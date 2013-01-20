@@ -14,7 +14,7 @@
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   #include <regex>
 #else
-  //#include <tr1/regex.hpp>
+  //#include <tr1/regex>
   // std::tr1::regex doesn't link in Qt, so use boost instead...
   #include <boost/regex.hpp>
 #endif
