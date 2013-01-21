@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/tcp_server.hpp"
+#include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include <map>
 #include <iostream>
@@ -25,28 +26,45 @@ namespace via
   template <typename Container>
   class http_server
   {
-    typedef via::comms::tcp_buffered_connection<Container> tcp_connection;
-    typedef via::comms::tcp_server<tcp_connection>         tcp_server;
-
-    boost::shared_ptr<tcp_server> tcp_server_;
-
-    typedef http_connection<Container> http_connection_type;
+  public:
+    typedef comms::tcp_buffered_connection<Container> tcp_connection;
+    typedef comms::tcp_server<tcp_connection>         tcp_server;
 
     // Require a collection of http_connections keyed by the connction pointer.
+    typedef http_connection<Container> http_connection_type;
     typedef std::map<void*, boost::shared_ptr<http_connection_type> >
         connection_collection;
-    connection_collection http_connections_;
     typedef typename connection_collection::iterator
       connection_collection_iterator;
     typedef typename connection_collection::value_type
       connection_collection_value_type;
+
+    typedef typename Container::const_iterator Container_const_iterator;
+    typedef boost::signal<void (const boost::weak_ptr<http_connection_type>,
+                                http::rx_request const&,
+                                Container_const_iterator,
+                                Container_const_iterator)> http_request_signal;
+
+
+  private:
+    boost::shared_ptr<tcp_server> tcp_server_;
+    connection_collection http_connections_;
+    http_request_signal http_request_signal_;
+
   public:
 
+    /// Connect the slot
+    typedef typename http_request_signal::slot_type http_request_signal_slot;
+    void request_received_event(const http_request_signal_slot& slot)
+    { http_request_signal_.connect(slot); }
+
+    /// Constructor.
     http_server(boost::asio::io_service& io_service,
                 const std::string& address,
                 const std::string& port) :
       tcp_server_(tcp_server::create(io_service, address, port)),
-      http_connections_()
+      http_connections_(),
+      http_request_signal_()
     {
       tcp_server_->received_event
           (boost::bind(&http_server::receive_handler, this, _1));
@@ -58,30 +76,35 @@ namespace via
           (boost::bind(&http_server::error_handler, this, _1, _2));
     }
 
+    /// receive a packet
     void receive_handler(boost::weak_ptr<via::comms::connection> connection)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(connection.lock().get());
-      if (!pointer)
-        return;
-
-      connection_collection_iterator iter(http_connections_.find(pointer));
-      if (iter != http_connections_.end())
+      if (pointer)
       {
-        if (!iter->second->receive())
+        boost::shared_ptr<http_connection_type> http_connection;
+        connection_collection_iterator iter(http_connections_.find(pointer));
+        if (iter != http_connections_.end())
+          http_connection = iter->second;
+        else
         {
-          // TODO disconnect
-          http_connections_.erase(iter);
+          http_connection = http_connection_type::create(connection);
+          http_connections_.insert
+              (connection_collection_value_type(pointer, http_connection));
+        }
+
+        if (http_connection->receive())
+        {
+          http_request_signal_(http_connection,
+                               http_connection->request(),
+                               http_connection->body_begin(),
+                               http_connection->body_end());
         }
       }
       else
-      {
-        boost::shared_ptr<http_connection_type> http_connection
-            (http_connection_type::create(connection));
-        if (http_connection->receive())
-          http_connections_.insert
-            (connection_collection_value_type(pointer, http_connection));
-      }
+        std::cerr << "Error: http_server::receive_handler connection expired"
+                  << std::endl;
     }
 
 /*
@@ -109,19 +132,13 @@ namespace via
         // TODO disconnect
         http_connections_.erase(iter);
       }
-/*
-      /// search for the connection in the map. If found, erase it
-      connection_collection::iterator
-          iter(http_connections_.find(pointer.get()));
-      if (iter != http_connections_.end())
-        http_connections_.erase(iter);
-        */
     }
 
     void receive_timedout_handler
       (boost::weak_ptr<via::comms::connection> connection)
     {
       std::cout << "receive_timedout_handler " << std::endl;
+      // disconnect?
     }
 
     void error_handler(const boost::system::error_code &error,

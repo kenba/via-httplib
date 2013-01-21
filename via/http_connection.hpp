@@ -17,19 +17,6 @@
 #include <deque>
 #include <iostream>
 
-namespace
-{
-  std::string test_body()
-  {
-    std::string body_text("<html>\r\n");
-    body_text += "<head><title>Accepted</title></head>\r\n";
-    body_text += "<body><h1>202 Accepted</h1></body>\r\n";
-    body_text += "</html>\r\n";
-
-    return body_text;
-  }
-}
-
 namespace via
 {
   ////////////////////////////////////////////////////////////////////////////
@@ -37,49 +24,31 @@ namespace via
   ///
   ////////////////////////////////////////////////////////////////////////////
   template <typename Container>
-  class http_connection :
-      public boost::enable_shared_from_this<http_connection<Container> >
+  class http_connection// :
+   //   public boost::enable_shared_from_this<http_connection<Container> >
   {
-  public:
-    typedef typename boost::weak_ptr<http_connection<Container> >
-              weak_http_connection;
-
-    typedef typename boost::shared_ptr<http_connection<Container> >
-              shared_http_connection;
-
     typedef typename Container::const_iterator Container_const_iterator;
 
-    typedef typename via::http::rx_request request_type;
-    typedef typename via::http::tx_response response_type;
+    boost::weak_ptr<via::comms::connection> connection_;
+    http::rx_request request_;
+    Container rx_buffer_;
+    Container_const_iterator body_begin_;
+    Container_const_iterator body_end_;
 
-    typedef boost::signal<void (request_type const&,
-                                Container_const_iterator,
-                                Container_const_iterator,
-                                response_type&,
-                                Container_const_iterator&,
-                                Container_const_iterator&) > response_signal;
+    /// Constructor.
+    http_connection(boost::weak_ptr<via::comms::connection> connection) :
+      connection_(connection),
+      request_(),
+      rx_buffer_(),
+      body_begin_(rx_buffer_.end()),
+      body_end_(rx_buffer_.end())
+    {}
 
-    typedef boost::signal<void (request_type const&,
-                                Container_const_iterator,
-                                Container_const_iterator,
-                                weak_http_connection) > request_signal;
+  public:
 
     typedef via::comms::tcp_buffered_connection<Container> tcp_connection;
 
-  private:
-    boost::weak_ptr<via::comms::connection> connection_;
-
-    response_signal response_signal_;
-
-    request_signal request_signal_;
-
-  public:
-    http_connection(boost::weak_ptr<via::comms::connection> connection) :
-      connection_(connection),
-      response_signal_(),
-      request_signal_()
-    {}
-
+    /// Create.
     static boost::shared_ptr<http_connection<Container> >
            create(boost::weak_ptr<via::comms::connection> connection)
     {
@@ -87,57 +56,55 @@ namespace via
           (new http_connection(connection));
     }
 
+    http::rx_request const& request() const
+    { return request_; }
+
+    Container_const_iterator body_begin() const
+    { return body_begin_; }
+
+    Container_const_iterator body_end() const
+    { return body_end_; }
+
     bool receive()
     {
 //      std::cout << "http_connection receive" << std::endl;
+      // attempt to get the pointer
       boost::shared_ptr<tcp_connection> tcp_pointer
           (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
       if (!tcp_pointer)
         return false;
 
-      Container_const_iterator rx_begin;
-      Container_const_iterator rx_end;
-      while (tcp_pointer->read_packet(rx_begin, rx_end))
+      // attempt to read the data
+      bool is_valid(false);
+      rx_buffer_.append(tcp_pointer->current_packet(is_valid));
+      while (is_valid)
       {
-        via::http::rx_request request;
-        Container_const_iterator next(rx_begin);
-        if (request.parse(next, rx_end))
+        tcp_pointer->next_packet();
+
+        http::rx_request request;
+        Container_const_iterator next(rx_buffer_.begin());
+        if (!request.parse(next, rx_buffer_.end()))
         {
-          // TODO send signals...
-
-          std::cout << "request.parsed" << std::endl;
-          std::cout << request.to_string() << std::endl;
-
-          // TODO parse the message properly
-          // i.e. send signals that the message was received
-          std::string body_text(test_body());
-          size_t body_length(body_text.size());
-
           via::http::tx_response response
-              (via::http::response_status::OK, body_length);
-          response.add_header(http::header_field::ACCEPT_CHARSET,
-                              "ISO-8859-1");
-          std::string http_message(response.message());
-          if (request.method() !=
-              http::request_method::name(http::request_method::HEAD))
-          {
-            http_message += body_text;
-          }
-
-          std::cout << http_message << std::endl;
-          tcp_pointer->send_packet(http_message);
+          (via::http::response_status::BAD_REQUEST, 0);
+          tcp_pointer->send_packet(response.message());
+          rx_buffer_.clear();
+          return false;
         }
         else
         {
-          via::http::tx_response response
-              (via::http::response_status::BAD_REQUEST, 0);
-          tcp_pointer->send_packet(response.message());
+        //  std::cout << "request.parsed" << std::endl;
+       //   std::cout << request.to_string() << std::endl;
+          body_begin_ = next;
+          body_end_ = body_begin_ + request.content_length();
+          if (body_end_ <= rx_buffer_.end())
+            return true;
         }
 
-        tcp_pointer->next_packet();
+        rx_buffer_.append(tcp_pointer->current_packet(is_valid));
       }
 
-      return true;
+      return false;
     }
 
     /* Does not work when Container is a string
@@ -148,7 +115,6 @@ namespace via
     }
     */
 
-    /*
     template<typename ForwardIterator1, typename ForwardIterator2>
     void send(std::string const& http_header,
               ForwardIterator1 begin, ForwardIterator2 end) const
@@ -168,13 +134,14 @@ namespace via
       if (tcp_pointer)
         tcp_pointer->send_packet(packet);
       else
-        ; // TODO log error http_connection::send weak pointer expired
+        std::cerr << "http_connection::send connection weak pointer expired"
+                  << std::endl;
     }
 
     void disconnect()
     {}
 
-    */
+
 
   };
 
