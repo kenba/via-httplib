@@ -24,8 +24,7 @@ namespace via
   ///
   ////////////////////////////////////////////////////////////////////////////
   template <typename Container>
-  class http_connection// :
-   //   public boost::enable_shared_from_this<http_connection<Container> >
+  class http_connection
   {
     typedef typename Container::const_iterator Container_const_iterator;
 
@@ -67,7 +66,6 @@ namespace via
 
     bool receive()
     {
-//      std::cout << "http_connection receive" << std::endl;
       // attempt to get the pointer
       boost::shared_ptr<tcp_connection> tcp_pointer
           (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
@@ -76,32 +74,36 @@ namespace via
 
       // attempt to read the data
       bool is_valid(false);
-      rx_buffer_.append(tcp_pointer->current_packet(is_valid));
-      while (is_valid)
+      Container_const_iterator next(rx_buffer_.begin());
+      Container_const_iterator end(rx_buffer_.end());
+      while (tcp_pointer->read_packet(next, end))
       {
+        // append the data to the end of the buffer.
+        rx_buffer_.insert(rx_buffer_.end(), next, end);
         tcp_pointer->next_packet();
 
-        http::rx_request request;
-        Container_const_iterator next(rx_buffer_.begin());
-        if (!request.parse(next, rx_buffer_.end()))
+        next = rx_buffer_.begin();
+        request_ = http::rx_request();
+        if (!request_.parse(next, rx_buffer_.end()))
         {
           via::http::tx_response response
           (via::http::response_status::BAD_REQUEST, 0);
-          tcp_pointer->send_packet(response.message());
+          std::string response_txt(response.message());
+          tcp_pointer->send_packet(response_txt.begin(), response_txt.end());
           rx_buffer_.clear();
           return false;
         }
         else
         {
-        //  std::cout << "request.parsed" << std::endl;
-       //   std::cout << request.to_string() << std::endl;
           body_begin_ = next;
-          body_end_ = body_begin_ + request.content_length();
-          if (body_end_ <= rx_buffer_.end())
+          body_end_ = body_begin_;
+          size_t rx_body_size(rx_buffer_.end() - body_begin_);
+          if (request_.content_length() <= rx_body_size)
+          {
+            body_end_ += request_.content_length();
             return true;
+          }
         }
-
-        rx_buffer_.append(tcp_pointer->current_packet(is_valid));
       }
 
       return false;
@@ -117,8 +119,10 @@ namespace via
 
     template<typename ForwardIterator1, typename ForwardIterator2>
     void send(std::string const& http_header,
-              ForwardIterator1 begin, ForwardIterator2 end) const
+              ForwardIterator1 begin, ForwardIterator2 end)
     {
+      rx_buffer_.clear();
+
       size_t size(end - begin);
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
@@ -127,8 +131,10 @@ namespace via
       send(tx_message);
     }
 
-    void send(Container const& packet) const
+    void send(Container const& packet)
     {
+      rx_buffer_.clear();
+
       boost::shared_ptr<tcp_connection> tcp_pointer
           (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
       if (tcp_pointer)

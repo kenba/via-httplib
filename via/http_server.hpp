@@ -60,9 +60,8 @@ namespace via
 
     /// Constructor.
     http_server(boost::asio::io_service& io_service,
-                const std::string& address,
-                const std::string& port) :
-      tcp_server_(tcp_server::create(io_service, address, port)),
+                unsigned short port) :
+      tcp_server_(tcp_server::create(io_service, port)),
       http_connections_(),
       http_request_signal_()
     {
