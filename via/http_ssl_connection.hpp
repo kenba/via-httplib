@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef HTTP_CONNECTION_HPP_VIA_HTTPLIB_
-#define HTTP_CONNECTION_HPP_VIA_HTTPLIB_
+#ifndef HTTP_SSL_CONNECTION_HPP_VIA_HTTPLIB_
+#define HTTP_SSL_CONNECTION_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
-#include "via/comms/tcp_buffered_connection.hpp"
+#include "via/comms/ssl_tcp_buffered_connection.hpp"
 #include <boost/signal.hpp>
 #include <deque>
 #include <iostream>
@@ -20,11 +20,11 @@
 namespace via
 {
   ////////////////////////////////////////////////////////////////////////////
-  /// @class http_connection
+  /// @class http_ssl_connection
   ///
   ////////////////////////////////////////////////////////////////////////////
   template <typename Container>
-  class http_connection
+  class http_ssl_connection
   {
     typedef typename Container::const_iterator Container_const_iterator;
 
@@ -35,7 +35,7 @@ namespace via
     Container_const_iterator body_end_;
 
     /// Constructor.
-    http_connection(boost::weak_ptr<via::comms::connection> connection) :
+    http_ssl_connection(boost::weak_ptr<via::comms::connection> connection) :
       connection_(connection),
       request_(),
       rx_buffer_(),
@@ -45,14 +45,15 @@ namespace via
 
   public:
 
-    typedef via::comms::tcp_buffered_connection<Container> tcp_connection;
+    typedef via::comms::ssl_tcp_buffered_connection<Container>
+                ssl_tcp_connection;
 
     /// Create.
-    static boost::shared_ptr<http_connection<Container> >
+    static boost::shared_ptr<http_ssl_connection<Container> >
            create(boost::weak_ptr<via::comms::connection> connection)
     {
-      return boost::shared_ptr<http_connection<Container> >
-          (new http_connection(connection));
+      return boost::shared_ptr<http_ssl_connection<Container> >
+          (new http_ssl_connection(connection));
     }
 
     http::rx_request const& request() const
@@ -66,20 +67,21 @@ namespace via
 
     bool receive()
     {
+//      std::cout << "http_connection receive" << std::endl;
       // attempt to get the pointer
-      boost::shared_ptr<tcp_connection> tcp_pointer
-          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
-      if (!tcp_pointer)
+      boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
+          (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
+      if (!ssl_tcp_pointer)
         return false;
 
       // attempt to read the data
       Container_const_iterator next(rx_buffer_.begin());
       Container_const_iterator end(rx_buffer_.end());
-      while (tcp_pointer->read_packet(next, end))
+      while (ssl_tcp_pointer->read_packet(next, end))
       {
         // append the data to the end of the buffer.
         rx_buffer_.insert(rx_buffer_.end(), next, end);
-        tcp_pointer->next_packet();
+        ssl_tcp_pointer->next_packet();
 
         next = rx_buffer_.begin();
         request_ = http::rx_request();
@@ -88,7 +90,7 @@ namespace via
           via::http::tx_response response
           (via::http::response_status::BAD_REQUEST, 0);
           std::string response_txt(response.message());
-          tcp_pointer->send_packet(response_txt.begin(), response_txt.end());
+          ssl_tcp_pointer->send_packet(response_txt.begin(), response_txt.end());
           rx_buffer_.clear();
           return false;
         }
@@ -118,10 +120,8 @@ namespace via
 
     template<typename ForwardIterator1, typename ForwardIterator2>
     void send(std::string const& http_header,
-              ForwardIterator1 begin, ForwardIterator2 end)
+              ForwardIterator1 begin, ForwardIterator2 end) const
     {
-      rx_buffer_.clear();
-
       size_t size(end - begin);
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
@@ -130,14 +130,12 @@ namespace via
       send(tx_message);
     }
 
-    void send(Container const& packet)
+    void send(Container const& packet) const
     {
-      rx_buffer_.clear();
-
-      boost::shared_ptr<tcp_connection> tcp_pointer
-          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
-      if (tcp_pointer)
-        tcp_pointer->send_packet(packet);
+      boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
+          (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
+      if (ssl_tcp_pointer)
+        ssl_tcp_pointer->send_packet(packet);
       else
         std::cerr << "http_connection::send connection weak pointer expired"
                   << std::endl;
@@ -146,9 +144,6 @@ namespace via
     void disconnect()
     {}
 
-
-
   };
-
 }
 #endif
