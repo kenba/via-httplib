@@ -37,13 +37,13 @@ namespace via
       /// The Ssl password.
       std::string password_;
 
+      size_t buffer_size_;
+
       /// The next connection to be accepted.
       boost::shared_ptr<SslTcpConnection> new_connection_;
 
       /// The connections established with this server.
       connections connections_;
-
-      size_t receive_timeout_;
 
       /// The data received signal.
       connection::event_signal received_;
@@ -56,9 +56,6 @@ namespace via
 
       /// The disconnected signal.
       connection::event_signal disconnected_;
-
-      /// The receive timedout signal.
-      connection::event_signal receive_timedout_;
 
       /// The error signal.
       connection::error_signal error_;
@@ -78,13 +75,12 @@ namespace via
 
         if (!error)
         {
+          std::cout << "ssl_tcp_server::accept_handler ok" << std::endl;
+
           // Perform the SSL handshaking
           new_connection_->start();
 
-          new_connection_->set_no_delay(true);
-          new_connection_->enable_reception();
-
-          connected_(new_connection_);
+          connections_.insert(new_connection_);
 
           new_connection_->received_event
               (boost::bind(&ssl_tcp_server::received_handler, this,
@@ -95,15 +91,15 @@ namespace via
           new_connection_->disconnected_event
               (boost::bind(&ssl_tcp_server::disconnected_handler, this,
                            new_connection_));
-          new_connection_->receive_timedout_event
-              (boost::bind(&ssl_tcp_server::receive_timedout_handler, this,
-                             new_connection_));
           new_connection_->error_event
               (boost::bind(&ssl_tcp_server::error_handler, this,
                           boost::asio::placeholders::error,
                           new_connection_));
 
-          connections_.insert(new_connection_);
+//          new_connection_->set_no_delay(true);
+//          new_connection_->enable_reception();
+
+          connected_(new_connection_);
         }
         else
           error_(error, new_connection_);
@@ -136,9 +132,6 @@ namespace via
         }
       }
 
-      void receive_timedout_handler(boost::weak_ptr<connection> weak_connection)
-      { receive_timedout_(weak_connection.lock()); }
-
       /// Connection error handler. It  just forwards the signal.
       void error_handler(const boost::system::error_code& error,
                          boost::weak_ptr<connection> weak_connection)
@@ -149,50 +142,43 @@ namespace via
       /// Constructor.
       /// Create a TCP server on the given address and port.
       /// @param io_service the asio::io_service that this socket is bound to.
-      /// @param address the address of the server
       /// @param port the address of the server
       /// @param buffer_size the size of the read and write buffers
       /// @param noDelay if true disables the Nagle algorithm, default true.
       explicit ssl_tcp_server(boost::asio::io_service& io_service,
-                              const std::string& address,
-                              const std::string& port,
-                              size_t receive_timeout = 0) :
+                              unsigned short port,
+                              size_t buffer_size) :
         io_service_(io_service),
         acceptor_(io_service),
         context_(boost::asio::ssl::context::sslv23),
         password_(""),
+        buffer_size_(buffer_size),
         new_connection_(),
         connections_(),
-        receive_timeout_(receive_timeout),
         received_(),
         sent_(),
         connected_(),
         disconnected_(),
-        receive_timedout_(),
         error_()
       {
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(address, port);
-        boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+        boost::asio::ip::tcp::endpoint
+            endpoint(boost::asio::ip::tcp::v4(), port);
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option
           (boost::asio::ip::tcp::acceptor::reuse_address(true));
         acceptor_.bind(endpoint);
         acceptor_.listen();
-
-        start_accept();
       }
 
       static boost::shared_ptr<ssl_tcp_server> create
                                         (boost::asio::io_service& io_service,
-                                         const std::string& address,
-                                         const std::string& port,
-                                         size_t receive_timeout = 0)
+                                         unsigned short port,
+                                         size_t buffer_size = 4096)
       {
         return boost::shared_ptr<ssl_tcp_server>
-            (new ssl_tcp_server(io_service, address, port, receive_timeout));
+            (new ssl_tcp_server(io_service, port, buffer_size));
       }
 
       void set_password(const std::string& password)
@@ -220,9 +206,9 @@ namespace via
                         | boost::asio::ssl::context::single_dh_use);
 
         // either of the lines below works
-    //  context_.use_certificate_chain_file(certificate_file); // Asio example
-        context_.use_certificate_file(certificate_file,
-                                      boost::asio::ssl::context::pem);
+        context_.use_certificate_chain_file(certificate_file); // Asio example
+   //     context_.use_certificate_file(certificate_file,
+   //                                   boost::asio::ssl::context::pem);
         context_.use_private_key_file(key_file,
                                       boost::asio::ssl::context::pem);
 
@@ -234,8 +220,8 @@ namespace via
       void start_accept()
       {
         new_connection_.reset();
-        new_connection_ = SslTcpConnection::create(io_service_, context_,
-                                                   receive_timeout_);
+        new_connection_ =
+                SslTcpConnection::create(io_service_, context_, buffer_size_);
         acceptor_.async_accept(new_connection_->socket(),
                                boost::bind(&ssl_tcp_server::accept_handler, this,
                                            boost::asio::placeholders::error));
@@ -275,12 +261,6 @@ namespace via
       void disconnected_event
         (const connection::event_signal::slot_type& slot)
       { disconnected_.connect(slot); }
-
-      /// Connect a slot to the receive_timeout_ signal.
-      /// @param slot the slot to connect.
-      void receive_timedout_event
-         (const connection::event_signal::slot_type& slot)
-      { receive_timedout_.connect(slot); }
 
     };
   }

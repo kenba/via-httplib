@@ -26,29 +26,22 @@ namespace via
     template <typename Container>
     class ssl_tcp_buffered_connection : public buffered_connection<Container>
     {
-      typedef buffered_connection<Container> buffered_connection_class;
 
       boost::asio::io_service& io_service_;
 
       /// The SSL socket.
       boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
 
-
-      size_t connection_timeout_;
-      size_t receive_timeout_;
-      boost::asio::deadline_timer deadline_timer_;
-
       /// Resolve the ip address of the connection.
-      /// @param hostName the name of the TCP host
-      /// @param portName the name of the TCP port
+      /// @param host_name the name of the TCP host
+      /// @param port_name the name of the TCP port
       /// @return a resolver iterator to the potential endpoints
       boost::asio::ip::tcp::resolver::iterator resolve_host
-          (char const* hostName, char const* portName) const
+          (char const* host_name, char const* port_name) const
       {
         boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(hostName, portName);
-        boost::asio::ip::tcp::resolver::iterator itr(resolver.resolve(query));
-        return itr;
+        boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+        return resolver.resolve(query);
       }
 
       ///
@@ -66,19 +59,9 @@ namespace via
                   boost::bind(&ssl_tcp_buffered_connection::handle_connect,
                               this, boost::asio::placeholders::error, itr));
 
-        if (connection_timeout_)
-        {
-          deadline_timer_.expires_from_now
-            (boost::posix_time::milliseconds(connection_timeout_));
-          deadline_timer_.async_wait
-            (boost::bind(&ssl_tcp_buffered_connection::connection_timeout,
-                         this, boost::asio::placeholders::error));
-        }
-
         return true;
       }
 
-      ///
       void handle_connect(boost::system::error_code const& error,
                           boost::asio::ip::tcp::resolver::iterator itr)
       {
@@ -90,13 +73,6 @@ namespace via
           socket_.async_handshake(boost::asio::ssl::stream_base::client,
              boost::bind(&ssl_tcp_buffered_connection::handle_handshake,
                          this, boost::asio::placeholders::error));
-          /*
-          deadline_timer_.cancel();
-          set_no_delay(true);
-          buffered_connection_class::enable_reception();
-          connection::signal_connected();
-          start_receive_timer();
-          */
         }
         else // there was an error
         {
@@ -115,73 +91,42 @@ namespace via
         }
       }
 
-      void verify_certificate(bool preverified,
+      bool verify_certificate(bool preverified,
                               boost::asio::ssl::verify_context& ctx)
       {
         // The verify callback can be used to check whether the certificate that is
-         // being presented is valid for the peer. For example, RFC 2818 describes
-         // the steps involved in doing this for HTTPS. Consult the OpenSSL
-         // documentation for more details. Note that the callback is called once
-         // for each certificate in the certificate chain, starting from the root
-         // certificate authority.
+        // being presented is valid for the peer. For example, RFC 2818 describes
+        // the steps involved in doing this for HTTPS. Consult the OpenSSL
+        // documentation for more details. Note that the callback is called once
+        // for each certificate in the certificate chain, starting from the root
+        // certificate authority.
 
-         // Need code below to verify the certificate.
-         char subject_name[256];
-         X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
-         X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-         /* The example code below simply prints the certificate's subject name.
-         std::cout << "Verifying "  << subject_name << std::endl;
-         std::cout << "preverified " << preverified << std::endl;
-         */
+        // In this example we will simply print the certificate's subject name.
+        char subject_name[256];
+        X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+        X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+        /* The example code below simply prints the certificate's subject name.
+        std::cout << "Verifying "  << subject_name << std::endl;
+        std::cout << "preverified " << preverified << std::endl;
+        */
 
-         return preverified;
+        return preverified;
       }
+
 
       void handle_handshake(boost::system::error_code const& error)
       {
         if (!error)
         {
-          deadline_timer_.cancel();
           set_no_delay(true);
-          buffered_connection_class::enable_reception();
+          buffered_connection<Container>::enable_reception();
           connection::signal_connected();
-          start_receive_timer();
         }
         else
         {
-          stop();
           connection::signal_error(error);
-        }
-      }
-
-      /// Close the socket and signal a timeout.
-      void connection_timeout(boost::system::error_code const& error)
-      {
-        if (boost::asio::error::operation_aborted != error)
-        {
           stop();
-          connection::signal_connection_timedout();
         }
-      }
-
-      ///
-      void start_receive_timer()
-      {
-        if (receive_timeout_)
-        {
-          deadline_timer_.expires_from_now
-            (boost::posix_time::milliseconds(receive_timeout_));
-          deadline_timer_.async_wait
-            (boost::bind(&ssl_tcp_buffered_connection::receive_timedout,
-                         this, boost::asio::placeholders::error));
-        }
-      }
-
-      ///
-      void receive_timedout(boost::system::error_code const& error)
-      {
-        if (boost::asio::error::operation_aborted != error)
-          connection::signal_receive_timedout();
       }
 
     protected:
@@ -226,25 +171,20 @@ namespace via
       /// @param size the size of the write buffer in bytes.
       void write(void const* ptr, size_t size)
       {
+        // send the message at the front of the queue
+        // Note: uses the boost::asio::async_write function NOT
+        // socket_.async_write_some.
+        // See Boost Asio documentation on Short Reads and Short Writes.
         boost::asio::async_write
             (socket_, boost::asio::buffer(ptr, size),
              boost::bind(&ssl_tcp_buffered_connection::write_handler, this,
-             boost::asio::placeholders::error,
-             boost::asio::placeholders::bytes_transferred));
-      }
-
-      ///
-      virtual void write_handler(const boost::system::error_code& error,
-                                      size_t bytes_transferred)
-      {
-        buffered_connection_class::write_handler(error, bytes_transferred);
-        start_receive_timer();
+                         boost::asio::placeholders::error,
+                         boost::asio::placeholders::bytes_transferred));
       }
 
       ///
       void stop()
       {
-        deadline_timer_.cancel();
         boost::system::error_code ignoredEc;
         socket_.lowest_layer().shutdown
             (boost::asio::ip::tcp::socket::shutdown_both, ignoredEc);
@@ -253,17 +193,12 @@ namespace via
 
       /// Constructor.
       /// Hidden to ensure that it can only be TODO...
-      explicit ssl_tcp_buffered_connection(boost::asio::io_service& io_service,
-                                       boost::asio::ssl::context& ssl_context,
-                                       size_t receive_timeout,
-                                       size_t connection_timeout,
-                                       size_t buffer_size) :
-        buffered_connection_class(buffer_size),
+      ssl_tcp_buffered_connection(boost::asio::io_service& io_service,
+                     boost::asio::ssl::context& context,
+                     size_t buffer_size) :
+        buffered_connection<Container>(buffer_size),
         io_service_(io_service),
-        socket_(io_service, ssl_context),
-        connection_timeout_(connection_timeout),
-        receive_timeout_(receive_timeout),
-        deadline_timer_(io_service)
+        socket_(io_service, context)
       {}
 
     public:
@@ -272,38 +207,32 @@ namespace via
 
       ///
       static boost::shared_ptr<ssl_tcp_buffered_connection> create
-                                      (boost::asio::io_service& io_service,
-                                       boost::asio::ssl::context& ssl_context,
-                                       size_t receive_timeout = 0,
-                                       size_t connection_timeout = 0,
-                                       size_t buffer_size =
-                                                 DEFAULT_RECEIVE_BUFFER_SIZE)
+                          (boost::asio::io_service& io_service,
+                           boost::asio::ssl::context& context,
+                           size_t buffer_size =
+                                     DEFAULT_RECEIVE_BUFFER_SIZE)
       {
         return boost::shared_ptr<ssl_tcp_buffered_connection>
-          (new ssl_tcp_buffered_connection
-            (io_service, ssl_context, receive_timeout, connection_timeout, buffer_size));
+            (new ssl_tcp_buffered_connection
+              (io_service, context, buffer_size));
       }
 
       ///
-      bool connect(const char* hostName, const char* portName)
-      { return connect_socket(resolve_host(hostName, portName)); }
+      bool connect(char const* host_name, char const* port_name)
+      { return connect_socket(resolve_host(host_name, port_name)); }
 
-      void set_no_delay(bool no_delay = true)
+      void set_no_delay(bool no_delay)
       {
- //       socket_.set_option(boost::asio::socket_base::send_buffer_size
- //                          (MAX_RX_PACKET_SIZE));
-//        socket_.set_option(boost::asio::socket_base::receive_buffer_size
- //                          (MAX_RX_PACKET_SIZE));
         socket_.lowest_layer().set_option
-             (boost::asio::ip::tcp::no_delay(no_delay));
+            (boost::asio::ip::tcp::no_delay(no_delay));
       }
 
       void start()
       {
         socket_.async_handshake
             (boost::asio::ssl::stream_base::server,
-             boost::bind(&ssl_tcp_buffered_connection::handl_handshake,
-                         this, boost::asio::placeholders::error));
+             boost::bind(&ssl_tcp_buffered_connection::handle_handshake,
+                          this, boost::asio::placeholders::error));
       }
 
       ///
@@ -315,4 +244,4 @@ namespace via
 
   }
 }
-#endif
+#endif // SSL_CONNECTION_HPP

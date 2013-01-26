@@ -140,13 +140,11 @@ namespace via
       /// Constructor.
       /// Create a TCP server on the given address and port.
       /// @param io_service the asio::io_service that this socket is bound to.
-      /// @param address the address of the server
       /// @param port the address of the server
       /// @param buffer_size the size of the read and write buffers
       /// @param noDelay if true disables the Nagle algorithm, default true.
       explicit tcp_server(boost::asio::io_service& io_service,
-                          const std::string& address,
-                          const std::string& port,
+                          unsigned short port,
                           size_t receive_timeout = 0) :
         io_service_(io_service),
         acceptor_(io_service),
@@ -162,9 +160,8 @@ namespace via
       {
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(address, port);
-        boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+        boost::asio::ip::tcp::endpoint
+            endpoint(boost::asio::ip::tcp::v4(), port);
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option
           (boost::asio::ip::tcp::acceptor::reuse_address(true));
@@ -176,12 +173,11 @@ namespace via
 
       static boost::shared_ptr<tcp_server> create
                                         (boost::asio::io_service& io_service,
-                                         const std::string& address,
-                                         const std::string& port,
+                                         unsigned short port,
                                          size_t receive_timeout = 0)
       {
         return boost::shared_ptr<tcp_server>
-            (new tcp_server(io_service, address, port, receive_timeout));
+            (new tcp_server(io_service, port, receive_timeout));
       }
 
       /// Asynchorously wait for connections.
