@@ -37,8 +37,6 @@ namespace via
       /// The Ssl password.
       std::string password_;
 
-      size_t buffer_size_;
-
       /// The next connection to be accepted.
       boost::shared_ptr<SslTcpConnection> new_connection_;
 
@@ -75,12 +73,9 @@ namespace via
 
         if (!error)
         {
-          std::cout << "ssl_tcp_server::accept_handler ok" << std::endl;
-
           // Perform the SSL handshaking
+          new_connection_->set_no_delay(true);
           new_connection_->start();
-
-          connections_.insert(new_connection_);
 
           new_connection_->received_event
               (boost::bind(&ssl_tcp_server::received_handler, this,
@@ -96,10 +91,8 @@ namespace via
                           boost::asio::placeholders::error,
                           new_connection_));
 
-//          new_connection_->set_no_delay(true);
-//          new_connection_->enable_reception();
-
           connected_(new_connection_);
+          connections_.insert(new_connection_);
         }
         else
           error_(error, new_connection_);
@@ -146,13 +139,11 @@ namespace via
       /// @param buffer_size the size of the read and write buffers
       /// @param noDelay if true disables the Nagle algorithm, default true.
       explicit ssl_tcp_server(boost::asio::io_service& io_service,
-                              unsigned short port,
-                              size_t buffer_size) :
+                              unsigned short port) :
         io_service_(io_service),
         acceptor_(io_service),
         context_(boost::asio::ssl::context::sslv23),
         password_(""),
-        buffer_size_(buffer_size),
         new_connection_(),
         connections_(),
         received_(),
@@ -174,11 +165,10 @@ namespace via
 
       static boost::shared_ptr<ssl_tcp_server> create
                                         (boost::asio::io_service& io_service,
-                                         unsigned short port,
-                                         size_t buffer_size = 4096)
+                                         unsigned short port)
       {
         return boost::shared_ptr<ssl_tcp_server>
-            (new ssl_tcp_server(io_service, port, buffer_size));
+            (new ssl_tcp_server(io_service, port));
       }
 
       void set_password(const std::string& password)
@@ -220,8 +210,7 @@ namespace via
       void start_accept()
       {
         new_connection_.reset();
-        new_connection_ =
-                SslTcpConnection::create(io_service_, context_, buffer_size_);
+        new_connection_ = SslTcpConnection::create(io_service_, context_);
         acceptor_.async_accept(new_connection_->socket(),
                                boost::bind(&ssl_tcp_server::accept_handler, this,
                                            boost::asio::placeholders::error));

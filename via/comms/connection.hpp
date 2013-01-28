@@ -40,8 +40,6 @@ namespace via
       event_signal sent_;
       event_signal connected_;
       event_signal disconnected_;
-      event_signal receive_timedout_;
-      event_signal connection_timedout_;
 
       error_signal error_;
 
@@ -60,12 +58,6 @@ namespace via
       void signal_disconnected()
       { disconnected_(shared_from_this()); }
 
-      void signal_receive_timedout()
-      { receive_timedout_(shared_from_this()); }
-
-      void signal_connection_timedout()
-      { connection_timedout_(shared_from_this()); }
-
       /// Note: the signal error is declared virtual so that derived classes
       /// can interogate the error code to determine whether it is a
       /// disconnect.
@@ -81,7 +73,7 @@ namespace via
 
       ///
       virtual void read_handler(const boost::system::error_code& error,
-                                size_t bytes_transferred)
+                                size_t) // bytes_transferred
       {
         if (error)
           signal_error(error);
@@ -91,7 +83,7 @@ namespace via
 
       ///
       virtual void write_handler(const boost::system::error_code& error,
-                                 size_t bytes_transferred)
+                                 size_t) // bytes_transferred
       {
         if (error)
           signal_error(error);
@@ -107,8 +99,6 @@ namespace via
         sent_(),
         connected_(),
         disconnected_(),
-        receive_timedout_(),
-        connection_timedout_(),
         error_()
       {}
 
@@ -134,12 +124,6 @@ namespace via
 
       void disconnected_event(const event_signal::slot_type& slot)
       { disconnected_.connect(slot); }
-
-      void receive_timedout_event(const event_signal::slot_type& slot)
-      { receive_timedout_.connect(slot); }
-
-      void connection_timedout_event(const event_signal::slot_type& slot)
-      { connection_timedout_.connect(slot); }
 
       void error_event(const error_signal::slot_type& slot)
       { error_.connect(slot); }

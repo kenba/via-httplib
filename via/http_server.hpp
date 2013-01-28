@@ -69,11 +69,14 @@ namespace via
           (boost::bind(&http_server::receive_handler, this, _1));
       tcp_server_->disconnected_event
           (boost::bind(&http_server::disconnected_handler, this, _1));
-      tcp_server_->receive_timedout_event
-          (boost::bind(&http_server::receive_timedout_handler, this, _1));
       tcp_server_->error_event
           (boost::bind(&http_server::error_handler, this, _1, _2));
+
+      start_accept();
     }
+
+    void start_accept()
+    { tcp_server_->start_accept(); }
 
     /// receive a packet
     void receive_handler(boost::weak_ptr<via::comms::connection> connection)
@@ -131,13 +134,6 @@ namespace via
         // TODO disconnect
         http_connections_.erase(iter);
       }
-    }
-
-    void receive_timedout_handler
-      (boost::weak_ptr<via::comms::connection> connection)
-    {
-      std::cout << "receive_timedout_handler " << std::endl;
-      // disconnect?
     }
 
     void error_handler(const boost::system::error_code &error,

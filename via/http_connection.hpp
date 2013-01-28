@@ -73,22 +73,20 @@ namespace via
         return false;
 
       // attempt to read the data
-      Container_const_iterator next(rx_buffer_.begin());
-      Container_const_iterator end(rx_buffer_.end());
-      while (tcp_pointer->read_packet(next, end))
+      while (tcp_pointer->read_pending())
       {
         // append the data to the end of the buffer.
-        rx_buffer_.insert(rx_buffer_.end(), next, end);
-        tcp_pointer->next_packet();
+        Container data(tcp_pointer->read_data());
+        rx_buffer_.insert(rx_buffer_.end(), data.begin(), data.end());
 
-        next = rx_buffer_.begin();
+        Container_const_iterator next = rx_buffer_.begin();
         request_ = http::rx_request();
         if (!request_.parse(next, rx_buffer_.end()))
         {
           via::http::tx_response response
           (via::http::response_status::BAD_REQUEST, 0);
           std::string response_txt(response.message());
-          tcp_pointer->send_packet(response_txt.begin(), response_txt.end());
+          tcp_pointer->send_data(response_txt.begin(), response_txt.end());
           rx_buffer_.clear();
           return false;
         }
@@ -137,7 +135,7 @@ namespace via
       boost::shared_ptr<tcp_connection> tcp_pointer
           (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
       if (tcp_pointer)
-        tcp_pointer->send_packet(packet);
+        tcp_pointer->send_data(packet);
       else
         std::cerr << "http_connection::send connection weak pointer expired"
                   << std::endl;

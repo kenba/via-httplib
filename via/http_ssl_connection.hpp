@@ -67,7 +67,6 @@ namespace via
 
     bool receive()
     {
-//      std::cout << "http_connection receive" << std::endl;
       // attempt to get the pointer
       boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
           (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
@@ -75,22 +74,20 @@ namespace via
         return false;
 
       // attempt to read the data
-      Container_const_iterator next(rx_buffer_.begin());
-      Container_const_iterator end(rx_buffer_.end());
-      while (ssl_tcp_pointer->read_packet(next, end))
+      while (ssl_tcp_pointer->read_pending())
       {
         // append the data to the end of the buffer.
-        rx_buffer_.insert(rx_buffer_.end(), next, end);
-        ssl_tcp_pointer->next_packet();
+        Container data(ssl_tcp_pointer->read_data());
+        rx_buffer_.insert(rx_buffer_.end(), data.begin(), data.end());
 
-        next = rx_buffer_.begin();
+        Container_const_iterator next(rx_buffer_.begin());
         request_ = http::rx_request();
         if (!request_.parse(next, rx_buffer_.end()))
         {
           via::http::tx_response response
           (via::http::response_status::BAD_REQUEST, 0);
           std::string response_txt(response.message());
-          ssl_tcp_pointer->send_packet(response_txt.begin(), response_txt.end());
+          ssl_tcp_pointer->send_data(response_txt.begin(), response_txt.end());
           rx_buffer_.clear();
           return false;
         }
@@ -130,12 +127,14 @@ namespace via
       send(tx_message);
     }
 
-    void send(Container const& packet) const
+    void send(Container const& packet)
     {
+      rx_buffer_.clear();
+
       boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
           (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
       if (ssl_tcp_pointer)
-        ssl_tcp_pointer->send_packet(packet);
+        ssl_tcp_pointer->send_data(packet);
       else
         std::cerr << "http_connection::send connection weak pointer expired"
                   << std::endl;

@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
 #include <deque>
+#include <cassert>
 
 namespace via
 {
@@ -22,13 +23,15 @@ namespace via
     /// This class adds queues to the connection class to manage the
     /// read and write buffers.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container> //, size_t MAX_RX_PACKET_SIZE>
+    template <typename Container>
     class buffered_connection : public connection
     {
       std::deque<Container> rx_queue_;
       std::deque<Container> tx_queue_;
       size_t buffer_size_;
       bool is_writing_;
+
+      static const size_t DEFAULT_BUFFER_SIZE = 8192;
 
     protected:
 
@@ -48,7 +51,7 @@ namespace via
 
       ///
       virtual void write_handler(const boost::system::error_code& error,
-                                size_t bytes_transferred)
+                                size_t) // bytes_transferred
       {
         tx_queue_.pop_front();
         is_writing_ = false;
@@ -68,13 +71,16 @@ namespace via
       }
 
       ///
-      explicit buffered_connection(size_t buffer_size) :
+      explicit buffered_connection(size_t buffer_size = DEFAULT_BUFFER_SIZE) :
         connection(),
         rx_queue_(),
         tx_queue_(),
         buffer_size_(buffer_size),
         is_writing_(false)
       {}
+
+      void set_buffer_size(size_t buffer_size)
+      { buffer_size_ = buffer_size; }
 
     public:
 
@@ -88,35 +94,20 @@ namespace via
       }
 
       ///
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool read_packet(ForwardIterator1& begin,
-                       ForwardIterator2& end) const
-      {
-        bool is_valid(rx_queue_.size() > 1);
-        if (is_valid)
-        {
-          begin = rx_queue_.front().begin();
-          end   = rx_queue_.front().end();
-        }
-        return is_valid;
-      }
+      bool read_pending() const
+      { return rx_queue_.size() > 1; }
 
       ///
-      Container const& current_packet(bool& is_valid)
+      Container read_data()
       {
-        is_valid = (rx_queue_.size() > 1);
-        return rx_queue_.front();
-      }
-
-      ///
-      void next_packet()
-      {
-        if (rx_queue_.size() > 1)
-          rx_queue_.pop_front();
+        assert(read_pending());
+        Container data(rx_queue_.front());
+        rx_queue_.pop_front();
+        return data;
       }
 
       // Note: provide move sematics for C++11
-      void send_packet(Container const& packet)
+      void send_data(Container const& packet)
       {
         tx_queue_.push_back(packet);
         if (!is_writing_)
@@ -128,11 +119,13 @@ namespace via
 
       ///
       template<typename ForwardIterator1, typename ForwardIterator2>
-      void send_packet(ForwardIterator1 begin, ForwardIterator2 end)
+      void send_data(ForwardIterator1 begin, ForwardIterator2 end)
       {
         Container buffer(begin, end);
-        send_packet(buffer);
+        send_data(buffer);
       }
+
+
     };
 
   }

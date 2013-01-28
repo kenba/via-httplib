@@ -10,6 +10,7 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+#include "tcp_buffered_connection.hpp"
 #include "buffered_connection.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -194,27 +195,21 @@ namespace via
       /// Constructor.
       /// Hidden to ensure that it can only be TODO...
       ssl_tcp_buffered_connection(boost::asio::io_service& io_service,
-                     boost::asio::ssl::context& context,
-                     size_t buffer_size) :
-        buffered_connection<Container>(buffer_size),
+                     boost::asio::ssl::context& context) :
+        buffered_connection<Container>(),
         io_service_(io_service),
         socket_(io_service, context)
       {}
 
     public:
 
-      static const size_t DEFAULT_RECEIVE_BUFFER_SIZE = 4096;
-
       ///
       static boost::shared_ptr<ssl_tcp_buffered_connection> create
                           (boost::asio::io_service& io_service,
-                           boost::asio::ssl::context& context,
-                           size_t buffer_size =
-                                     DEFAULT_RECEIVE_BUFFER_SIZE)
+                           boost::asio::ssl::context& context)
       {
         return boost::shared_ptr<ssl_tcp_buffered_connection>
-            (new ssl_tcp_buffered_connection
-              (io_service, context, buffer_size));
+            (new ssl_tcp_buffered_connection(io_service, context));
       }
 
       ///
@@ -225,6 +220,9 @@ namespace via
       {
         socket_.lowest_layer().set_option
             (boost::asio::ip::tcp::no_delay(no_delay));
+        boost::asio::socket_base::receive_buffer_size option;
+        socket_.lowest_layer().get_option(option);
+        buffered_connection<Container>::set_buffer_size(option.value());
       }
 
       void start()

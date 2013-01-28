@@ -37,8 +37,6 @@ namespace via
       /// The connections established with this server.
       connections connections_;
 
-      size_t receive_timeout_;
-
       /// The data received signal.
       connection::event_signal received_;
 
@@ -50,9 +48,6 @@ namespace via
 
       /// The disconnected signal.
       connection::event_signal disconnected_;
-
-      /// The receive timedout signal.
-      connection::event_signal receive_timedout_;
 
       /// The error signal.
       connection::error_signal error_;
@@ -86,9 +81,6 @@ namespace via
           new_connection_->disconnected_event
               (boost::bind(&tcp_server::disconnected_handler, this,
                            new_connection_));
-          new_connection_->receive_timedout_event
-              (boost::bind(&tcp_server::receive_timedout_handler, this,
-                             new_connection_));
           new_connection_->error_event
               (boost::bind(&tcp_server::error_handler, this,
                           boost::asio::placeholders::error,
@@ -127,9 +119,6 @@ namespace via
         }
       }
 
-      void receive_timedout_handler(boost::weak_ptr<connection> weak_connection)
-      { receive_timedout_(weak_connection.lock()); }
-
       /// Connection error handler. It  just forwards the signal.
       void error_handler(const boost::system::error_code& error,
                          boost::weak_ptr<connection> weak_connection)
@@ -144,18 +133,15 @@ namespace via
       /// @param buffer_size the size of the read and write buffers
       /// @param noDelay if true disables the Nagle algorithm, default true.
       explicit tcp_server(boost::asio::io_service& io_service,
-                          unsigned short port,
-                          size_t receive_timeout = 0) :
+                          unsigned short port) :
         io_service_(io_service),
         acceptor_(io_service),
         new_connection_(),
         connections_(),
-        receive_timeout_(receive_timeout),
         received_(),
         sent_(),
         connected_(),
         disconnected_(),
-        receive_timedout_(),
         error_()
       {
         // Open the acceptor with the option to reuse the address
@@ -167,24 +153,21 @@ namespace via
           (boost::asio::ip::tcp::acceptor::reuse_address(true));
         acceptor_.bind(endpoint);
         acceptor_.listen();
-
-        start_accept();
       }
 
       static boost::shared_ptr<tcp_server> create
                                         (boost::asio::io_service& io_service,
-                                         unsigned short port,
-                                         size_t receive_timeout = 0)
+                                         unsigned short port)
       {
         return boost::shared_ptr<tcp_server>
-            (new tcp_server(io_service, port, receive_timeout));
+            (new tcp_server(io_service, port));
       }
 
       /// Asynchorously wait for connections.
       void start_accept()
       {
         new_connection_.reset();
-        new_connection_ = TcpConnection::create(io_service_, receive_timeout_);
+        new_connection_ = TcpConnection::create(io_service_);
         acceptor_.async_accept(new_connection_->socket(),
                                boost::bind(&tcp_server::accept_handler, this,
                                            boost::asio::placeholders::error));
@@ -224,12 +207,6 @@ namespace via
       void disconnected_event
         (const connection::event_signal::slot_type& slot)
       { disconnected_.connect(slot); }
-
-      /// Connect a slot to the receive_timeout_ signal.
-      /// @param slot the slot to connect.
-      void receive_timedout_event
-         (const connection::event_signal::slot_type& slot)
-      { receive_timedout_.connect(slot); }
 
     };
   }

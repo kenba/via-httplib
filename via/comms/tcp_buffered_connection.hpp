@@ -18,6 +18,7 @@ namespace via
 {
   namespace comms
   {
+
     //////////////////////////////////////////////////////////////////////////
     /// @class tcp_buffered_connection
     /// This class
@@ -31,10 +32,6 @@ namespace via
 
       /// The TCP socket.
       boost::asio::ip::tcp::socket socket_;
-
-      size_t connection_timeout_;
-      size_t receive_timeout_;
-      boost::asio::deadline_timer deadline_timer_;
 
       /// Resolve the ip address of the connection.
       /// @param hostName the name of the TCP host
@@ -60,15 +57,6 @@ namespace via
                   boost::bind(&tcp_buffered_connection::handle_connect, this,
                               boost::asio::placeholders::error, itr));
 
-        if (connection_timeout_)
-        {
-          deadline_timer_.expires_from_now
-            (boost::posix_time::milliseconds(connection_timeout_));
-          deadline_timer_.async_wait
-            (boost::bind(&tcp_buffered_connection::connection_timeout, this,
-                         boost::asio::placeholders::error));
-        }
-
         return true;
       }
 
@@ -79,11 +67,9 @@ namespace via
         // if a connection has been established
         if (!error)
         {
-          deadline_timer_.cancel();
           set_no_delay(true);
           buffered_connection_class::enable_reception();
           connection::signal_connected();
-          start_receive_timer();
         }
         else // there was an error
         {
@@ -100,36 +86,6 @@ namespace via
             connection::signal_error(error);
           }
         }
-      }
-
-      /// Close the socket and signal a timeout.
-      void connection_timeout(boost::system::error_code const& error)
-      {
-        if (boost::asio::error::operation_aborted != error)
-        {
-          stop();
-          connection::signal_connection_timedout();
-        }
-      }
-
-      ///
-      void start_receive_timer()
-      {
-        if (receive_timeout_)
-        {
-          deadline_timer_.expires_from_now
-            (boost::posix_time::milliseconds(receive_timeout_));
-          deadline_timer_.async_wait
-            (boost::bind(&tcp_buffered_connection::receive_timedout, this,
-                         boost::asio::placeholders::error));
-        }
-      }
-
-      ///
-      void receive_timedout(boost::system::error_code const& error)
-      {
-        if (boost::asio::error::operation_aborted != error)
-          connection::signal_receive_timedout();
       }
 
     protected:
@@ -182,17 +138,8 @@ namespace via
       }
 
       ///
-      virtual void write_handler(const boost::system::error_code& error,
-                                      size_t bytes_transferred)
-      {
-        buffered_connection_class::write_handler(error, bytes_transferred);
-        start_receive_timer();
-      }
-
-      ///
       void stop()
       {
-        deadline_timer_.cancel();
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::tcp::socket::shutdown_both,
                           ignoredEc);
@@ -201,46 +148,32 @@ namespace via
 
       /// Constructor.
       /// Hidden to ensure that it can only be TODO...
-      explicit tcp_buffered_connection(boost::asio::io_service& io_service,
-                                       size_t receive_timeout,
-                                       size_t connection_timeout,
-                                       size_t buffer_size) :
-        buffered_connection_class(buffer_size),
+      explicit tcp_buffered_connection(boost::asio::io_service& io_service) :
+        buffered_connection_class(),
         io_service_(io_service),
-        socket_(io_service),
-        connection_timeout_(connection_timeout),
-        receive_timeout_(receive_timeout),
-        deadline_timer_(io_service)
+        socket_(io_service)
       {}
 
     public:
 
-      static const size_t DEFAULT_RECEIVE_BUFFER_SIZE = 4096;
-
       ///
       static boost::shared_ptr<tcp_buffered_connection> create
-                                      (boost::asio::io_service& io_service,
-                                       size_t receive_timeout = 0,
-                                       size_t connection_timeout = 0,
-                                       size_t buffer_size =
-                                                 DEFAULT_RECEIVE_BUFFER_SIZE)
+                                      (boost::asio::io_service& io_service)
       {
         return boost::shared_ptr<tcp_buffered_connection>
-          (new tcp_buffered_connection
-            (io_service, receive_timeout, connection_timeout, buffer_size));
+          (new tcp_buffered_connection(io_service));
       }
 
       ///
-      bool connect(const char* hostName, const char* portName)
-      { return connect_socket(resolve_host(hostName, portName)); }
+      bool connect(const char* host_name, const char* port_name)
+      { return connect_socket(resolve_host(host_name, port_name)); }
 
       void set_no_delay(bool no_delay = true)
       {
- //       socket_.set_option(boost::asio::socket_base::send_buffer_size
- //                          (MAX_RX_PACKET_SIZE));
-//        socket_.set_option(boost::asio::socket_base::receive_buffer_size
- //                          (MAX_RX_PACKET_SIZE));
         socket_.set_option(boost::asio::ip::tcp::no_delay(no_delay));
+        boost::asio::socket_base::receive_buffer_size option;
+        socket_.get_option(option);
+        buffered_connection<Container>::set_buffer_size(option.value());
       }
 
       ///
