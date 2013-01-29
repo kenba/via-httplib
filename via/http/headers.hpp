@@ -23,9 +23,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class field_line
     {
-      std::string name_;
-      std::string value_;
-
+    public:
       enum parsing_state
       {
         HEADER_NAME,
@@ -35,53 +33,68 @@ namespace via
         HEADER_END
       };
 
+    private:
+
+      std::string name_;
+      std::string value_;
+      parsing_state state_;
+
       /// Parse an individual character.
       /// @param c the current character to be parsed.
       /// @retval state the current state of the parser.
-      bool parse_char(char c, parsing_state& state);
+      bool parse_char(char c);
 
     public:
 
-      explicit field_line()
-        : name_("")
-        , value_("")
+      explicit field_line() :
+        name_(""),
+        value_(""),
+        state_(HEADER_NAME)
       {}
+
+      void clear()
+      {
+        name_.clear();
+        value_.clear();
+        state_ = HEADER_NAME;
+      }
+
+      void swap(field_line& other)
+      {
+        name_.swap(other.name_);
+        value_.swap(other.value_);
+        std::swap(state_, other.state_);
+      }
 
       /// Parse an individual http header field and extract the field name
       /// (transformed to lower case) and value.
-      /// @retval next to an iterator to the start of the data.
+      /// @retval iter an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the buffer.
       /// @retval name the header field name (lowercase).
       /// @retval value the header field value.
       /// @return true if a valid HTTP header, false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
-        parsing_state state(HEADER_NAME);
-        while ((iter != end) && (HEADER_END != state))
+        while ((iter != end) && (HEADER_END != state_))
         {
           // following line added to compile with vectors of Unsigned chars
           // using Visual Studio 2012 (Beta)
           char c(static_cast<char>(*iter++));
-          if (!parse_char(c, state))
+          if (!parse_char(c))
             return false;
-          else if (HEADER_END == state)
+          else if (HEADER_END == state_)
           { // determine whether the next line is a continuation header
             if ((iter != end) && is_space_or_tab(*iter))
             {
               value_.push_back(' ');
-              state = HEADER_VALUE_LS;
+              state_ = HEADER_VALUE_LS;
             }
           }
         }
 
-        if (HEADER_END != state)
-          return false;
-
-        next = iter;
-        return true;
+        return (HEADER_END == state_);
       }
 
       const std::string& name() const
@@ -92,40 +105,58 @@ namespace via
     }; // class field_line
 
     //////////////////////////////////////////////////////////////////////////
-    /// @class headers
+    /// @class message_headers
     //////////////////////////////////////////////////////////////////////////
-    class headers
+    class message_headers
     {
-      /// The HTTP header fields.
+      /// The HTTP message header fields.
       /// Note: A C++11 unordered_map or a hash_map would be better
       /// But hash_map is non-standard. TODO template?
       std::map<std::string, std::string> fields_;
+      field_line field_;
+      bool valid_;
 
     public:
 
-      explicit headers()
-        : fields_()
+      explicit message_headers() :
+        fields_(),
+        field_(),
+        valid_(false)
       {}
 
-      /// Parse headers from received data.
+      void clear()
+      {
+        fields_.clear();
+        field_.clear();
+        valid_ = false;
+      }
+
+      void swap(message_headers& other)
+      {
+        fields_.swap(other.fields_);
+        field_.swap(other.field_);
+        std::swap(valid_, other.valid_);
+      }
+
+      /// Parse message_headers from received data.
       /// @retval next reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
         while (iter != end && !is_end_of_line(*iter))
         {
-          field_line field;
-          if (!field.parse(iter, end))
+         // field_line field;
+          if (!field_.parse(iter, end))
             return false;
 
-          add(field.name(), field.value());
+          add(field_.name(), field_.value());
+          field_.clear();
         }
 
-        // Parse the blank line at the end of the headers (and footers)
+        // Parse the blank line at the end of the message_headers (and footers)
         if (iter == end || !is_end_of_line(*iter))
           return false;
 
@@ -136,8 +167,9 @@ namespace via
         if ((iter == end) || ('\n' != *iter))
            return false;
 
-        next = ++iter;
-        return true;
+        ++iter;
+        valid_ = true;
+        return valid_;
       }
 
       /// Add a header to the collection.
@@ -146,13 +178,13 @@ namespace via
                      (name, value)); }
 
       /// Find the value for a given header name.
-      /// Note: the name must be in lowercase for received headers.
+      /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
       /// @return the value, blank if not found
       const std::string& find(const std::string& name) const;
 
       /// Find the value for a given header name.
-      /// Note: the name must be in lowercase for received headers.
+      /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
       /// @return the value, blank if not found
       const std::string& find(header_field::field_id id) const
@@ -168,8 +200,11 @@ namespace via
       /// NOT contain the keyword "identity". See RFC2616 section 4.4 para 2.
       bool is_chunked() const;
 
-      /// Output the headers as a string.
-      /// @return a string containing all of the headers.
+      bool valid() const
+      { return valid_; }
+
+      /// Output the message_headers as a string.
+      /// @return a string containing all of the message_headers.
       std::string to_string() const;
     };
 

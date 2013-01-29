@@ -37,15 +37,15 @@ namespace via
   namespace http
   {
     //////////////////////////////////////////////////////////////////////////
-    bool field_line::parse_char(char c, parsing_state& state)            
+    bool field_line::parse_char(char c)
     {
-      switch (state)
+      switch (state_)
       {
       case HEADER_NAME:
         if (std::isalpha(c) || ('-' == c))
           name_.push_back(std::tolower(c));
         else if (':' == c)
-          state = HEADER_VALUE_LS;
+          state_ = HEADER_VALUE_LS;
         else
           return false;
         break;
@@ -54,21 +54,21 @@ namespace via
         if (is_space_or_tab(c))
           break;
         else
-          state = HEADER_VALUE;
+          state_ = HEADER_VALUE;
         // intentional fall-through
       case HEADER_VALUE:
         // The header line should end with an \r\n...
         if (!is_end_of_line(c))
           value_.push_back(c);
         else if ('\r' == c)
-          state = HEADER_LF;
+          state_ = HEADER_LF;
         else // ('\n' == c) \\ but permit just \n
-          state = HEADER_END;
+          state_ = HEADER_END;
         break;
 
       case HEADER_LF:
         if ('\n' == c)
-          state = HEADER_END;
+          state_ = HEADER_END;
         else 
           return false;
         break;
@@ -82,7 +82,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    const std::string& headers::find(const std::string& name) const
+    const std::string& message_headers::find(const std::string& name) const
     {
       std::map<std::string, std::string>::const_iterator iter
         (fields_.find(name));
@@ -95,7 +95,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     
     //////////////////////////////////////////////////////////////////////////
-    size_t headers::content_length() const
+    size_t message_headers::content_length() const
     {
       // Find whether there is a content length field.
       const std::string& content_length(find(header_field::CONTENT_LENGTH));
@@ -108,7 +108,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     
     //////////////////////////////////////////////////////////////////////////
-    bool headers::is_chunked() const
+    bool message_headers::is_chunked() const
     {
       // Find whether there is a transfer encoding header.
       const std::string& xfer_encoding(find(header_field::TRANSFER_ENCODING));
@@ -126,7 +126,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::string headers::to_string() const
+    std::string message_headers::to_string() const
     {
       std::string output;
       for (std::map<std::string, std::string>::const_iterator

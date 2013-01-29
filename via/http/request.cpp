@@ -14,23 +14,19 @@ namespace via
   namespace http
   {
     //////////////////////////////////////////////////////////////////////////
-    bool request_line::parse_char(char c, parsing_state& state)
+    bool request_line::parse_char(char c)
     {
-      static bool major_read(false);
-      static bool minor_read(false);
 
-      switch (state)
+
+      switch (state_)
       {
       case REQ_METHOD:
-        major_read = false;
-        minor_read = false;
-
         // Valid HTTP methods must be uppercase chars
         if (std::isupper(c))
           method_.push_back(c);
         // If this char is whitespace and method has been read
         else if (is_space_or_tab(c) && !method_.empty())
-          state = REQ_URI;
+          state_ = REQ_URI;
         else
           return false;
         break;
@@ -42,7 +38,7 @@ namespace via
         {
           // Ignore leading whitespace
           if (!uri_.empty())
-            state = REQ_HTTP;
+            state_ = REQ_HTTP;
         }
         else
           uri_.push_back(c);
@@ -53,7 +49,7 @@ namespace via
         if (!is_space_or_tab(c))
         {
           if ('H' == c)
-            state = REQ_HTTP_T1;
+            state_ = REQ_HTTP_T1;
           else
             return false;
         }
@@ -61,28 +57,28 @@ namespace via
 
       case REQ_HTTP_T1:
         if ('T' == c)
-          state = REQ_HTTP_T2;
+          state_ = REQ_HTTP_T2;
         else
           return false;
         break;
 
       case REQ_HTTP_T2:
         if ('T' == c)
-          state = REQ_HTTP_P;
+          state_ = REQ_HTTP_P;
         else
           return false;
         break;
 
       case REQ_HTTP_P:
         if ('P' == c)
-          state = REQ_HTTP_SLASH;
+          state_ = REQ_HTTP_SLASH;
         else
           return false;
         break;
 
       case REQ_HTTP_SLASH:
         if ('/' == c)
-          state = REQ_HTTP_MAJOR;
+          state_ = REQ_HTTP_MAJOR;
         else
           return false;
         break;
@@ -90,14 +86,14 @@ namespace via
       case REQ_HTTP_MAJOR:
         if (std::isdigit(c))
         {
-          major_read = true;
+          major_read_ = true;
           major_version_ *= 10;
           major_version_ += read_digit(c);
         }
         else
         {
-          if (major_read && ('.' == c))
-            state = REQ_HTTP_MINOR;
+          if (major_read_ && ('.' == c))
+            state_ = REQ_HTTP_MINOR;
           else
             return false;
         }
@@ -106,19 +102,19 @@ namespace via
       case REQ_HTTP_MINOR:
         if (std::isdigit(c))
         {
-          minor_read = true;
+          minor_read_ = true;
           minor_version_ *= 10;
           minor_version_ += read_digit(c);
         }
         else
         {
           // The HTTP version should end with a \r\n...
-          if (is_end_of_line(c) && minor_read)
+          if (is_end_of_line(c) && minor_read_)
           {
             if ('\r' == c)
-              state = REQ_HTTP_LF;
+              state_ = REQ_HTTP_LF;
             else // ('\n' == c) \\ but permit just \n
-              state = REQ_HTTP_END;
+              state_ = REQ_HTTP_END;
           }
           else
             return false;
@@ -127,7 +123,7 @@ namespace via
 
       case REQ_HTTP_LF:
         if ('\n' == c)
-          state = REQ_HTTP_END;
+          state_ = REQ_HTTP_END;
         else 
           return false;
         break;

@@ -136,7 +136,7 @@ TEST(TestResponseLineParser, ValidOk3)
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.end()));
-  // BYTES_EQUAL(response_data.back(), *next); // MinGw4.4
+  BYTES_EQUAL(' ', *next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
   CHECK_EQUAL(1, the_response.major_version());
@@ -264,31 +264,27 @@ TEST(TestResponseParser, ValidUnauthorised1)
   CHECK(!the_response.is_chunked());
 }
 
-TEST(TestResponseParser, ValidOKConstructor1)
+TEST(TestResponseParser, ValidOKMultiLine1)
 {
-  std::string response_data("HTTP/1.0 200 OK\r\nContent: text\r\n\r\n");
+  std::string response_data("HTTP/1.0 200 OK\r\nC");
   std::string::const_iterator next(response_data.begin());
 
-  rx_response the_response(next, response_data.end());
+  rx_response the_response;
+  CHECK(!the_response.parse(next, response_data.end()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
   CHECK_EQUAL(1, the_response.major_version());
   CHECK_EQUAL(0, the_response.minor_version());
 
-  STRCMP_EQUAL("text", the_response.header().find("content").c_str());
-  CHECK_EQUAL(0, the_response.content_length());
+  std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
+  next = response_data2.begin();
+  CHECK(the_response.parse(next, response_data2.end()));
+
   CHECK(!the_response.is_chunked());
-  STRCMP_EQUAL("text", the_response.header().find("content").c_str());
-}
-
-TEST(TestResponseParser, InvalidOKConstructor1)
-{
-  std::string response_data("HTtP/1.0 200 OK\r\nContent: text\r\n\r\n");
-  std::string::const_iterator next(response_data.begin());
-
-  rx_response the_response(next, response_data.end());
-  CHECK(response_data.begin() == next);
+  CHECK_EQUAL(4, the_response.content_length());
+  std::string body(next, next + the_response.content_length());
+  STRCMP_EQUAL("abcd", body.c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
 

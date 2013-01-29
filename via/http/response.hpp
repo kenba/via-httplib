@@ -23,10 +23,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class response_line
     {
-      int major_version_;
-      int minor_version_;
-      int status_;
-      std::string reason_phrase_;
+    public:
 
       enum parsing_state
       {
@@ -43,11 +40,22 @@ namespace via
         RESP_HTTP_END
       };
 
+    private:
+
+      int major_version_;
+      int minor_version_;
+      int status_;
+      std::string reason_phrase_;
+      parsing_state state_;
+      bool major_read_;
+      bool minor_read_;
+      bool status_read_;
+      bool valid_;
+
       /// Parse an individual character.
       /// @param c the character to be parsed.
-      /// @retval state the current state of the parser.
       /// @return true if valid, false otherwise.
-      bool parse_char(char c,  parsing_state& state);
+      bool parse_char(char c);
 
     public:
 
@@ -55,12 +63,43 @@ namespace via
       // Parsing interface.
 
       /// Default constructor
-      explicit response_line()
-        : major_version_(0)
-        , minor_version_(0)
-        , status_(0)
-        , reason_phrase_("")
+      explicit response_line() :
+        major_version_(0),
+        minor_version_(0),
+        status_(0),
+        reason_phrase_(""),
+        state_(RESP_HTTP),
+        major_read_(false),
+        minor_read_(false),
+        status_read_(false),
+        valid_(false)
       {}
+
+      void clear()
+      {
+        major_version_ = 0;
+        minor_version_ = 0;
+        status_ = 0;
+        reason_phrase_.clear();
+        state_ = RESP_HTTP;
+        major_read_ =  false;
+        minor_read_ =  false;
+        status_read_ = false;
+        valid_ =  false;
+      }
+
+      void swap(response_line& other)
+      {
+        std::swap(major_version_, other.major_version_);
+        std::swap(minor_version_, other.minor_version_);
+        std::swap(status_, other.status_);
+        reason_phrase_.swap(other.reason_phrase_);
+        std::swap(state_, other.state_);
+        std::swap(major_read_, other.major_read_);
+        std::swap(minor_read_, other.minor_read_);
+        std::swap(status_read_, other.status_read_);
+        std::swap(valid_, other.valid_);
+      }
 
       /// Virtual destructor.
       /// Since the class is inherited...
@@ -73,22 +112,16 @@ namespace via
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
-        parsing_state state(RESP_HTTP);
-        while ((iter != end) && (RESP_HTTP_END != state))
+        while ((iter != end) && (RESP_HTTP_END != state_))
         {
           char c(static_cast<char>(*iter++));
-          if (!parse_char(c, state))
+          if (!parse_char(c))
             return false;
         }
-
-        if (RESP_HTTP_END != state)
-          return false;
-
-        next = iter;
-        return true;
+        valid_ = (RESP_HTTP_END == state_);
+        return valid_;
       }
 
       // Accessors
@@ -104,6 +137,9 @@ namespace via
       const std::string& reason_phrase() const
       { return reason_phrase_; }
 
+      bool valid() const
+      { return valid_; }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
@@ -114,11 +150,16 @@ namespace via
       /// @param major_version default 1
       explicit response_line(response_status::status_code status,
                              int minor_version = 1,
-                             int major_version = 1)
-        : major_version_(major_version)
-        , minor_version_(minor_version)
-        , status_(status)
-        , reason_phrase_(response_status::reason_phrase(status))
+                             int major_version = 1) :
+        major_version_(major_version),
+        minor_version_(minor_version),
+        status_(status),
+        reason_phrase_(response_status::reason_phrase(status)),
+        state_(RESP_HTTP_END),
+        major_read_(true),
+        minor_read_(true),
+        status_read_(true),
+        valid_(true)
       {}
 
       /// Free form constructor.
@@ -130,13 +171,18 @@ namespace via
       explicit response_line(int status,
                              std::string reason_phrase = "",
                              int minor_version = 1,
-                             int major_version = 1)
-        : major_version_(major_version)
-        , minor_version_(minor_version)
-        , status_(status)
-        , reason_phrase_(!reason_phrase.empty() ? reason_phrase :
+                             int major_version = 1) :
+        major_version_(major_version),
+        minor_version_(minor_version),
+        status_(status),
+        reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::status_code>(status)))                 
+                    (static_cast<response_status::status_code>(status))),
+        state_(RESP_HTTP_END),
+        major_read_(true),
+        minor_read_(true),
+        status_read_(true),
+        valid_(true)
       {}
 
       // Setters
@@ -163,20 +209,35 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class rx_response : public response_line
     {
-      headers headers_;
+      message_headers headers_;
+      bool valid_;
 
     public:
 
       /// Default constructor
-      explicit rx_response()
-        : response_line()
-        , headers_()
+      explicit rx_response() :
+        response_line(),
+        headers_(),
+        valid_(false)
       {}
 
+      void reset()
+      {
+        response_line::clear();
+        headers_.clear();
+        valid_ =  false;
+      }
+
+      void swap(rx_response& other)
+      {
+        response_line::swap(other);
+        headers_.swap(other.headers_);
+        std::swap(valid_, other.valid_);
+      }
+
       /// Parse an HTTP response.
-      /// @retval next reference to an iterator to the start of the data.
-      /// If the response is not valid it will not be changed,
-      /// otherwise it will refer to:
+      /// @retval iter reference to an iterator to the start of the data.
+      /// If the response is valid it will refer to:
       ///   - the start of the response body if content_length > 0,
       ///   - the start of the first data chunk if is_chunked(),
       ///   - the start of the next http response, or
@@ -184,36 +245,20 @@ namespace via
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
-        if (!response_line::parse(iter, end))
+        if (!response_line::valid() && !response_line::parse(iter, end))
           return false;
 
-        if (!headers_.parse(iter, end))
+        if (!headers_.valid() && !headers_.parse(iter, end))
           return false;
 
-        next = iter;
-        return true;
+        valid_ = true;
+        return valid_;
       }
 
-      /// Parsing contructor.
-      /// @retval next reference to an iterator to the start of the data.
-      /// If the response is not valid it will not be changed,
-      /// otherwise it will refer to:
-      ///   - the start of the response body if content_length > 0,
-      ///   - the start of the first data chunk if is_chunked(),
-      ///   - the start of the next http response, or
-      ///   - the end of the data buffer.
-      /// @param end the end of the data buffer.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      explicit rx_response(ForwardIterator1& next, ForwardIterator2 end)
-        : response_line()
-        , headers_()
-      { parse(next, end); }
-
       // Accessors
-      const headers& header() const
+      const message_headers& header() const
       { return headers_; }
 
       size_t content_length() const
@@ -221,6 +266,10 @@ namespace via
 
       bool is_chunked() const
       { return headers_.is_chunked(); }
+
+      bool valid() const
+      { return valid_; }
+
     }; // class rx_response
 
     //////////////////////////////////////////////////////////////////////////

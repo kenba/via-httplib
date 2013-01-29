@@ -74,7 +74,8 @@ TEST(TestFieldLineParser, ValidSingleString2)
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
-//  BYTES_EQUAL(header_data.back(), *next); // Not MinGw
+  CHECK(header_data.end() != next);
+  BYTES_EQUAL('A', *next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("abcdefgh", field.value().c_str());
 }
@@ -114,7 +115,6 @@ TEST(TestFieldLineParser, InValidSingleLine1)
 
   field_line field;
   CHECK(!field.parse(next, header_data.end()));
-  CHECK(next == header_data.begin());
 }
 
 // A single http header line in a string, but without a :.
@@ -125,7 +125,6 @@ TEST(TestFieldLineParser, InValidSingleLine2)
 
   field_line field;
   CHECK(!field.parse(next, header_data.end()));
-  CHECK(next == header_data.begin());
 }
 
 // A multiple http header line in a string
@@ -154,6 +153,43 @@ TEST(TestFieldLineParser, ValidMultiLine1)
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("ab cd ef gh", field.value().c_str());
 }
+
+// A standard single http header line in two strings.
+TEST(TestFieldLineParser, ValidMultiMsg1)
+{
+  std::string header_data1("Accept-Char");
+  std::string::const_iterator next(header_data1.begin());
+
+  field_line field;
+  CHECK(!field.parse(next, header_data1.end()));
+  CHECK(header_data1.end() == next);
+
+  std::string header_data2("set: abcdefgh\r\n");
+  next = header_data2.begin();
+  CHECK(field.parse(next, header_data2.end()));
+  CHECK(header_data2.end() == next);
+  STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+               field.name().c_str());
+  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+}
+
+TEST(TestFieldLineParser, ValidMultiMsg2)
+{
+  std::string header_data1("Accept-Charset: abcd");
+  std::string::const_iterator next(header_data1.begin());
+
+  field_line field;
+  CHECK(!field.parse(next, header_data1.end()));
+  CHECK(header_data1.end() == next);
+
+  std::string header_data2("efgh\r\n");
+  next = header_data2.begin();
+  CHECK(field.parse(next, header_data2.end()));
+  CHECK(header_data2.end() == next);
+  STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+               field.name().c_str());
+  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+}
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -167,8 +203,9 @@ TEST(TestHeadersParser, ValidSingleHeaderString1)
   std::string header_data("Content: abcdefgh\r\n\r\n");
   std::string::const_iterator header_next(header_data.begin());
 
-  headers the_headers;
+  message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
 
@@ -178,8 +215,9 @@ TEST(TestHeadersParser, ValidSingleHeader1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::const_iterator header_next(header_data.begin());
 
-  headers the_headers;
+  message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
 
@@ -190,8 +228,43 @@ TEST(TestHeadersParser, ValidMultipleHeader1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::const_iterator header_next(header_data.begin());
 
-  headers the_headers;
+  message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+}
+
+TEST(TestHeadersParser, ValidMultipleHeader2)
+{
+  std::string HEADER_LINE("Content-Length: \t4\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\nA";
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() != header_next);
+  BYTES_EQUAL('A', *header_next);
+}
+
+TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
+{
+  std::string HEADER_LINE("Content-Length: \t4\r\n");
+  HEADER_LINE += "Transfer-Enco";
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(!the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+
+  std::string HEADER_LINE2("ding: \t Chunked\r\n\r\n");
+  std::vector<char> header_data2(HEADER_LINE2.begin(), HEADER_LINE2.end());
+  header_next = header_data2.begin();
+  CHECK(the_headers.parse(header_next, header_data2.end()));
+  CHECK(header_data2.end() == header_next);
+
+  STRCMP_EQUAL("Chunked",
+               the_headers.find(header_field::TRANSFER_ENCODING).c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +277,7 @@ TEST_GROUP(TestHeadersEncoder)
 /* TODO
 TEST(TestHeadersEncoder, ValidChunkTrailer1)
 {
-  headers the_headers;
+  message_headers the_headers;
   std::string trailer(the_headers.chunk_trailer());
  // std::cout << std::endl << trailer << std::endl;
   STRCMP_EQUAL("0\r\n\r\n", trailer.c_str());
@@ -212,7 +285,7 @@ TEST(TestHeadersEncoder, ValidChunkTrailer1)
 
 TEST(TestHeadersEncoder, ValidChunkTrailer2)
 {
-  headers the_headers;
+  message_headers the_headers;
   the_headers.add(headers::TRANSFER_ENCODING, headers::CHUNKED_STRING);
   std::string trailer(the_headers.chunk_trailer());
 //  std::cout << std::endl << trailer << std::endl;

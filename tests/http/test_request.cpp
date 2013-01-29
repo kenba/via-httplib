@@ -89,12 +89,12 @@ TEST(TestRequestLineParser, ValidGet2)
 // An http request line in a string without an \r but with extra whitespace
 TEST(TestRequestLineParser, ValidGet3)
 {
-  std::string request_data("GET\tabcdefghijklmnopqrstuvwxyz \t HTTP/1.0\n ");
+  std::string request_data("GET\tabcdefghijklmnopqrstuvwxyz \t HTTP/1.0\nA");
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.end()));
-  // BYTES_EQUAL(request_data.back(), *next); // // MinGw4.4
+  BYTES_EQUAL('A', *next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
@@ -109,7 +109,6 @@ TEST(TestRequestLineParser, InValidMethod1)
 
   request_line the_request;
   CHECK(!the_request.parse(next, request_data.end()));
-  CHECK(request_data.begin() == next);
   STRCMP_EQUAL("G", the_request.method().c_str());
   STRCMP_EQUAL("", the_request.uri().c_str());
   CHECK_EQUAL(0, the_request.major_version());
@@ -124,11 +123,31 @@ TEST(TestRequestLineParser, InValidUri1)
 
   request_line the_request;
   CHECK(!the_request.parse(next, request_data.end()));
-  CHECK(request_data.begin() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklm", the_request.uri().c_str());
   CHECK_EQUAL(0, the_request.major_version());
   CHECK_EQUAL(0, the_request.minor_version());
+}
+
+// An incomplete http request line in a string.
+TEST(TestRequestLineParser, ValidGet4)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HT");
+  std::string::const_iterator next(request_data.begin());
+
+  request_line the_request;
+  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(request_data.end() == next);
+  STRCMP_EQUAL("GET", the_request.method().c_str());
+  STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
+  CHECK(!the_request.valid());
+
+  std::string request_data2("TP/1.2\r\n");
+  next = request_data2.begin();
+  CHECK(the_request.parse(next, request_data2.end()));
+  CHECK(request_data2.end() == next);
+  CHECK_EQUAL(1, the_request.major_version());
+  CHECK_EQUAL(2, the_request.minor_version());
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -153,6 +172,7 @@ TEST(TestRequestLineEncoder, ValidGetId1)
 }
 //////////////////////////////////////////////////////////////////////////////
 
+
 //////////////////////////////////////////////////////////////////////////////
 TEST_GROUP(TestRequestParser)
 {
@@ -176,6 +196,7 @@ TEST(TestRequestParser, ValidGetVectorChar1)
   CHECK_EQUAL(0, the_request.content_length());
   CHECK(!the_request.is_chunked());
 }
+
 
 TEST(TestRequestParser, ValidGetVectorUnsignedChar1)
 {
@@ -292,37 +313,55 @@ TEST(TestRequestParser, ValidPostQt1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   std::string::const_iterator next(request_data.begin());
 
-  rx_request the_request(next, request_data.end());
+  rx_request the_request;
+  CHECK(the_request.parse(next, request_data.end()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
   CHECK_EQUAL(82, the_request.content_length());
 }
 
-
-TEST(TestRequestParser, ValidGetConstructor1)
+TEST(TestRequestParser, ValidPostMultiLine1)
 {
-  std::string request_data("GET abcde HTTP/1.0\r\nContent: text\r\n\r\n");
+  std::string request_data("POST abc");
   std::string::const_iterator next(request_data.begin());
 
-  rx_request the_request(next, request_data.end());
+  rx_request the_request;
+  CHECK(!the_request.parse(next, request_data.end()));
   CHECK(request_data.end() == next);
-  STRCMP_EQUAL("GET", the_request.method().c_str());
+
+  std::string request_data2("de HTTP/1.0\r\nContent-Length: 4\r\n\r\n");
+  next = request_data2.begin();
+  CHECK(the_request.parse(next, request_data2.end()));
+  CHECK(request_data2.end() == next);
+
+  STRCMP_EQUAL("POST", the_request.method().c_str());
+  STRCMP_EQUAL("abcde", the_request.uri().c_str());
+  CHECK_EQUAL(1, the_request.major_version());
+  CHECK_EQUAL(0, the_request.minor_version());
+  CHECK_EQUAL(4, the_request.content_length());
+  CHECK(!the_request.is_chunked());
+}
+
+TEST(TestRequestParser, ValidPostMultiLine2)
+{
+  std::string request_data("POST abcde HTTP/1.0\r\nContent-Le");
+  std::string::const_iterator next(request_data.begin());
+
+  rx_request the_request;
+  CHECK(!the_request.parse(next, request_data.end()));
+  STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
   CHECK_EQUAL(0, the_request.minor_version());
 
-  STRCMP_EQUAL("text", the_request.header().find("content").c_str());
-  CHECK_EQUAL(0, the_request.content_length());
-}
+  std::string request_data2("ngth: 4\r\n\r\n");
+  next = request_data2.begin();
+  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(request_data2.end() == next);
 
-TEST(TestRequestParser, InvalidGetConstructor1)
-{
-  std::string request_data("GeT abcde HTTP/1.0\r\nContent: text\r\n\r\n");
-  std::string::const_iterator next(request_data.begin());
-
-  rx_request the_request(next, request_data.end());
-  CHECK(request_data.begin() == next);
+  CHECK_EQUAL(4, the_request.content_length());
+  CHECK(!the_request.is_chunked());
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -363,4 +402,3 @@ TEST(TestRequestEncode, RequestEncode3)
   STRCMP_EQUAL(correct_request.c_str(), req_text.c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
-

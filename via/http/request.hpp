@@ -23,10 +23,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class request_line
     {
-      std::string method_;
-      std::string uri_;
-      int major_version_;
-      int minor_version_;
+    public:
 
       enum parsing_state
       {
@@ -43,11 +40,21 @@ namespace via
         REQ_HTTP_END
       };
 
+    private:
+
+      std::string method_;
+      std::string uri_;
+      int major_version_;
+      int minor_version_;
+      parsing_state state_;
+      bool major_read_;
+      bool minor_read_;
+      bool valid_;
+
       /// Parse an individual character.
       /// @param c the character to be parsed.
-      /// @retval state the current state of the parser.
       /// @return true if valid, false otherwise.
-      bool parse_char(char c, parsing_state& state);
+      bool parse_char(char c);
 
     public:
 
@@ -55,12 +62,40 @@ namespace via
       // Parsing interface.
 
       /// Default constructor
-      explicit request_line()
-        : method_()
-        , uri_()
-        , major_version_(0)
-        , minor_version_(0)
+      explicit request_line() :
+        method_(),
+        uri_(),
+        major_version_(0),
+        minor_version_(0),
+        state_(REQ_METHOD),
+        major_read_(false),
+        minor_read_(false),
+        valid_(false)
       {}
+
+      void clear()
+      {
+        method_.clear();
+        uri_.clear();
+        major_version_ = 0;
+        minor_version_ = 0;
+        state_ = REQ_METHOD;
+        major_read_ =  false;
+        minor_read_ =  false;
+        valid_ =  false;
+      }
+
+      void swap(request_line& other)
+      {
+        method_.swap(other.method_);
+        uri_.swap(other.uri_);
+        std::swap(major_version_, other.major_version_);
+        std::swap(minor_version_, other.minor_version_);
+        std::swap(state_, other.state_);
+        std::swap(major_read_, other.major_read_);
+        std::swap(minor_read_, other.minor_read_);
+        std::swap(valid_, other.valid_);
+      }
 
       /// Virtual destructor.
       /// Since the class is inherited...
@@ -73,22 +108,16 @@ namespace via
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
-        parsing_state state(REQ_METHOD);
-        while ((iter != end) && (REQ_HTTP_END != state))
+        while ((iter != end) && (REQ_HTTP_END != state_))
         {
           char c(static_cast<char>(*iter++));
-          if (!parse_char(c, state))
+          if (!parse_char(c))
             return false;
         }
-
-        if (REQ_HTTP_END != state)
-          return false;
-
-        next = iter;
-        return true;
+        valid_ = (REQ_HTTP_END == state_);
+        return valid_;
       }
 
       // Accessors
@@ -104,6 +133,9 @@ namespace via
       int minor_version() const
       { return minor_version_; }
 
+      bool valid() const
+      { return valid_; }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
@@ -115,11 +147,15 @@ namespace via
       explicit request_line(request_method::method_id id,
                             std::string uri = "",
                             int minor_version = 1,
-                            int major_version = 1)
-        : method_(request_method::name(id))
-        , uri_(uri)
-        , major_version_(major_version)
-        , minor_version_(minor_version)
+                            int major_version = 1) :
+        method_(request_method::name(id)),
+        uri_(uri),
+        major_version_(major_version),
+        minor_version_(minor_version),
+        state_(REQ_HTTP_END),
+        major_read_(true),
+        minor_read_(true),
+        valid_(true)
       {}
 
       /// Free form constructor
@@ -130,11 +166,15 @@ namespace via
       explicit request_line(const std::string& method,
                             std::string uri = "",
                             int minor_version = 1,
-                            int major_version = 1)
-        : method_(method)
-        , uri_(uri)
-        , major_version_(major_version)
-        , minor_version_(minor_version)
+                            int major_version = 1) :
+        method_(method),
+        uri_(uri),
+        major_version_(major_version),
+        minor_version_(minor_version),
+        state_(REQ_HTTP_END),
+        major_read_(true),
+        minor_read_(true),
+        valid_(true)
       {}
 
       // Setters
@@ -161,20 +201,35 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class rx_request : public request_line
     {
-      headers   headers_;
+      message_headers headers_;
+      bool valid_;
 
     public:
 
       /// Default constructor
-      explicit rx_request()
-        : request_line()
-        , headers_()
+      explicit rx_request() :
+        request_line(),
+        headers_(),
+        valid_(false)
       {}
 
+      void reset()
+      {
+        request_line::clear();
+        headers_.clear();
+        valid_ =  false;
+      }
+
+      void swap(rx_request& other)
+      {
+        request_line::swap(other);
+        headers_.swap(other.headers_);
+        std::swap(valid_, other.valid_);
+      }
+
       /// Parse an HTTP request.
-      /// @retval next reference to an iterator to the start of the data.
-      /// If the response is not valid it will not be changed,
-      /// otherwise it will refer to:
+      /// @retval iter reference to an iterator to the start of the data.
+      /// If the response is valid it will refer to:
       ///   - the start of the response body if content_length > 0,
       ///   - the start of the first data chunk if is_chunked(),
       ///   - the start of the next http response, or
@@ -182,36 +237,20 @@ namespace via
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& next, ForwardIterator2 end)
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
-        ForwardIterator1 iter(next);
-        if (!request_line::parse(iter, end))
+        if (!request_line::valid() && !request_line::parse(iter, end))
           return false;
 
-        if (!headers_.parse(iter, end))
+        if (!headers_.valid() && !headers_.parse(iter, end))
           return false;
 
-        next = iter;
-        return true;
+        valid_ = true;
+        return valid_;
       }
 
-      /// Parsing contructor.
-      /// @retval next reference to an iterator to the start of the data.
-      /// If the request is not valid it will not be changed,
-      /// otherwise it will refer to:
-      ///   - the start of the request body if content_length > 0,
-      ///   - the start of the first data chunk if is_chunked(),
-      ///   - the start of the next http request, or
-      ///   - the end of the data buffer.
-      /// @param end the end of the data buffer.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      explicit rx_request(ForwardIterator1& next, ForwardIterator2 end)
-        : request_line()
-        , headers_()
-      { parse(next, end); }
-
       // Accessors
-      const headers& header() const
+      const message_headers& header() const
       { return headers_; }
 
       size_t content_length() const
@@ -219,6 +258,10 @@ namespace via
 
       bool is_chunked() const
       { return headers_.is_chunked(); }
+
+      bool valid() const
+      { return valid_; }
+
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
@@ -246,11 +289,11 @@ namespace via
                           std::string header_string = "",
                           bool is_chunked = false,
                           int minor_version = 1,
-                          int major_version = 1)
-        : request_line(id, uri, minor_version, major_version)
-        , content_length_(content_length)
-        , header_string_(header_string)
-        , is_chunked_(is_chunked)
+                          int major_version = 1) :
+        request_line(id, uri, minor_version, major_version),
+        content_length_(content_length),
+        header_string_(header_string),
+        is_chunked_(is_chunked)
       {}
 
       /// Constructor for non-standard requests.
@@ -264,11 +307,11 @@ namespace via
                           std::string header_string = "",
                           bool is_chunked = false,
                           int minor_version = 1,
-                          int major_version = 1)
-        : request_line(method, uri, minor_version, major_version)
-        , content_length_(content_length)
-        , header_string_(header_string)
-        , is_chunked_(is_chunked)
+                          int major_version = 1) :
+        request_line(method, uri, minor_version, major_version),
+        content_length_(content_length),
+        header_string_(header_string),
+        is_chunked_(is_chunked)
       {}
 
       /// Add a free form header to the request.

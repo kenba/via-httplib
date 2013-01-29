@@ -14,24 +14,16 @@ namespace via
   namespace http
   {
     //////////////////////////////////////////////////////////////////////////
-    bool response_line::parse_char(char c, parsing_state& state)
+    bool response_line::parse_char(char c)
     {
-      static bool major_read(false);
-      static bool minor_read(false);
-      static bool status_read(false);
-
-      switch (state)
+      switch (state_)
       {
       case RESP_HTTP:
-        major_read = false;
-        minor_read = false;
-        status_read = false;
-
         // Ignore leading whitespace
         if (!is_space_or_tab(c))
         {
           if ('H' == c)
-            state = RESP_HTTP_T1;
+            state_ = RESP_HTTP_T1;
           else
             return false;
         }
@@ -39,28 +31,28 @@ namespace via
 
       case RESP_HTTP_T1:
         if ('T' == c)
-          state = RESP_HTTP_T2;
+          state_ = RESP_HTTP_T2;
         else
           return false;
         break;
 
       case RESP_HTTP_T2:
         if ('T' == c)
-          state = RESP_HTTP_P;
+          state_ = RESP_HTTP_P;
         else
           return false;
         break;
 
       case RESP_HTTP_P:
         if ('P' == c)
-          state = RESP_HTTP_SLASH;
+          state_ = RESP_HTTP_SLASH;
         else
           return false;
         break;
 
       case RESP_HTTP_SLASH:
         if ('/' == c)
-          state = RESP_HTTP_MAJOR;
+          state_ = RESP_HTTP_MAJOR;
         else
           return false;
         break;
@@ -68,14 +60,14 @@ namespace via
       case RESP_HTTP_MAJOR:
         if (std::isdigit(c))
         {
-          major_read = true;
+          major_read_ = true;
           major_version_ *= 10;
           major_version_ += read_digit(c);
         }
         else
         {
-          if (major_read && ('.' == c))
-            state = RESP_HTTP_MINOR;
+          if (major_read_ && ('.' == c))
+            state_ = RESP_HTTP_MINOR;
           else
             return false;
         }
@@ -84,12 +76,12 @@ namespace via
       case RESP_HTTP_MINOR:
         if (std::isdigit(c))
         {
-          minor_read = true;
+          minor_read_ = true;
           minor_version_ *= 10;
           minor_version_ += read_digit(c);
         }
-        else if (is_space_or_tab(c))
-          state = RESP_HTTP_STATUS;
+        else if (minor_read_ && (is_space_or_tab(c)))
+          state_ = RESP_HTTP_STATUS;
         else
           return false;
         break;
@@ -97,14 +89,14 @@ namespace via
       case RESP_HTTP_STATUS:
         if (std::isdigit(c))
         {
-          status_read = true;
+          status_read_ = true;
           status_ *= 10;
           status_ += read_digit(c);
         }
         else if (is_space_or_tab(c))
         {
-          if (status_read)
-            state = RESP_HTTP_REASON;
+          if (status_read_)
+            state_ = RESP_HTTP_REASON;
           // Ignore leading whitespace
         }
         else
@@ -115,9 +107,9 @@ namespace via
         if (is_end_of_line(c))
         {
           if ('\r' == c)
-            state = RESP_HTTP_LF;
+            state_ = RESP_HTTP_LF;
           else // ('\n' == *iter) \\ but permit just \n
-            state = RESP_HTTP_END;
+            state_ = RESP_HTTP_END;
         }
         // Ignore leading whitespace
         else if (!reason_phrase_.empty() || !is_space_or_tab(c))
@@ -126,7 +118,7 @@ namespace via
 
       case RESP_HTTP_LF:
         if ('\n' == c)
-          state = RESP_HTTP_END;
+          state_ = RESP_HTTP_END;
         else 
           return false;
         break;
