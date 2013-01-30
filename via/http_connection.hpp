@@ -43,6 +43,19 @@ namespace via
       body_end_(rx_buffer_.end())
     {}
 
+    void send(Container const& packet)
+    {
+      rx_buffer_.clear();
+
+      boost::shared_ptr<tcp_connection> tcp_pointer
+          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
+      if (tcp_pointer)
+        tcp_pointer->send_data(packet);
+      else
+        std::cerr << "http_connection::send connection weak pointer expired"
+                  << std::endl;
+    }
+
   public:
 
     typedef via::comms::tcp_buffered_connection<Container> tcp_connection;
@@ -106,19 +119,22 @@ namespace via
       return false;
     }
 
-    /* Does not work when Container is a string
-    void send(std::string const& http_header) const
+    void send(http::tx_response& response)
     {
+      response.set_major_version(request_.major_version());
+      response.set_minor_version(request_.minor_version());
+      std::string http_header(response.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
     }
-    */
 
     template<typename ForwardIterator1, typename ForwardIterator2>
-    void send(std::string const& http_header,
+    void send(http::tx_response& response,
               ForwardIterator1 begin, ForwardIterator2 end)
     {
-      rx_buffer_.clear();
+      response.set_major_version(request_.major_version());
+      response.set_minor_version(request_.minor_version());
+      std::string http_header(response.message());
 
       size_t size(end - begin);
       Container tx_message;
@@ -128,23 +144,8 @@ namespace via
       send(tx_message);
     }
 
-    void send(Container const& packet)
-    {
-      rx_buffer_.clear();
-
-      boost::shared_ptr<tcp_connection> tcp_pointer
-          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
-      if (tcp_pointer)
-        tcp_pointer->send_data(packet);
-      else
-        std::cerr << "http_connection::send connection weak pointer expired"
-                  << std::endl;
-    }
-
     void disconnect()
     {}
-
-
 
   };
 

@@ -43,6 +43,19 @@ namespace via
       body_end_(rx_buffer_.end())
     {}
 
+    void send(Container const& packet)
+    {
+      rx_buffer_.clear();
+
+      boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
+          (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
+      if (ssl_tcp_pointer)
+        ssl_tcp_pointer->send_data(packet);
+      else
+        std::cerr << "http_connection::send connection weak pointer expired"
+                  << std::endl;
+    }
+
   public:
 
     typedef via::comms::ssl_tcp_buffered_connection<Container>
@@ -107,37 +120,29 @@ namespace via
       return false;
     }
 
-    /* Does not work when Container is a string
-    void send(std::string const& http_header) const
+    void send(http::tx_response& response)
     {
+      response.set_major_version(request_.major_version());
+      response.set_minor_version(request_.minor_version());
+      std::string http_header(response.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
     }
-    */
 
     template<typename ForwardIterator1, typename ForwardIterator2>
-    void send(std::string const& http_header,
-              ForwardIterator1 begin, ForwardIterator2 end) const
+    void send(http::tx_response& response,
+              ForwardIterator1 begin, ForwardIterator2 end)
     {
+      response.set_major_version(request_.major_version());
+      response.set_minor_version(request_.minor_version());
+      std::string http_header(response.message());
+
       size_t size(end - begin);
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());
       tx_message.insert(tx_message.end(), begin, end);
       send(tx_message);
-    }
-
-    void send(Container const& packet)
-    {
-      rx_buffer_.clear();
-
-      boost::shared_ptr<ssl_tcp_connection> ssl_tcp_pointer
-          (boost::dynamic_pointer_cast<ssl_tcp_connection>(connection_.lock()));
-      if (ssl_tcp_pointer)
-        ssl_tcp_pointer->send_data(packet);
-      else
-        std::cerr << "http_connection::send connection weak pointer expired"
-                  << std::endl;
     }
 
     void disconnect()
