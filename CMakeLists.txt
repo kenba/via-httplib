@@ -19,27 +19,48 @@ else()
   set( VIA_HTTPLIB_LIBRARY_NAME via-httplib )
   set( VIA_HTTPLIB_LIBRARY_TYPE STATIC )
 endif()
+
 set(Boost_USE_MULTITHREADED ON)
 if(VIA_HTTPLIB_BUILD_TESTS)
-  set(Boost_COMPONENTS system regex )
+  set(Boost_COMPONENTS system thread regex )
 else()
-  set(Boost_COMPONENTS system regex )
+  set(Boost_COMPONENTS system thread regex )
+endif()
+if (Boost_USE_MULTITHREADED)
+  set( VIA_HTTPLIB_LIBRARY_NAME ${VIA_HTTPLIB_LIBRARY_NAME}-mt )
+endif()
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+  set( VIA_HTTPLIB_LIBRARY_NAME ${VIA_HTTPLIB_LIBRARY_NAME}d )
 endif()
 
 find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )
 find_package( OpenSSL )
+find_package( Threads )
 
-if(Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
+if (OPENSSL_FOUND)
+    add_definitions(-DBOOST_NETWORK_ENABLE_HTTPS)
 endif()
 
-add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
-       via/http/character.cpp
-       via/http/chunk.cpp
-       via/http/header_field.cpp
-       via/http/headers.cpp
-       via/http/request.cpp
-       via/http/request_method.cpp
-       via/http/response.cpp
-       via/http/response_status.cpp
-       )
+if(Boost_FOUND)
+  if (MSVC)
+    add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+  endif(MSVC)
+  if (WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0501)
+  endif(WIN32)
+  include_directories(${Boost_INCLUDE_DIRS})
+
+  add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
+    via/http/character.cpp
+    via/http/chunk.cpp
+    via/http/header_field.cpp
+    via/http/headers.cpp
+    via/http/request.cpp
+    via/http/request_method.cpp
+    via/http/response.cpp
+    via/http/response_status.cpp
+  )
+
+  install(PROGRAMS ${VIA_HTTPLIB_LIBRARY_NAME}
+    DESTINATION bin)
+endif()
