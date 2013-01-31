@@ -23,3 +23,10 @@ parsed lowercase field name as the key.
 The library was originally developed to support a simple RESTful controller
 for a client. It is currently working in that capacity. However, further
 development work is planned to make it fully compliant with RFC2616.
+
+See
+---
+
+[Design](DESIGN.md)
+
+[Make](MAKE.md)
