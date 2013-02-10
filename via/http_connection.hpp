@@ -29,31 +29,29 @@ namespace via
     typedef typename Container::const_iterator Container_const_iterator;
 
     boost::weak_ptr<via::comms::connection> connection_;
-    http::rx_request request_;
-    Container rx_buffer_;
-    Container_const_iterator body_begin_;
-    Container_const_iterator body_end_;
+    http::request_receiver<Container> rx_;
 
     /// Constructor.
     http_connection(boost::weak_ptr<via::comms::connection> connection) :
       connection_(connection),
-      request_(),
-      rx_buffer_(),
-      body_begin_(rx_buffer_.end()),
-      body_end_(rx_buffer_.end())
+      rx_()
     {}
 
-    void send(Container const& packet)
+    bool send(Container const& packet)
     {
-      rx_buffer_.clear();
+      rx_.clear();
 
       boost::shared_ptr<tcp_connection> tcp_pointer
           (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
       if (tcp_pointer)
+      {
         tcp_pointer->send_data(packet);
+        return tcp_pointer->read_pending();
+      }
       else
         std::cerr << "http_connection::send connection weak pointer expired"
                   << std::endl;
+      return false;
     }
 
   public:
@@ -69,13 +67,13 @@ namespace via
     }
 
     http::rx_request const& request() const
-    { return request_; }
+    { return rx_.request(); }
 
     Container_const_iterator body_begin() const
-    { return body_begin_; }
+    { return rx_.body().begin(); }
 
     Container_const_iterator body_end() const
-    { return body_end_; }
+    { return rx_.body().end(); }
 
     bool receive()
     {
@@ -88,52 +86,44 @@ namespace via
       // attempt to read the data
       while (tcp_pointer->read_pending())
       {
-        // append the data to the end of the buffer.
         Container data(tcp_pointer->read_data());
-        rx_buffer_.insert(rx_buffer_.end(), data.begin(), data.end());
+        boost::logic::tribool rx_state
+            (rx_.receive(data.begin(), data.end()));
 
-        Container_const_iterator next = rx_buffer_.begin();
-        request_ = http::rx_request();
-        if (!request_.parse(next, rx_buffer_.end()))
-        {
-          via::http::tx_response response
-          (via::http::response_status::BAD_REQUEST, 0);
-          std::string response_txt(response.message());
-          tcp_pointer->send_data(response_txt.begin(), response_txt.end());
-          rx_buffer_.clear();
-          return false;
-        }
+        if (rx_state == boost::logic::tribool::true_value)
+          return true;
         else
         {
-          body_begin_ = next;
-          body_end_ = body_begin_;
-          size_t rx_body_size(rx_buffer_.end() - body_begin_);
-          if (request_.content_length() <= rx_body_size)
+          if (rx_state == boost::logic::tribool::false_value)
           {
-            body_end_ += request_.content_length();
-            return true;
+            rx_.clear();
+            via::http::tx_response response
+                (via::http::response_status::BAD_REQUEST, 0);
+            std::string response_txt(response.message());
+            tcp_pointer->send_data(response_txt.begin(), response_txt.end());
           }
+          return false;
         }
       }
 
       return false;
     }
 
-    void send(http::tx_response& response)
+    bool send(http::tx_response& response)
     {
-      response.set_major_version(request_.major_version());
-      response.set_minor_version(request_.minor_version());
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
       std::string http_header(response.message());
       Container tx_message(http_header.begin(), http_header.end());
-      send(tx_message);
+      return send(tx_message);
     }
 
     template<typename ForwardIterator1, typename ForwardIterator2>
-    void send(http::tx_response& response,
+    bool send(http::tx_response& response,
               ForwardIterator1 begin, ForwardIterator2 end)
     {
-      response.set_major_version(request_.major_version());
-      response.set_minor_version(request_.minor_version());
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
       std::string http_header(response.message());
 
       size_t size(end - begin);
@@ -141,7 +131,7 @@ namespace via
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());
       tx_message.insert(tx_message.end(), begin, end);
-      send(tx_message);
+      return send(tx_message);
     }
 
     void disconnect()

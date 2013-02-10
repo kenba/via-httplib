@@ -318,3 +318,38 @@ TEST(TestResponseEncode, ResponseEncode2)
   STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_GROUP(TestResponseReceiver)
+{
+};
+
+TEST(TestResponseReceiver, ValidOK1)
+{
+  std::string response_data("HTTP/1.0 200 OK\r\nC");
+  std::string::const_iterator next(response_data.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  boost::logic::tribool rx_state
+      (the_response_receiver.receive(next, response_data.end()));
+  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  CHECK(ok);
+
+  std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
+  next = response_data2.begin();
+  rx_state = the_response_receiver.receive(next, response_data2.end());
+  bool complete (rx_state == boost::logic::tribool::true_value);
+  CHECK(complete);
+
+
+  CHECK_EQUAL(200, the_response_receiver.response().status());
+  STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
+  CHECK_EQUAL(1, the_response_receiver.response().major_version());
+  CHECK_EQUAL(0, the_response_receiver.response().minor_version());
+  CHECK(!the_response_receiver.response().is_chunked());
+  CHECK_EQUAL(4, the_response_receiver.response().content_length());
+  std::string body(the_response_receiver.body());
+  STRCMP_EQUAL("abcd", body.c_str());
+}
+//////////////////////////////////////////////////////////////////////////////
+

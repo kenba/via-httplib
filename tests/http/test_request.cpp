@@ -402,3 +402,91 @@ TEST(TestRequestEncode, RequestEncode3)
   STRCMP_EQUAL(correct_request.c_str(), req_text.c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_GROUP(TestRequestReceiver)
+{
+};
+
+TEST(TestRequestReceiver, ValidGet1)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
+  std::string::const_iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver;
+  boost::logic::tribool rx_state
+      (the_request_receiver.receive(next, request_data.end()));
+  bool complete (rx_state == boost::logic::tribool::true_value);
+  CHECK(complete);
+
+  rx_request const& the_request(the_request_receiver.request());
+  STRCMP_EQUAL("GET", the_request.method().c_str());
+  STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
+  CHECK_EQUAL(1, the_request.major_version());
+  CHECK_EQUAL(0, the_request.minor_version());
+}
+
+TEST(TestRequestReceiver, ValidGet2)
+{
+  std::string request_data1("G");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver;
+  boost::logic::tribool rx_state
+      (the_request_receiver.receive(next, request_data1.end()));
+  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  CHECK(ok);
+
+  std::string request_data2("ET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
+  next = request_data2.begin();
+  rx_state = the_request_receiver.receive(next, request_data2.end());
+  bool complete (rx_state == boost::logic::tribool::true_value);
+  CHECK(complete);
+
+  rx_request const& the_request(the_request_receiver.request());
+  STRCMP_EQUAL("GET", the_request.method().c_str());
+  STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
+  CHECK_EQUAL(1, the_request.major_version());
+  CHECK_EQUAL(0, the_request.minor_version());
+}
+
+TEST(TestRequestReceiver, ValidPostQt1)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver;
+  boost::logic::tribool rx_state
+      (the_request_receiver.receive(next, request_data1.end()));
+  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Content-Length: 26\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.end());
+  ok = (rx_state == boost::logic::tribool::indeterminate_value);
+  CHECK(ok);
+
+  std::string body_data("abcdefghijklmnopqrstuvwxyz");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.end());
+  bool complete (rx_state == boost::logic::tribool::true_value);
+  CHECK(complete);
+
+  rx_request const& the_request(the_request_receiver.request());
+  STRCMP_EQUAL("POST", the_request.method().c_str());
+  STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
+  CHECK_EQUAL(26, the_request.content_length());
+  STRCMP_EQUAL(body_data.c_str(), the_request_receiver.body().c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////////

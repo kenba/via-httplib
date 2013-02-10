@@ -12,7 +12,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "response_status.hpp"
 #include "headers.hpp"
+#include <boost/logic/tribool.hpp>
 #include <algorithm>
+#include <cassert>
 
 namespace via
 {
@@ -342,6 +344,69 @@ namespace via
 
         return output;
       }
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    /// @class response_receiver
+    //////////////////////////////////////////////////////////////////////////
+    template <typename Container>
+    class response_receiver
+    {
+      typedef typename Container::const_iterator Container_const_iterator;
+      rx_response response_;
+      Container   body_;
+
+    public:
+
+      explicit response_receiver() :
+        response_(),
+        body_()
+      {}
+
+      void clear()
+      {
+        response_.reset();
+        body_.clear();
+      }
+
+      rx_response const& response() const
+      { return response_; }
+
+      Container const& body() const
+      { return body_; }
+
+      boost::logic::tribool receive(Container_const_iterator iter,
+                                    Container_const_iterator end)
+      {
+        // building a response
+        if (!response_.valid())
+        {
+          // failed to parse response
+          if (!response_.parse(iter, end))
+          {
+            // if a parsing error (not run out of data)
+            if (iter != end)
+            {
+              response_.reset();
+              return false;
+            }
+            else
+              return boost::logic::tribool::indeterminate_value;
+          }
+        }
+
+        // build a response body
+        assert(response_.valid());
+        if (end > iter)
+          body_.insert(body_.end(), iter, end);
+
+        // return whether the body is complete
+        if (body_.size() >= response_.content_length())
+          return true;
+
+        return boost::logic::tribool::indeterminate_value;
+      }
+
     };
 
   }
