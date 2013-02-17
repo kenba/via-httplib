@@ -12,7 +12,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
-#include "via/comms/tcp_buffered_connection.hpp"
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/signal.hpp>
 #include <deque>
 #include <iostream>
@@ -23,16 +24,28 @@ namespace via
   /// @class http_connection
   ///
   ////////////////////////////////////////////////////////////////////////////
-  template <typename Container>
-  class http_connection
+  template <typename Connection,
+            typename Container = std::vector<char> >
+  class http_connection : public boost::enable_shared_from_this
+          <http_connection<Connection, Container> >
   {
+  public:
+
+    typedef typename boost::weak_ptr<http_connection<Connection, Container> >
+       weak_pointer;
+
+    typedef typename boost::shared_ptr<http_connection<Connection, Container> >
+       shared_pointer;
+
     typedef typename Container::const_iterator Container_const_iterator;
 
-    boost::weak_ptr<via::comms::connection> connection_;
+  private:
+
+    boost::weak_ptr<Connection> connection_;
     http::request_receiver<Container> rx_;
 
     /// Constructor.
-    http_connection(boost::weak_ptr<via::comms::connection> connection) :
+    http_connection(boost::weak_ptr<Connection> connection) :
       connection_(connection),
       rx_()
     {}
@@ -41,8 +54,7 @@ namespace via
     {
       rx_.clear();
 
-      boost::shared_ptr<tcp_connection> tcp_pointer
-          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
+      boost::shared_ptr<Connection> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -56,14 +68,10 @@ namespace via
 
   public:
 
-    typedef via::comms::tcp_buffered_connection<Container> tcp_connection;
-
     /// Create.
-    static boost::shared_ptr<http_connection<Container> >
-           create(boost::weak_ptr<via::comms::connection> connection)
+    static shared_pointer create(boost::weak_ptr<Connection> connection)
     {
-      return boost::shared_ptr<http_connection<Container> >
-          (new http_connection(connection));
+      return shared_pointer(new http_connection(connection));
     }
 
     http::rx_request const& request() const
@@ -78,8 +86,7 @@ namespace via
     bool receive()
     {
       // attempt to get the pointer
-      boost::shared_ptr<tcp_connection> tcp_pointer
-          (boost::dynamic_pointer_cast<tcp_connection>(connection_.lock()));
+      boost::shared_ptr<Connection> tcp_pointer(connection_.lock());
       if (!tcp_pointer)
         return false;
 

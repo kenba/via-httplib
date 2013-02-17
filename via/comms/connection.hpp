@@ -10,126 +10,198 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+#include "socket_adaptor.hpp"
 #include <boost/system/error_code.hpp>
 #include <boost/signal.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <vector>
+#include <deque>
 
 namespace via
 {
   namespace comms
   {
     //////////////////////////////////////////////////////////////////////////
-    /// @class connection
-    /// The abstract base class for all asynchronous (non-blocking) connection
-    /// classes.
+    /// @class
+    /// This class
     //////////////////////////////////////////////////////////////////////////
-    class connection : public boost::enable_shared_from_this<connection>
+    template <typename SocketAdaptor,
+              typename Container = std::vector<char> >
+    class connection : public SocketAdaptor,
+        public boost::enable_shared_from_this
+            <connection<SocketAdaptor, Container> >
     {
     public:
+
+      typedef typename boost::weak_ptr<connection<SocketAdaptor, Container> >
+         weak_pointer;
+
+      typedef typename boost::shared_ptr<connection<SocketAdaptor, Container> >
+         shared_pointer;
+
+      typedef typename boost::enable_shared_from_this<connection
+        <SocketAdaptor, Container> > enable;
+
       /// A signal to indicate that an event occured.
-      typedef boost::signal<void (boost::weak_ptr<connection>)> event_signal;
+      typedef boost::signal<void (int event, weak_pointer)> event_signal_type;
+
+      typedef typename event_signal_type::slot_type event_slot_type;
 
       /// A signal to indicate that an error occured.
-      typedef boost::signal<void (const boost::system::error_code&,
-                                  boost::weak_ptr<connection>)> error_signal;
+      typedef boost::signal<void (const boost::system::error_code&, weak_pointer)>
+                                  error_signal_type;
+
+      typedef typename error_signal_type::slot_type error_slot_type;
 
     private:
-      /// The signals
-      event_signal received_;
-      event_signal sent_;
-      event_signal connected_;
-      event_signal disconnected_;
 
-      error_signal error_;
+      std::deque<Container> rx_queue_;
+      std::deque<Container> tx_queue_;
+      bool is_writing_;
 
-    protected:
+      size_t buffer_size_;
+      static const size_t DEFAULT_BUFFER_SIZE = 8192;
 
-      /// Functions to signal events and errors from derived classes.
-      void signal_received()
-      { received_(shared_from_this()); }
+      event_signal_type signal_event_;
+      error_signal_type signal_error_;
 
-      void signal_sent()
-      { sent_(shared_from_this()); }
-
-      void signal_connected()
-      { connected_(shared_from_this()); }
-
-      void signal_disconnected()
-      { disconnected_(shared_from_this()); }
-
-      /// Note: the signal error is declared virtual so that derived classes
-      /// can interogate the error code to determine whether it is a
-      /// disconnect.
-      /// @param error the error_code for the error.
-      virtual void signal_error(const boost::system::error_code& error)
-      { error_(error, shared_from_this()); }
-
-      ///
-      virtual void read(void* ptr, size_t& size) = 0;
-
-      ///
-      virtual void write(void const* ptr, size_t size) = 0;
-
-      ///
-      virtual void read_handler(const boost::system::error_code& error,
-                                size_t) // bytes_transferred
+      void signal_event(int event)
       {
-        if (error)
-          signal_error(error);
-        else
-          received_(shared_from_this());
+        if (event == CONNECTED)
+          enable_reception();
+
+        signal_event_(event, enable::shared_from_this());
       }
 
-      ///
-      virtual void write_handler(const boost::system::error_code& error,
-                                 size_t) // bytes_transferred
+      void signal_error(const boost::system::error_code& error)
       {
-        if (error)
-          signal_error(error);
+        if (SocketAdaptor::is_disconnect(error))
+          signal_event_(DISCONNECTED, enable::shared_from_this());
         else
-          sent_(shared_from_this());
+          signal_error_(error, enable::shared_from_this());
       }
 
-      virtual void stop()
-      { }
+      void read_handler(const boost::system::error_code& error,
+                        size_t bytes_transferred)
+      {
+        if (!error)
+        {
+          rx_queue_.back().resize(bytes_transferred);
+          enable_reception();
+          signal_event(RECEIVED);
+        }
+        else
+          signal_error(error);
+      }
 
-      explicit connection() :
-        received_(),
-        sent_(),
-        connected_(),
-        disconnected_(),
-        error_()
+      void write_handler(const boost::system::error_code& error,
+                         size_t) // bytes_transferred
+      {
+        tx_queue_.pop_front();
+        is_writing_ = false;
+
+        if (!error)
+        {
+          if (!tx_queue_.empty())
+          {
+            is_writing_ = true;
+            SocketAdaptor::write(&tx_queue_.front()[0],
+                                  tx_queue_.front().size());
+          }
+          else
+            signal_event(SENT);
+        }
+        else
+          signal_error(error);
+      }
+
+      explicit connection(boost::asio::io_service& io_service) :
+        SocketAdaptor(io_service,
+                      boost::bind(&connection::read_handler, this,
+                                  boost::asio::placeholders::error,
+                                  boost::asio::placeholders::bytes_transferred),
+                      boost::bind(&connection::write_handler, this,
+                                  boost::asio::placeholders::error,
+                                  boost::asio::placeholders::bytes_transferred),
+                      boost::bind(&connection::signal_event, this, _1),
+                      boost::bind(&connection::signal_error, this, _1)),
+        rx_queue_(),
+        tx_queue_(),
+        is_writing_(false),
+        buffer_size_(DEFAULT_BUFFER_SIZE),
+        signal_event_(),
+        signal_error_()
       {}
 
     public:
 
-      virtual ~connection()
+      void get_event_signal(const event_slot_type& slot)
+      { signal_event_.connect(slot); }
+
+      void get_error_signal(const error_slot_type& slot)
+      { signal_error_.connect(slot); }
+
+      static boost::shared_ptr<connection>
+         create(boost::asio::io_service& io_service)
+      {
+        return boost::shared_ptr<connection>
+            (new connection(io_service));
+      }
+
+      ~connection()
       { disconnect(); }
 
-      virtual void enable_reception()
-      {}
+      bool connect(const char *host_name, const char *port_name)
+      { return SocketAdaptor::connect(host_name, port_name); }
 
       void disconnect()
-      { stop(); }
+      { SocketAdaptor::stop(); }
 
-      void received_event(const event_signal::slot_type& slot)
-      { received_.connect(slot); }
+      void enable_reception()
+      {
+        // Note: this could be a move in C++11
+        rx_queue_.push_back(Container(buffer_size_, 0));
+        size_t size(buffer_size_);
+        SocketAdaptor::read(&rx_queue_.back()[0], size);
+      }
 
-      void sent_event(const event_signal::slot_type& slot)
-      { sent_.connect(slot); }
+      ///
+      bool read_pending() const
+      { return rx_queue_.size() > 1; }
 
-      void connected_event(const event_signal::slot_type& slot)
-      { connected_.connect(slot); }
+      ///
+      Container read_data()
+      {
+        assert(read_pending());
+        Container data(rx_queue_.front());
+        rx_queue_.pop_front();
+        return data;
+      }
 
-      void disconnected_event(const event_signal::slot_type& slot)
-      { disconnected_.connect(slot); }
+      // Note: provide move sematics for C++11
+      void send_data(Container const& packet)
+      {
+        tx_queue_.push_back(packet);
+        if (!is_writing_)
+        {
+          is_writing_ = true;
+          SocketAdaptor::write(&tx_queue_.front()[0],
+                                tx_queue_.front().size());
+        }
+      }
 
-      void error_event(const error_signal::slot_type& slot)
-      { error_.connect(slot); }
+      ///
+      template<typename ForwardIterator1, typename ForwardIterator2>
+      void send_data(ForwardIterator1 begin, ForwardIterator2 end)
+      {
+        Container buffer(begin, end);
+        send_data(buffer);
+      }
 
     };
 
   }
 }
+
 #endif
