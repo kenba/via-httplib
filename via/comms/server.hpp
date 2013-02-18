@@ -9,6 +9,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file server.hpp
+/// @brief The server template class.
+//////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
@@ -21,18 +24,32 @@ namespace via
   {
     //////////////////////////////////////////////////////////////////////////
     /// @class server
+    /// A template class serving connections.
     //////////////////////////////////////////////////////////////////////////
     template <typename Connection>
     class server : boost::noncopyable
     {
+    public:
+
+      /// The connection type used by this server.
+      typedef Connection connection_type;
+
+      /// @typedef a set of connections.
       typedef std::set<boost::shared_ptr<Connection> > connections;
 
+      /// @typedef the boost signal to indicate that an event occured.
       typedef typename Connection::event_signal_type event_signal_type;
+
+      /// @typedef the boost slot associated with the event_signal_type.
       typedef typename event_signal_type::slot_type event_slot_type;
 
+      /// @typedef the boost signal to indicate that an error occured.
       typedef typename Connection::error_signal_type error_signal_type;
+
+      /// @typedef the boost slot associated with the error_signal_type.
       typedef typename error_signal_type::slot_type error_slot_type;
 
+    private:
       /// The asio::io_service to use.
       boost::asio::io_service& io_service_;
 
@@ -45,11 +62,21 @@ namespace via
       /// The connections established with this server.
       connections connections_;
 
+      /// The password. Only used by SSL servers.
       std::string password_;
 
-      event_signal_type signal_event_;
-      error_signal_type signal_error_;
+      event_signal_type signal_event_; ///< The event signal.
+      error_signal_type signal_error_; ///< The error signal.
 
+      /// @accept_handler
+      /// The callback function called by the acceptor when it accepts a
+      /// new connection.
+      /// If there is no error, it performs the following:
+      /// - calls "start" on the new connection.
+      /// - connects the connections event and error signals to the servers
+      /// - add the new connection to the set
+      /// - restart the acceptor to look for new connections.
+      /// @param error the error, if any.
       void accept_handler(const boost::system::error_code& error)
       {
         if (!acceptor_.is_open())
@@ -75,25 +102,29 @@ namespace via
         start_accept();
       }
 
-      void event_handler(int event,
-                         boost::weak_ptr<Connection> weak_connection)
-      { signal_event_(event, weak_connection); }
+      /// @fn event_handler.
+      /// It just forwards the connection's event signal.
+      /// @param event the event, @see event_type.
+      /// @param connection a weak_pointer to the connection that sent the
+      /// event.
+      void event_handler(int event, boost::weak_ptr<Connection> connection)
+      { signal_event_(event, connection); }
 
-      /// Connection error handler. It  just forwards the signal.
+      /// @fn error_handler.
+      /// It just forwards the connection's error signal.
+      /// @param error the boost asio error.
+      /// @param connection a weak_pointer to the connection that sent the
+      /// error.
       void error_handler(const boost::system::error_code& error,
-                         boost::weak_ptr<Connection> weak_connection)
-      { signal_error_(error, weak_connection); }
+                         boost::weak_ptr<Connection> connection)
+      { signal_error_(error, connection); }
 
     public:
 
-      typedef Connection connection_type;
-
-      void get_event_signal(const event_slot_type& slot)
-      { signal_event_.connect(slot); }
-
-      void get_error_signal(const error_slot_type& slot)
-      { signal_error_.connect(slot); }
-
+      /// @fn Constructor
+      /// @param io_service the boost asio io_service used by the acceptor
+      /// and connections.
+      /// @param port the port number to serve.
       explicit server(boost::asio::io_service& io_service,
                       unsigned short port) :
         io_service_(io_service),
@@ -115,11 +146,28 @@ namespace via
         acceptor_.listen();
       }
 
+      /// @fn create
+      /// Function to create a shared pointer to a server.
+      /// @param io_service the boost asio io_service used by the server.
+      /// @param port the port number to serve.
       static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
                                               unsigned short port)
       { return boost::shared_ptr<server>(new server(io_service, port)); }
 
-      /// Asynchorously wait for connections.
+      /// @fn get_event_signal
+      /// A function to connect a slot to the event signal.
+      /// @param slot the slot to connect.
+      void get_event_signal(const event_slot_type& slot)
+      { signal_event_.connect(slot); }
+
+      /// @fn get_error_signal
+      /// A function to connect a slot to the error signal.
+      /// @param slot the slot to connect.
+      void get_error_signal(const error_slot_type& slot)
+      { signal_error_.connect(slot); }
+
+      /// @fn start_accept
+      /// Wait for connections.
       void start_accept()
       {
         new_connection_.reset();
@@ -130,15 +178,24 @@ namespace via
                                            boost::asio::placeholders::error));
       }
 
+      /// @fn password
+      /// Get the password.
+      /// @pre It must be an SSL server.
+      /// @return The password.
       const std::string password() const
       { return password_; }
 
+      /// @fn set_password
+      /// Set the password.
+      /// @pre It must be an SSL server.
+      /// @param password the password
       void set_password(std::string const& password)
       {
         password_ = password;
         Connection::ssl_context().set_password_callback
             (boost::bind(&server::password, this));
       }
+
     };
   }
 }
