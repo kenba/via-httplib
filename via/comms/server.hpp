@@ -26,25 +26,25 @@ namespace via
     /// @class server
     /// A template class serving connections.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Connection>
+    template <typename SocketAdaptor, typename Container = std::vector<char> >
     class server : boost::noncopyable
     {
     public:
 
       /// The connection type used by this server.
-      typedef Connection connection_type;
+      typedef connection<SocketAdaptor, Container> connection_type;
 
       /// @typedef a set of connections.
-      typedef std::set<boost::shared_ptr<Connection> > connections;
+      typedef std::set<boost::shared_ptr<connection_type> > connections;
 
       /// @typedef the boost signal to indicate that an event occured.
-      typedef typename Connection::event_signal_type event_signal_type;
+      typedef typename connection_type::event_signal_type event_signal_type;
 
       /// @typedef the boost slot associated with the event_signal_type.
       typedef typename event_signal_type::slot_type event_slot_type;
 
       /// @typedef the boost signal to indicate that an error occured.
-      typedef typename Connection::error_signal_type error_signal_type;
+      typedef typename connection_type::error_signal_type error_signal_type;
 
       /// @typedef the boost slot associated with the error_signal_type.
       typedef typename error_signal_type::slot_type error_slot_type;
@@ -57,7 +57,7 @@ namespace via
       boost::asio::ip::tcp::acceptor acceptor_;
 
       /// The next connection to be accepted.
-      boost::shared_ptr<Connection> new_connection_;
+      boost::shared_ptr<connection_type> new_connection_;
 
       /// The connections established with this server.
       connections connections_;
@@ -107,7 +107,7 @@ namespace via
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, boost::weak_ptr<Connection> connection)
+      void event_handler(int event, boost::weak_ptr<connection_type> connection)
       { signal_event_(event, connection); }
 
       /// @fn error_handler.
@@ -116,7 +116,7 @@ namespace via
       /// @param connection a weak_pointer to the connection that sent the
       /// error.
       void error_handler(const boost::system::error_code& error,
-                         boost::weak_ptr<Connection> connection)
+                         boost::weak_ptr<connection_type> connection)
       { signal_error_(error, connection); }
 
     public:
@@ -171,7 +171,7 @@ namespace via
       void start_accept()
       {
         new_connection_.reset();
-        new_connection_ = Connection::create(io_service_);
+        new_connection_ = connection_type::create(io_service_);
 
         acceptor_.async_accept(new_connection_->socket(),
                                boost::bind(&server::accept_handler, this,
@@ -192,7 +192,7 @@ namespace via
       void set_password(std::string const& password)
       {
         password_ = password;
-        Connection::ssl_context().set_password_callback
+        connection_type::ssl_context().set_password_callback
             (boost::bind(&server::password, this));
       }
 

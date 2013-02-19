@@ -152,7 +152,7 @@ namespace via
           write_handler_(write_handler),
           event_handler_(event_handler),
           error_handler_(error_handler)
-        { ssl_context().set_verify_mode(boost::asio::ssl::verify_peer); }
+        {}
 
       public:
 
@@ -175,6 +175,8 @@ namespace via
         /// @param port_name the port to connect to.
         bool connect(const char* host_name, const char* port_name)
         {
+          ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
+
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
             return false;

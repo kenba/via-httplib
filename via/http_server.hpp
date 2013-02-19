@@ -14,6 +14,9 @@
 #include "via/comms/server.hpp"
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#ifdef HTTP_SSL
+#include <boost/asio/ssl/context.hpp>
+#endif
 #include <map>
 #include <iostream>
 
@@ -23,15 +26,17 @@ namespace via
   /// @class http_server
   ///
   ////////////////////////////////////////////////////////////////////////////
-  template <typename Connection,
-            typename Container = std::vector<char> >
+  template <typename SocketAdaptor, typename Container = std::vector<char> >
   class http_server
   {
   public:
-    typedef comms::server<Connection> tcp_server;
+
+    typedef comms::connection<SocketAdaptor, Container> connection_type;
+
+    typedef comms::server<SocketAdaptor, Container> tcp_server;
 
     // Require a collection of http_connections keyed by the connction pointer.
-    typedef http_connection<Connection, Container> http_connection_type;
+    typedef http_connection<SocketAdaptor, Container> http_connection_type;
 
     typedef std::map<void*, boost::shared_ptr<http_connection_type> >
         connection_collection;
@@ -75,7 +80,7 @@ namespace via
     void start_accept()
     { tcp_server_->start_accept(); }
 
-    void receive_handler(boost::weak_ptr<Connection> connection)
+    void receive_handler(boost::weak_ptr<connection_type> connection)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(connection.lock().get());
@@ -105,7 +110,7 @@ namespace via
                   << std::endl;
     }
 
-    void disconnected_handler(boost::weak_ptr<Connection> c)
+    void disconnected_handler(boost::weak_ptr<connection_type> c)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(c.lock().get());
@@ -121,7 +126,7 @@ namespace via
     }
 
     /// receive a packet
-    void event_handler(int event, boost::weak_ptr<Connection> connection)
+    void event_handler(int event, boost::weak_ptr<connection_type> connection)
     {
       switch(event)
       {
@@ -137,7 +142,7 @@ namespace via
     }
 
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<Connection> connection)
+                       boost::weak_ptr<connection_type> connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
@@ -146,13 +151,14 @@ namespace via
     void set_password(std::string const& password)
     { tcp_server_->set_password(password); }
 
-#ifdef VIA_SSL
-    void set_ssl_files(const std::string& certificate_file,
+#ifdef HTTP_SSL
+    static void set_ssl_files(const std::string& certificate_file,
                        const std::string& key_file,
                        std::string        dh_file = "")
     {
       tcp_server::connection_type::ssl_context().
-          use_certificate_chain_file(certificate_file);
+          use_certificate_file(certificate_file,
+                               boost::asio::ssl::context::pem);
       tcp_server::connection_type::ssl_context().
           use_private_key_file(key_file, boost::asio::ssl::context::pem);
 
