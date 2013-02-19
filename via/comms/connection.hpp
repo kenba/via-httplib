@@ -158,7 +158,8 @@ namespace via
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      explicit connection(boost::asio::io_service& io_service) :
+      explicit connection(boost::asio::io_service& io_service,
+                          unsigned short port_number) :
         SocketAdaptor(io_service,
                       boost::bind(&connection::read_handler, this,
                                   boost::asio::placeholders::error,
@@ -167,7 +168,8 @@ namespace via
                                   boost::asio::placeholders::error,
                                   boost::asio::placeholders::bytes_transferred),
                       boost::bind(&connection::signal_event, this, _1),
-                      boost::bind(&connection::signal_error, this, _1)),
+                      boost::bind(&connection::signal_error, this, _1),
+                      port_number),
         rx_queue_(),
         tx_queue_(),
         is_writing_(false),
@@ -195,8 +197,9 @@ namespace via
       /// The factory function to create connections.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      static shared_pointer create(boost::asio::io_service& io_service)
-      { return shared_pointer(new connection(io_service)); }
+      static shared_pointer create(boost::asio::io_service& io_service,
+                                   unsigned short port_number = 0)
+      { return shared_pointer(new connection(io_service, port_number)); }
 
       /// @fn get_event_signal
       /// A function to connect a slot to the event signal.

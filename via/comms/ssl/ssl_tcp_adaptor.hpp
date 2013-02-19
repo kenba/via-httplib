@@ -144,7 +144,8 @@ namespace via
                                  CommsHandler read_handler,
                                  CommsHandler write_handler,
                                  EventHandler event_handler,
-                                 ErrorHandler error_handler) :
+                                 ErrorHandler error_handler,
+                                 unsigned int /*port_number*/) :
           io_service_(io_service),
           socket_(io_service_, ssl_context()),
           host_iterator_(boost::asio::ip::tcp::resolver::iterator()),
