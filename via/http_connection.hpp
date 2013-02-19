@@ -96,21 +96,19 @@ namespace via
       while (tcp_pointer->read_pending())
       {
         Container data(tcp_pointer->read_data());
-        boost::logic::tribool rx_state
+        http::receiver_parsing_state rx_state
             (rx_.receive(data.begin(), data.end()));
 
-        if (rx_state == boost::logic::tribool::true_value)
+        if (rx_state == http::RX_VALID)
           return true;
         else
         {
-          if (rx_state == boost::logic::tribool::false_value)
+          if (rx_state == http::RX_INVALID)
           {
-            rx_.clear();
-            via::http::tx_response response
-                (via::http::response_status::BAD_REQUEST, 0);
-            std::string response_txt(response.message());
-            tcp_pointer->send_data(response_txt.begin(), response_txt.end());
+            http::tx_response response(http::response_status::BAD_REQUEST, 0);
+            send(response);
           }
+
           return false;
         }
       }

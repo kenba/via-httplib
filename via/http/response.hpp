@@ -12,7 +12,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "response_status.hpp"
 #include "headers.hpp"
-#include <boost/logic/tribool.hpp>
 #include <algorithm>
 #include <cassert>
 
@@ -375,8 +374,8 @@ namespace via
       Container const& body() const
       { return body_; }
 
-      boost::logic::tribool receive(Container_const_iterator iter,
-                                    Container_const_iterator end)
+      receiver_parsing_state receive(Container_const_iterator iter,
+                                     Container_const_iterator end)
       {
         // building a response
         if (!response_.valid())
@@ -387,11 +386,11 @@ namespace via
             // if a parsing error (not run out of data)
             if (iter != end)
             {
-              response_.reset();
-              return false;
+              clear();
+              return RX_INVALID;
             }
             else
-              return boost::logic::tribool::indeterminate_value;
+              return RX_INCOMPLETE;
           }
         }
 
@@ -402,9 +401,9 @@ namespace via
 
         // return whether the body is complete
         if (body_.size() >= response_.content_length())
-          return true;
+          return RX_VALID;
 
-        return boost::logic::tribool::indeterminate_value;
+        return RX_INCOMPLETE;
       }
 
     };

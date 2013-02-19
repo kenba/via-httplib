@@ -330,17 +330,16 @@ TEST(TestResponseReceiver, ValidOK1)
   std::string::const_iterator next(response_data.begin());
 
   response_receiver<std::string> the_response_receiver;
-  boost::logic::tribool rx_state
+  receiver_parsing_state rx_state
       (the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
   next = response_data2.begin();
   rx_state = the_response_receiver.receive(next, response_data2.end());
-  bool complete (rx_state == boost::logic::tribool::true_value);
+  bool complete (rx_state == RX_VALID);
   CHECK(complete);
-
 
   CHECK_EQUAL(200, the_response_receiver.response().status());
   STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());

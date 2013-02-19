@@ -411,13 +411,13 @@ TEST_GROUP(TestRequestReceiver)
 
 TEST(TestRequestReceiver, ValidGet1)
 {
-  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   std::string::const_iterator next(request_data.begin());
 
   request_receiver<std::string> the_request_receiver;
-  boost::logic::tribool rx_state
+  receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data.end()));
-  bool complete (rx_state == boost::logic::tribool::true_value);
+  bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -433,15 +433,15 @@ TEST(TestRequestReceiver, ValidGet2)
   std::string::const_iterator next(request_data1.begin());
 
   request_receiver<std::string> the_request_receiver;
-  boost::logic::tribool rx_state
+  receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
-  std::string request_data2("ET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
+  std::string request_data2("ET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   next = request_data2.begin();
   rx_state = the_request_receiver.receive(next, request_data2.end());
-  bool complete (rx_state == boost::logic::tribool::true_value);
+  bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -457,9 +457,9 @@ TEST(TestRequestReceiver, ValidPostQt1)
   std::string::const_iterator next(request_data1.begin());
 
   request_receiver<std::string> the_request_receiver;
-  boost::logic::tribool rx_state
+  receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == boost::logic::tribool::indeterminate_value);
+  bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string request_data
@@ -473,13 +473,13 @@ TEST(TestRequestReceiver, ValidPostQt1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == boost::logic::tribool::indeterminate_value);
+  ok = (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string body_data("abcdefghijklmnopqrstuvwxyz");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  bool complete (rx_state == boost::logic::tribool::true_value);
+  bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());

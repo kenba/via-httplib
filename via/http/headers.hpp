@@ -18,6 +18,16 @@ namespace via
 {
   namespace http
   {
+
+    /// @enum receiver_parsing_state is valid for both the request and
+    /// response receivers.
+    enum receiver_parsing_state
+    {
+      RX_INVALID,
+      RX_INCOMPLETE,
+      RX_VALID
+    };
+
     //////////////////////////////////////////////////////////////////////////
     /// @class field_line
     //////////////////////////////////////////////////////////////////////////
