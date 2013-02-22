@@ -89,6 +89,21 @@ TEST(TestChunkLineParser, ValidString3)
   CHECK_EQUAL(15, the_chunk.size());
 }
 
+TEST(TestChunkLineParser, MultipleString1)
+{
+  std::string chunk_data("2f; some rubbish\r\n");
+  std::string::const_iterator next(chunk_data.begin());
+
+  chunk_header the_chunk;
+  CHECK(!the_chunk.parse(next, chunk_data.begin() +1));
+  CHECK(chunk_data.end() != next);
+  CHECK(the_chunk.parse(next, chunk_data.end()));
+  CHECK(chunk_data.end() == next);
+  STRCMP_EQUAL("2f",  the_chunk.hex_size().c_str());
+  STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
+  CHECK_EQUAL(47, the_chunk.size());
+}
+
 TEST(TestChunkLineParser, InValidString1)
 {
   std::string chunk_data("g;\r\n");

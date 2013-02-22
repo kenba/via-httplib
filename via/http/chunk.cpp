@@ -31,6 +31,8 @@ namespace via
         {
           if (is_end_of_line(c) || (';' == c))
           {
+            size_ = from_hex_string(hex_size_);
+            size_read_ = true;
             if (';' == c)
               state_ = CHUNK_EXTENSION_LS;
             else if ('\r' == c)

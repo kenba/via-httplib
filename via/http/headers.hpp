@@ -210,6 +210,8 @@ namespace via
       /// NOT contain the keyword "identity". See RFC2616 section 4.4 para 2.
       bool is_chunked() const;
 
+      bool close_connection() const;
+
       bool valid() const
       { return valid_; }
 

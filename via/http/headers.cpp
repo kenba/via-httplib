@@ -26,9 +26,11 @@ namespace
 // if C++11 or Visual Studio 2010 or newer
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   const std::regex REGEX_IDENTITY(".*identity.*", std::regex::icase);
+  const std::regex REGEX_CLOSE(".*close.*", std::regex::icase);
 #else
   //const std::tr1::regex REGEX_IDENTITY(".*identity.*", std::tr1::regex::icase);
   const boost::regex REGEX_IDENTITY(".*identity.*", boost::regex::icase);
+  const boost::regex REGEX_CLOSE(".*close.*", boost::regex::icase);
 #endif
 }
 
@@ -121,6 +123,24 @@ namespace via
 #else
       //return (!std::tr1::regex_match(xfer_encoding, REGEX_IDENTITY));
       return (!boost::regex_match(xfer_encoding, REGEX_IDENTITY));
+#endif
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool message_headers::close_connection() const
+    {
+      // Find whether there is a connection header.
+      const std::string& connection(find(header_field::CONNECTION));
+      if (connection.empty())
+        return false;
+
+// if C++11 or Visual Studio 2010 or newer
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      return (std::regex_match(connection, REGEX_CLOSE));
+#else
+      //return (!std::tr1::regex_match(xfer_encoding, REGEX_IDENTITY));
+      return (boost::regex_match(connection, REGEX_CLOSE));
 #endif
     }
     //////////////////////////////////////////////////////////////////////////

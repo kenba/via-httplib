@@ -94,7 +94,8 @@ namespace via
       /// @param error the boost asio error.
       void signal_error(const boost::system::error_code& error)
       {
-        if (SocketAdaptor::is_disconnect(error))
+        if ((error == boost::asio::error::eof) ||
+             SocketAdaptor::is_disconnect(error))
           signal_event_(DISCONNECTED, enable::shared_from_this());
         else
           signal_error_(error, enable::shared_from_this());

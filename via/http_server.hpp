@@ -152,15 +152,23 @@ namespace via
     { tcp_server_->set_password(password); }
 
 #ifdef HTTP_SSL
-    static void set_ssl_files(const std::string& certificate_file,
+    static boost::system::error_code set_ssl_files
+                       (const std::string& certificate_file,
                        const std::string& key_file,
                        std::string        dh_file = "")
     {
+      boost::system::error_code error;
       tcp_server::connection_type::ssl_context().
           use_certificate_file(certificate_file,
-                               boost::asio::ssl::context::pem);
+                               boost::asio::ssl::context::pem, error);
+      if (error)
+        return error;
+
       tcp_server::connection_type::ssl_context().
-          use_private_key_file(key_file, boost::asio::ssl::context::pem);
+          use_private_key_file(key_file, boost::asio::ssl::context::pem,
+                               error);
+      if (error)
+        return error;
 
       if (dh_file.empty())
         tcp_server::connection_type::ssl_context().
@@ -168,12 +176,19 @@ namespace via
                        boost::asio::ssl::context::no_sslv2);
       else
       {
+        tcp_server::connection_type::ssl_context().use_tmp_dh_file(dh_file,
+                                                                   error);
+        if (error)
+          return error;
+
         tcp_server::connection_type::ssl_context().
            set_options(boost::asio::ssl::context::default_workarounds |
                        boost::asio::ssl::context::no_sslv2 |
-                       boost::asio::ssl::context::single_dh_use);
-        tcp_server::connection_type::ssl_context().use_tmp_dh_file(dh_file);
+                       boost::asio::ssl::context::single_dh_use,
+                       error);
       }
+
+      return error;
     }
 #endif
 

@@ -221,6 +221,7 @@ TEST(TestResponseParser, ValidOK2)
   STRCMP_EQUAL("abcd", body.c_str());
 }
 
+
 // Memory leaks according to Qt/MinGw
 // New version not tested on Visual Studio yet
 #ifdef _MSC_VER
@@ -350,5 +351,60 @@ TEST(TestResponseReceiver, ValidOK1)
   std::string body(the_response_receiver.body());
   STRCMP_EQUAL("abcd", body.c_str());
 }
+
+TEST(TestResponseReceiver, InValidOK1)
+{
+  std::string response_data("P");
+  std::string::const_iterator next(response_data.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data.end()));
+  CHECK (rx_state == RX_INVALID);
+}
+
+TEST(TestResponseReceiver, ValidOKChunked1)
+{
+  std::string response_data1("H");
+  std::string::const_iterator next(response_data1.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data1.end()));
+  CHECK(rx_state == RX_INCOMPLETE);
+
+  std::string response_data("TTP/1.0 200 OK\r\n");
+  response_data += "Content-Type: application/json\r\n";
+  response_data += "Transfer-Encoding: Chunked\r\n";
+  response_data += "Connection: Keep-Alive\r\n";
+  response_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = response_data.begin();
+
+  rx_state = the_response_receiver.receive(next, response_data.end());
+  CHECK(rx_state == RX_VALID);
+  CHECK_EQUAL(200, the_response_receiver.response().status());
+  STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
+  CHECK_EQUAL(1, the_response_receiver.response().major_version());
+  CHECK_EQUAL(0, the_response_receiver.response().minor_version());
+//  CHECK(the_response_receiver.response().is_chunked());
+  CHECK(the_response_receiver.body().empty());
+
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  next = body_data.begin();
+  rx_state = the_response_receiver.receive(next, body_data.end());
+  bool complete (rx_state == RX_VALID);
+  CHECK(complete);
+
+  std::string body_data2("24\r\n0123456789abcdefghijkl");
+  next = body_data2.begin();
+  rx_state = the_response_receiver.receive(next, body_data2.end());
+  CHECK (rx_state == RX_INCOMPLETE);
+
+  std::string body_data3("mnopqrstuvwxyz");
+  next = body_data3.begin();
+  rx_state = the_response_receiver.receive(next, body_data3.end());
+  CHECK (rx_state == RX_VALID);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 

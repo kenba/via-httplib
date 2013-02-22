@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "request_method.hpp"
 #include "headers.hpp"
+#include "chunk.hpp"
 #include <algorithm>
 #include <cassert>
 
@@ -51,6 +52,7 @@ namespace via
       bool major_read_;
       bool minor_read_;
       bool valid_;
+      bool fail_;
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -71,7 +73,8 @@ namespace via
         state_(REQ_METHOD),
         major_read_(false),
         minor_read_(false),
-        valid_(false)
+        valid_(false),
+        fail_(false)
       {}
 
       void clear()
@@ -84,6 +87,7 @@ namespace via
         major_read_ =  false;
         minor_read_ =  false;
         valid_ =  false;
+        fail_ = false;
       }
 
       void swap(request_line& other)
@@ -96,6 +100,7 @@ namespace via
         std::swap(major_read_, other.major_read_);
         std::swap(minor_read_, other.minor_read_);
         std::swap(valid_, other.valid_);
+        std::swap(fail_, other.fail_);
       }
 
       /// Virtual destructor.
@@ -114,7 +119,7 @@ namespace via
         while ((iter != end) && (REQ_HTTP_END != state_))
         {
           char c(static_cast<char>(*iter++));
-          if (!parse_char(c))
+          if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
         valid_ = (REQ_HTTP_END == state_);
@@ -137,6 +142,9 @@ namespace via
       bool valid() const
       { return valid_; }
 
+      bool fail() const
+      { return fail_; }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
@@ -156,7 +164,8 @@ namespace via
         state_(REQ_HTTP_END),
         major_read_(true),
         minor_read_(true),
-        valid_(true)
+        valid_(true),
+        fail_(false)
       {}
 
       /// Free form constructor
@@ -175,7 +184,8 @@ namespace via
         state_(REQ_HTTP_END),
         major_read_(true),
         minor_read_(true),
-        valid_(true)
+        valid_(true),
+        fail_(false)
       {}
 
       // Setters
@@ -263,6 +273,13 @@ namespace via
       bool valid() const
       { return valid_; }
 
+      bool keep_alive() const
+      {
+        return major_version() >= 1 &&
+               minor_version() >= 1 &&
+               !headers_.close_connection();
+      }
+
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
@@ -347,23 +364,29 @@ namespace via
     {
       typedef typename Container::const_iterator Container_const_iterator;
       rx_request request_;
+      chunk_header chunk_;
       Container  body_;
 
     public:
 
       explicit request_receiver() :
         request_(),
+        chunk_(),
         body_()
       {}
 
       void clear()
       {
         request_.reset();
+        chunk_.clear();
         body_.clear();
       }
 
       rx_request const& request() const
       { return request_; }
+
+      chunk_header const& chunk() const
+      { return chunk_; }
 
       Container const& body() const
       { return body_; }
@@ -372,13 +395,14 @@ namespace via
                                      Container_const_iterator end)
       {
         // building a request
-        if (!request_.valid())
+        bool request_parsed(!request_.valid());
+        if (request_parsed)
         {
           // failed to parse request
           if (!request_.parse(iter, end))
           {
             // if a parsing error (not run out of data)
-            if (iter != end)
+            if ((iter != end) || request_.fail())
             {
               clear();
               return RX_INVALID;
@@ -388,14 +412,55 @@ namespace via
           }
         }
 
-        // build a request body
+        // build a request body or receive a chunk
         assert(request_.valid());
-        if (end > iter)
-          body_.insert(body_.end(), iter, end);
+        if (!request_.is_chunked())
+        {
+          if (end > iter)
+            body_.insert(body_.end(), iter, end);
 
-        // return whether the body is complete
-        if (body_.size() >= request_.content_length())
-          return RX_VALID;
+          // return whether the body is complete
+          if (body_.size() >= request_.content_length())
+            return RX_VALID;
+        }
+        else // request_.is_chunked()
+        {
+          // If parsed the request header without a data chunk yet
+          if (request_parsed && (iter == end))
+            return RX_VALID;
+
+          // If parsed a chunk and its data previously,
+          // then clear it ready for the next chunk
+          if ((chunk_.valid() > 0) &&
+              (chunk_.size() == body_.size()))
+          {
+            chunk_.clear();
+            body_.clear();
+          }
+
+          if (!chunk_.valid())
+          {
+            // failed to parse request
+            if (!chunk_.parse(iter, end))
+            {
+              // if a parsing error (not run out of data)
+              if (iter != end)
+              {
+                clear();
+                return RX_INVALID;
+              }
+              else
+                return RX_INCOMPLETE;
+            }
+          }
+
+          if (end > iter)
+            body_.insert(body_.end(), iter, end);
+
+          // return whether the body is complete
+          if (body_.size() >= chunk_.size())
+            return RX_VALID;
+        }
 
         return RX_INCOMPLETE;
       }

@@ -38,6 +38,8 @@ namespace via
       std::string hex_size_;
       std::string extension_;
       parsing_state state_;
+      bool size_read_;
+      bool valid_;
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -54,8 +56,30 @@ namespace via
         size_(0),
         hex_size_(""),
         extension_(""),
-        state_(CHUNK_SIZE_LS)
+        state_(CHUNK_SIZE_LS),
+        size_read_(false),
+        valid_(false)
       {}
+
+      void clear()
+      {
+        size_ = 0;
+        hex_size_.clear();
+        extension_.clear();
+        state_ = CHUNK_SIZE_LS;
+        size_read_ =  false;
+        valid_ =  false;
+      }
+
+      void swap(chunk_header& other)
+      {
+        std::swap(size_, other.size_);
+        hex_size_.swap(other.hex_size_);
+        extension_.swap(other.extension_);
+        std::swap(state_, other.state_);
+        std::swap(size_read_, other.size_read_);
+        std::swap(valid_, other.valid_);
+      }
 
       /// Parse an http 1.1 chunk size line
       /// @retval iter to an iterator to the start of the http chunk.
@@ -72,11 +96,8 @@ namespace via
             return false;
         }
 
-        if ((CHUNK_END != state_) || hex_size_.empty())
-          return false;
-
-        size_ = from_hex_string(hex_size_);
-        return true;
+        valid_ = (CHUNK_END == state_);
+        return valid_;
       }
 
       size_t size() const
@@ -87,6 +108,9 @@ namespace via
 
       const std::string& extension() const
       { return extension_; }
+
+      bool valid() const
+      { return valid_; }
 
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.

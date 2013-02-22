@@ -186,7 +186,7 @@ namespace via
       /// This function determines whether the error is a socket disconnect.
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
-      { return (error == boost::asio::error::connection_aborted); }
+      { return (error == boost::asio::error::connection_refused); }
 
       /// @fn socket
       /// Accessor for the underlying tcp socket.

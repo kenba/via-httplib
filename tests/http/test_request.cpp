@@ -451,6 +451,17 @@ TEST(TestRequestReceiver, ValidGet2)
   CHECK_EQUAL(0, the_request.minor_version());
 }
 
+TEST(TestRequestReceiver, InValidGet1)
+{
+  std::string request_data1("g");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver;
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.end()));
+  CHECK(rx_state == RX_INVALID);
+}
+
 TEST(TestRequestReceiver, ValidPostQt1)
 {
   std::string request_data1("P");
@@ -487,6 +498,53 @@ TEST(TestRequestReceiver, ValidPostQt1)
   STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
   CHECK_EQUAL(26, the_request.content_length());
   STRCMP_EQUAL(body_data.c_str(), the_request_receiver.body().c_str());
+}
+
+TEST(TestRequestReceiver, ValidPostChunk1)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver;
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.end()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Transfer-Encoding: Chunked\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.end());
+  ok = (rx_state == RX_VALID);
+  CHECK(ok);
+
+  rx_request const& the_request(the_request_receiver.request());
+  STRCMP_EQUAL("POST", the_request.method().c_str());
+  STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
+  CHECK(the_request_receiver.body().empty());
+
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.end());
+  bool complete (rx_state == RX_VALID);
+  CHECK(complete);
+
+  std::string body_data2("24\r\n0123456789abcdefghijkl");
+  next = body_data2.begin();
+  rx_state = the_request_receiver.receive(next, body_data2.end());
+  CHECK (rx_state == RX_INCOMPLETE);
+
+  std::string body_data3("mnopqrstuvwxyz");
+  next = body_data3.begin();
+  rx_state = the_request_receiver.receive(next, body_data3.end());
+  CHECK (rx_state == RX_VALID);
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -147,7 +147,6 @@ namespace via
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::tcp::socket::shutdown_both,
                           ignoredEc);
-        socket_.close(ignoredEc);
       }
 
       /// @fn start

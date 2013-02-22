@@ -54,13 +54,20 @@ namespace via
 
     bool send(Container const& packet)
     {
+      bool keep_alive(rx_.request().keep_alive());
       rx_.clear();
 
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
-        return tcp_pointer->read_pending();
+
+        if (keep_alive)
+          return tcp_pointer->read_pending();
+        else
+          tcp_pointer->disconnect();
+
+        return false;
       }
       else
         std::cerr << "http_connection::send connection weak pointer expired"
