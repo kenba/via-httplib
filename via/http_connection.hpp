@@ -149,7 +149,7 @@ namespace via
     }
 
     void disconnect()
-    {}
+    { connection_.lock()->disconnect(); }
 
   };
 

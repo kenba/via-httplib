@@ -11,6 +11,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 #include <string>
+#include <ctime>
 
 namespace via
 {
@@ -98,6 +99,9 @@ namespace via
       /// @param id header field id.
       /// @param value header field value.
       std::string to_header(field_id id, std::string const& value);
+
+      /// Create an http header line for the current date and time.
+      std::string date_header();
 
       /// An http content length header line for the given size.
       /// @param size

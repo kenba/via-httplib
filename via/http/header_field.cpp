@@ -136,6 +136,9 @@ namespace
 
   /// The value to use for chunked tranfer encoding.
   const std::string CHUNKED  ("Chunked");
+
+  /// The value to use to format an HTTP date into RFC1123 format.
+  const std::string DATE_FORMAT = (" %a, %d %b %Y %H:%M:%S GMT");
 }
 
 namespace via
@@ -287,6 +290,19 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       std::string to_header(field_id id, std::string const& value)
       { return to_header(standard_name(id), value); }
+      ////////////////////////////////////////////////////////////////////////
+
+      ////////////////////////////////////////////////////////////////////////
+      std::string date_header()
+      {
+        static std::string timeString(32, 0);
+
+        time_t uTime;
+        time(&uTime);
+        strftime(&timeString[0], timeString.size(),
+                 DATE_FORMAT.c_str(), std::gmtime(&uTime));
+        return to_header(header_field::DATE, timeString);
+      }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////

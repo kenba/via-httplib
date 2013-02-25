@@ -214,7 +214,6 @@ namespace via
           boost::system::error_code ignoredEc;
           socket_.lowest_layer().shutdown
               (boost::asio::ip::tcp::socket::shutdown_both, ignoredEc);
-          socket_.lowest_layer().close(ignoredEc);
         }
 
         /// @fn start
