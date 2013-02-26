@@ -18,28 +18,30 @@ namespace via
   {
     //////////////////////////////////////////////////////////////////////////
     /// @class chunk_header
+    /// The HTTP header for a data chunk.
     //////////////////////////////////////////////////////////////////////////
     class chunk_header
     {
     public:
+      /// @enum parsing_state the state of the chunk header parser.
       enum parsing_state
       {
-        CHUNK_SIZE_LS,
-        CHUNK_SIZE,
-        CHUNK_EXTENSION_LS,
-        CHUNK_EXTENSION,
-        CHUNK_LF,
+        CHUNK_SIZE_LS,      ///< leading white space
+        CHUNK_SIZE,         ///< the chunk size hex text
+        CHUNK_EXTENSION_LS, ///< chunk extension leading white space
+        CHUNK_EXTENSION,    ///< the chunk extension
+        CHUNK_LF,           ///< the line feed (if any)
         CHUNK_END
       };
 
     private:
 
-      size_t size_;
-      std::string hex_size_;
-      std::string extension_;
-      parsing_state state_;
-      bool size_read_;
-      bool valid_;
+      size_t size_;           ///< the size of the chunk in bytes
+      std::string hex_size_;  ///< the chunk size hex string
+      std::string extension_; ///< the chunk extesion (if any)
+      parsing_state state_;   ///< the current parsing state
+      bool size_read_;        ///< true if the chunk size was read
+      bool valid_;            ///< true if a chunk header is valid
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -51,7 +53,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit chunk_header() :
         size_(0),
         hex_size_(""),
@@ -61,6 +64,8 @@ namespace via
         valid_(false)
       {}
 
+      /// clear the chunk_header.
+      /// Sets all member variables to their initial state.
       void clear()
       {
         size_ = 0;
@@ -71,6 +76,8 @@ namespace via
         valid_ =  false;
       }
 
+      /// swap member variables with another chunk_header.
+      /// @param other the other chunk_header
       void swap(chunk_header& other)
       {
         std::swap(size_, other.size_);
@@ -100,41 +107,56 @@ namespace via
         return valid_;
       }
 
+      /// Accessor for the chunk size.
+      /// @return the chunk size in bytes.
       size_t size() const
       { return size_; }
 
+      /// Accessor for the size hex string.
+      /// @return the chunk size as a hex string.
       const std::string& hex_size() const
       { return hex_size_; }
 
+      /// Accessor for the chunk extension.
+      /// @return the chunk extension, blank if none.
       const std::string& extension() const
       { return extension_; }
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
+      /// Encoding constructor.
+      /// Set the chunk size and optionally the extension.
+      /// @param size the size of the chunk in bytes.
+      /// @param extension the chunk extension (default blank).
       explicit chunk_header(size_t size,
-                          std::string extension = "")
+                            std::string extension = "")
         : size_(size)
         , hex_size_(to_hex_string(size))
         , extension_(extension)
       {}
 
+      /// Set the size of the chunk.
+      /// @param size the size of the chunk in bytes.
       void set_size(size_t size)
       {
         size_ = size;
         hex_size_ = to_hex_string(size);
       }
 
+      /// Set the chunk extension.
+      /// @param extension the chunk extension
       void set_extension(const std::string& extension)
       { extension_ = extension; }
 
       /// Output as a string.
       /// @return a string containing the chunk line.
       std::string to_string() const;
-
     }; // class chunk_header
 
   }

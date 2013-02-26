@@ -23,31 +23,33 @@ namespace via
     /// response receivers.
     enum receiver_parsing_state
     {
-      RX_INVALID,
-      RX_INCOMPLETE,
-      RX_VALID
+      RX_INVALID,    ///< the message is invalid
+      RX_INCOMPLETE, ///< the message requires more data
+      RX_VALID       ///< a valid request, response or chunk received
     };
 
     //////////////////////////////////////////////////////////////////////////
     /// @class field_line
+    /// An HTTP header field.
     //////////////////////////////////////////////////////////////////////////
     class field_line
     {
     public:
+      /// @enum parsing_state the state of the field line parser
       enum parsing_state
       {
-        HEADER_NAME,
-        HEADER_VALUE_LS,
-        HEADER_VALUE,
-        HEADER_LF,
+        HEADER_NAME,     ///< the header name field
+        HEADER_VALUE_LS, ///< the header value leading white space
+        HEADER_VALUE,    ///< the header value
+        HEADER_LF,       ///< the line feed (if any)
         HEADER_END
       };
 
     private:
 
-      std::string name_;
-      std::string value_;
-      parsing_state state_;
+      std::string   name_;  ///< the field name (lower case)
+      std::string   value_; ///< the field value
+      parsing_state state_; ///< the current parsing state
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -56,12 +58,16 @@ namespace via
 
     public:
 
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit field_line() :
         name_(""),
         value_(""),
         state_(HEADER_NAME)
       {}
 
+      /// clear the field_line.
+      /// Sets all member variables to their initial state.
       void clear()
       {
         name_.clear();
@@ -69,6 +75,8 @@ namespace via
         state_ = HEADER_NAME;
       }
 
+      /// swap member variables with another field_line.
+      /// @param other the other field_line
       void swap(field_line& other)
       {
         name_.swap(other.name_);
@@ -107,15 +115,20 @@ namespace via
         return (HEADER_END == state_);
       }
 
+      /// Accessor for the field name.
+      /// @return the field name (as a lower case string)
       const std::string& name() const
       { return name_; }
 
+      /// Accessor for the field value.
+      /// @return the field value in the same case that it was received in.
       const std::string& value() const
       { return value_; }
     }; // class field_line
 
     //////////////////////////////////////////////////////////////////////////
     /// @class message_headers
+    /// The collection of HTTP headers received with a request or response.
     //////////////////////////////////////////////////////////////////////////
     class message_headers
     {
@@ -123,17 +136,21 @@ namespace via
       /// Note: A C++11 unordered_map or a hash_map would be better
       /// But hash_map is non-standard. TODO template?
       std::map<std::string, std::string> fields_;
-      field_line field_;
-      bool valid_;
+      field_line field_; ///< the current field being parsed
+      bool       valid_; ///< true if the headers are valid
 
     public:
 
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit message_headers() :
         fields_(),
         field_(),
         valid_(false)
       {}
 
+      /// clear the message_headers.
+      /// Sets all member variables to their initial state.
       void clear()
       {
         fields_.clear();
@@ -141,6 +158,8 @@ namespace via
         valid_ = false;
       }
 
+      /// swap member variables with another message_headers.
+      /// @param other the other message_headers
       void swap(message_headers& other)
       {
         fields_.swap(other.fields_);
@@ -183,6 +202,8 @@ namespace via
       }
 
       /// Add a header to the collection.
+      /// @param name the field name (in lower case)
+      /// @param value the field value.
       void add(const std::string& name, const std::string& value)
       { fields_.insert(std::map<std::string, std::string>::value_type
                      (name, value)); }
@@ -210,8 +231,12 @@ namespace via
       /// NOT contain the keyword "identity". See RFC2616 section 4.4 para 2.
       bool is_chunked() const;
 
+      /// Whether the connection should be closed after the response.
+      /// @return true if there is a Connection: close header, false otherwise
       bool close_connection() const;
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 

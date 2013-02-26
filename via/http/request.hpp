@@ -22,37 +22,38 @@ namespace via
   {
     //////////////////////////////////////////////////////////////////////////
     /// @class request_line
+    /// The HTTP request start line.
     //////////////////////////////////////////////////////////////////////////
     class request_line
     {
     public:
-
+      /// @enum parsing_state the state of the request line parser.
       enum parsing_state
       {
-        REQ_METHOD,
-        REQ_URI,
-        REQ_HTTP,
-        REQ_HTTP_T1,
-        REQ_HTTP_T2,
-        REQ_HTTP_P,
-        REQ_HTTP_SLASH,
-        REQ_HTTP_MAJOR,
-        REQ_HTTP_MINOR,
-        REQ_HTTP_LF,
+        REQ_METHOD,     ///< request method
+        REQ_URI,        ///< request uri
+        REQ_HTTP,       ///< HTTP/ -H
+        REQ_HTTP_T1,    ///< HTTP/ first T
+        REQ_HTTP_T2,    ///< HTTP/ second T
+        REQ_HTTP_P,     ///< HTTP/ P
+        REQ_HTTP_SLASH, ///< HTTP/ slash
+        REQ_HTTP_MAJOR, ///< HTTP major version number
+        REQ_HTTP_MINOR, ///< HTTP minor version number
+        REQ_HTTP_LF,    ///< the line feed (if any)
         REQ_HTTP_END
       };
 
     private:
 
-      std::string method_;
-      std::string uri_;
-      int major_version_;
-      int minor_version_;
-      parsing_state state_;
-      bool major_read_;
-      bool minor_read_;
-      bool valid_;
-      bool fail_;
+      std::string method_;  ///< the request method
+      std::string uri_;     ///< the request uri
+      int major_version_;   ///< the HTTP major version number
+      int minor_version_;   ///< the HTTP minor version number
+      parsing_state state_; ///< the current parsing state
+      bool major_read_;     ///< true if major version was read
+      bool minor_read_;     ///< true if minor version was read
+      bool valid_;          ///< true if the request line is valid
+      bool fail_;           ///< true if the request line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -64,7 +65,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit request_line() :
         method_(),
         uri_(),
@@ -77,6 +79,8 @@ namespace via
         fail_(false)
       {}
 
+      /// clear the request_line.
+      /// Sets all member variables to their initial state.
       void clear()
       {
         method_.clear();
@@ -90,6 +94,8 @@ namespace via
         fail_ = false;
       }
 
+      /// swap member variables with another request_line.
+      /// @param other the other request_line
       void swap(request_line& other)
       {
         method_.swap(other.method_);
@@ -126,22 +132,33 @@ namespace via
         return valid_;
       }
 
-      // Accessors
+      /// Accessor for the HTTP minor version number.
+      /// @return the minor version number.
       const std::string& method() const
       { return method_; }
 
+      /// Accessor for the request uri.
+      /// @return the request uri string.
       const std::string& uri() const
       { return uri_; }
 
+      /// Accessor for the HTTP major version number.
+      /// @return the major version number.
       int major_version() const
       { return major_version_; }
 
+      /// Accessor for the HTTP minor version number.
+      /// @return the minor version number.
       int minor_version() const
       { return minor_version_; }
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 
+      /// Accessor for the fail flag.
+      /// @return the fail flag.
       bool fail() const
       { return fail_; }
 
@@ -149,7 +166,7 @@ namespace via
       // Encoding interface.
 
       /// Id constructor
-      /// @param method
+      /// @param id the HTTP request method id, @see request_method
       /// @param uri
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -169,7 +186,7 @@ namespace via
       {}
 
       /// Free form constructor
-      /// @param method
+      /// @param method the HTTP request method name
       /// @param uri
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -188,49 +205,61 @@ namespace via
         fail_(false)
       {}
 
-      // Setters
+      /// Set the request method.
+      /// @param method the HTTP request method.
       void set_method(const std::string& method)
       { method_ = method; }
 
+      /// Set the request uri.
+      /// @param method the HTTP request uri.
       void set_uri(const std::string& uri)
       { uri_ = uri; }
 
+      /// Set the HTTP major version.
+      /// @param major_version the HTTP major version.
       void set_major_version(int major_version)
       { major_version_ = major_version; }
 
+      /// Set the HTTP minor version.
+      /// @param major_version the HTTP minor version.
       void set_minor_version(int minor_version)
       { minor_version_ = minor_version; }
 
       /// Output as a string.
       /// @return a string containing the request line.
       std::string to_string() const;
-
     }; // class request_line
 
     //////////////////////////////////////////////////////////////////////////
     /// @class rx_request
+    /// A class to receive an HTTP request.
     //////////////////////////////////////////////////////////////////////////
     class rx_request : public request_line
     {
-      message_headers headers_;
-      bool valid_;
+      message_headers headers_; ///< the HTTP headers for the request
+      bool valid_;              ///< true if the request is valid
 
     public:
 
-      /// Default constructor
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit rx_request() :
         request_line(),
         headers_(),
         valid_(false)
       {}
 
-      void reset()
+      /// clear the rx_request.
+      /// Sets all member variables to their initial state.
+      void clear()
       {
         request_line::clear();
         headers_.clear();
         valid_ =  false;
       }
 
+      /// swap member variables with another rx_request.
+      /// @param other the other rx_request
       void swap(rx_request& other)
       {
         request_line::swap(other);
@@ -260,26 +289,34 @@ namespace via
         return valid_;
       }
 
-      // Accessors
+      /// Accessor for the request message headers.
+      /// @return a constant reference to the message_headers
       const message_headers& header() const
       { return headers_; }
 
+      /// The size in the content_length header (if there is one)
+      /// @return the content_length header value.
       size_t content_length() const
       { return headers_.content_length(); }
 
+      /// Whether chunked transfer encoding is enabled.
+      /// @return true if chunked transfer encoding is enabled.
       bool is_chunked() const
       { return headers_.is_chunked(); }
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 
+      /// Whether the connection should be kept alive.
+      /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
         return major_version() >= 1 &&
                minor_version() >= 1 &&
                !headers_.close_connection();
       }
-
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
@@ -358,39 +395,55 @@ namespace via
 
     //////////////////////////////////////////////////////////////////////////
     /// @class request_receiver
+    /// A template class to receive HTTP requests and any associated data.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container>
     class request_receiver
     {
+      /// The template requires a typename to access the iterator
       typedef typename Container::const_iterator Container_const_iterator;
-      rx_request request_;
-      chunk_header chunk_;
-      Container  body_;
+
+      rx_request   request_; ///< the received request
+      chunk_header chunk_;   ///< the last received chunk
+      Container    body_;    ///< the request body or data for the last chunk
 
     public:
 
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit request_receiver() :
         request_(),
         chunk_(),
         body_()
       {}
 
+      /// clear the request_receiver.
+      /// Sets all member variables to their initial state.
       void clear()
       {
-        request_.reset();
+        request_.clear();
         chunk_.clear();
         body_.clear();
       }
 
+      /// Accessor for the HTTP request header.
+      /// @return a constant reference to an rx_request.
       rx_request const& request() const
       { return request_; }
 
+      /// Accessor for the last chunk header.
+      /// @return a constant reference to the last chunk.
       chunk_header const& chunk() const
       { return chunk_; }
 
+      /// Accessor for the request body / last chunk data.
+      /// @return a constant reference to the data.
       Container const& body() const
       { return body_; }
 
+      /// Receive data for an HTTP request, body or data chunk.
+      /// @param iter an iterator to the beginning of the received data.
+      /// @param end an iterator to the end of the received data.
       receiver_parsing_state receive(Container_const_iterator iter,
                                      Container_const_iterator end)
       {

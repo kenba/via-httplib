@@ -22,38 +22,39 @@ namespace via
   {
     //////////////////////////////////////////////////////////////////////////
     /// @class response_line
+    /// The HTTP response start line.
     //////////////////////////////////////////////////////////////////////////
     class response_line
     {
     public:
-
+      /// @enum parsing_state the state of the response line parser.
       enum parsing_state
       {
-        RESP_HTTP,
-        RESP_HTTP_T1,
-        RESP_HTTP_T2,
-        RESP_HTTP_P,
-        RESP_HTTP_SLASH,
-        RESP_HTTP_MAJOR,
-        RESP_HTTP_MINOR,
-        RESP_HTTP_STATUS,
-        RESP_HTTP_REASON,
-        RESP_HTTP_LF,
+        RESP_HTTP,        ///< HTTP/ -H
+        RESP_HTTP_T1,     ///< HTTP/ first T
+        RESP_HTTP_T2,     ///< HTTP/ second T
+        RESP_HTTP_P,      ///< HTTP/ P
+        RESP_HTTP_SLASH,  ///< HTTP/ slash
+        RESP_HTTP_MAJOR,  ///< HTTP major version number
+        RESP_HTTP_MINOR,  ///< HTTP minor version number
+        RESP_HTTP_STATUS, ///< response status code
+        RESP_HTTP_REASON, ///< response status reason
+        RESP_HTTP_LF,     ///< the line feed (if any)
         RESP_HTTP_END
       };
 
     private:
 
-      int major_version_;
-      int minor_version_;
-      int status_;
-      std::string reason_phrase_;
-      parsing_state state_;
-      bool major_read_;
-      bool minor_read_;
-      bool status_read_;
-      bool valid_;
-      bool fail_;
+      int major_version_;         ///< the HTTP major version number
+      int minor_version_;         ///< the HTTP minor version number
+      int status_;                ///< the response status code
+      std::string reason_phrase_; ///< response status reason phrase
+      parsing_state state_;       ///< the current parsing state
+      bool major_read_;           ///< true if major version was read
+      bool minor_read_;           ///< true if minor version was read
+      bool status_read_;          ///< true if status code was read
+      bool valid_;                ///< true if the response line is valid
+      bool fail_;                 ///< true if the response line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -65,7 +66,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit response_line() :
         major_version_(0),
         minor_version_(0),
@@ -79,6 +81,8 @@ namespace via
         fail_(false)
       {}
 
+      /// clear the response_line.
+      /// Sets all member variables to their initial state.
       void clear()
       {
         major_version_ = 0;
@@ -93,6 +97,8 @@ namespace via
         fail_ = false;
       }
 
+      /// swap member variables with another response_line.
+      /// @param other the other response_line
       void swap(response_line& other)
       {
         std::swap(major_version_, other.major_version_);
@@ -130,22 +136,33 @@ namespace via
         return valid_;
       }
 
-      // Accessors
+      /// Accessor for the HTTP major version number.
+      /// @return the major version number.
       int major_version() const
       { return major_version_; }
 
+      /// Accessor for the HTTP minor version number.
+      /// @return the minor version number.
       int minor_version() const
       { return minor_version_; }
 
+      /// Accessor for the response status.
+      /// @return the response status number.
       int status() const
       { return status_; }
 
+      /// Accessor for the response reason string.
+      /// @return the response reason string.
       const std::string& reason_phrase() const
       { return reason_phrase_; }
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 
+      /// Accessor for the fail flag.
+      /// @return the fail flag.
       bool fail() const
       { return fail_; }
 
@@ -154,7 +171,7 @@ namespace via
 
       /// Status constructor for standard responses.
       /// This is the usual contructor to use when creating an http response.
-      /// @param status
+      /// @param status the response status code @see response_status
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit response_line(response_status::status_code status,
@@ -174,7 +191,7 @@ namespace via
 
       /// Free form constructor.
       /// This contructor should only be used for non-standard http responses.
-      /// @param status
+      /// @param status the response status
       /// @param reason_phrase default blank
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -196,49 +213,61 @@ namespace via
         fail_(false)
       {}
 
-      // Setters
+      /// Set the HTTP major version.
+      /// @param major_version the HTTP major version.
       void set_major_version(int major_version)
       { major_version_ = major_version; }
 
+      /// Set the HTTP minor version.
+      /// @param major_version the HTTP minor version.
       void set_minor_version(int minor_version)
       { minor_version_ = minor_version; }
 
+      /// Set the response status.
+      /// @param status the response status.
       void set_status(int status)
       { status_ = status; }
 
+      /// Set the response reason phrase.
+      /// @param reason_phrase the response reason phrase.
       void set_reason_phrase(const std::string& reason_phrase)
       { reason_phrase_ = reason_phrase; }
 
       /// Output as a string.
       /// @return a string containing the response line.
       std::string to_string() const;
-
     }; // class response_line
 
     //////////////////////////////////////////////////////////////////////////
     /// @class rx_response
+    /// A class to receive an HTTP response.
     //////////////////////////////////////////////////////////////////////////
     class rx_response : public response_line
     {
-      message_headers headers_;
-      bool valid_;
+      message_headers headers_; ///< the HTTP headers for the response
+      bool valid_;               ///< true if the response is valid
 
     public:
 
-      /// Default constructor
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit rx_response() :
         response_line(),
         headers_(),
         valid_(false)
       {}
 
-      void reset()
+      /// clear the rx_response.
+      /// Sets all member variables to their initial state.
+      void clear()
       {
         response_line::clear();
         headers_.clear();
         valid_ =  false;
       }
 
+      /// swap member variables with another rx_response.
+      /// @param other the other rx_response
       void swap(rx_response& other)
       {
         response_line::swap(other);
@@ -268,19 +297,34 @@ namespace via
         return valid_;
       }
 
-      // Accessors
+      /// Accessor for the response message headers.
+      /// @return a constant reference to the message_headers
       const message_headers& header() const
       { return headers_; }
 
+      /// The size in the content_length header (if there is one)
+      /// @return the content_length header value.
       size_t content_length() const
       { return headers_.content_length(); }
 
+      /// Whether chunked transfer encoding is enabled.
+      /// @return true if chunked transfer encoding is enabled.
       bool is_chunked() const
       { return headers_.is_chunked(); }
 
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
       bool valid() const
       { return valid_; }
 
+      /// Whether the connection should be kept alive.
+      /// @return true if it should be kept alive, false otherwise.
+      bool keep_alive() const
+      {
+        return major_version() >= 1 &&
+               minor_version() >= 1 &&
+               !headers_.close_connection();
+      }
     }; // class rx_response
 
     //////////////////////////////////////////////////////////////////////////
@@ -354,43 +398,59 @@ namespace via
 
         return output;
       }
-    };
+    }; // class tx_response
 
     //////////////////////////////////////////////////////////////////////////
     /// @class response_receiver
+        /// A template class to receive HTTP responses and any associated data.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container>
     class response_receiver
     {
+      /// The template requires a typename to access the iterator
       typedef typename Container::const_iterator Container_const_iterator;
-      rx_response response_;
-      chunk_header chunk_;
-      Container   body_;
+
+      rx_response  response_; ///< the received response
+      chunk_header chunk_;    ///< the last received chunk
+      Container    body_;     ///< the response body or data for the last chunk
 
     public:
 
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
       explicit response_receiver() :
         response_(),
         chunk_(),
         body_()
       {}
 
+      /// clear the response_receiver.
+      /// Sets all member variables to their initial state.
       void clear()
       {
-        response_.reset();
+        response_.clear();
         chunk_.clear();
         body_.clear();
       }
 
+      /// Accessor for the HTTP response header.
+      /// @return a constant reference to an rx_response.
       rx_response const& response() const
       { return response_; }
 
+      /// Accessor for the last chunk header.
+      /// @return a constant reference to the last chunk.
       chunk_header const& chunk() const
       { return chunk_; }
 
+      /// Accessor for the response body / last chunk data.
+      /// @return a constant reference to the data.
       Container const& body() const
       { return body_; }
 
+      /// Receive data for an HTTP response, body or data chunk.
+      /// @param iter an iterator to the beginning of the received data.
+      /// @param end an iterator to the end of the received data.
       receiver_parsing_state receive(Container_const_iterator iter,
                                      Container_const_iterator end)
       {
