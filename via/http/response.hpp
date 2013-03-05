@@ -519,7 +519,7 @@ namespace via
 
           // return whether the body is complete
           if (body_.size() >= chunk_.size())
-            return RX_VALID;
+            return RX_CHUNK;
         }
 
         return RX_INCOMPLETE;

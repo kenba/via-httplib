@@ -25,7 +25,8 @@ namespace via
     {
       RX_INVALID,    ///< the message is invalid
       RX_INCOMPLETE, ///< the message requires more data
-      RX_VALID       ///< a valid request, response or chunk received
+      RX_VALID,      ///< a valid request or response
+      RX_CHUNK       ///< a valid chunk received
     };
 
     //////////////////////////////////////////////////////////////////////////
