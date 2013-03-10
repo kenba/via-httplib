@@ -387,8 +387,8 @@ namespace via
       std::string message() const
       {
         std::string output(response_line::to_string());
-        output += header_string_;
         output += header_field::date_header();
+        output += header_string_;
 
         if (is_chunked_)
           output += header_field::chunked_encoding();

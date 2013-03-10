@@ -533,7 +533,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_VALID);
+  bool complete (rx_state == RX_CHUNK);
   CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
@@ -544,7 +544,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   std::string body_data3("mnopqrstuvwxyz");
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
-  CHECK (rx_state == RX_VALID);
+  CHECK (rx_state == RX_CHUNK);
 }
 
 //////////////////////////////////////////////////////////////////////////////

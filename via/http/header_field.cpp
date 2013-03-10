@@ -138,7 +138,7 @@ namespace
   const std::string CHUNKED  ("Chunked");
 
   /// The value to use to format an HTTP date into RFC1123 format.
-  const std::string DATE_FORMAT = (" %a, %d %b %Y %H:%M:%S GMT");
+  const std::string DATE_FORMAT = ("%a, %d %b %Y %H:%M:%S GMT");
 }
 
 namespace via
@@ -295,13 +295,13 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       std::string date_header()
       {
-        static std::string timeString(32, 0);
-
+        char dateBuffer[30] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         time_t uTime;
         time(&uTime);
-        strftime(&timeString[0], timeString.size(),
-                 DATE_FORMAT.c_str(), std::gmtime(&uTime));
-        return to_header(header_field::DATE, timeString);
+        strftime(dateBuffer, 30, DATE_FORMAT.c_str(), std::gmtime(&uTime));
+        return to_header(header_field::DATE, dateBuffer);
       }
       ////////////////////////////////////////////////////////////////////////
 
