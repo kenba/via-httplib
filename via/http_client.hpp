@@ -14,11 +14,11 @@
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/signal.hpp>
+
 #include <deque>
 #include <iostream>
-
+#include <boost/bind.hpp>
 namespace via
 {
   ////////////////////////////////////////////////////////////////////////////
@@ -26,34 +26,29 @@ namespace via
   /// An HTTP client.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char> >
-  class http_client : public boost::enable_shared_from_this
-          <http_client<SocketAdaptor, Container> >
+  class http_client
   {
   public:
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
-    /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_client<SocketAdaptor, Container> >
-       weak_pointer;
+    /// A shared pointer to this type.
+    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container> >
+       shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
     /// The signal sent when a response is received.
-    typedef boost::signal<void (const weak_pointer,
-                                http::rx_response const&,
-                                Container_const_iterator,
-                                Container_const_iterator)> http_response_signal;
+    typedef boost::signal<void (http::rx_response const&,
+                                Container const&)> http_response_signal;
 
     /// The slot type associated with a response received signal.
     typedef typename http_response_signal::slot_type http_response_signal_slot;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signal<void (const weak_pointer,
-                                http::chunk_header const&,
-                                Container_const_iterator,
-                                Container_const_iterator)> http_chunk_signal;
+    typedef boost::signal<void (http::chunk_header const&,
+                                Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
@@ -64,6 +59,7 @@ namespace via
     http::response_receiver<Container> rx_;       ///< the response receiver
     http_response_signal http_response_signal_;   ///< the response callback function
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
+    std::string host_name_;                       ///< the name of the host
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
@@ -82,7 +78,29 @@ namespace via
       return false;
     }
 
+    /// Constructor.
+    /// @param io_service the asio io_service to use.
+    explicit http_client(boost::asio::io_service& io_service) :
+      connection_(connection_type::create(io_service)),
+      rx_(),
+      http_response_signal_(),
+      http_chunk_signal_(),
+      host_name_()
+    {
+      connection_->get_event_signal
+          (boost::bind(&http_client::event_handler, this, _1, _2));
+      connection_->get_error_signal
+          (boost::bind(&http_client::error_handler, this, _1, _2));
+    }
+
   public:
+
+    /// @fn create
+    /// The factory function to create connections.
+    /// @param io_service the boost asio io_service used by the underlying
+    /// connection.
+    static shared_pointer create(boost::asio::io_service& io_service)
+    { return shared_pointer(new http_client(io_service)); }
 
     /// Connect the response received slot.
     /// @param slot the slot for the response received signal.
@@ -94,22 +112,21 @@ namespace via
     void chunk_received_event(http_chunk_signal_slot const& slot)
     { http_chunk_signal_.connect(slot); }
 
-    /// Constructor.
-    /// @param connection a weak pointer to the underlying connection.
-    explicit http_client(boost::asio::io_service& io_service,
-                         unsigned short port_number) :
-      connection_(connection_type::create(io_service, port_number)),
-      rx_(),
-      http_response_signal_(),
-      http_chunk_signal_()
-    {}
-
     /// Connect to the given host name and port.
     /// @param host_name the host to connect to.
     /// @param port_name the port to connect to.
     /// @return true if resolved, false otherwise.
-    bool connect(const char *host_name, const char *port_name)
-    { return connection_->connect(host_name, port_name); }
+    bool connect(const std::string& host_name, std::string port_name = "http")
+    {
+      host_name_ = host_name;
+      if (port_name != "http")
+      {
+        host_name_ += ":";
+        host_name_ += port_name;
+      }
+
+      return connection_->connect(host_name.c_str(), port_name.c_str());
+    }
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.
@@ -127,35 +144,26 @@ namespace via
     { return rx_.body().end(); }
 
     /// Receive data on the underlying connection.
-    bool receive()
+    void receive_handler()
     {
-      // attempt to get the pointer
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (!tcp_pointer)
-        return false;
-
       // attempt to read the data
-      while (tcp_pointer->read_pending())
+      while (connection_->read_pending())
       {
-        Container data(tcp_pointer->read_data());
+        Container data(connection_->read_data());
         http::receiver_parsing_state rx_state
             (rx_.receive(data.begin(), data.end()));
 
         switch (rx_state)
         {
         case http::RX_VALID:
-          http_response_signal_(connection_,
-                                rx_.response(),
-                                rx_.body().begin(),
-                                rx_.body().end());
-          return true;
+          http_response_signal_(rx_.response(),
+                                rx_.body());
+          return;
 
         case http::RX_CHUNK:
-          http_chunk_signal_(connection_,
-                             rx_.chunk(),
-                             rx_.body().begin(),
-                             rx_.body().end());
-          return true;
+          http_chunk_signal_(rx_.chunk(),
+                             rx_.body());
+          return;
 
         case http::RX_INVALID:
           break;
@@ -165,13 +173,14 @@ namespace via
         }
       }
 
-      return false;
+      return;
     }
 
     /// Send an HTTP request without a body.
     /// @param request the request to send.
     bool send(http::tx_request& request)
     {
+      request.add_header(http::header_field::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message);
@@ -185,6 +194,7 @@ namespace via
     bool send(http::tx_request& request,
               ForwardIterator1 begin, ForwardIterator2 end)
     {
+      request.add_header(http::header_field::HOST, host_name_);
       std::string http_header(request.message());
 
       size_t size(end - begin);
@@ -198,6 +208,32 @@ namespace via
     /// Disconnect the underlying connection.
     void disconnect()
     { connection_.lock()->disconnect(); }
+
+    /// Receive an event from the underlying comms connection.
+    /// @param connection a weak ponter to the underlying comms connection.
+    void event_handler(int event, boost::weak_ptr<connection_type> connection)
+    {
+      switch(event)
+      {
+      case via::comms::RECEIVED:
+        receive_handler();
+        break;
+      case via::comms::DISCONNECTED:
+      //  disconnected_handler(connection);
+        break;
+      default:
+        break;
+      }
+    }
+
+    /// Receive an error from the underlying comms connection.
+    /// @param connection a weak ponter to the underlying comms connection.
+    void error_handler(const boost::system::error_code &error,
+                       boost::weak_ptr<connection_type> connection)
+    {
+      std::cerr << "error_handler" << std::endl;
+      std::cerr << error <<  std::endl;
+    }
   };
 }
 
