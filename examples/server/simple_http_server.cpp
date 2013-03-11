@@ -12,8 +12,9 @@
 
 /// The http_connection and http_server types.
 /// Note: this example uses a string for the Container.
-typedef via::http_connection<via::comms::tcp_adaptor> http_connection_type;
-typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
+typedef via::http_connection<via::comms::tcp_adaptor, std::string>
+                                                        http_connection_type;
+typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
@@ -47,10 +48,8 @@ namespace
   /// @param body the body (if any) associated with the request.
   void request_receiver(http_connection_type::weak_pointer http_connection,
                         via::http::rx_request const& request,
-                        http_connection_type::Container_const_iterator body_begin,
-                        http_connection_type::Container_const_iterator body_end)
+                        std::string body)
   {
-    std::string body(body_begin, body_end);
     std::cout << request.to_string()
               << request.header().to_string()
               << body << std::endl;
@@ -66,10 +65,8 @@ namespace
   /// @param body the body (if any) associated with the chunk.
   void chunk_receiver(http_connection_type::weak_pointer http_connection,
                       via::http::chunk_header const& chunk,
-                      http_connection_type::Container_const_iterator body_begin,
-                      http_connection_type::Container_const_iterator body_end)
+                      std::string body)
   {
-      std::string body(body_begin, body_end);
       std::cout << chunk.to_string() << "\n"
                 << body << std::endl;
   }

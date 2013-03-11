@@ -104,6 +104,11 @@ namespace via
     http::chunk_header const& chunk() const
     { return rx_.chunk(); }
 
+    /// Accessor for the body.
+    /// @return a constant reference to the body.
+    Container body() const
+    { return rx_.body(); }
+
     /// Accessor for the beginning of the body.
     /// @return a constant iterator to the beginning of the body.
     Container_const_iterator body_begin() const
