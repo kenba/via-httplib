@@ -106,7 +106,7 @@ namespace via
 
     /// Accessor for the body.
     /// @return a constant reference to the body.
-    Container body() const
+    Container const& body() const
     { return rx_.body(); }
 
     /// Accessor for the beginning of the body.

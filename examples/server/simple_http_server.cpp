@@ -48,7 +48,7 @@ namespace
   /// @param body the body (if any) associated with the request.
   void request_receiver(http_connection_type::weak_pointer http_connection,
                         via::http::rx_request const& request,
-                        std::string body)
+                        std::string const& body)
   {
     std::cout << request.to_string()
               << request.header().to_string()
@@ -65,7 +65,7 @@ namespace
   /// @param body the body (if any) associated with the chunk.
   void chunk_receiver(http_connection_type::weak_pointer http_connection,
                       via::http::chunk_header const& chunk,
-                      std::string body)
+                      std::string const& body)
   {
       std::cout << chunk.to_string() << "\n"
                 << body << std::endl;

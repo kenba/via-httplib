@@ -58,7 +58,7 @@ namespace via
     /// The signal sent when a request is received.
     typedef boost::signal<void (const boost::weak_ptr<http_connection_type>,
                                 http::rx_request const&,
-                                Container)> http_request_signal;
+                                Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
@@ -66,7 +66,7 @@ namespace via
     /// The signal sent when a chunk is received.
     typedef boost::signal<void (const boost::weak_ptr<http_connection_type>,
                                 http::chunk_header const&,
-                                Container)> http_chunk_signal;
+                                Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
