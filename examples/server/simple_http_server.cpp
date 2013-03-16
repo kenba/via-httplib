@@ -22,8 +22,7 @@ namespace
   /// A function to send a response to a request.
   /// @param http_connection
   /// @param request
-  void send_response(boost::weak_ptr<http_connection_type> http_connection,
-                     via::http::rx_request const& request)
+  void send_response(boost::weak_ptr<http_connection_type> http_connection)
   {
     std::string body_text("<html>\r\n");
     body_text += "<head><title>Accepted</title></head>\r\n";
@@ -34,11 +33,7 @@ namespace
     via::http::tx_response response
         (via::http::response_status::OK, body_length);
     response.add_header(via::http::header_field::ACCEPT_CHARSET, "ISO-8859-1");
-    if (request.method() !=
-        via::http::request_method::name(via::http::request_method::HEAD))
-      http_connection.lock()->send(response, body_text.begin(), body_text.end());
-    else
-      http_connection.lock()->send(response);
+    http_connection.lock()->send(response, body_text);
   }
 
   /// The request callback function.
@@ -48,13 +43,13 @@ namespace
   /// @param body the body (if any) associated with the request.
   void request_receiver(http_connection_type::weak_pointer http_connection,
                         via::http::rx_request const& request,
-                        std::string const& body)
+                        std::string body)
   {
     std::cout << request.to_string()
               << request.header().to_string()
               << body << std::endl;
-
-    send_response(http_connection, request);
+    if (!request.is_chunked())
+      send_response(http_connection);
   }
 
   /// The chunk callback function.
@@ -65,10 +60,14 @@ namespace
   /// @param body the body (if any) associated with the chunk.
   void chunk_receiver(http_connection_type::weak_pointer http_connection,
                       via::http::chunk_header const& chunk,
-                      std::string const& body)
+                      std::string body)
   {
       std::cout << chunk.to_string() << "\n"
                 << body << std::endl;
+
+      // Note: for the last chunk the size is always zero.
+      if (chunk.size() == 0)
+        send_response(http_connection);
   }
 }
 //////////////////////////////////////////////////////////////////////////////

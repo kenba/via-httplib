@@ -155,6 +155,37 @@ namespace via
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
+    /// @param body the body to send
+    bool send(http::tx_response& response, Container const& body)
+    {
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      std::string http_header(response.message());
+
+      Container tx_message(body);
+      tx_message.insert(tx_message.begin(),
+                        http_header.begin(), http_header.end());
+      return send(tx_message);
+    }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send an HTTP response with a body.
+    /// @param response the response to send.
+    /// @param body the body to send
+    bool send(http::tx_response& response, Container&& body)
+    {
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      std::string http_header(response.message());
+
+      tx_message.insert(body.begin(),
+                        http_header.begin(), http_header.end());
+      return send(body);
+    }
+#endif // BOOST_ASIO_HAS_MOVE
+
+    /// Send an HTTP response with a body.
+    /// @param response the response to send.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
     template<typename ForwardIterator1, typename ForwardIterator2>
@@ -170,6 +201,65 @@ namespace via
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());
       tx_message.insert(tx_message.end(), begin, end);
+      return send(tx_message);
+    }
+
+    /// Send an HTTP body chunk.
+    /// @param chunk the body chunk to send
+    /// @param extension the (optional) chunk extension.
+    bool send_chunk(Container const& chunk, std::string extension = "")
+    {
+      size_t size(chunk.size());
+      http::chunk_header chunk_header(size, extension);
+      std::string chunk_string(chunk_header.to_string());
+
+      Container tx_message(chunk);
+      tx_message.insert(tx_message.begin(),
+                        chunk_string.begin(), chunk_string.end());
+      return send(tx_message);
+    }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send an HTTP body chunk.
+    /// @param chunk the body chunk to send
+    /// @param extension the (optional) chunk extension.
+    bool send_chunk(Container&& chunk, std::string extension = "")
+    {
+      size_t size(chunk.size());
+      http::chunk_header chunk_header(size, extension);
+      std::string chunk_string(chunk_header.to_string());
+
+      tx_message.insert(chunk.begin(),
+                        chunk_string.begin(), chunk_string.end());
+      return send(chunk);
+    }
+#endif // BOOST_ASIO_HAS_MOVE
+
+    /// Send an HTTP body chunk.
+    /// @param begin a constant iterator to the beginning of the body to send.
+    /// @param end a constant iterator to the end of the body to send.
+    /// @param extension the (optional) chunk extension.
+    template<typename ForwardIterator1, typename ForwardIterator2>
+    bool send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+                    std::string extension = "")
+    {
+      size_t size(end - begin);
+      http::chunk_header chunk_header(size, extension);
+      std::string chunk_string(chunk_header.to_string());
+
+      Container tx_message;
+      tx_message.reserve(chunk_string.size() + size);
+      tx_message.assign(chunk_string.begin(), chunk_string.end());
+      tx_message.insert(tx_message.end(), begin, end);
+      return send(tx_message);
+    }
+
+    bool last_chunk()
+    {
+      http::chunk_header chunk_header(0);
+      std::string chunk_string(chunk_header.to_string());
+
+      Container tx_message(chunk_string.begin(), chunk_string.end());
       return send(tx_message);
     }
 

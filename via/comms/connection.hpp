@@ -299,7 +299,7 @@ namespace via
                                 tx_queue_.front().size());
         }
       }
-#endif
+#endif // BOOST_ASIO_HAS_MOVE
 
       /// @fn send_data
       /// Send a packet of data.
