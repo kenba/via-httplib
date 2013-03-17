@@ -33,7 +33,7 @@ namespace
   /// Defined in case the site responds with a chunked message.
   /// @param chunk the http chunk header
   /// @param body the body (if any) associated with the chunk.
-  void chunk_receiver(via::http::chunk_header const& chunk,
+  void chunk_receiver(via::http::rx_chunk const& chunk,
                       std::string const& body)
   {
     std::cout << chunk.to_string() << "\n"
@@ -41,8 +41,7 @@ namespace
   }
 
   /// The period to call the timeout handler in milliseconds.
-  /// i.e. half a second.
-  unsigned int TIMEOUT_PERIOD(500);
+  unsigned int TIMEOUT_PERIOD(100);
 
   /// Something to send in the chunks.
   std::string chunk_text("An http chunk\r\n");
@@ -146,6 +145,7 @@ int main(int argc, char *argv[])
       signals_.add(SIGQUIT);
 #endif // #if defined(SIGQUIT)
       signals_.async_wait(boost::bind(&handle_stop));
+
       // run the io_service to start communications
       io_service.run();
     }

@@ -500,6 +500,7 @@ TEST(TestRequestReceiver, ValidPostQt1)
   STRCMP_EQUAL(body_data.c_str(), the_request_receiver.body().c_str());
 }
 
+#ifdef _MSC_VER
 TEST(TestRequestReceiver, ValidPostChunk1)
 {
   std::string request_data1("P");
@@ -546,5 +547,5 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   rx_state = the_request_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_CHUNK);
 }
-
+#endif
 //////////////////////////////////////////////////////////////////////////////

@@ -47,7 +47,7 @@ namespace via
     typedef typename http_response_signal::slot_type http_response_signal_slot;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signal<void (http::chunk_header const&,
+    typedef boost::signal<void (http::rx_chunk const&,
                                 Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
@@ -298,10 +298,11 @@ namespace via
       return send(tx_message);
     }
 
-    bool last_chunk()
+    bool last_chunk(std::string extension = "",
+                    std::string trailer_string = "")
     {
-      http::chunk_header chunk_header(0);
-      std::string chunk_string(chunk_header.to_string());
+      http::last_chunk last_chunk(extension, trailer_string);
+      std::string chunk_string(last_chunk.message());
 
       Container tx_message(chunk_string.begin(), chunk_string.end());
       return send(tx_message);

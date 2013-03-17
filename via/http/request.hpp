@@ -403,9 +403,9 @@ namespace via
       /// The template requires a typename to access the iterator
       typedef typename Container::const_iterator Container_const_iterator;
 
-      rx_request   request_; ///< the received request
-      chunk_header chunk_;   ///< the last received chunk
-      Container    body_;    ///< the request body or data for the last chunk
+      rx_request request_; ///< the received request
+      rx_chunk   chunk_;   ///< the received chunk
+      Container  body_;    ///< the request body or data for the last chunk
 
     public:
 
@@ -431,9 +431,9 @@ namespace via
       rx_request const& request() const
       { return request_; }
 
-      /// Accessor for the last chunk header.
-      /// @return a constant reference to the last chunk.
-      chunk_header const& chunk() const
+      /// Accessor for the received chunk.
+      /// @return a constant reference to the received chunk.
+      rx_chunk const& chunk() const
       { return chunk_; }
 
       /// Accessor for the request body / last chunk data.

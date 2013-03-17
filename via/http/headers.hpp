@@ -168,7 +168,7 @@ namespace via
         std::swap(valid_, other.valid_);
       }
 
-      /// Parse message_headers from received data.
+      /// Parse message_headers from a received request or response.
       /// @retval next reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
@@ -199,6 +199,28 @@ namespace via
 
         ++iter;
         valid_ = true;
+        return valid_;
+      }
+
+      /// Parse message_headers as trailers from a received chunk.
+      /// @retval next reference to an iterator to the start of the data.
+      /// If valid it will refer to the next char of data to be read.
+      /// @param end the end of the data buffer.
+      /// @return true if parsed ok false otherwise.
+      template<typename ForwardIterator1, typename ForwardIterator2>
+      bool parse_trailer(ForwardIterator1& iter, ForwardIterator2 end)
+      {
+        while (iter != end && !is_end_of_line(*iter))
+        {
+         // field_line field;
+          if (!field_.parse(iter, end))
+            return false;
+
+          add(field_.name(), field_.value());
+          field_.clear();
+        }
+
+        valid_ = (iter == end);
         return valid_;
       }
 

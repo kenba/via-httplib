@@ -83,7 +83,21 @@ namespace via
       if (!extension_.empty())
         output += "; " + extension_;
 
-      output += "\r\n";
+      output += CRLF;
+      return output;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    std::string last_chunk::message() const
+    {
+      std::string output("0");
+      if (!extension_.empty())
+        output += "; " + extension_;
+
+      output += CRLF;
+      output += trailer_string_;
+
       return output;
     }
     //////////////////////////////////////////////////////////////////////////

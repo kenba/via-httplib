@@ -27,7 +27,7 @@ namespace
     std::string body_text("<html>\r\n");
     body_text += "<head><title>Accepted</title></head>\r\n";
     body_text += "<body><h1>202 Accepted</h1></body>\r\n";
-    body_text += "</html>\r\ntest_body";
+    body_text += "</html>\r\nBody text blah blah...";
     size_t body_length(body_text.size());
 
     via::http::tx_response response
@@ -48,6 +48,7 @@ namespace
     std::cout << request.to_string()
               << request.header().to_string()
               << body << std::endl;
+
     if (!request.is_chunked())
       send_response(http_connection);
   }
@@ -59,15 +60,24 @@ namespace
   /// @param chunk the http chunk header
   /// @param body the body (if any) associated with the chunk.
   void chunk_receiver(http_connection_type::weak_pointer http_connection,
-                      via::http::chunk_header const& chunk,
+                      via::http::rx_chunk const& chunk,
                       std::string body)
   {
       std::cout << chunk.to_string() << "\n"
                 << body << std::endl;
 
       // Note: for the last chunk the size is always zero.
-      if (chunk.size() == 0)
+      if (chunk.is_last())
         send_response(http_connection);
+  }
+
+  /// The stop callback function.
+  /// Exits the application.
+  /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
+  void handle_stop()
+  {
+    std::cout << "Exit, shutting down" << std::endl;
+    exit(0);
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -102,6 +112,15 @@ int main(int argc, char *argv[])
 
     // start accepting http connections
     http_server.start_accept();
+
+    // The signal set is used to register for termination notifications
+    boost::asio::signal_set signals_(io_service);
+    signals_.add(SIGINT);
+    signals_.add(SIGTERM);
+#if defined(SIGQUIT)
+    signals_.add(SIGQUIT);
+#endif // #if defined(SIGQUIT)
+    signals_.async_wait(boost::bind(&handle_stop));
 
     // run the io_service to start communications
     io_service.run();

@@ -136,3 +136,31 @@ TEST(TestChunkEncoder, ValidChunk1)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_GROUP(TestChunkParser)
+{
+};
+
+TEST(TestChunkParser, ValidChunk1)
+{
+  std::string chunk_data("f;\r\n");
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk the_chunk;
+  CHECK(the_chunk.parse(next, chunk_data.end()));
+  CHECK_EQUAL(15, the_chunk.size());
+}
+
+TEST(TestChunkParser, ValidChunkTrailer1)
+{
+  std::string chunk_data("0\r\n");
+  chunk_data += "Accept-Encoding: gzip\r\n";
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk the_chunk;
+  CHECK(the_chunk.parse(next, chunk_data.end()));
+  CHECK_EQUAL(0, the_chunk.size());
+}
+//////////////////////////////////////////////////////////////////////////////
+

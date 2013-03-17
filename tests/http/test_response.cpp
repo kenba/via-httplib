@@ -363,6 +363,7 @@ TEST(TestResponseReceiver, InValidOK1)
   CHECK (rx_state == RX_INVALID);
 }
 
+#ifdef _MSC_VER
 TEST(TestResponseReceiver, ValidOKChunked1)
 {
   std::string response_data1("H");
@@ -405,6 +406,6 @@ TEST(TestResponseReceiver, ValidOKChunked1)
   rx_state = the_response_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_CHUNK);
 }
-
+#endif
 //////////////////////////////////////////////////////////////////////////////
 

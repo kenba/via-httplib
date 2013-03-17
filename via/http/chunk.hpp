@@ -10,7 +10,7 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "character.hpp"
+#include "headers.hpp"
 
 namespace via
 {
@@ -127,6 +127,11 @@ namespace via
       bool valid() const
       { return valid_; }
 
+      /// Function to determine whether this is the last chunk.
+      /// @return true if the last chunk, false otherwise.
+      bool is_last() const
+      { return size() == 0; }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
@@ -158,6 +163,106 @@ namespace via
       /// @return a string containing the chunk line.
       std::string to_string() const;
     }; // class chunk_header
+
+    //////////////////////////////////////////////////////////////////////////
+    /// @class rx_chunk
+    /// A class to receive an HTTP chunk.
+    //////////////////////////////////////////////////////////////////////////
+    class rx_chunk : public chunk_header
+    {
+      message_headers headers_; ///< the HTTP headers for the chunk
+      bool valid_;              ///< true if the chunk is valid
+
+    public:
+
+      /// Default constructor.
+      /// Sets all member variables to their initial state.
+      explicit rx_chunk() :
+        chunk_header(),
+        headers_(),
+        valid_(false)
+      {}
+
+      /// clear the rx_chunk.
+      /// Sets all member variables to their initial state.
+      void clear()
+      {
+        chunk_header::clear();
+        headers_.clear();
+        valid_ =  false;
+      }
+
+      /// swap member variables with another rx_chunk.
+      /// @param other the other rx_chunk
+      void swap(rx_chunk& other)
+      {
+        chunk_header::swap(other);
+        headers_.swap(other.headers_);
+        std::swap(valid_, other.valid_);
+      }
+
+      /// Parse an HTTP chunk.
+      /// @retval iter reference to an iterator to the start of the data.
+      /// If the chunk is valid it will refer to:
+      ///   - the start of the next data chunk,
+      ///   - the start of the next http message, or
+      ///   - the end of the data buffer.
+      /// @param end the end of the data buffer.
+      /// @return true if parsed ok false otherwise.
+      template<typename ForwardIterator1, typename ForwardIterator2>
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      {
+        if (!chunk_header::valid() && !chunk_header::parse(iter, end))
+          return false;
+
+        // Only the last chunk has a trailer.
+        if (chunk_header::is_last() &&
+            !headers_.valid() && !headers_.parse_trailer(iter, end))
+          return false;
+
+        valid_ = true;
+        return valid_;
+      }
+
+      /// Accessor for the chunk message headers.
+      /// @return a constant reference to the message_headers
+      const message_headers& header() const
+      { return headers_; }
+
+      /// Accessor for the valid flag.
+      /// @return the valid flag.
+      bool valid() const
+      { return valid_; }
+    }; // rx_chunk
+
+    //////////////////////////////////////////////////////////////////////////
+    /// @class last_chunk
+    /// A class to send the last HTTP chunk and any trailers.
+    //////////////////////////////////////////////////////////////////////////
+    class last_chunk
+    {
+      std::string extension_;
+      std::string trailer_string_;
+
+    public:
+
+      explicit last_chunk(std::string const& extension,
+                          std::string const& trailer_string) :
+        extension_(extension),
+        trailer_string_(trailer_string)
+      {}
+
+      /// Add a free form trailer to the chunk.
+      void add_trailer(std::string const& field, std::string const& value)
+      { trailer_string_ += header_field::to_header(field, value);  }
+
+      /// Add a standard trailer to the chunk.
+      void add_trailer(header_field::field_id id, std::string const& value)
+      { trailer_string_ += header_field::to_header(id, value);  }
+
+      /// The http message header string.
+      std::string message() const;
+    };
 
   }
 }

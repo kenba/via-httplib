@@ -99,9 +99,9 @@ namespace via
     http::rx_request const& request() const
     { return rx_.request(); }
 
-    /// Accessor for the HTTP chunk header.
-    /// @return a constant reference to a chunk_header.
-    http::chunk_header const& chunk() const
+    /// Accessor for the received HTTP chunk.
+    /// @return a constant reference to an rx_chunk.
+    http::rx_chunk const& chunk() const
     { return rx_.chunk(); }
 
     /// Accessor for the body.
@@ -254,10 +254,11 @@ namespace via
       return send(tx_message);
     }
 
-    bool last_chunk()
+    bool last_chunk(std::string extension = "",
+                    std::string trailer_string = "")
     {
-      http::chunk_header chunk_header(0);
-      std::string chunk_string(chunk_header.to_string());
+      http::last_chunk last_chunk(extension, trailer_string);
+      std::string chunk_string(last_chunk.message());
 
       Container tx_message(chunk_string.begin(), chunk_string.end());
       return send(tx_message);

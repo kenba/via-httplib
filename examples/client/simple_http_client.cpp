@@ -33,7 +33,7 @@ namespace
   /// Defined in case the site responds with a chunked message.
   /// @param chunk the http chunk header
   /// @param body the body (if any) associated with the chunk.
-  void chunk_receiver(via::http::chunk_header const& chunk,
+  void chunk_receiver(via::http::rx_chunk const& chunk,
                       std::string const& body)
   {
     std::cout << chunk.to_string() << "\n"
