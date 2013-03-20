@@ -17,6 +17,22 @@ namespace via
     const std::string CRLF("\r\n");
 
     //////////////////////////////////////////////////////////////////////////
+    bool is_separator(char c)
+    {
+      switch (c)
+      {
+      case '(': case ')': case '<': case '>': case '@':
+      case ',': case ';': case ':': case '\\': case '"':
+      case '/': case '[': case ']': case '?': case '=':
+      case '{': case '}': case ' ': case '\t':
+        return true;
+      default:
+        return false;
+      }
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
     std::string http_version(int major_version, int minor_version)
     {
       std::string output("HTTP/");

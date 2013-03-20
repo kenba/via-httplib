@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file headers.hpp
+/// @brief Classes to parse and encode HTTP headers.
+//////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
 #include "character.hpp"
 #include <map>
@@ -169,7 +172,7 @@ namespace via
       }
 
       /// Parse message_headers from a received request or response.
-      /// @retval next reference to an iterator to the start of the data.
+      /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
@@ -203,7 +206,7 @@ namespace via
       }
 
       /// Parse message_headers as trailers from a received chunk.
-      /// @retval next reference to an iterator to the start of the data.
+      /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
@@ -237,9 +240,8 @@ namespace via
       /// @return the value, blank if not found
       const std::string& find(const std::string& name) const;
 
-      /// Find the value for a given header name.
-      /// Note: the name must be in lowercase for received message_headers.
-      /// @param name the name of the header.
+      /// Find the value for a given header id.
+      /// @param id the id of the header.
       /// @return the value, blank if not found
       const std::string& find(header_field::field_id id) const
       { return find(header_field::lowercase_name(id)); }

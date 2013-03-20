@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file request.hpp
+/// @brief Classes to parse and encode HTTP requests.
+//////////////////////////////////////////////////////////////////////////////
 #include "request_method.hpp"
 #include "headers.hpp"
 #include "chunk.hpp"
@@ -115,7 +118,7 @@ namespace via
       {}
 
       /// Parse the line as an HTTP request.
-      /// @retval next reference to an iterator to the start of the data.
+      /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
@@ -211,7 +214,7 @@ namespace via
       { method_ = method; }
 
       /// Set the request uri.
-      /// @param method the HTTP request uri.
+      /// @param uri the HTTP request uri.
       void set_uri(const std::string& uri)
       { uri_ = uri; }
 
@@ -221,7 +224,7 @@ namespace via
       { major_version_ = major_version; }
 
       /// Set the HTTP minor version.
-      /// @param major_version the HTTP minor version.
+      /// @param minor_version the HTTP minor version.
       void set_minor_version(int minor_version)
       { minor_version_ = minor_version; }
 
@@ -321,17 +324,18 @@ namespace via
 
     //////////////////////////////////////////////////////////////////////////
     /// @class tx_request
+    /// A class to encode an HTTP request.
     //////////////////////////////////////////////////////////////////////////
     class tx_request : public request_line
     {
-      size_t      content_length_;
-      std::string header_string_;
-      bool        is_chunked_;
+      size_t      content_length_; ///< The length in a content header.
+      std::string header_string_;  ///< The headers as a string.
+      bool        is_chunked_;     ///< Whether the request will be chunked.
 
     public:
 
       /// Constructor for a standard request.
-      /// @param method
+      /// @param id
       /// @param uri
       /// @param content_length
       /// @param header_string
@@ -354,6 +358,9 @@ namespace via
       /// Constructor for non-standard requests.
       /// @param method
       /// @param uri
+      /// @param content_length
+      /// @param header_string
+      /// @param is_chunked
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_request(const std::string& method,

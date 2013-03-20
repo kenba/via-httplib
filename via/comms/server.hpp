@@ -34,19 +34,19 @@ namespace via
       /// The connection type used by this server.
       typedef connection<SocketAdaptor, Container> connection_type;
 
-      /// @typedef a set of connections.
+      /// a set of connections.
       typedef std::set<boost::shared_ptr<connection_type> > connections;
 
-      /// @typedef the boost signal to indicate that an event occured.
+      /// the boost signal to indicate that an event occured.
       typedef typename connection_type::event_signal_type event_signal_type;
 
-      /// @typedef the boost slot associated with the event_signal_type.
+      /// the boost slot associated with the event_signal_type.
       typedef typename event_signal_type::slot_type event_slot_type;
 
-      /// @typedef the boost signal to indicate that an error occured.
+      /// the boost signal to indicate that an error occured.
       typedef typename connection_type::error_signal_type error_signal_type;
 
-      /// @typedef the boost slot associated with the error_signal_type.
+      /// the boost slot associated with the error_signal_type.
       typedef typename error_signal_type::slot_type error_slot_type;
 
     private:
@@ -121,7 +121,7 @@ namespace via
 
     public:
 
-      /// @fn Constructor
+      /// The server constructor.
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
       /// @param port the port number to serve.

@@ -36,29 +36,29 @@ namespace via
     {
     public:
 
-      /// @typedef a weak pointer to a connection.
+      /// a weak pointer to a connection.
       typedef typename boost::weak_ptr<connection<SocketAdaptor, Container> >
          weak_pointer;
 
-      /// @typedef a shared pointer to a connection.
+      /// a shared pointer to a connection.
       typedef typename boost::shared_ptr<connection<SocketAdaptor, Container> >
          shared_pointer;
 
-      /// @typedef the enable_shared_from_this type of this class.
+      /// the enable_shared_from_this type of this class.
       typedef typename boost::enable_shared_from_this
                               <connection<SocketAdaptor, Container> > enable;
 
-      /// @typedef the boost signal to indicate that an event occured.
+      /// the boost signal to indicate that an event occured.
       typedef boost::signal<void (int event, weak_pointer)> event_signal_type;
 
-      /// @typedef the boost slot associated with the event_signal_type.
+      /// the boost slot associated with the event_signal_type.
       typedef typename event_signal_type::slot_type event_slot_type;
 
-      /// @typedef the boost signal to indicate that an error occured.
+      /// the boost signal to indicate that an error occured.
       typedef boost::signal<void (const boost::system::error_code&, weak_pointer)>
                                   error_signal_type;
 
-      /// @typedef the boost slot associated with the error_signal_type.
+      /// the boost slot associated with the error_signal_type.
       typedef typename error_signal_type::slot_type error_slot_type;
 
     private:
@@ -153,7 +153,6 @@ namespace via
           signal_error(error);
       }
 
-      /// @fn Constructor
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
@@ -198,6 +197,7 @@ namespace via
       /// The factory function to create connections.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
+      /// @param port_number required for UDP servers, default zero.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    unsigned short port_number = 0)
       { return shared_pointer(new connection(io_service, port_number)); }
@@ -214,8 +214,7 @@ namespace via
       void get_error_signal(const error_slot_type& slot)
       { signal_error_.connect(slot); }
 
-      /// @fn destructor.
-      /// Disconnects the socket.
+      /// The connection destructor disconnects the socket.
       ~connection()
       { disconnect(); }
 
@@ -267,7 +266,7 @@ namespace via
         return data;
       }
 
-      /// @fn send_data
+      /// @fn send_data(Container const& packet)
       /// Send a packet of data.
       /// The data is put on the back of the queue, whilst the function
       /// ensures that the data at the front of the queue is being written.
@@ -284,7 +283,7 @@ namespace via
       }
 
 #if defined(BOOST_ASIO_HAS_MOVE)
-      /// @fn send_data
+      /// @fn send_data(Container&& packet)
       /// Send a packet of data, move version for C++11.
       /// The data is put on the back of the queue, whilst the function
       /// ensures that the data at the front of the queue is being written.
@@ -301,7 +300,7 @@ namespace via
       }
 #endif // BOOST_ASIO_HAS_MOVE
 
-      /// @fn send_data
+      /// @fn send_data(ForwardIterator1 begin, ForwardIterator2 end)
       /// Send a packet of data.
       /// As above, but this function takes a pair of iterators, so the data
       /// doesn't have to be held in the same type of container as the

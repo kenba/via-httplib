@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file character.hpp
+/// @brief Low level functions to classify characters and manipulate strings.
+//////////////////////////////////////////////////////////////////////////////
 #include <cctype>
 #include <string>
 
@@ -33,6 +36,24 @@ namespace via
     /// @return true if character is space or tab, false otherwise.
     inline bool is_space_or_tab(char c)
     { return (' ' == c) || ('\t' == c); }
+
+    /// Test whether a character is a control character.
+    /// @param c the character
+    /// @return true if character is control character, false otherwise.
+    inline bool is_ctl(char c)
+    { return ((0 <= c) && (31 >= c)) || (127 ==c); }
+
+    /// Test whether a character is a separator character.
+    /// @param c the character
+    /// @return true if character is a separator character, false otherwise.
+    bool is_separator(char c);
+
+    /// Test whether a character is a token character.
+    /// i.e. not a control or separator character.
+    /// @param c the character
+    /// @return true if character is a token character, false otherwise.
+    inline bool is_token(char c)
+    { return !is_ctl(c) && !is_separator(c); }
 
     /// Convert a digit charcter to an integer.
     /// @pre the character must be a valid digit character.

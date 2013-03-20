@@ -10,6 +10,10 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file http_connection.hpp
+/// @brief Just contains the http_connection template class as used by the
+/// http_server template class.
+//////////////////////////////////////////////////////////////////////////////
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
@@ -254,6 +258,9 @@ namespace via
       return send(tx_message);
     }
 
+    /// Send the last HTTP chunk for a response.
+    /// @param extension the (optional) chunk extension.
+    /// @param trailer_string the (optional) chunk trailers.
     bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {

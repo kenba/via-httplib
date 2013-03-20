@@ -65,12 +65,13 @@ namespace via
 
     public:
 
-      /// @fn Constructor
+      /// The udp_adaptor onstructor.
       /// @param io_service the asio io_service associted with this connection
       /// @param read_handler the read callback function.
       /// @param write_handler the write callback function.
       /// @param event_handler the event handler callback function.
       /// @param error_handler the error handler callback function.
+      /// @param port_number the port number of a udp server.
       explicit udp_adaptor(boost::asio::io_service& io_service,
                            CommsHandler read_handler,
                            CommsHandler write_handler,

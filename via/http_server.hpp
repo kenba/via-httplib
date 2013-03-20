@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file http_server.hpp
+/// @brief Just contains the http_server template class.
+//////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
 #include <boost/signal.hpp>
@@ -175,6 +178,7 @@ namespace via
     }
 
     /// Receive an event from the underlying comms connection.
+    /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
     void event_handler(int event, boost::weak_ptr<connection_type> connection)
     {
@@ -192,6 +196,7 @@ namespace via
     }
 
     /// Receive an error from the underlying comms connection.
+    /// @param error the boost error_code.
     /// @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
                        boost::weak_ptr<connection_type> connection)

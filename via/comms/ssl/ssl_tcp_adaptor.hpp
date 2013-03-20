@@ -12,6 +12,8 @@
 //////////////////////////////////////////////////////////////////////////////
 /// @file ssl_tcp_adaptor.hpp
 /// @brief The specific adaptor for ssl tcp connections.
+/// Only include this file if you need an HTTPS server or client. SSL support
+/// is provided by the OpenSSL library which must be included with this file.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
 #include <boost/asio/ssl.hpp>
@@ -134,12 +136,13 @@ namespace via
 
       protected:
 
-        /// @fn Constructor
+        /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
         /// @param read_handler the read callback function.
         /// @param write_handler the write callback function.
         /// @param event_handler the event handler callback function.
         /// @param error_handler the error handler callback function.
+        /// @param int not required for tcp connections.
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service,
                                  CommsHandler read_handler,
                                  CommsHandler write_handler,

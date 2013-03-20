@@ -34,16 +34,16 @@ namespace via
       DISCONNECTED ///< The socket is now disconnected.
     };
 
-    /// @typedef An event hander callback function type.
+    /// An event hander callback function type.
     /// @param int the event type
     typedef std::tr1::function<void (int)> EventHandler;
 
-    /// @typedef An error hander callback function type.
+    /// An error hander callback function type.
     /// @param error the (boost) error code.
     typedef std::tr1::function<void (boost::system::error_code const&)>
                                            ErrorHandler;
 
-    /// @typedef A (read or write) comms hander callback function type.
+    /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
     typedef std::tr1::function<void (boost::system::error_code const&,

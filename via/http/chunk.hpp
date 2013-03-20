@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file chunk.hpp
+/// @brief Classes to parse and encode HTTP chunks.
+//////////////////////////////////////////////////////////////////////////////
 #include "headers.hpp"
 
 namespace via
@@ -246,6 +249,9 @@ namespace via
 
     public:
 
+      /// Send the last HTTP chunk for a request or response.
+      /// @param extension the (optional) chunk extension.
+      /// @param trailer_string the (optional) chunk trailers.
       explicit last_chunk(std::string const& extension,
                           std::string const& trailer_string) :
         extension_(extension),

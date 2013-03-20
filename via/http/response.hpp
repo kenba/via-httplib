@@ -10,6 +10,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file response.hpp
+/// @brief Classes to parse and encode HTTP responses.
+//////////////////////////////////////////////////////////////////////////////
 #include "response_status.hpp"
 #include "headers.hpp"
 #include "chunk.hpp"
@@ -119,7 +122,7 @@ namespace via
       {}
 
       /// Parse the line as an HTTP response.
-      /// @retval next reference to an iterator to the start of the data.
+      /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
@@ -219,7 +222,7 @@ namespace via
       { major_version_ = major_version; }
 
       /// Set the HTTP minor version.
-      /// @param major_version the HTTP minor version.
+      /// @param minor_version the HTTP minor version.
       void set_minor_version(int minor_version)
       { minor_version_ = minor_version; }
 
@@ -329,12 +332,13 @@ namespace via
 
     //////////////////////////////////////////////////////////////////////////
     /// @class tx_response
+    /// A class to encode an HTTP response.
     //////////////////////////////////////////////////////////////////////////
     class tx_response : public response_line
     {
-      size_t      content_length_;
-      std::string header_string_;
-      bool        is_chunked_;
+      size_t      content_length_; ///< The length in a content header.
+      std::string header_string_;  ///< The headers as a string.
+      bool        is_chunked_;     ///< Whether the response will be chunked.
 
     public:
 
@@ -342,6 +346,7 @@ namespace via
       /// @param status
       /// @param content_length
       /// @param header_string default blank
+      /// @param is_chunked
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_response(response_status::status_code status,
@@ -358,8 +363,10 @@ namespace via
 
       /// Constructor for non-standard responses.
       /// @param status
+      /// @param reason_phrase
       /// @param content_length
       /// @param header_string default blank
+      /// @param is_chunked default false
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_response(int status,
