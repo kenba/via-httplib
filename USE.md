@@ -7,8 +7,8 @@ to implement the HTTP protocol in your applications.
 The library implements the HTTP 1.1 communications protocol as defined in
 RFC2616 and some of the terms used (e.g. chunk) are taken directly from RFC2616.
 If you don't know the protocol then I recommend that you read a good
-introduction to HTTP e.g.: [HTTP Made Really Easy](www.jmarshall.com/easy/http/)
-or if your suffer from insomnia: [RFC2616](www.ietf.org/rfc/rfc2616.txt)
+introduction to HTTP e.g.: [HTTP Made Really Easy](http://www.jmarshall.com/easy/http/)
+or if your suffer from insomnia: [RFC2616](http://www.ietf.org/rfc/rfc2616.txt)
 itself, before using the library.
 
 Instantiating the Classes
@@ -27,7 +27,9 @@ http\_client respectively:
     class http_client
 	
 To use these template classes they must first be instantiated with a 
-SocketAdaptor. There are two types of SocketAdaptor:  
+SocketAdaptor.
+
+There are two types of SocketAdaptor:  
 * tcp\_adaptor - supports TCP/IP communicatons for plain connections.  
 * ssl\_tcp\_adaptor - supports SSL/TLS communicatons for encrypted connections.
 
@@ -48,7 +50,6 @@ Constructing the Classes
 ------------------------
 
 The library uses the boost::asio library to implement it's communications.
-
 The asio library bases it's communications around a io\_service object and so
 both the server and client require a boost::asio::io\_service in their
 constructors:
@@ -62,13 +63,12 @@ Normally, the io\_service is created before the http\_server or http\_client
 and the io\_service.run() function is called after the http\_server or
 http\_client have been set up. However, multiple instances of the io_service
 can be run for better performance. See the boost asio documentation at
-[www.boost.org](www.boost.org)
+[www.boost.org](http://www.boost.org)
 
 Event Callbacks
 ---------------
 
 The library uses the boost::signals library to implement it's callbacks.
-
 The signals library implements function callbacks in terms of signals and
 slots:  
 * signals are a callback function signature, defined in the library.  
@@ -168,13 +168,13 @@ has not been deleted by the server in the meanwhile, e.g.:
 SSL/TLS Support
 ---------------
 
-The library uses the OpenSSL library to implement the SSL/TLS protocol.
+The library uses the OpenSSL library to implement the SSL/TLS protocol, see: [www.openssl.org](http://www.openssl.org).
 
 The library has been designed so that if SSL support is not needed then the
 OpenSSL library does not need to be present. The OpenSSL library is only
 required if the file ssl\_tcp\_adaptor.hpp is included in the application.
 
-If SSL support is required then the application must have OpenSSL in the
+If SSL support is required then in application it must have OpenSSL in the
 include path and link with the OpenSSL libraries. It must also define the
 macro: HTTP_SSL. This macro is used in http\_server.hpp and defined in
 ssl\_tcp\_adaptor.hpp. So simply including ssl\_tcp\_adaptor.hpp before
