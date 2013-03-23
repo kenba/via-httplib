@@ -16,6 +16,10 @@
 #include "character.hpp"
 #include <string>
 
+#ifdef DELETE
+#undef DELETE
+#endif
+
 namespace via
 {
   namespace http

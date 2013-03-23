@@ -6,15 +6,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/tcp_adaptor.hpp"
+#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <iostream>
 
 /// The http_connection and http_server types.
 /// Note: this example uses a string for the Container.
-typedef via::http_connection<via::comms::tcp_adaptor, std::string>
+typedef via::http_connection<via::comms::ssl::ssl_tcp_adaptor, std::string>
   http_connection_type;
-typedef via::http_server<via::comms::tcp_adaptor, std::string>
+typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
   http_server_type;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,15 +90,20 @@ int main(int argc, char *argv[])
   // Get a port number from the user
   if (argc <= 1)
   {
-    std::cerr << "Usage: simple_http_server [port number]\n"
+    std::cerr << "Usage: simple_https_server [port number]\n"
               << "E.g. simple_http_server 80"
               << std::endl;
     return 1;
   }
 
+  // The values for the SSL functions
+  std::string password         = "test";
+  std::string certificate_file = "cacert.pem";
+  std::string private_key_file = "privkey.pem";
+
   std::string port(argv[1]);
   unsigned short portNumber(atoi(port.c_str()));
-  std::cout << "HTTP server port: " << portNumber << std::endl;
+  std::cout << "HTTPS server port: " << portNumber << std::endl;
 
   try
   {
@@ -107,6 +112,16 @@ int main(int argc, char *argv[])
 
     // create an http_server
     http_server_type http_server(io_service, portNumber);
+
+    // Set up SSL
+    http_server.set_password(password);
+    boost::system::error_code error
+        (http_server_type::set_ssl_files(certificate_file, private_key_file));
+    if (error)
+    {
+      std::cerr << "Error: "  << error.message() << std::endl;
+      exit(1);
+    }
 
     // connect the request and chunk received callback functions
     http_server.request_received_event(request_receiver);

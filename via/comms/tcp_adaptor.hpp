@@ -82,6 +82,9 @@ namespace via
 
     public:
 
+      /// The default HTTP port.
+      static const unsigned short DEFAULT_HTTP_PORT = 80;
+
       /// The tcp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
       /// @param read_handler the read callback function.

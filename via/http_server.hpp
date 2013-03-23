@@ -95,8 +95,8 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param port the number of the comms port.
-    http_server(boost::asio::io_service& io_service,
-                unsigned short port) :
+    explicit http_server(boost::asio::io_service& io_service,
+        unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT) :
       server_(server_type::create(io_service, port)),
       http_connections_(),
       http_request_signal_(),

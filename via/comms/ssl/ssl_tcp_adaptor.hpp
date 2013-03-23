@@ -18,6 +18,9 @@
 #include "via/comms/socket_adaptor.hpp"
 #include <boost/asio/ssl.hpp>
 
+// Enable SSL support.
+#define HTTP_SSL
+
 namespace via
 {
   namespace comms
@@ -159,6 +162,9 @@ namespace via
         {}
 
       public:
+
+        /// The default HTTPS port.
+        static const unsigned short DEFAULT_HTTP_PORT = 443;
 
         /// @fn ssl_context
         /// A static function to manage the ssl context for the ssl
