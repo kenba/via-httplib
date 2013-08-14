@@ -74,11 +74,20 @@ namespace via
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
+    /// The signal sent when a socket is disconnected.
+    typedef boost::signal<void (const boost::weak_ptr<http_connection_type>)>
+                                                   http_disconnected_signal;
+
+    /// The slot type associated with a socket disconnected signal.
+    typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
+
   private:
     boost::shared_ptr<server_type> server_;   ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
     http_request_signal http_request_signal_; ///< the request callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
+                                              /// the disconncted callback function
+    http_disconnected_signal http_disconnected_signal_;
 
   public:
 
@@ -92,6 +101,11 @@ namespace via
     void chunk_received_event(http_chunk_signal_slot const& slot)
     { http_chunk_signal_.connect(slot); }
 
+    /// Connect the disconnected slot.
+    /// @param slot the slot for the socket disconnected signal.
+    void socket_disconnected_event(http_disconnected_signal_slot const& slot)
+    { http_disconnected_signal_.connect(slot); }
+
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param port the number of the comms port.
@@ -100,7 +114,8 @@ namespace via
       server_(server_type::create(io_service, port)),
       http_connections_(),
       http_request_signal_(),
-      http_chunk_signal_()
+      http_chunk_signal_(),
+      http_disconnected_signal_()
     {
       server_->get_event_signal
           (boost::bind(&http_server::event_handler, this, _1, _2));
@@ -174,7 +189,11 @@ namespace via
 
       connection_collection_iterator iter(http_connections_.find(pointer));
       if (iter != http_connections_.end())
+      {
+        // Signal the application
+        http_disconnected_signal_(iter->second);
         http_connections_.erase(iter);
+      }
     }
 
     /// Receive an event from the underlying comms connection.
