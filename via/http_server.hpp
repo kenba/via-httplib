@@ -230,8 +230,6 @@ namespace via
     void set_password(std::string const& password)
     { server_->set_password(password); }
 
-#ifdef HTTP_SSL
-
     /// Set the files required for an SSL server.
     /// Note: only valid for SSL connections, do NOT call for TCP servers.
     /// @param certificate_file the server SSL certificate file.
@@ -243,6 +241,7 @@ namespace via
                         std::string        dh_file = "")
     {
       boost::system::error_code error;
+#ifdef HTTP_SSL
       server_type::connection_type::ssl_context().
           use_certificate_file(certificate_file,
                                boost::asio::ssl::context::pem, error);
@@ -272,10 +271,9 @@ namespace via
                        boost::asio::ssl::context::single_dh_use,
                        error);
       }
-
+#endif // HTTP_SSL
       return error;
     }
-#endif
 
   };
 

@@ -182,8 +182,8 @@ namespace via
       response.set_minor_version(rx_.request().minor_version());
       std::string http_header(response.message());
 
-      tx_message.insert(body.begin(),
-                        http_header.begin(), http_header.end());
+      body.insert(body.begin(),
+                  http_header.begin(), http_header.end());
       return send(body);
     }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -233,8 +233,8 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       std::string chunk_string(chunk_header.to_string());
 
-      tx_message.insert(chunk.begin(),
-                        chunk_string.begin(), chunk_string.end());
+      chunk.insert(chunk.begin(),
+                   chunk_string.begin(), chunk_string.end());
       return send(chunk);
     }
 #endif // BOOST_ASIO_HAS_MOVE
