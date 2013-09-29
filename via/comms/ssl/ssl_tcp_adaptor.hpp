@@ -19,7 +19,9 @@
 #include <boost/asio/ssl.hpp>
 
 // Enable SSL support.
+#ifndef HTTP_SSL
 #define HTTP_SSL
+#endif
 
 namespace via
 {
@@ -38,8 +40,6 @@ namespace via
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
         boost::asio::ip::tcp::resolver::iterator host_iterator_;
-        CommsHandler read_handler_;  ///< The read callback function.
-        CommsHandler write_handler_; ///< The write callback function.
         EventHandler event_handler_; ///< The event callback function.
         ErrorHandler error_handler_; ///< The error callback function.
 
@@ -80,27 +80,30 @@ namespace via
         /// @param error the boost asio error code.
         void handle_connect(boost::system::error_code const& error)
         {
-          if (error)
+          if (boost::asio::error::operation_aborted != error)
           {
-            if ((boost::asio::error::host_not_found == error) &&
-                (boost::asio::ip::tcp::resolver::iterator() != host_iterator_))
+            if (error)
             {
-              socket_.lowest_layer().close();
-              connect_socket(++host_iterator_);
+              if ((boost::asio::error::host_not_found == error) &&
+                  (boost::asio::ip::tcp::resolver::iterator() != host_iterator_))
+              {
+                close();
+                connect_socket(++host_iterator_);
+              }
+              else
+              {
+                shutdown();
+                error_handler_(error);
+              }
             }
             else
-            {
-              stop();
-              error_handler_(error);
-            }
+              // Perform the client SSL handshake
+              // Note: this is NOT the same as start(), which is the server
+              // handshake.
+              socket_.async_handshake(boost::asio::ssl::stream_base::client,
+                                      boost::bind(&ssl_tcp_adaptor::handle_handshake, this,
+                                                  boost::asio::placeholders::error));
           }
-          else
-            // Perform the client SSL handshake
-            // Note: this is NOT the same as start(), which is the server
-            // handshake.
-            socket_.async_handshake(boost::asio::ssl::stream_base::client,
-                       boost::bind(&ssl_tcp_adaptor::handle_handshake, this,
-                                   boost::asio::placeholders::error));
         }
 
         /// @fn verify_certificate
@@ -127,14 +130,17 @@ namespace via
         /// @param error the boost asio error code.
         void handle_handshake(boost::system::error_code const& error)
         {
-          if (error)
+          if (boost::asio::error::operation_aborted != error)
           {
-            stop();
-            error_handler_(error);
+            if (error)
+            {
+              shutdown();
+              error_handler_(error);
+            }
+            else
+              // signal connected
+              event_handler_(CONNECTED);
           }
-          else
-            // signal connected
-            event_handler_(CONNECTED);
         }
 
       protected:
@@ -147,21 +153,20 @@ namespace via
         /// @param error_handler the error handler callback function.
         /// @param int not required for tcp connections.
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service,
-                                 CommsHandler read_handler,
-                                 CommsHandler write_handler,
                                  EventHandler event_handler,
                                  ErrorHandler error_handler,
                                  unsigned int /*port_number*/) :
           io_service_(io_service),
           socket_(io_service_, ssl_context()),
           host_iterator_(boost::asio::ip::tcp::resolver::iterator()),
-          read_handler_(read_handler),
-          write_handler_(write_handler),
           event_handler_(event_handler),
           error_handler_(error_handler)
         {}
 
       public:
+
+        virtual ~ssl_tcp_adaptor()
+        {}
 
         /// The default HTTPS port.
         static const unsigned short DEFAULT_HTTP_PORT = 443;
@@ -199,30 +204,39 @@ namespace via
         /// The ssl tcp socket read function.
         /// @param ptr pointer to the receive buffer.
         /// @param size the size of the receive buffer.
-        void read(void* ptr, size_t& size)
+        void read(void* ptr, size_t& size, CommsHandler read_handler)
         {
           socket_.async_read_some
-              (boost::asio::buffer(ptr, size), read_handler_);
+              (boost::asio::buffer(ptr, size), read_handler);
         }
 
         /// @fn write
         /// The ssl tcp socket write function.
         /// @param ptr pointer to the send buffer.
         /// @param size the size of the send buffer.
-        void write(void const* ptr, size_t size)
+        void write(void const* ptr, size_t size, CommsHandler write_handler)
         {
           boost::asio::async_write
-              (socket_, boost::asio::buffer(ptr, size), write_handler_);
+              (socket_, boost::asio::buffer(ptr, size), write_handler);
         }
 
-        /// @fn stop
-        /// The ssl tcp socket stop function.
+        /// @fn shutdown
+        /// The ssl tcp socket shutdown function.
         /// Disconnects the socket.
-        void stop()
+        void shutdown()
         {
           boost::system::error_code ignoredEc;
           socket_.lowest_layer().shutdown
               (boost::asio::ip::tcp::socket::shutdown_both, ignoredEc);
+        }
+
+        /// @fn close
+        /// The tcp socket close function.
+        /// Cancels any send, receive or connect operations and closes the socket.
+        void close()
+        {
+          boost::system::error_code ignoredEc;
+          socket_.lowest_layer().close (ignoredEc);
         }
 
         /// @fn start

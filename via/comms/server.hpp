@@ -37,17 +37,14 @@ namespace via
       /// a set of connections.
       typedef std::set<boost::shared_ptr<connection_type> > connections;
 
-      /// the boost signal to indicate that an event occured.
-      typedef typename connection_type::event_signal_type event_signal_type;
+      /// an iterator to the connections;
+      typedef typename connections::iterator connections_iterator;
 
-      /// the boost slot associated with the event_signal_type.
-      typedef typename event_signal_type::slot_type event_slot_type;
+      /// Event callback function type.
+      typedef typename connection_type::event_callback_type event_callback_type;
 
-      /// the boost signal to indicate that an error occured.
-      typedef typename connection_type::error_signal_type error_signal_type;
-
-      /// the boost slot associated with the error_signal_type.
-      typedef typename error_signal_type::slot_type error_slot_type;
+      /// Error callback function type.
+      typedef typename connection_type::error_callback_type error_callback_type;
 
     private:
       /// The asio::io_service to use.
@@ -57,7 +54,7 @@ namespace via
       boost::asio::ip::tcp::acceptor acceptor_;
 
       /// The next connection to be accepted.
-      boost::shared_ptr<connection_type> new_connection_;
+      boost::shared_ptr<connection_type> next_connection_;
 
       /// The connections established with this server.
       connections connections_;
@@ -65,8 +62,8 @@ namespace via
       /// The password. Only used by SSL servers.
       std::string password_;
 
-      event_signal_type signal_event_; ///< The event signal.
-      error_signal_type signal_error_; ///< The error signal.
+      event_callback_type event_callback_;   ///< The event callback function.
+      error_callback_type error_callback_;   ///< The error callback function.
 
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
@@ -84,31 +81,46 @@ namespace via
 
         if (!error)
         {
-          new_connection_->start();
+          boost::shared_ptr<connection_type>
+                  new_connection(connection_type::create(io_service_,
+                                 boost::bind(&server::event_handler, this,
+                                             _1, _2),
+                                 boost::bind(&server::error_handler, this,
+                                             boost::asio::placeholders::error,
+                                             _2)));
+          new_connection.swap(next_connection_);
 
-          new_connection_->get_event_signal
-            (boost::bind(&server::event_handler, this, _1, new_connection_));
+          new_connection->start();
 
-          new_connection_->get_error_signal
-            (boost::bind(&server::error_handler, this,
-                         boost::asio::placeholders::error,
-                         new_connection_));
-
-          connections_.insert(new_connection_);
+          connections_.insert(new_connection);
         }
         else
-          signal_error_(error, new_connection_);
+          error_callback_(error, next_connection_);
 
         start_accept();
       }
 
       /// @fn event_handler.
-      /// It just forwards the connection's event signal.
+      /// It forwards the connection's event signal.
+      /// For a disconnected event, it closes and deletes the connection.
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, boost::weak_ptr<connection_type> connection)
-      { signal_event_(event, connection); }
+      void event_handler(int event, boost::weak_ptr<connection_type> ptr)
+      {
+        event_callback_(event, ptr);
+        if (event == DISCONNECTED)
+        {
+          if (boost::shared_ptr<connection_type> connection = ptr.lock())
+          {
+            connection->close();
+            // search for the connection to delete
+            connections_iterator iter(connections_.find(connection));
+            if (iter != connections_.end())
+              connections_.erase(iter);
+          }
+        }
+      }
 
       /// @fn error_handler.
       /// It just forwards the connection's error signal.
@@ -117,7 +129,7 @@ namespace via
       /// error.
       void error_handler(const boost::system::error_code& error,
                          boost::weak_ptr<connection_type> connection)
-      { signal_error_(error, connection); }
+      { error_callback_(error, connection); }
 
     public:
 
@@ -126,14 +138,21 @@ namespace via
       /// and connections.
       /// @param port the port number to serve.
       explicit server(boost::asio::io_service& io_service,
+                      event_callback_type event_callback,
+                      error_callback_type error_callback,
                       unsigned short port) :
         io_service_(io_service),
         acceptor_(io_service),
-        new_connection_(),
+        next_connection_(connection_type::create(io_service_,
+                                   boost::bind(&server::event_handler, this,
+                                               _1, _2),
+                                   boost::bind(&server::error_handler, this,
+                                               boost::asio::placeholders::error,
+                                               _2))),
         connections_(),
         password_(),
-        signal_event_(),
-        signal_error_()
+        event_callback_(event_callback),
+        error_callback_(error_callback)
       {
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
@@ -151,29 +170,17 @@ namespace via
       /// @param io_service the boost asio io_service used by the server.
       /// @param port the port number to serve.
       static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
+                                              event_callback_type event_callback,
+                                              error_callback_type error_callback,
                                               unsigned short port)
-      { return boost::shared_ptr<server>(new server(io_service, port)); }
-
-      /// @fn get_event_signal
-      /// A function to connect a slot to the event signal.
-      /// @param slot the slot to connect.
-      void get_event_signal(const event_slot_type& slot)
-      { signal_event_.connect(slot); }
-
-      /// @fn get_error_signal
-      /// A function to connect a slot to the error signal.
-      /// @param slot the slot to connect.
-      void get_error_signal(const error_slot_type& slot)
-      { signal_error_.connect(slot); }
+      { return boost::shared_ptr<server>(new server(io_service, event_callback,
+                                                    error_callback, port)); }
 
       /// @fn start_accept
       /// Wait for connections.
       void start_accept()
       {
-        new_connection_.reset();
-        new_connection_ = connection_type::create(io_service_);
-
-        acceptor_.async_accept(new_connection_->socket(),
+        acceptor_.async_accept(next_connection_->socket(),
                                boost::bind(&server::accept_handler, this,
                                            boost::asio::placeholders::error));
       }

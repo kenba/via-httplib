@@ -31,8 +31,6 @@ namespace via
       boost::asio::ip::udp::socket socket_; ///< The asio UDP socket.
       unsigned short tx_port_number_;
       bool is_connected_; ///< True if the socket is in "connected" mode.
-      CommsHandler read_handler_;  ///< The read callback function.
-      CommsHandler write_handler_; ///< The write callback function.
       EventHandler event_handler_; ///< The event callback function.
       ErrorHandler error_handler_; ///< The error callback function.
 
@@ -53,17 +51,20 @@ namespace via
       /// @param error the boost asio error code.
       void handle_connect(boost::system::error_code const& error)
       {
-        if (error)
+        if (boost::asio::error::operation_aborted != error)
         {
-          stop();
-          error_handler_(error);
+          if (error)
+          {
+            shutdown();
+            error_handler_(error);
+          }
+          else
+            // signal connected
+            event_handler_(CONNECTED);
         }
-        else
-          // signal connected
-          event_handler_(CONNECTED);
       }
 
-    public:
+    protected:
 
       /// The udp_adaptor onstructor.
       /// @param io_service the asio io_service associted with this connection
@@ -73,8 +74,6 @@ namespace via
       /// @param error_handler the error handler callback function.
       /// @param port_number the port number of a udp server.
       explicit udp_adaptor(boost::asio::io_service& io_service,
-                           CommsHandler read_handler,
-                           CommsHandler write_handler,
                            EventHandler event_handler,
                            ErrorHandler error_handler,
                            unsigned int port_number = 0) :
@@ -84,10 +83,13 @@ namespace via
         socket_(io_service_, endpoint_),
         tx_port_number_(0),
         is_connected_(false),
-        read_handler_(read_handler),
-        write_handler_(write_handler),
         event_handler_(event_handler),
         error_handler_(error_handler)
+      {}
+
+    public:
+
+      virtual ~udp_adaptor()
       {}
 
       /// Set up the UDP socket for broadcast mode.
@@ -136,42 +138,50 @@ namespace via
       /// The udp socket read function.
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
-      void read(void* ptr, size_t& size)
+      void read(void* ptr, size_t& size, CommsHandler read_handler)
       {
         if (is_connected_)
-          socket_.async_receive(boost::asio::buffer(ptr, size), read_handler_);
+          socket_.async_receive(boost::asio::buffer(ptr, size), read_handler);
         else
           socket_.async_receive_from
-              (boost::asio::buffer(ptr, size), endpoint_, read_handler_);
+              (boost::asio::buffer(ptr, size), endpoint_, read_handler);
       }
 
       /// @fn write
       /// The udp socket write function.
       /// @param ptr pointer to the send buffer.
       /// @param size the size of the send buffer.
-      void write(void const* ptr, size_t size)
+      void write(void const* ptr, size_t size, CommsHandler write_handler)
       {
         if (is_connected_)
-          socket_.async_send(boost::asio::buffer(ptr, size), write_handler_);
+          socket_.async_send(boost::asio::buffer(ptr, size), write_handler);
         else
         {
           boost::asio::ip::udp::endpoint tx_endpoint((tx_port_number_ == 0)
             ? endpoint_ : boost::asio::ip::udp::endpoint
               (boost::asio::ip::address_v4::broadcast (), tx_port_number_));
           socket_.async_send_to(boost::asio::buffer(ptr, size),
-                                tx_endpoint, write_handler_);
+                                tx_endpoint, write_handler);
         }
       }
 
-      /// @fn stop
-      /// The udp socket stop function.
+      /// @fn shutdown
+      /// The udp socket shutdown function.
       /// Disconnects the socket.
-      void stop()
+      void shutdown()
       {
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::udp::socket::shutdown_both,
                           ignoredEc);
-        socket_.close(ignoredEc);
+      }
+
+      /// @fn close
+      /// The udp socket close function.
+      /// Cancels any send, receive or connect operations and closes the socket.
+      void close()
+      {
+        boost::system::error_code ignoredEc;
+        socket_.close (ignoredEc);
       }
 
       /// @fn start

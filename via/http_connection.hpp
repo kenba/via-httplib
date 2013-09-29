@@ -80,7 +80,7 @@ namespace via
         if (keep_alive)
           return tcp_pointer->read_pending();
         else
-          tcp_pointer->disconnect();
+          tcp_pointer->shutdown();
 
         return false;
       }

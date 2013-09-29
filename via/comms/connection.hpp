@@ -15,7 +15,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
 #include <boost/system/error_code.hpp>
-#include <boost/signal.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <vector>
@@ -48,30 +47,29 @@ namespace via
       typedef typename boost::enable_shared_from_this
                               <connection<SocketAdaptor, Container> > enable;
 
-      /// the boost signal to indicate that an event occured.
-      typedef boost::signal<void (int event, weak_pointer)> event_signal_type;
+      /// Event callback function type.
+      typedef std::tr1::function<void (int, weak_pointer)> event_callback_type;
 
-      /// the boost slot associated with the event_signal_type.
-      typedef typename event_signal_type::slot_type event_slot_type;
-
-      /// the boost signal to indicate that an error occured.
-      typedef boost::signal<void (const boost::system::error_code&, weak_pointer)>
-                                  error_signal_type;
-
-      /// the boost slot associated with the error_signal_type.
-      typedef typename error_signal_type::slot_type error_slot_type;
+      /// Error callback function type.
+      typedef std::tr1::function<void (boost::system::error_code const&,
+                                       weak_pointer)> error_callback_type;
 
     private:
 
       std::deque<Container> rx_queue_; ///< The receive buffer.
       std::deque<Container> tx_queue_; ///< The transmit buffer.
       bool is_writing_;                ///< A flag for the transmit buffer.
+      event_callback_type event_callback_; ///< The event callback function.
+      error_callback_type error_callback_; ///< The error callback function.
 
       /// The default receive buffer size.
       static const size_t DEFAULT_BUFFER_SIZE = 8192;
 
-      event_signal_type signal_event_; ///< The event signal.
-      error_signal_type signal_error_; ///< The error signal.
+      /// @fn weak_from_this
+      /// Get a weak_pointer to this instance.
+      /// @return a weak_pointer to this connection.
+      weak_pointer weak_from_this()
+      { return weak_pointer(enable::shared_from_this()); }
 
       /// @fn signal_event
       /// This function is called whenever a comms event occurs.
@@ -83,10 +81,10 @@ namespace via
         if (event == CONNECTED)
           enable_reception();
 
-        signal_event_(event, enable::shared_from_this());
+        event_callback_(event, weak_from_this());
       }
 
-      /// @fn signal_event
+      /// @fn signal_error
       /// This function is called whenever an error event occurs.
       /// It sends the error signal, unless the socket adaptor determines
       /// that the error is a disconnect, in which case it sends a
@@ -94,16 +92,27 @@ namespace via
       /// @param error the boost asio error.
       void signal_error(const boost::system::error_code& error)
       {
-        if ((error == boost::asio::error::eof) ||
-             SocketAdaptor::is_disconnect(error))
-          signal_event_(DISCONNECTED, enable::shared_from_this());
+          if ((error == boost::asio::error::eof) ||
+                SocketAdaptor::is_disconnect(error))
+          event_callback_(DISCONNECTED, enable::shared_from_this());
         else
-          signal_error_(error, enable::shared_from_this());
+          error_callback_(error, weak_from_this());
+      }
+
+      /// @fn read_callback
+      /// The callback function called whenever a socket adaptor receives
+      /// a data packet.
+      /// It ensures that the object still exists before calling the handler.
+      static void read_callback(weak_pointer ptr,
+                                const boost::system::error_code& error,
+                                size_t bytes_transferred)
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer && (boost::asio::error::operation_aborted != error))
+          pointer->read_handler(error, bytes_transferred);
       }
 
       /// @fn read_handler
-      /// The callback function called whenever a socket adaptor receives
-      /// a data packet.
       /// If there was no error, it resizes the buffer to the size of the
       /// received packet and signals that a packet has been recieved.
       /// Otherwise it calls signal_error to determine whether the socket has
@@ -113,14 +122,27 @@ namespace via
       void read_handler(const boost::system::error_code& error,
                         size_t bytes_transferred)
       {
-        if (!error)
-        {
-          rx_queue_.back().resize(bytes_transferred);
-          enable_reception();
-          signal_event(RECEIVED);
-        }
-        else
-          signal_error(error);
+          if (!error)
+          {
+            rx_queue_.back().resize(bytes_transferred);
+            enable_reception();
+            signal_event(RECEIVED);
+          }
+          else
+            signal_error(error);
+      }
+
+      /// @fn write_callback
+      /// The callback function called whenever a socket adaptor sends
+      /// a data packet.
+      /// It ensures that the object still exists before calling the handler.
+      static void write_callback(weak_pointer ptr,
+                                const boost::system::error_code& error,
+                                size_t bytes_transferred)
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer && (boost::asio::error::operation_aborted != error))
+          pointer->write_handler(error, bytes_transferred);
       }
 
       /// @fn write_handler
@@ -135,16 +157,20 @@ namespace via
       void write_handler(const boost::system::error_code& error,
                          size_t) // bytes_transferred
       {
-        tx_queue_.pop_front();
-        is_writing_ = false;
-
         if (!error)
         {
+          tx_queue_.pop_front();
+          is_writing_ = false;
+
           if (!tx_queue_.empty())
           {
             is_writing_ = true;
             SocketAdaptor::write(&tx_queue_.front()[0],
-                                  tx_queue_.front().size());
+                                 tx_queue_.front().size(),
+                                 boost::bind(&connection::write_callback,
+                                             weak_from_this(),
+                                             boost::asio::placeholders::error,
+                                             boost::asio::placeholders::bytes_transferred));
           }
           else
             signal_event(SENT);
@@ -159,22 +185,18 @@ namespace via
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
       explicit connection(boost::asio::io_service& io_service,
+                          event_callback_type event_callback,
+                          error_callback_type error_callback,
                           unsigned short port_number) :
         SocketAdaptor(io_service,
-                      boost::bind(&connection::read_handler, this,
-                                  boost::asio::placeholders::error,
-                                  boost::asio::placeholders::bytes_transferred),
-                      boost::bind(&connection::write_handler, this,
-                                  boost::asio::placeholders::error,
-                                  boost::asio::placeholders::bytes_transferred),
                       boost::bind(&connection::signal_event, this, _1),
                       boost::bind(&connection::signal_error, this, _1),
                       port_number),
         rx_queue_(),
         tx_queue_(),
         is_writing_(false),
-        signal_event_(),
-        signal_error_()
+        event_callback_(event_callback),
+        error_callback_(error_callback)
       {}
 
     public:
@@ -199,24 +221,11 @@ namespace via
       /// socket adaptor.
       /// @param port_number required for UDP servers, default zero.
       static shared_pointer create(boost::asio::io_service& io_service,
+                                   event_callback_type event_callback,
+                                   error_callback_type error_callback,
                                    unsigned short port_number = 0)
-      { return shared_pointer(new connection(io_service, port_number)); }
-
-      /// @fn get_event_signal
-      /// A function to connect a slot to the event signal.
-      /// @param slot the slot to connect.
-      void get_event_signal(const event_slot_type& slot)
-      { signal_event_.connect(slot); }
-
-      /// @fn get_error_signal
-      /// A function to connect a slot to the error signal.
-      /// @param slot the slot to connect.
-      void get_error_signal(const error_slot_type& slot)
-      { signal_error_.connect(slot); }
-
-      /// The connection destructor disconnects the socket.
-      ~connection()
-      { disconnect(); }
+      { return shared_pointer(new connection(io_service, event_callback,
+                                             error_callback, port_number)); }
 
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
@@ -229,9 +238,14 @@ namespace via
       { return SocketAdaptor::connect(host_name, port_name); }
 
       /// @fn disconnect
-      /// Disconnect the underlying socket adaptor.
+      /// Shutdown the underlying socket adaptor.
       void disconnect()
-      { SocketAdaptor::stop(); }
+      { SocketAdaptor::shutdown(); }
+
+      /// @fn close
+      /// Close the underlying socket adaptor.
+      void close()
+      { SocketAdaptor::close(); }
 
       /// @fn enable_reception
       /// This function primes the receive buffer and calls the socket adaptor
@@ -240,7 +254,11 @@ namespace via
       {
         rx_queue_.push_back(Container(buffer_size(), 0));
         size_t size(buffer_size());
-        SocketAdaptor::read(&rx_queue_.back()[0], size);
+        SocketAdaptor::read(&rx_queue_.back()[0], size,
+            boost::bind(&connection::read_callback,
+                        weak_from_this(),
+                        boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred));
       }
 
       /// @fn read_pending
@@ -278,7 +296,11 @@ namespace via
         {
           is_writing_ = true;
           SocketAdaptor::write(&tx_queue_.front()[0],
-                                tx_queue_.front().size());
+                                tx_queue_.front().size(),
+             boost::bind(&connection::write_callback,
+                         weak_from_this(),
+                         boost::asio::placeholders::error,
+                         boost::asio::placeholders::bytes_transferred));
         }
       }
 
@@ -295,7 +317,11 @@ namespace via
         {
           is_writing_ = true;
           SocketAdaptor::write(&tx_queue_.front()[0],
-                                tx_queue_.front().size());
+                                tx_queue_.front().size(),
+              boost::bind(&connection::write_callback,
+                          weak_from_this(),
+                          boost::asio::placeholders::error,
+                          boost::asio::placeholders::bytes_transferred));
         }
       }
 #endif // BOOST_ASIO_HAS_MOVE

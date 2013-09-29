@@ -59,23 +59,26 @@ namespace via
     typedef typename Container::const_iterator Container_const_iterator;
 
     /// The signal sent when a request is received.
-    typedef boost::signal<void (const boost::weak_ptr<http_connection_type>,
-                                http::rx_request const&,
-                                Container const&)> http_request_signal;
+    typedef boost::signal
+      <void (const boost::weak_ptr<http_connection_type>,
+                                  http::rx_request const&,
+                                  Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signal<void (const boost::weak_ptr<http_connection_type>,
-                                http::rx_chunk const&,
-                                Container const&)> http_chunk_signal;
+    typedef boost::signal
+      <void (const boost::weak_ptr<http_connection_type>,
+                                  http::rx_chunk const&,
+                                  Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
     /// The signal sent when a socket is disconnected.
-    typedef boost::signal<void (const boost::weak_ptr<http_connection_type>)>
+    typedef boost::signal
+      <void (const boost::weak_ptr<http_connection_type>)>
                                                    http_disconnected_signal;
 
     /// The slot type associated with a socket disconnected signal.
@@ -111,17 +114,16 @@ namespace via
     /// @param port the number of the comms port.
     explicit http_server(boost::asio::io_service& io_service,
         unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT) :
-      server_(server_type::create(io_service, port)),
+      server_(server_type::create(io_service,
+        boost::bind(&http_server::event_handler, this, _1, _2),
+        boost::bind(&http_server::error_handler, this,
+                    boost::asio::placeholders::error, _2),
+        port)),
       http_connections_(),
       http_request_signal_(),
       http_chunk_signal_(),
       http_disconnected_signal_()
-    {
-      server_->get_event_signal
-          (boost::bind(&http_server::event_handler, this, _1, _2));
-      server_->get_error_signal
-          (boost::bind(&http_server::error_handler, this, _1, _2));
-    }
+    {}
 
     /// Start accepting connections on the communiations server.
     void start_accept()
