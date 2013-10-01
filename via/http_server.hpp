@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #ifdef HTTP_SSL
 #include <boost/asio/ssl/context.hpp>
@@ -59,7 +59,7 @@ namespace via
     typedef typename Container::const_iterator Container_const_iterator;
 
     /// The signal sent when a request is received.
-    typedef boost::signal
+    typedef boost::signals2::signal
       <void (const boost::weak_ptr<http_connection_type>,
                                   http::rx_request const&,
                                   Container const&)> http_request_signal;
@@ -68,7 +68,7 @@ namespace via
     typedef typename http_request_signal::slot_type http_request_signal_slot;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signal
+    typedef boost::signals2::signal
       <void (const boost::weak_ptr<http_connection_type>,
                                   http::rx_chunk const&,
                                   Container const&)> http_chunk_signal;
@@ -77,7 +77,7 @@ namespace via
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
     /// The signal sent when a socket is disconnected.
-    typedef boost::signal
+    typedef boost::signals2::signal
       <void (const boost::weak_ptr<http_connection_type>)>
                                                    http_disconnected_signal;
 
