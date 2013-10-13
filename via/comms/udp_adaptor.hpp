@@ -25,14 +25,20 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class udp_adaptor
     {
+      /// A connection hander callback function type.
+      /// @param error the (boost) error code.
+      /// @param size the number of bytes read or written.
+      typedef std::tr1::function<void (boost::system::error_code const&,
+                                       boost::asio::ip::udp::resolver::iterator)>
+                                             ConnectHandler;
+
       boost::asio::io_service& io_service_; ///< The asio io_service.
       /// The socket endpoint, used by normal / unconnected sockets.
       boost::asio::ip::udp::endpoint endpoint_;
       boost::asio::ip::udp::socket socket_; ///< The asio UDP socket.
+      boost::asio::ip::udp::resolver::iterator host_iterator_;
       unsigned short tx_port_number_;
       bool is_connected_; ///< True if the socket is in "connected" mode.
-      EventHandler event_handler_; ///< The event callback function.
-      ErrorHandler error_handler_; ///< The error callback function.
 
       /// @fn resolve_host
       /// resolves the host name and port.
@@ -46,25 +52,20 @@ namespace via
         return resolver.resolve(query);
       }
 
-      /// @fn handle_connect
-      /// The connect callback function.
-      /// @param error the boost asio error code.
-      void handle_connect(boost::system::error_code const& error)
+    protected:
+
+      void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
-        if (boost::asio::error::operation_aborted != error)
-        {
-          if (error)
-          {
-            shutdown();
-            error_handler_(error);
-          }
-          else
-            // signal connected
-            event_handler_(CONNECTED);
-        }
+        boost::system::error_code ec; // Default is success
+        handshake_handler(ec);
       }
 
-    protected:
+      /// @fn connect_socket
+      /// Attempts to connect to the given resolver iterator.
+      /// @param itr the resolver iterator.
+      void connect_socket(ConnectHandler connectHandler,
+                          boost::asio::ip::udp::resolver::iterator host_iterator)
+      { boost::asio::async_connect(socket_, host_iterator, connectHandler); }
 
       /// The udp_adaptor onstructor.
       /// @param io_service the asio io_service associted with this connection
@@ -74,20 +75,19 @@ namespace via
       /// @param error_handler the error handler callback function.
       /// @param port_number the port number of a udp server.
       explicit udp_adaptor(boost::asio::io_service& io_service,
-                           EventHandler event_handler,
-                           ErrorHandler error_handler,
-                           unsigned int port_number = 0) :
+                           unsigned short port_number = 0) :
         io_service_(io_service),
         endpoint_(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(),
                                                  port_number)),
         socket_(io_service_, endpoint_),
+        host_iterator_(),
         tx_port_number_(0),
-        is_connected_(false),
-        event_handler_(event_handler),
-        error_handler_(error_handler)
+        is_connected_(false)
       {}
 
     public:
+
+      typedef boost::asio::ip::udp::resolver::iterator resolver_iterator;
 
       virtual ~udp_adaptor()
       {}
@@ -101,7 +101,7 @@ namespace via
         socket_.set_option(option);
         endpoint_ = boost::asio::ip::udp::endpoint
                       (boost::asio::ip::address_v4::broadcast(), port_number);
-        start();
+ //  TODO     start();
       }
 
       /// Set transmit port number for a UDP socket in broadcast mode.
@@ -119,18 +119,14 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       /// @return true if able to connect to the port, false otherwise.
-      bool connect(const char* host_name, const char* port_name)
+      bool connect(const char* host_name, const char* port_name,
+                   ConnectHandler connectHandler)
       {
-        boost::asio::ip::udp::resolver::iterator host_iterator
-            (resolve_host(host_name, port_name));
-        if (host_iterator == boost::asio::ip::udp::resolver::iterator())
+        host_iterator_ = resolve_host(host_name, port_name);
+        if (host_iterator_ == boost::asio::ip::udp::resolver::iterator())
           return false;
 
-        endpoint_ = *host_iterator;
-        socket_.async_connect(endpoint_,
-                              boost::bind(&udp_adaptor::handle_connect, this,
-                                          boost::asio::placeholders::error));
-
+        connect_socket(connectHandler, host_iterator_);
         return true;
       }
 
@@ -187,11 +183,8 @@ namespace via
       /// @fn start
       /// The udp socket start function.
       /// Signals that the socket is connected.
-      void start()
-      {
-        // signal connected
-        event_handler_(CONNECTED);
-      }
+      void start(ErrorHandler handshake_handler)
+      { handshake(handshake_handler, true); }
 
       /// @fn is_disconnect
       /// This function determines whether the error is a socket disconnect.

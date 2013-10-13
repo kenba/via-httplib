@@ -47,6 +47,8 @@ namespace via
       typedef typename boost::enable_shared_from_this
                               <connection<SocketAdaptor, Container> > enable;
 
+      typedef typename SocketAdaptor::resolver_iterator resolver_iterator;
+
       /// Event callback function type.
       typedef std::tr1::function<void (int, weak_pointer)> event_callback_type;
 
@@ -90,11 +92,11 @@ namespace via
       /// that the error is a disconnect, in which case it sends a
       /// DISCONNECTED event instead.
       /// @param error the boost asio error.
-      void signal_error(const boost::system::error_code& error)
+      void signal_error(boost::system::error_code const& error)
       {
           if ((error == boost::asio::error::eof) ||
                 SocketAdaptor::is_disconnect(error))
-          event_callback_(DISCONNECTED, enable::shared_from_this());
+          event_callback_(DISCONNECTED, weak_from_this());
         else
           error_callback_(error, weak_from_this());
       }
@@ -104,12 +106,17 @@ namespace via
       /// a data packet.
       /// It ensures that the object still exists before calling the handler.
       static void read_callback(weak_pointer ptr,
-                                const boost::system::error_code& error,
+                                boost::system::error_code const& error,
                                 size_t bytes_transferred)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
-          pointer->read_handler(error, bytes_transferred);
+        {
+          if (error)
+            pointer->signal_error(error);
+          else
+            pointer->read_handler(bytes_transferred);
+        }
       }
 
       /// @fn read_handler
@@ -117,19 +124,12 @@ namespace via
       /// received packet and signals that a packet has been recieved.
       /// Otherwise it calls signal_error to determine whether the socket has
       /// been disconnected or to pass on the error.
-      /// @param error the boost asio error (if any).
       /// @param bytes_transferred the size of the received data packet.
-      void read_handler(const boost::system::error_code& error,
-                        size_t bytes_transferred)
+      void read_handler(size_t bytes_transferred)
       {
-          if (!error)
-          {
-            rx_queue_.back().resize(bytes_transferred);
-            enable_reception();
-            signal_event(RECEIVED);
-          }
-          else
-            signal_error(error);
+        rx_queue_.back().resize(bytes_transferred);
+        enable_reception();
+        event_callback_(RECEIVED, weak_from_this());
       }
 
       /// @fn write_callback
@@ -137,12 +137,17 @@ namespace via
       /// a data packet.
       /// It ensures that the object still exists before calling the handler.
       static void write_callback(weak_pointer ptr,
-                                const boost::system::error_code& error,
+                                boost::system::error_code const& error,
                                 size_t bytes_transferred)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
-          pointer->write_handler(error, bytes_transferred);
+        {
+          if (error)
+            pointer->signal_error(error);
+          else
+            pointer->write_handler(bytes_transferred);
+        }
       }
 
       /// @fn write_handler
@@ -154,30 +159,76 @@ namespace via
       /// Otherwise it calls signal_error to determine whether the socket has
       /// been disconnected or to pass on the error.
       /// received packet and signals that a packet has been recieved.
-      void write_handler(const boost::system::error_code& error,
-                         size_t) // bytes_transferred
+      void write_handler(size_t) // bytes_transferred
       {
-        if (!error)
-        {
-          tx_queue_.pop_front();
-          is_writing_ = false;
+        tx_queue_.pop_front();
 
-          if (!tx_queue_.empty())
-          {
-            is_writing_ = true;
-            SocketAdaptor::write(&tx_queue_.front()[0],
-                                 tx_queue_.front().size(),
-                                 boost::bind(&connection::write_callback,
-                                             weak_from_this(),
-                                             boost::asio::placeholders::error,
-                                             boost::asio::placeholders::bytes_transferred));
-          }
-          else
-            signal_event(SENT);
+        if (!tx_queue_.empty())
+        {
+          SocketAdaptor::write(&tx_queue_.front()[0],
+                                tx_queue_.front().size(),
+                                boost::bind(&connection::write_callback,
+                                            weak_from_this(),
+                                            boost::asio::placeholders::error,
+                                            boost::asio::placeholders::bytes_transferred));
         }
         else
-          signal_error(error);
+          is_writing_ = false;
+
+        event_callback_(SENT, weak_from_this());
       }
+      
+      /// @fn handshake_callback
+      /// The callback function called whenever a socket adaptor sends
+      /// completes a connection.
+      static void handshake_callback(weak_pointer ptr,
+                                     boost::system::error_code const& error)
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer && (boost::asio::error::operation_aborted != error))
+        {
+          if (error)
+          {
+            pointer->shutdown();
+            pointer->signal_error(error);
+          }
+          else
+          {
+            pointer->enable_reception();
+            pointer->event_callback_(CONNECTED, ptr);
+          }
+        }
+      }
+
+      /// @fn connect_callback
+      /// The callback function called whenever a socket adaptor connects.
+      static void connect_callback(weak_pointer ptr,
+                                   boost::system::error_code const& error,
+                                   resolver_iterator host_iterator)
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer && (boost::asio::error::operation_aborted != error))
+        {
+          if (!error)
+            pointer->handshake(boost::bind(&connection::handshake_callback, ptr, 
+                               boost::asio::placeholders::error));
+          else
+          {
+            if ((boost::asio::error::host_not_found == error) &&
+                (resolver_iterator() != host_iterator))
+              pointer->connect_socket(boost::bind(&connection::connect_callback, ptr,
+                                                  boost::asio::placeholders::error,
+                                                  boost::asio::placeholders::iterator),
+                                      host_iterator);
+            else
+            {
+              pointer->shutdown();
+              pointer->signal_error(error);
+            }
+          }
+        }
+      }
+
 
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
@@ -188,10 +239,7 @@ namespace via
                           event_callback_type event_callback,
                           error_callback_type error_callback,
                           unsigned short port_number) :
-        SocketAdaptor(io_service,
-                      boost::bind(&connection::signal_event, this, _1),
-                      boost::bind(&connection::signal_error, this, _1),
-                      port_number),
+        SocketAdaptor(io_service, port_number),
         rx_queue_(),
         tx_queue_(),
         is_writing_(false),
@@ -224,8 +272,10 @@ namespace via
                                    event_callback_type event_callback,
                                    error_callback_type error_callback,
                                    unsigned short port_number = 0)
-      { return shared_pointer(new connection(io_service, event_callback,
-                                             error_callback, port_number)); }
+      {
+        return shared_pointer(new connection(io_service, event_callback,
+                                             error_callback, port_number));
+      }
 
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
@@ -235,7 +285,18 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       bool connect(const char *host_name, const char *port_name)
-      { return SocketAdaptor::connect(host_name, port_name); }
+      { 
+        return SocketAdaptor::connect(host_name, port_name,
+          boost::bind(&connection::connect_callback, weak_from_this(),
+                      boost::asio::placeholders::error,
+                      boost::asio::placeholders::iterator));
+      }
+
+      void start()
+      {
+        SocketAdaptor::start(boost::bind(&connection::handshake_callback, weak_from_this(),
+                                         boost::asio::placeholders::error));
+      }
 
       /// @fn disconnect
       /// Shutdown the underlying socket adaptor.

@@ -25,12 +25,14 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
+      typedef std::tr1::function<void (boost::system::error_code const&,
+                                       boost::asio::ip::tcp::resolver::iterator)>
+                                             ConnectHandler;
+
       boost::asio::io_service& io_service_; ///< The asio io_service.
       boost::asio::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.
       boost::asio::ip::tcp::resolver::iterator host_iterator_;
-      EventHandler event_handler_; ///< The event callback function.
-      ErrorHandler error_handler_; ///< The error callback function.
 
       /// @fn resolve_host
       /// resolves the host name and port.
@@ -44,44 +46,22 @@ namespace via
         return resolver.resolve(query);
       }
 
+    protected:
+
+      void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
+      {
+        boost::system::error_code ec; // Default is success
+        handshake_handler(ec);
+      }
+        
       /// @fn connect_socket
       /// Attempts to connect to the given resolver iterator.
       /// @param itr the resolver iterator.
-      void connect_socket(boost::asio::ip::tcp::resolver::iterator itr)
+      void connect_socket(ConnectHandler connectHandler,
+                          boost::asio::ip::tcp::resolver::iterator host_iterator)
       {
-        socket_.async_connect(*itr,
-                              boost::bind(&tcp_adaptor::handle_connect, this,
-                                          boost::asio::placeholders::error));
+        boost::asio::async_connect(socket_, host_iterator, connectHandler);
       }
-
-      /// @fn handle_connect
-      /// The connect callback function.
-      /// @param error the boost asio error code.
-      void handle_connect(boost::system::error_code const& error)
-      {
-        if (boost::asio::error::operation_aborted != error)
-        {
-          if (error)
-          {
-            if ((boost::asio::error::host_not_found == error) &&
-                (boost::asio::ip::tcp::resolver::iterator() != host_iterator_))
-            {
-              close();
-              connect_socket(++host_iterator_);
-            }
-            else
-            {
-              shutdown();
-              error_handler_(error);
-            }
-          }
-          else
-            // signal connected
-            event_handler_(CONNECTED);
-        }
-      }
-
-    protected:
 
       /// The tcp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
@@ -91,18 +71,16 @@ namespace via
       /// @param error_handler the error handler callback function.
       /// @param int not required for tcp connections.
       explicit tcp_adaptor(boost::asio::io_service& io_service,
-                           EventHandler event_handler,
-                           ErrorHandler error_handler,
-                           unsigned int /*port_number*/) :
+                           unsigned short /*port_number*/) :
         io_service_(io_service),
         socket_(io_service_),
-        host_iterator_(boost::asio::ip::tcp::resolver::iterator()),
-        event_handler_(event_handler),
-        error_handler_(error_handler)
+        host_iterator_()
       {}
 
     public:
 
+      typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
+      
       virtual ~tcp_adaptor()
       {}
 
@@ -115,13 +93,14 @@ namespace via
       /// Server connections are accepted by the server instead.
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
-      bool connect(const char* host_name, const char* port_name)
+      bool connect(const char* host_name, const char* port_name,
+                   ConnectHandler connectHandler)
       {
         host_iterator_ = resolve_host(host_name, port_name);
         if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
           return false;
 
-        connect_socket(host_iterator_);
+        connect_socket(connectHandler, host_iterator_);
         return true;
       }
 
@@ -167,11 +146,8 @@ namespace via
       /// @fn start
       /// The tcp socket start function.
       /// Signals that the socket is connected.
-      void start()
-      {
-        // signal connected
-        event_handler_(CONNECTED);
-      }
+      void start(ErrorHandler handshake_handler)
+      { handshake(handshake_handler, true); }
 
       /// @fn is_disconnect
       /// This function determines whether the error is a socket disconnect.

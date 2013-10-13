@@ -35,75 +35,27 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        boost::asio::io_service& io_service_; ///< The asio io_service.
+        typedef std::tr1::function<void (boost::system::error_code const&,
+                                         boost::asio::ip::tcp::resolver::iterator)>
+                                               ConnectHandler;
+
+        /// The asio io_service.
+        boost::asio::io_service& io_service_;
         /// The asio SSL TCP socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
         boost::asio::ip::tcp::resolver::iterator host_iterator_;
-        EventHandler event_handler_; ///< The event callback function.
-        ErrorHandler error_handler_; ///< The error callback function.
 
         /// @fn resolve_host
         /// resolves the host name and port.
         /// @param host_name the host name.
         /// @param port_name the host port.
         boost::asio::ip::tcp::resolver::iterator resolve_host
-        (char const* host_name, char const* port_name) const
+          (char const* host_name, char const* port_name) const
         {
           boost::asio::ip::tcp::resolver resolver(io_service_);
           boost::asio::ip::tcp::resolver::query query(host_name, port_name);
           return resolver.resolve(query);
-        }
-
-        /// @fn connect_socket
-        /// Attempts to connect to the given resolver iterator.
-        /// @param itr the resolver iterator.
-        bool connect_socket(boost::asio::ip::tcp::resolver::iterator itr)
-        {
-          if (boost::asio::ip::tcp::resolver::iterator() == itr)
-            return false;
-
-          socket_.set_verify_callback
-              (boost::bind(&ssl_tcp_adaptor::verify_certificate,
-                           this, _1, _2));
-
-          // Attempt to connect to the host
-          boost::asio::async_connect(socket_.lowest_layer(), itr,
-                         boost::bind(&ssl_tcp_adaptor::handle_connect, this,
-                                     boost::asio::placeholders::error));
-
-          return true;
-        }
-
-        /// @fn handle_connect
-        /// The connect callback function.
-        /// @param error the boost asio error code.
-        void handle_connect(boost::system::error_code const& error)
-        {
-          if (boost::asio::error::operation_aborted != error)
-          {
-            if (error)
-            {
-              if ((boost::asio::error::host_not_found == error) &&
-                  (boost::asio::ip::tcp::resolver::iterator() != host_iterator_))
-              {
-                close();
-                connect_socket(++host_iterator_);
-              }
-              else
-              {
-                shutdown();
-                error_handler_(error);
-              }
-            }
-            else
-              // Perform the client SSL handshake
-              // Note: this is NOT the same as start(), which is the server
-              // handshake.
-              socket_.async_handshake(boost::asio::ssl::stream_base::client,
-                                      boost::bind(&ssl_tcp_adaptor::handle_handshake, this,
-                                                  boost::asio::placeholders::error));
-          }
         }
 
         /// @fn verify_certificate
@@ -114,8 +66,8 @@ namespace via
         /// Consult the OpenSSL documentation for more details.
         /// Note that the callback is called once for each certificate in the
         /// certificate chain, starting from the root certificate authority.
-        bool verify_certificate(bool preverified,
-                                boost::asio::ssl::verify_context& ctx)
+        static bool verify_certificate(bool preverified,
+                                       boost::asio::ssl::verify_context& ctx)
         {
           // In this example we can simply print the certificate's subject name.
           char subject_name[256];
@@ -125,25 +77,33 @@ namespace via
           return preverified;
         }
 
-        /// @fn handle_handshake
-        /// The handshake callback function.
-        /// @param error the boost asio error code.
-        void handle_handshake(boost::system::error_code const& error)
+      protected:
+
+        /// @fn handshake
+        /// Asynchorously performs the ssl handshake.
+        /// @param handshake_handler the handshake callback function.
+        /// @param is_server whether performing client or server handshaking,
+        /// default client.
+        void handshake(ErrorHandler handshake_handler, bool is_server = false)
         {
-          if (boost::asio::error::operation_aborted != error)
-          {
-            if (error)
-            {
-              shutdown();
-              error_handler_(error);
-            }
-            else
-              // signal connected
-              event_handler_(CONNECTED);
-          }
+          socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
+                                            : boost::asio::ssl::stream_base::client, 
+                                  handshake_handler);
         }
 
-      protected:
+        /// @fn connect_socket
+        /// Attempts to connect to the given resolver iterator.
+        /// @param itr the resolver iterator.
+        void connect_socket(ConnectHandler connectHandler,
+                            boost::asio::ip::tcp::resolver::iterator host_iterator)
+        {
+          socket_.set_verify_callback
+              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
+
+          // Attempt to connect to the host
+          boost::asio::async_connect(socket_.lowest_layer(), host_iterator,
+                                     connectHandler);
+        }
 
         /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
@@ -153,17 +113,15 @@ namespace via
         /// @param error_handler the error handler callback function.
         /// @param int not required for tcp connections.
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service,
-                                 EventHandler event_handler,
-                                 ErrorHandler error_handler,
-                                 unsigned int /*port_number*/) :
+                                 unsigned short /*port_number*/) :
           io_service_(io_service),
           socket_(io_service_, ssl_context()),
-          host_iterator_(boost::asio::ip::tcp::resolver::iterator()),
-          event_handler_(event_handler),
-          error_handler_(error_handler)
+          host_iterator_()
         {}
 
       public:
+
+        typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
 
         virtual ~ssl_tcp_adaptor()
         {}
@@ -188,7 +146,8 @@ namespace via
         /// Server connections are accepted by the server instead.
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
-        bool connect(const char* host_name, const char* port_name)
+        bool connect(const char* host_name, const char* port_name,
+                     ConnectHandler connectHandler)
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
 
@@ -196,7 +155,7 @@ namespace via
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
             return false;
 
-          connect_socket(host_iterator_);
+          connect_socket(connectHandler, host_iterator_);
           return true;
         }
 
@@ -242,12 +201,9 @@ namespace via
         /// @fn start
         /// The ssl tcp socket start function.
         /// Signals that the socket is connected.
-        void start()
+        void start(ErrorHandler handshake_handler)
         {
-          socket_.async_handshake
-              (boost::asio::ssl::stream_base::server,
-               boost::bind(&ssl_tcp_adaptor::handle_handshake,
-                           this, boost::asio::placeholders::error));
+          handshake(handshake_handler, true);
         }
 
         /// @fn is_disconnect
