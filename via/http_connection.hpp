@@ -77,7 +77,7 @@ namespace via
         tcp_pointer->send_data(packet);
 
         if (keep_alive)
-          return tcp_pointer->read_pending();
+          return true;
         else
           tcp_pointer->shutdown();
 
@@ -131,16 +131,13 @@ namespace via
       if (!tcp_pointer)
         return http::RX_INCOMPLETE;
 
-      // attempt to read the data
-      while (tcp_pointer->read_pending())
-      {
-        Container data(tcp_pointer->read_data());
-        http::receiver_parsing_state rx_state
-            (rx_.receive(data.begin(), data.end()));
+      // read the data
+      Container const& data(tcp_pointer->rx_buffer());
+      http::receiver_parsing_state rx_state
+          (rx_.receive(data.begin(), data.end()));
 
-        if (rx_state != http::RX_INCOMPLETE)
-          return rx_state;
-      }
+      if (rx_state != http::RX_INCOMPLETE)
+        return rx_state;
 
       return http::RX_INCOMPLETE;
     }

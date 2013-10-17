@@ -76,28 +76,27 @@ namespace via
       /// @param error the error, if any.
       void accept_handler(const boost::system::error_code& error)
       {
-        if (!acceptor_.is_open())
-          return;
-
-        if (!error)
+        if (acceptor_.is_open() &&
+            (boost::asio::error::operation_aborted != error))
         {
-          boost::shared_ptr<connection_type>
-                  new_connection(connection_type::create(io_service_,
-                                 boost::bind(&server::event_handler, this,
-                                             _1, _2),
-                                 boost::bind(&server::error_handler, this,
-                                             boost::asio::placeholders::error,
-                                             _2)));
-          new_connection.swap(next_connection_);
+          if (error)
+            error_callback_(error, next_connection_);
+          else
+          {
+            boost::shared_ptr<connection_type> new_connection
+                (connection_type::create(io_service_,
+                    boost::bind(&server::event_handler, this, _1, _2),
+                    boost::bind(&server::error_handler, this,
+                                boost::asio::placeholders::error, _2)));
+            new_connection.swap(next_connection_);
 
-          new_connection->start();
+            new_connection->start();
 
-          connections_.insert(new_connection);
+            connections_.insert(new_connection);
+          }
+
+          start_accept();
         }
-        else
-          error_callback_(error, next_connection_);
-
-        start_accept();
       }
 
       /// @fn event_handler.
@@ -136,6 +135,8 @@ namespace via
       /// The server constructor.
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
       /// @param port the port number to serve.
       explicit server(boost::asio::io_service& io_service,
                       event_callback_type event_callback,
@@ -144,11 +145,9 @@ namespace via
         io_service_(io_service),
         acceptor_(io_service),
         next_connection_(connection_type::create(io_service_,
-                                   boost::bind(&server::event_handler, this,
-                                               _1, _2),
-                                   boost::bind(&server::error_handler, this,
-                                               boost::asio::placeholders::error,
-                                               _2))),
+            boost::bind(&server::event_handler, this, _1, _2),
+            boost::bind(&server::error_handler, this,
+                        boost::asio::placeholders::error, _2))),
         connections_(),
         password_(),
         event_callback_(event_callback),
@@ -168,6 +167,8 @@ namespace via
       /// @fn create
       /// Function to create a shared pointer to a server.
       /// @param io_service the boost asio io_service used by the server.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
       /// @param port the port number to serve.
       static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
                                               event_callback_type event_callback,

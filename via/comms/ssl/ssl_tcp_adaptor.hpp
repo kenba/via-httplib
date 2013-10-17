@@ -35,12 +35,14 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
+        /// A connection hander callback function type.
+        /// @param error the (boost) error code.
+        /// @param host_iterator the resolver_iterator
         typedef std::tr1::function<void (boost::system::error_code const&,
                                          boost::asio::ip::tcp::resolver::iterator)>
                                                ConnectHandler;
 
-        /// The asio io_service.
-        boost::asio::io_service& io_service_;
+        boost::asio::io_service& io_service_; ///< The asio io_service.
         /// The asio SSL TCP socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
@@ -107,11 +109,7 @@ namespace via
 
         /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
-        /// @param read_handler the read callback function.
-        /// @param write_handler the write callback function.
-        /// @param event_handler the event handler callback function.
-        /// @param error_handler the error handler callback function.
-        /// @param int not required for tcp connections.
+        /// @param port_number not required for tcp connections.
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service,
                                  unsigned short /*port_number*/) :
           io_service_(io_service),
@@ -121,8 +119,10 @@ namespace via
 
       public:
 
+        /// The type of resolver iterator used by this socket.
         typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
 
+        /// A virtual destructor because connection inherits from this class.
         virtual ~ssl_tcp_adaptor()
         {}
 
@@ -163,7 +163,7 @@ namespace via
         /// The ssl tcp socket read function.
         /// @param ptr pointer to the receive buffer.
         /// @param size the size of the receive buffer.
-        void read(void* ptr, size_t& size, CommsHandler read_handler)
+        void read(void* ptr, size_t size, CommsHandler read_handler)
         {
           socket_.async_read_some
               (boost::asio::buffer(ptr, size), read_handler);

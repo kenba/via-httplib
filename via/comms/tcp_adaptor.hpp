@@ -25,6 +25,9 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
+      /// A connection hander callback function type.
+      /// @param error the (boost) error code.
+      /// @param host_iterator the resolver_iterator
       typedef std::tr1::function<void (boost::system::error_code const&,
                                        boost::asio::ip::tcp::resolver::iterator)>
                                              ConnectHandler;
@@ -48,6 +51,12 @@ namespace via
 
     protected:
 
+      /// @fn handshake
+      /// Performs the SSL handshake. Since this isn't an SSL socket, it just
+      /// calls the handshake_handler with a success error code.
+      /// @param handshake_handler the handshake callback function.
+      /// @param is_server whether performing client or server handshaking,
+      /// not used by un-encrypted sockets.
       void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
         boost::system::error_code ec; // Default is success
@@ -56,20 +65,15 @@ namespace via
         
       /// @fn connect_socket
       /// Attempts to connect to the given resolver iterator.
-      /// @param itr the resolver iterator.
-      void connect_socket(ConnectHandler connectHandler,
+      /// @param connect_handler the connect callback function.
+      /// @param host_iterator the resolver iterator.
+      void connect_socket(ConnectHandler connect_handler,
                           boost::asio::ip::tcp::resolver::iterator host_iterator)
-      {
-        boost::asio::async_connect(socket_, host_iterator, connectHandler);
-      }
+      { boost::asio::async_connect(socket_, host_iterator, connect_handler); }
 
       /// The tcp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
-      /// @param read_handler the read callback function.
-      /// @param write_handler the write callback function.
-      /// @param event_handler the event handler callback function.
-      /// @param error_handler the error handler callback function.
-      /// @param int not required for tcp connections.
+      /// @param port_number not required for tcp connections.
       explicit tcp_adaptor(boost::asio::io_service& io_service,
                            unsigned short /*port_number*/) :
         io_service_(io_service),
@@ -79,8 +83,10 @@ namespace via
 
     public:
 
+      /// The type of resolver iterator used by this socket.
       typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
       
+      /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()
       {}
 
@@ -108,7 +114,7 @@ namespace via
       /// The tcp socket read function.
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
-      void read(void* ptr, size_t& size, CommsHandler read_handler)
+      void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         socket_.async_read_some
             (boost::asio::buffer(ptr, size), read_handler);
@@ -146,6 +152,7 @@ namespace via
       /// @fn start
       /// The tcp socket start function.
       /// Signals that the socket is connected.
+      /// @param handshake_handler the handshake callback function.
       void start(ErrorHandler handshake_handler)
       { handshake(handshake_handler, true); }
 

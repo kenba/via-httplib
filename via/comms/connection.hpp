@@ -47,6 +47,7 @@ namespace via
       typedef typename boost::enable_shared_from_this
                               <connection<SocketAdaptor, Container> > enable;
 
+      /// the resolver_iterator type of the SocketAdaptor
       typedef typename SocketAdaptor::resolver_iterator resolver_iterator;
 
       /// Event callback function type.
@@ -58,9 +59,8 @@ namespace via
 
     private:
 
-      std::deque<Container> rx_queue_; ///< The receive buffer.
-      std::deque<Container> tx_queue_; ///< The transmit buffer.
-      bool is_writing_;                ///< A flag for the transmit buffer.
+      Container rx_buffer_;                ///< The receive buffer.
+      std::deque<Container> tx_queue_;     ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
 
@@ -72,19 +72,6 @@ namespace via
       /// @return a weak_pointer to this connection.
       weak_pointer weak_from_this()
       { return weak_pointer(enable::shared_from_this()); }
-
-      /// @fn signal_event
-      /// This function is called whenever a comms event occurs.
-      /// It sends the event signal and in the case of the connection
-      /// becoming connected, it enables the recevier on the connection.
-      /// @param event the event, @see event_type.
-      void signal_event(int event)
-      {
-        if (event == CONNECTED)
-          enable_reception();
-
-        event_callback_(event, weak_from_this());
-      }
 
       /// @fn signal_error
       /// This function is called whenever an error event occurs.
@@ -102,9 +89,13 @@ namespace via
       }
 
       /// @fn read_callback
-      /// The callback function called whenever a socket adaptor receives
-      /// a data packet.
-      /// It ensures that the object still exists before calling the handler.
+      /// The function called whenever a socket adaptor receives a data packet.
+      /// It ensures that the connection still exists and the event is valid.
+      /// If there was an error it calls the connection's signal_error
+      /// function, otherwise it calls the connection's read_handler.
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
+      /// @param bytes_transferred the size of the received data packet.
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
                                 size_t bytes_transferred)
@@ -120,25 +111,29 @@ namespace via
       }
 
       /// @fn read_handler
-      /// If there was no error, it resizes the buffer to the size of the
-      /// received packet and signals that a packet has been recieved.
-      /// Otherwise it calls signal_error to determine whether the socket has
-      /// been disconnected or to pass on the error.
+      /// The function called whenever a data packet has been received.
+      /// It resizes the receive buffer to the size of the received packet,
+      /// signals that a packet has been received and then calls
+      /// enable_reception to listen for the next packet.
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
-        rx_queue_.back().resize(bytes_transferred);
-        enable_reception();
+        rx_buffer_.resize(bytes_transferred);
         event_callback_(RECEIVED, weak_from_this());
+        enable_reception();
       }
 
       /// @fn write_callback
-      /// The callback function called whenever a socket adaptor sends
-      /// a data packet.
-      /// It ensures that the object still exists before calling the handler.
+      /// The function called whenever a socket adaptor has sent a data packet.
+      /// It ensures that the connection still exists and the event is valid.
+      /// If there was an error it calls the connection's signal_error
+      /// function, otherwise it calls the connection's write_handler.
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
+      /// @param bytes_transferred the size of the sent data packet.
       static void write_callback(weak_pointer ptr,
-                                boost::system::error_code const& error,
-                                size_t bytes_transferred)
+                                 boost::system::error_code const& error,
+                                 size_t bytes_transferred)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -151,36 +146,36 @@ namespace via
       }
 
       /// @fn write_handler
-      /// The callback function called whenever a socket adaptor sends
-      /// a data packet.
-      /// If there was no error, it removes the packet at the front of the
-      /// tx queue and attempts to send the next packet. If there are no
-      /// more packets to send, it signals that the packets were sent.
-      /// Otherwise it calls signal_error to determine whether the socket has
-      /// been disconnected or to pass on the error.
-      /// received packet and signals that a packet has been recieved.
+      /// The function called whenever a data packet has been sent.
+      /// It removes the data packet at the front of the transmit queue, sends
+      /// the next packet in the queue (if any) and signals that that a packet
+      /// has been sent.
+      /// @param bytes_transferred the size of the sent data packet.
       void write_handler(size_t) // bytes_transferred
       {
         tx_queue_.pop_front();
 
         if (!tx_queue_.empty())
         {
-          SocketAdaptor::write(&tx_queue_.front()[0],
-                                tx_queue_.front().size(),
-                                boost::bind(&connection::write_callback,
-                                            weak_from_this(),
-                                            boost::asio::placeholders::error,
-                                            boost::asio::placeholders::bytes_transferred));
+          SocketAdaptor::write(&tx_queue_.front()[0], tx_queue_.front().size(),
+              boost::bind(&connection::write_callback,
+                          weak_from_this(),
+                          boost::asio::placeholders::error,
+                          boost::asio::placeholders::bytes_transferred));
         }
-        else
-          is_writing_ = false;
 
         event_callback_(SENT, weak_from_this());
       }
       
       /// @fn handshake_callback
-      /// The callback function called whenever a socket adaptor sends
-      /// completes a connection.
+      /// The function called whenever a socket adaptor receives a connection
+      /// handshake.
+      /// It ensures that the connection still exists and the event is valid.
+      /// If there was an error, it shutdowns the connection and signals the
+      /// error. Otherwise, it calls enable_reception to listen on the
+      /// connection and signals that it's connected.
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
       static void handshake_callback(weak_pointer ptr,
                                      boost::system::error_code const& error)
       {
@@ -201,7 +196,16 @@ namespace via
       }
 
       /// @fn connect_callback
-      /// The callback function called whenever a socket adaptor connects.
+      /// The function called whenever a socket adaptor attempts to connect.
+      /// It ensures that the connection still exists and the event is valid.
+      /// If there was no error, it attempts to handshake on the connection -
+      /// this shall always be accepted for an unencypted conection.
+      /// If the error was host not found and there are more host to try,
+      /// it attempts to connect to the next host
+      /// Otherwise it shuts down and signals an error
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
+      /// @param host_iterator an iterator to the host to connect to.
       static void connect_callback(weak_pointer ptr,
                                    boost::system::error_code const& error,
                                    resolver_iterator host_iterator)
@@ -216,10 +220,11 @@ namespace via
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
-              pointer->connect_socket(boost::bind(&connection::connect_callback, ptr,
-                                                  boost::asio::placeholders::error,
-                                                  boost::asio::placeholders::iterator),
-                                      host_iterator);
+              pointer->connect_socket
+                  (boost::bind(&connection::connect_callback, ptr,
+                               boost::asio::placeholders::error,
+                               boost::asio::placeholders::iterator),
+                   ++host_iterator);
             else
             {
               pointer->shutdown();
@@ -229,20 +234,21 @@ namespace via
         }
       }
 
-
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      /// @param port_number the port number (only applies to UDP servers).
       explicit connection(boost::asio::io_service& io_service,
                           event_callback_type event_callback,
                           error_callback_type error_callback,
                           unsigned short port_number) :
         SocketAdaptor(io_service, port_number),
-        rx_queue_(),
+        rx_buffer_(),
         tx_queue_(),
-        is_writing_(false),
         event_callback_(event_callback),
         error_callback_(error_callback)
       {}
@@ -267,6 +273,8 @@ namespace via
       /// The factory function to create connections.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
       /// @param port_number required for UDP servers, default zero.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    event_callback_type event_callback,
@@ -292,9 +300,12 @@ namespace via
                       boost::asio::placeholders::iterator));
       }
 
+      /// @fn start
+      /// Start the handshake for a server connection.
       void start()
       {
-        SocketAdaptor::start(boost::bind(&connection::handshake_callback, weak_from_this(),
+        SocketAdaptor::start(boost::bind(&connection::handshake_callback,
+                                         weak_from_this(),
                                          boost::asio::placeholders::error));
       }
 
@@ -309,53 +320,37 @@ namespace via
       { SocketAdaptor::close(); }
 
       /// @fn enable_reception
-      /// This function primes the receive buffer and calls the socket adaptor
-      /// to read the next received data packet.
+      /// This function prepares the receive buffer and calls the
+      /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_queue_.push_back(Container(buffer_size(), 0));
-        size_t size(buffer_size());
-        SocketAdaptor::read(&rx_queue_.back()[0], size,
+        rx_buffer_.resize(buffer_size());
+        SocketAdaptor::read(&rx_buffer_[0], buffer_size(),
             boost::bind(&connection::read_callback,
                         weak_from_this(),
                         boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred));
       }
 
-      /// @fn read_pending
-      /// This function returns true if there is at least one received data
-      /// packet ready to be read.
-      /// @return true if there is one (or more) received data packets ready,
-      /// false otherwise.
-      bool read_pending() const
-      { return rx_queue_.size() > 1; }
-
-      /// @fn read_data
-      /// This function returns the data packet at the head of the queue
-      /// an "pops" it off the head of the queue.
-      /// @pre There must be at least one data packet in the queue, i.e.
-      /// read_pending() == true.
-      /// Otherwise the function will assert an error.
+      /// @fn rx_buffer
+      /// Accessor for the receive buffer.
+      /// @pre Only valid within the receive even callback function.
       /// @return the data packet at the head of the receive queue.
-      Container read_data()
-      {
-        assert(read_pending());
-        Container data(rx_queue_.front());
-        rx_queue_.pop_front();
-        return data;
-      }
+      Container const& rx_buffer()
+      { return rx_buffer_; }
 
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
-      /// The data is put on the back of the queue, whilst the function
-      /// ensures that the data at the front of the queue is being written.
+      /// The data added to the back of the transmit queue and sends the
+      /// packet if the queue was empty.
       /// @param packet the data packet to write.
       void send_data(Container const& packet)
       {
+        bool notWriting(tx_queue_.empty());
         tx_queue_.push_back(packet);
-        if (!is_writing_)
+
+        if (notWriting)
         {
-          is_writing_ = true;
           SocketAdaptor::write(&tx_queue_.front()[0],
                                 tx_queue_.front().size(),
              boost::bind(&connection::write_callback,
@@ -368,15 +363,16 @@ namespace via
 #if defined(BOOST_ASIO_HAS_MOVE)
       /// @fn send_data(Container&& packet)
       /// Send a packet of data, move version for C++11.
-      /// The data is put on the back of the queue, whilst the function
-      /// ensures that the data at the front of the queue is being written.
+      /// The data added to the back of the transmit queue and sends the
+      /// packet if the queue was empty.
       /// @param packet the data packet to write.
       void send_data(Container&& packet)
       {
+        bool notWriting(tx_queue_.empty());
         tx_queue_.push_back(packet);
-        if (!is_writing_)
+
+        if (notWriting)
         {
-          is_writing_ = true;
           SocketAdaptor::write(&tx_queue_.front()[0],
                                 tx_queue_.front().size(),
               boost::bind(&connection::write_callback,

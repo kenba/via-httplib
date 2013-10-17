@@ -27,7 +27,7 @@ namespace via
     {
       /// A connection hander callback function type.
       /// @param error the (boost) error code.
-      /// @param size the number of bytes read or written.
+      /// @param host_iterator the resolver_iterator
       typedef std::tr1::function<void (boost::system::error_code const&,
                                        boost::asio::ip::udp::resolver::iterator)>
                                              ConnectHandler;
@@ -36,6 +36,7 @@ namespace via
       /// The socket endpoint, used by normal / unconnected sockets.
       boost::asio::ip::udp::endpoint endpoint_;
       boost::asio::ip::udp::socket socket_; ///< The asio UDP socket.
+      /// The host iterator used by the resolver.
       boost::asio::ip::udp::resolver::iterator host_iterator_;
       unsigned short tx_port_number_;
       bool is_connected_; ///< True if the socket is in "connected" mode.
@@ -54,6 +55,12 @@ namespace via
 
     protected:
 
+      /// @fn handshake
+      /// Performs the SSL handshake. Since this isn't an SSL socket, it just
+      /// calls the handshake_handler with a success error code.
+      /// @param handshake_handler the handshake callback function.
+      /// @param is_server whether performing client or server handshaking,
+      /// not used by un-encrypted sockets.
       void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
         boost::system::error_code ec; // Default is success
@@ -62,17 +69,14 @@ namespace via
 
       /// @fn connect_socket
       /// Attempts to connect to the given resolver iterator.
-      /// @param itr the resolver iterator.
+      /// @param connect_handler the connect callback function.
+      /// @param host_iterator the resolver iterator..
       void connect_socket(ConnectHandler connectHandler,
                           boost::asio::ip::udp::resolver::iterator host_iterator)
       { boost::asio::async_connect(socket_, host_iterator, connectHandler); }
 
       /// The udp_adaptor onstructor.
       /// @param io_service the asio io_service associted with this connection
-      /// @param read_handler the read callback function.
-      /// @param write_handler the write callback function.
-      /// @param event_handler the event handler callback function.
-      /// @param error_handler the error handler callback function.
       /// @param port_number the port number of a udp server.
       explicit udp_adaptor(boost::asio::io_service& io_service,
                            unsigned short port_number = 0) :
@@ -87,8 +91,10 @@ namespace via
 
     public:
 
+      /// The type of resolver iterator used by this socket.
       typedef boost::asio::ip::udp::resolver::iterator resolver_iterator;
 
+      /// A virtual destructor because connection inherits from this class.
       virtual ~udp_adaptor()
       {}
 
@@ -101,7 +107,6 @@ namespace via
         socket_.set_option(option);
         endpoint_ = boost::asio::ip::udp::endpoint
                       (boost::asio::ip::address_v4::broadcast(), port_number);
- //  TODO     start();
       }
 
       /// Set transmit port number for a UDP socket in broadcast mode.
@@ -134,7 +139,7 @@ namespace via
       /// The udp socket read function.
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
-      void read(void* ptr, size_t& size, CommsHandler read_handler)
+      void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         if (is_connected_)
           socket_.async_receive(boost::asio::buffer(ptr, size), read_handler);
