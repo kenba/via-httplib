@@ -269,6 +269,11 @@ namespace via
         return buffer_size_;
       }
 
+      /// The destructor closes the connections to ensure that all of the
+      /// callback functions are cancelled.
+      ~connection()
+      { close(); }
+
       /// @fn create
       /// The factory function to create connections.
       /// @param io_service the boost asio io_service used by the underlying

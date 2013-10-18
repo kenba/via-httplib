@@ -101,7 +101,7 @@ namespace via
 
       /// @fn event_handler.
       /// It forwards the connection's event signal.
-      /// For a disconnected event, it closes and deletes the connection.
+      /// For a disconnected event, it deletes the connection.
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
@@ -112,7 +112,6 @@ namespace via
         {
           if (boost::shared_ptr<connection_type> connection = ptr.lock())
           {
-            connection->close();
             // search for the connection to delete
             connections_iterator iter(connections_.find(connection));
             if (iter != connections_.end())

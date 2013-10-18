@@ -491,8 +491,7 @@ namespace via
 
           // If parsed a chunk and its data previously,
           // then clear it ready for the next chunk
-          if ((chunk_.valid() > 0) &&
-              (chunk_.size() == body_.size()))
+          if (chunk_.valid() && (chunk_.size() == body_.size()))
           {
             chunk_.clear();
             body_.clear();
