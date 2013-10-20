@@ -139,7 +139,10 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (error)
+          {
+            pointer->tx_queue_.clear();
             pointer->signal_error(error);
+          }
           else
             pointer->write_handler(bytes_transferred);
         }

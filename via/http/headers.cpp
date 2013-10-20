@@ -27,10 +27,12 @@ namespace
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   const std::regex REGEX_IDENTITY(".*identity.*", std::regex::icase);
   const std::regex REGEX_CLOSE(".*close.*", std::regex::icase);
+  const std::regex REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
 #else
   //const std::tr1::regex REGEX_IDENTITY(".*identity.*", std::tr1::regex::icase);
   const boost::regex REGEX_IDENTITY(".*identity.*", boost::regex::icase);
   const boost::regex REGEX_CLOSE(".*close.*", boost::regex::icase);
+  const boost::regex REGEX_CONTINUE(".*100-continue.*", boost::regex::icase);
 #endif
 }
 
@@ -139,9 +141,27 @@ namespace via
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
       return (std::regex_match(connection, REGEX_CLOSE));
 #else
-      //return (!std::tr1::regex_match(xfer_encoding, REGEX_IDENTITY));
+      //return (std::tr1::regex_match(xfer_encoding, REGEX_CLOSE));
       return (boost::regex_match(connection, REGEX_CLOSE));
 #endif
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool message_headers::expect_continue() const
+    {
+      // Find whether there is a expect header.
+      const std::string& connection(find(header_field::EXPECT));
+      if (connection.empty())
+        return false;
+
+      // if C++11 or Visual Studio 2010 or newer
+      #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+            return (std::regex_match(connection, REGEX_CONTINUE));
+      #else
+            //return (std::tr1::regex_match(xfer_encoding, REGEX_CONTINUE));
+            return (boost::regex_match(connection, REGEX_CONTINUE));
+      #endif
     }
     //////////////////////////////////////////////////////////////////////////
 

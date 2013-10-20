@@ -106,6 +106,9 @@ namespace via
       /// Create an http header line for the current date and time.
       std::string date_header();
 
+      /// Create an http header line for this server.
+      std::string server_header();
+
       /// An http content length header line for the given size.
       /// @param size
       /// @return http content length header line for the size.

@@ -88,9 +88,12 @@ namespace via
     boost::shared_ptr<server_type> server_;   ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
     http_request_signal http_request_signal_; ///< the request callback function
+    http_request_signal http_continue_signal_; ///< the continue callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
                                               /// the disconncted callback function
     http_disconnected_signal http_disconnected_signal_;
+    bool continue_enabled_; ///< whether the server should send 100 Continue
+    bool has_clock_;        ///< whether the server has a clock
 
   public:
 
@@ -98,6 +101,20 @@ namespace via
     /// @param slot the slot for the request received signal.
     void request_received_event(http_request_signal_slot const& slot)
     { http_request_signal_.connect(slot); }
+
+    /// Connect the expects continue received slot.
+    /// If the application registers a slot for this event, then the
+    /// application must determine how to respond to a request containing an
+    /// Expects: 100-continue header based upon it's other headers.
+    /// Otherwise, the server will send a 100 Continue response, so that the
+    /// client can continue to send the body of the request.
+    /// @post disables automatic sending of a 100 Continue response
+    /// @param slot the slot for the expects continue signal.
+    void request_expects_continue_event(http_request_signal_slot const& slot)
+    {
+      continue_enabled_ = false;
+      http_continue_signal_.connect(slot);
+    }
 
     /// Connect the chunk received slot.
     /// @param slot the slot for the chunk received signal.
@@ -113,7 +130,8 @@ namespace via
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param port the number of the comms port.
     explicit http_server(boost::asio::io_service& io_service,
-        unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT) :
+        unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
+                         bool has_clock = true) :
       server_(server_type::create(io_service,
         boost::bind(&http_server::event_handler, this, _1, _2),
         boost::bind(&http_server::error_handler, this,
@@ -121,11 +139,14 @@ namespace via
         port)),
       http_connections_(),
       http_request_signal_(),
+      http_continue_signal_(),
       http_chunk_signal_(),
-      http_disconnected_signal_()
+      http_disconnected_signal_(),
+      continue_enabled_(true),
+      has_clock_(has_clock)
     {}
 
-    /// Start accepting connections on the communiations server.
+    /// Start accepting connections on the communications server.
     void start_accept()
     { server_->start_accept(); }
 
@@ -143,7 +164,9 @@ namespace via
           http_connection = iter->second;
         else
         {
-          http_connection = http_connection_type::create(connection);
+          http_connection = http_connection_type::create(connection,
+                                                         continue_enabled_,
+                                                         has_clock_);
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
         }
@@ -156,6 +179,12 @@ namespace via
           http_request_signal_(http_connection,
                                http_connection->request(),
                                http_connection->body());
+          break;
+
+        case http::RX_EXPECT_CONTINUE:
+          http_continue_signal_(http_connection,
+                                http_connection->request(),
+                                http_connection->body());
           break;
 
         case http::RX_CHUNK:
@@ -220,7 +249,7 @@ namespace via
     /// @param error the boost error_code.
     /// @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<connection_type> connection)
+                       boost::weak_ptr<connection_type> /* connection */)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;

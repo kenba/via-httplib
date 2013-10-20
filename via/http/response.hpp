@@ -390,11 +390,18 @@ namespace via
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
 
+      /// Whether this is a continue response.
+      /// @return true if this is a continue response, false otherwise.
+      bool is_continue() const
+      { return status() == response_status::CONTINUE; }
+
       /// The http message header string.
-      std::string message() const
+      std::string message(bool has_clock) const
       {
         std::string output(response_line::to_string());
-        output += header_field::date_header();
+        output += header_field::server_header();
+        if (has_clock)
+          output += header_field::date_header();
         output += header_string_;
 
         if (is_chunked_)

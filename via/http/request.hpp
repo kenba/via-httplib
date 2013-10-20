@@ -307,6 +307,16 @@ namespace via
       bool is_chunked() const
       { return headers_.is_chunked(); }
 
+      /// Whether the client expects a "100-continue" response.
+      /// @return true if the server should send a 100-Continue header, false
+      /// otherwise
+      bool expect_continue() const
+      {
+        return major_version() >= 1 &&
+               minor_version() >= 1 &&
+               headers_.expect_continue();
+      }
+
       /// Accessor for the valid flag.
       /// @return the valid flag.
       bool valid() const
@@ -413,6 +423,7 @@ namespace via
       rx_request request_; ///< the received request
       rx_chunk   chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
+      bool       continue_sent_; ///< a 100 Continue response has been sent
 
     public:
 
@@ -421,7 +432,8 @@ namespace via
       explicit request_receiver() :
         request_(),
         chunk_(),
-        body_()
+        body_(),
+        continue_sent_(false)
       {}
 
       /// clear the request_receiver.
@@ -431,7 +443,12 @@ namespace via
         request_.clear();
         chunk_.clear();
         body_.clear();
+        continue_sent_ = false;
       }
+
+      /// set the continue_sent_ flag
+      void set_continue_sent()
+      { continue_sent_ = true; }
 
       /// Accessor for the HTTP request header.
       /// @return a constant reference to an rx_request.
@@ -520,6 +537,9 @@ namespace via
           if (body_.size() >= chunk_.size())
             return RX_CHUNK;
         }
+
+        if (request_.expect_continue() && !continue_sent_)
+          return RX_EXPECT_CONTINUE;
 
         return RX_INCOMPLETE;
       }

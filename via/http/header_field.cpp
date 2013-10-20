@@ -11,6 +11,9 @@
 
 namespace
 {
+  // The server name for the server header.
+  const std::string	SERVER_NAME             ("Via-httplib/0.9");
+
   // The following strings are for the standard header field names.
 
   // General Header Fields, RFC2616 sec 4.5 pg 33
@@ -303,6 +306,11 @@ namespace via
         strftime(dateBuffer, 30, DATE_FORMAT.c_str(), std::gmtime(&uTime));
         return to_header(header_field::DATE, dateBuffer);
       }
+      ////////////////////////////////////////////////////////////////////////
+
+      ////////////////////////////////////////////////////////////////////////
+      std::string server_header()
+      { return to_header(header_field::SERVER, SERVER_NAME); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////

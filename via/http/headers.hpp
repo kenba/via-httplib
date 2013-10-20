@@ -26,10 +26,11 @@ namespace via
     /// response receivers.
     enum receiver_parsing_state
     {
-      RX_INVALID,    ///< the message is invalid
-      RX_INCOMPLETE, ///< the message requires more data
-      RX_VALID,      ///< a valid request or response
-      RX_CHUNK       ///< a valid chunk received
+      RX_INVALID,         ///< the message is invalid
+      RX_EXPECT_CONTINUE, ///< the client expects a 100 Continue response
+      RX_INCOMPLETE,      ///< the message requires more data
+      RX_VALID,           ///< a valid request or response
+      RX_CHUNK            ///< a valid chunk received
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -259,6 +260,11 @@ namespace via
       /// Whether the connection should be closed after the response.
       /// @return true if there is a Connection: close header, false otherwise
       bool close_connection() const;
+
+      /// Whether the client expects a "100-continue" response.
+      /// @return true if there is an Expect: 100-continue header, false
+      /// otherwise
+      bool expect_continue() const;
 
       /// Accessor for the valid flag.
       /// @return the valid flag.

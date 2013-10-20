@@ -55,21 +55,40 @@ namespace via
     /// The request receiver for this connection.
     http::request_receiver<Container> rx_;
 
+    /// A flag to indicate that the server should always respond to an
+    /// expect: 100-continue header with a 100 Continue response.
+    bool continue_enabled_;
+
+    /// A flag to indicate that the server has a clock.
+    bool has_clock_;
+
     /// Constructor.
     /// Note: the constructor is private to ensure that an http_connection
     /// can only be created as a shared pointer by the create method.
     /// @param connection a weak pointer to the underlying connection.
-    http_connection(boost::weak_ptr<connection_type> connection) :
+    /// @param continue_enabled if true the server shall always immediately
+    /// respond to an HTTP1.1 request containing an Expect: 100-continue
+    /// header with a 100 Continue response.
+    /// @param has_clock if true the server shall always send a date header
+    /// in the response.
+    http_connection(boost::weak_ptr<connection_type> connection,
+                    bool continue_enabled,
+                    bool has_clock) :
       connection_(connection),
-      rx_()
+      rx_(),
+      continue_enabled_(continue_enabled),
+      has_clock_(has_clock)
     {}
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
-    bool send(Container const& packet)
+    bool send(Container const& packet, bool is_continue)
     {
       bool keep_alive(rx_.request().keep_alive());
-      rx_.clear();
+      if (is_continue)
+        rx_.set_continue_sent();
+      else
+        rx_.clear();
 
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
@@ -94,8 +113,17 @@ namespace via
     /// Create.
     /// A factory method to create a shared pointer to this type.
     /// @param connection a weak pointer to the underlying connection.
-    static shared_pointer create(boost::weak_ptr<connection_type> connection)
-    { return shared_pointer(new http_connection(connection)); }
+    /// @param continue_enabled if true the server shall always immediately
+    /// respond to an HTTP1.1 request containing an Expect: 100-continue
+    /// header with a 100 Continue response.
+    /// @param has_clock if true the server shall always send a date header
+    /// in the response.
+    static shared_pointer create(boost::weak_ptr<connection_type> connection,
+                                 bool continue_enabled,
+                                 bool has_clock)
+    { return shared_pointer(new http_connection(connection,
+                                                continue_enabled,
+                                                has_clock)); }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
@@ -136,10 +164,19 @@ namespace via
       http::receiver_parsing_state rx_state
           (rx_.receive(data.begin(), data.end()));
 
-      if (rx_state != http::RX_INCOMPLETE)
-        return rx_state;
+      // Determine whether the server should send a 100 Continue response
+      if (continue_enabled_ && (rx_state == http::RX_EXPECT_CONTINUE))
+      {
+#if defined(BOOST_ASIO_HAS_MOVE)
+        send(http::tx_response(http::response_status::CONTINUE));
+#else
+        http::tx_response continue_response(http::response_status::CONTINUE);
+        send(continue_response);
+#endif // BOOST_ASIO_HAS_MOVE
+        rx_state = http::RX_INCOMPLETE;
+      }
 
-      return http::RX_INCOMPLETE;
+      return rx_state;
     }
 
     /// Send an HTTP response without a body.
@@ -148,10 +185,25 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header(response.message(has_clock_));
+
       Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message);
+      return send(tx_message, response.is_continue());
     }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send an HTTP response without a body.
+    /// @param response the response to send.
+    bool send(http::tx_response&& response)
+    {
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      std::string http_header(response.message(has_clock_));
+
+      Container tx_message(http_header.begin(), http_header.end());
+      return send(tx_message, response.is_continue());
+    }
+#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
@@ -160,27 +212,33 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header(response.message(has_clock_));
 
       Container tx_message(body);
+      if (rx_.request().method() ==
+          http::request_method::name(http::request_method::HEAD))
+        tx_message.clear();
       tx_message.insert(tx_message.begin(),
                         http_header.begin(), http_header.end());
-      return send(tx_message);
+      return send(tx_message, response.is_continue());
     }
 
 #if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response with a body.
     /// @param response the response to send.
     /// @param body the body to send
-    bool send(http::tx_response& response, Container&& body)
+    bool send(http::tx_response&& response, Container&& body)
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header(response.message(has_clock_));
 
+      if (rx_.request().method() ==
+          http::request_method::name(http::request_method::HEAD))
+        body.clear();
       body.insert(body.begin(),
                   http_header.begin(), http_header.end());
-      return send(body);
+      return send(body, response.is_continue());
     }
 #endif // BOOST_ASIO_HAS_MOVE
 
@@ -194,14 +252,16 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header(response.message(has_clock_));
 
       size_t size(end - begin);
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      return send(tx_message);
+      if (rx_.request().method() !=
+          http::request_method::name(http::request_method::HEAD))
+        tx_message.insert(tx_message.end(), begin, end);
+      return send(tx_message, response.is_continue());
     }
 
     /// Send an HTTP body chunk.
