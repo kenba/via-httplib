@@ -390,6 +390,10 @@ namespace via
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
 
+      /// Add a Content-Type: message/http header for a TRACE response
+      void add_content_http_header()
+      { header_string_ += header_field::content_http_header(); }
+
       /// Whether this is a continue response.
       /// @return true if this is a continue response, false otherwise.
       bool is_continue() const

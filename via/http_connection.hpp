@@ -72,16 +72,18 @@ namespace via
     /// @param has_clock if true the server shall always send a date header
     /// in the response.
     http_connection(boost::weak_ptr<connection_type> connection,
+                    bool translate_head,
                     bool continue_enabled,
                     bool has_clock) :
       connection_(connection),
-      rx_(),
+      rx_(translate_head),
       continue_enabled_(continue_enabled),
       has_clock_(has_clock)
     {}
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
+    /// @param is_continue whether this is a 100 Continue response
     bool send(Container const& packet, bool is_continue)
     {
       bool keep_alive(rx_.request().keep_alive());
@@ -99,8 +101,6 @@ namespace via
           return true;
         else
           tcp_pointer->shutdown();
-
-        return false;
       }
       else
         std::cerr << "http_connection::send connection weak pointer expired"
@@ -108,20 +108,53 @@ namespace via
       return false;
     }
 
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send a packet on the connection.
+    /// @param packet the data packet to send.
+    /// @param is_continue whether this is a 100 Continue response
+    bool send(Container&& packet, bool is_continue)
+    {
+      bool keep_alive(rx_.request().keep_alive());
+      if (is_continue)
+        rx_.set_continue_sent();
+      else
+        rx_.clear();
+
+      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+      {
+        tcp_pointer->send_data(packet);
+
+        if (keep_alive)
+          return true;
+        else
+          tcp_pointer->shutdown();
+      }
+      else
+        std::cerr << "http_connection::send connection weak pointer expired"
+                  << std::endl;
+      return false;
+    }
+#endif
+
   public:
 
     /// Create.
     /// A factory method to create a shared pointer to this type.
     /// @param connection a weak pointer to the underlying connection.
+    /// @param translate_head if true the server passes a HEAD request to the
+    /// application as a GET request.
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
     /// @param has_clock if true the server shall always send a date header
     /// in the response.
     static shared_pointer create(boost::weak_ptr<connection_type> connection,
+                                 bool translate_head,
                                  bool continue_enabled,
                                  bool has_clock)
     { return shared_pointer(new http_connection(connection,
+                                                translate_head,
                                                 continue_enabled,
                                                 has_clock)); }
 
@@ -175,6 +208,21 @@ namespace via
 #endif // BOOST_ASIO_HAS_MOVE
         rx_state = http::RX_INCOMPLETE;
       }
+      // Determine whether this is a TRACE request,
+      // in which case the server reflects the message back.
+      else if ((rx_state == http::RX_VALID) && rx_.request().is_trace())
+      {
+        // Response is OK with a  Content-Type: message/http header
+        http::tx_response ok_response(http::response_status::OK);
+        ok_response.add_content_http_header();
+
+        // The body of the response contains the TRACE request
+        std::string trace_request(rx_.request().to_string());
+        trace_request += rx_.request().header().to_string();
+
+        send(ok_response, trace_request.begin(), trace_request.end());
+        rx_state = http::RX_INVALID;
+      }
 
       return rx_state;
     }
@@ -215,9 +263,11 @@ namespace via
       std::string http_header(response.message(has_clock_));
 
       Container tx_message(body);
-      if (rx_.request().method() ==
-          http::request_method::name(http::request_method::HEAD))
+
+      // Don't send a body in response to a HEAD request
+      if (rx_.is_head())
         tx_message.clear();
+
       tx_message.insert(tx_message.begin(),
                         http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
@@ -233,9 +283,10 @@ namespace via
       response.set_minor_version(rx_.request().minor_version());
       std::string http_header(response.message(has_clock_));
 
-      if (rx_.request().method() ==
-          http::request_method::name(http::request_method::HEAD))
+      // Don't send a body in response to a HEAD request
+      if (rx_.is_head())
         body.clear();
+
       body.insert(body.begin(),
                   http_header.begin(), http_header.end());
       return send(body, response.is_continue());
@@ -258,8 +309,9 @@ namespace via
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());
-      if (rx_.request().method() !=
-          http::request_method::name(http::request_method::HEAD))
+
+      // Don't send a body in response to a HEAD request
+      if (!rx_.is_head())
         tx_message.insert(tx_message.end(), begin, end);
       return send(tx_message, response.is_continue());
     }

@@ -302,6 +302,16 @@ namespace via
       size_t content_length() const
       { return headers_.content_length(); }
 
+      /// Whether the request is "HEAD"
+      /// @return true if the request is "HEAD"
+      bool is_head() const
+      { return request_method::name(request_method::HEAD) == method(); }
+
+      /// Whether the request is "TRACE"
+      /// @return true if the request is "TRACE"
+      bool is_trace() const
+      { return request_method::name(request_method::TRACE) == method(); }
+
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
       bool is_chunked() const
@@ -423,17 +433,21 @@ namespace via
       rx_request request_; ///< the received request
       rx_chunk   chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
-      bool       continue_sent_; ///< a 100 Continue response has been sent
+      bool       continue_sent_;  ///< a 100 Continue response has been sent
+      bool       translate_head_; ///< whether to translate HEADs to GETs
+      bool       is_head_;        ///< whether it's a HEAD request
 
     public:
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
-      explicit request_receiver() :
+      explicit request_receiver(bool translate_head) :
         request_(),
         chunk_(),
         body_(),
-        continue_sent_(false)
+        continue_sent_(false),
+        translate_head_(translate_head),
+        is_head_(false)
       {}
 
       /// clear the request_receiver.
@@ -444,11 +458,16 @@ namespace via
         chunk_.clear();
         body_.clear();
         continue_sent_ = false;
+        is_head_ = false;
       }
 
       /// set the continue_sent_ flag
       void set_continue_sent()
       { continue_sent_ = true; }
+
+      /// Accessor for the is_head flag.
+      bool is_head() const
+      { return is_head_; }
 
       /// Accessor for the HTTP request header.
       /// @return a constant reference to an rx_request.
@@ -496,9 +515,16 @@ namespace via
           if (end > iter)
             body_.insert(body_.end(), iter, end);
 
-          // return whether the body is complete
+          // determine whether the body is complete
           if (body_.size() >= request_.content_length())
+          {
+            is_head_ = request_.is_head();
+            // If enabled, translate a HEAD request to a GET request
+            if (is_head_ && translate_head_)
+              request_.set_method(request_method::name(request_method::GET));
+
             return RX_VALID;
+          }
         }
         else // request_.is_chunked()
         {

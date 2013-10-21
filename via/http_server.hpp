@@ -92,6 +92,7 @@ namespace via
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
                                               /// the disconncted callback function
     http_disconnected_signal http_disconnected_signal_;
+    bool translate_head_;   ///< whether the server should translate head requests
     bool continue_enabled_; ///< whether the server should send 100 Continue
     bool has_clock_;        ///< whether the server has a clock
 
@@ -129,8 +130,13 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param port the number of the comms port.
+    /// @param translate_head if true the server passes a HEAD request to the
+    /// application as a GET request. Default true.
+    /// @param has_clock if true the server shall always send a date header
+    /// in the response. Default true.
     explicit http_server(boost::asio::io_service& io_service,
         unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
+                         bool translate_head = true,
                          bool has_clock = true) :
       server_(server_type::create(io_service,
         boost::bind(&http_server::event_handler, this, _1, _2),
@@ -142,6 +148,7 @@ namespace via
       http_continue_signal_(),
       http_chunk_signal_(),
       http_disconnected_signal_(),
+      translate_head_(translate_head),
       continue_enabled_(true),
       has_clock_(has_clock)
     {}
@@ -165,6 +172,7 @@ namespace via
         else
         {
           http_connection = http_connection_type::create(connection,
+                                                         translate_head_,
                                                          continue_enabled_,
                                                          has_clock_);
           http_connections_.insert

@@ -109,6 +109,9 @@ namespace via
       /// Create an http header line for this server.
       std::string server_header();
 
+      /// Create a Content-Type: message/http header for a TRACE response
+      std::string content_http_header();
+
       /// An http content length header line for the given size.
       /// @param size
       /// @return http content length header line for the size.

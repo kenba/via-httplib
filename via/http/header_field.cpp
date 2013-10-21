@@ -11,8 +11,11 @@
 
 namespace
 {
-  // The server name for the server header.
+  /// The server name for the server header.
   const std::string	SERVER_NAME             ("Via-httplib/0.9");
+
+  /// The message/http content for a TRACE response
+  const std::string	MESSAGE_HTTP            ("message/http");
 
   // The following strings are for the standard header field names.
 
@@ -311,6 +314,11 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       std::string server_header()
       { return to_header(header_field::SERVER, SERVER_NAME); }
+      ////////////////////////////////////////////////////////////////////////
+
+      ////////////////////////////////////////////////////////////////////////
+      std::string content_http_header()
+      { return to_header(header_field::CONTENT_TYPE, MESSAGE_HTTP); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
