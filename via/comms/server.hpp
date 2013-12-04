@@ -83,16 +83,9 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
-            boost::shared_ptr<connection_type> new_connection
-                (connection_type::create(io_service_,
-                    boost::bind(&server::event_handler, this, _1, _2),
-                    boost::bind(&server::error_handler, this,
-                                boost::asio::placeholders::error, _2)));
-            new_connection.swap(next_connection_);
-
-            new_connection->start();
-
-            connections_.insert(new_connection);
+            next_connection_->start();
+            connections_.insert(next_connection_);
+            next_connection_.reset();
           }
 
           start_accept();
@@ -143,10 +136,7 @@ namespace via
                       unsigned short port) :
         io_service_(io_service),
         acceptor_(io_service),
-        next_connection_(connection_type::create(io_service_,
-            boost::bind(&server::event_handler, this, _1, _2),
-            boost::bind(&server::error_handler, this,
-                        boost::asio::placeholders::error, _2))),
+        next_connection_(),
         connections_(),
         password_(),
         event_callback_(event_callback),
@@ -180,6 +170,10 @@ namespace via
       /// Wait for connections.
       void start_accept()
       {
+        next_connection_ = connection_type::create(io_service_,
+                                boost::bind(&server::event_handler, this, _1, _2),
+                                boost::bind(&server::error_handler, this,
+                                            boost::asio::placeholders::error, _2));
         acceptor_.async_accept(next_connection_->socket(),
                                boost::bind(&server::accept_handler, this,
                                            boost::asio::placeholders::error));
