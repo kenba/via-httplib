@@ -51,16 +51,25 @@ namespace via
       typedef typename SocketAdaptor::resolver_iterator resolver_iterator;
 
       /// Event callback function type.
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      typedef std::function<void (int, weak_pointer)> event_callback_type;
+#else
       typedef std::tr1::function<void (int, weak_pointer)> event_callback_type;
+#endif
 
       /// Error callback function type.
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      typedef std::function<void (boost::system::error_code const&,
+                                  weak_pointer)> error_callback_type;
+#else
       typedef std::tr1::function<void (boost::system::error_code const&,
                                        weak_pointer)> error_callback_type;
+#endif
 
     private:
 
-      Container rx_buffer_;                ///< The receive buffer.
-      std::deque<Container> tx_queue_;     ///< The transmit buffers.
+      boost::shared_ptr<Container> rx_buffer_;                ///< The receive buffer.
+      boost::shared_ptr<std::deque<Container> > tx_queue_;     ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
 
@@ -98,7 +107,8 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
-                                size_t bytes_transferred)
+                                size_t bytes_transferred,
+                                boost::shared_ptr<Container> /*rx_buffer*/)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -118,7 +128,7 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
-        rx_buffer_.resize(bytes_transferred);
+        rx_buffer_->resize(bytes_transferred);
         event_callback_(RECEIVED, weak_from_this());
         enable_reception();
       }
@@ -133,14 +143,15 @@ namespace via
       /// @param bytes_transferred the size of the sent data packet.
       static void write_callback(weak_pointer ptr,
                                  boost::system::error_code const& error,
-                                 size_t bytes_transferred)
+                                 size_t bytes_transferred,
+                                 boost::shared_ptr<std::deque<Container> > /* tx_queue */)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (error)
           {
-            pointer->tx_queue_.clear();
+            pointer->tx_queue_->clear();
             pointer->signal_error(error);
           }
           else
@@ -156,15 +167,16 @@ namespace via
       /// @param bytes_transferred the size of the sent data packet.
       void write_handler(size_t) // bytes_transferred
       {
-        tx_queue_.pop_front();
+        tx_queue_->pop_front();
 
-        if (!tx_queue_.empty())
+        if (!tx_queue_->empty())
         {
-          SocketAdaptor::write(&tx_queue_.front()[0], tx_queue_.front().size(),
+          SocketAdaptor::write(&tx_queue_->front()[0], tx_queue_->front().size(),
               boost::bind(&connection::write_callback,
                           weak_from_this(),
                           boost::asio::placeholders::error,
-                          boost::asio::placeholders::bytes_transferred));
+                          boost::asio::placeholders::bytes_transferred,
+                          tx_queue_));
         }
 
         event_callback_(SENT, weak_from_this());
@@ -250,8 +262,8 @@ namespace via
                           error_callback_type error_callback,
                           unsigned short port_number) :
         SocketAdaptor(io_service, port_number),
-        rx_buffer_(),
-        tx_queue_(),
+        rx_buffer_(new Container()),
+        tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
         error_callback_(error_callback)
       {}
@@ -332,12 +344,13 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_buffer_.resize(buffer_size());
-        SocketAdaptor::read(&rx_buffer_[0], buffer_size(),
+        rx_buffer_->resize(buffer_size());
+        SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size(),
             boost::bind(&connection::read_callback,
                         weak_from_this(),
                         boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
+                        boost::asio::placeholders::bytes_transferred,
+                        rx_buffer_));
       }
 
       /// @fn rx_buffer
@@ -345,7 +358,7 @@ namespace via
       /// @pre Only valid within the receive even callback function.
       /// @return the data packet at the head of the receive queue.
       Container const& rx_buffer()
-      { return rx_buffer_; }
+      { return *rx_buffer_; }
 
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
@@ -354,17 +367,18 @@ namespace via
       /// @param packet the data packet to write.
       void send_data(Container const& packet)
       {
-        bool notWriting(tx_queue_.empty());
-        tx_queue_.push_back(packet);
+        bool notWriting(tx_queue_->empty());
+        tx_queue_->push_back(packet);
 
         if (notWriting)
         {
-          SocketAdaptor::write(&tx_queue_.front()[0],
-                                tx_queue_.front().size(),
+          SocketAdaptor::write(&tx_queue_->front()[0],
+                                tx_queue_->front().size(),
              boost::bind(&connection::write_callback,
                          weak_from_this(),
                          boost::asio::placeholders::error,
-                         boost::asio::placeholders::bytes_transferred));
+                         boost::asio::placeholders::bytes_transferred,
+                         tx_queue_));
         }
       }
 
@@ -386,7 +400,8 @@ namespace via
               boost::bind(&connection::write_callback,
                           weak_from_this(),
                           boost::asio::placeholders::error,
-                          boost::asio::placeholders::bytes_transferred));
+                          boost::asio::placeholders::bytes_transferred,
+                          tx_queue_));
         }
       }
 #endif // BOOST_ASIO_HAS_MOVE

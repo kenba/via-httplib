@@ -28,8 +28,13 @@ namespace via
       /// A connection hander callback function type.
       /// @param error the (boost) error code.
       /// @param host_iterator the resolver_iterator
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      typedef std::function<void (boost::system::error_code const&,
+                                  boost::asio::ip::tcp::resolver::iterator)>
+#else
       typedef std::tr1::function<void (boost::system::error_code const&,
                                        boost::asio::ip::tcp::resolver::iterator)>
+#endif
                                              ConnectHandler;
 
       boost::asio::io_service& io_service_; ///< The asio io_service.
@@ -161,6 +166,11 @@ namespace via
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
       { return (boost::asio::error::connection_reset == error); }
+
+      /// @fn no_delay
+      /// Disable the nagle algorithm (no delay) on the socket.
+      void no_delay()
+      { socket_.set_option(boost::asio::ip::tcp::no_delay(true)); }
 
       /// @fn socket
       /// Accessor for the underlying tcp socket.

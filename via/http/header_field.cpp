@@ -9,10 +9,14 @@
 #include "header_field.hpp"
 #include "character.hpp"
 
+#ifdef _MSC_VER // MSVC doesn't like gmtime...
+#pragma warning( disable : 4996 )
+#endif
+
 namespace
 {
   /// The server name for the server header.
-  const std::string	SERVER_NAME             ("Via-httplib/0.9");
+  const std::string	SERVER_NAME             ("Via-httplib/0.11");
 
   /// The message/http content for a TRACE response
   const std::string	MESSAGE_HTTP            ("message/http");
@@ -216,7 +220,6 @@ namespace via
 
         default:                            return EMPTY_STRING;
         }
-        return EMPTY_STRING;
       }
       ////////////////////////////////////////////////////////////////////////
 
@@ -283,7 +286,6 @@ namespace via
 
         default:                            return EMPTY_STRING;
         }
-        return EMPTY_STRING;
       }
       ////////////////////////////////////////////////////////////////////////
 

@@ -15,7 +15,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#ifdef _MSC_VER
+
+// if C++11 or Visual Studio 2010 or newer
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
 #include <functional>
 #else
 #include <tr1/functional>
@@ -36,14 +38,22 @@ namespace via
 
     /// An error hander callback function type.
     /// @param error the (boost) error code.
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+    typedef std::function<void (boost::system::error_code const&)>
+#else
     typedef std::tr1::function<void (boost::system::error_code const&)>
+#endif
                                            ErrorHandler;
 
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-    typedef std::tr1::function<void (boost::system::error_code const&,
-                                     size_t)> CommsHandler;
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+    typedef std::function<void (boost::system::error_code const&, size_t)>
+#else
+    typedef std::tr1::function<void (boost::system::error_code const&, size_t)>
+#endif
+                                           CommsHandler;
   }
 }
 
