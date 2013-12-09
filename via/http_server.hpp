@@ -137,12 +137,13 @@ namespace via
     explicit http_server(boost::asio::io_service& io_service,
         unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                          bool translate_head = true,
-                         bool has_clock = true) :
+                         bool has_clock = true,
+                         bool ipv6 = false) :
       server_(server_type::create(io_service,
         boost::bind(&http_server::event_handler, this, _1, _2),
         boost::bind(&http_server::error_handler, this,
                     boost::asio::placeholders::error, _2),
-        port)),
+        port, ipv6)),
       http_connections_(),
       http_request_signal_(),
       http_continue_signal_(),

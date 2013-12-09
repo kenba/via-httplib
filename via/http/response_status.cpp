@@ -144,8 +144,6 @@ namespace via
       // Unknown Error Status Code
       default:                            return EMPTY_STRING;
       }
-
-      return EMPTY_STRING;
     }
     //////////////////////////////////////////////////////////////////////////
 

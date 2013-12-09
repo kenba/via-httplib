@@ -49,7 +49,6 @@ namespace via
         // Unknown method id
         default:                            return EMPTY_STRING;
         }
-        return EMPTY_STRING;
       }
       //////////////////////////////////////////////////////////////////////////
 

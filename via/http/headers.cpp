@@ -47,7 +47,7 @@ namespace via
       {
       case HEADER_NAME:
         if (std::isalpha(c) || ('-' == c))
-          name_.push_back(std::tolower(c));
+          name_.push_back(static_cast<char>(std::tolower(c)));
         else if (':' == c)
           state_ = HEADER_VALUE_LS;
         else
