@@ -174,17 +174,10 @@ namespace via
       /// @return true if successful, false if the acceptor was not opened.
       bool accept_connections(unsigned short port, bool ipv6)
       {
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        std::string address(ipv6 ? "0::0" : "0.0.0.0");
-        boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
-        boost::asio::ip::tcp::resolver::iterator
-            host_iterator(resolver.resolve(query));
-        if (host_iterator == boost::asio::ip::tcp::resolver::iterator())
-          return false;
-
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
-        boost::asio::ip::tcp::endpoint endpoint(*host_iterator);
+        boost::asio::ip::tcp::endpoint endpoint
+          (ipv6 ? boost::asio::ip::tcp::v6() : boost::asio::ip::tcp::v4(), port);
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option
           (boost::asio::ip::tcp::acceptor::reuse_address(true));
@@ -194,9 +187,7 @@ namespace via
           return false;
 
         acceptor_.listen();
-
         start_accept();
-
         return true;
       }
 
