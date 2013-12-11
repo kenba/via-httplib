@@ -123,59 +123,6 @@ namespace via
                          boost::weak_ptr<connection_type> connection)
       { error_callback_(error, connection); }
 
-    public:
-
-      /// The server constructor.
-      /// @param io_service the boost asio io_service used by the acceptor
-      /// and connections.
-      /// @param event_callback the event callback function.
-      /// @param error_callback the error callback function.
-      /// @param port the port number to serve.
-      /// @param ipv6 whether to create an IPV6 server.
-      explicit server(boost::asio::io_service& io_service,
-                      event_callback_type event_callback,
-                      error_callback_type error_callback,
-                      unsigned short port,
-                      bool ipv6) :
-        io_service_(io_service),
-        acceptor_(io_service),
-        next_connection_(),
-        connections_(),
-        password_(),
-        event_callback_(event_callback),
-        error_callback_(error_callback)
-      {
-        // Open the acceptor with the option to reuse the address
-        // (i.e. SO_REUSEADDR).
-        std::stringstream portName;
-        portName << port;
-        std::string address(ipv6 ? "0::0" : "0.0.0.0");
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(address, portName.str());
-        boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-
-        acceptor_.open(endpoint.protocol());
-        acceptor_.set_option
-          (boost::asio::ip::tcp::acceptor::reuse_address(true));
-        acceptor_.bind(endpoint);
-        acceptor_.listen();
-      }
-
-      /// @fn create
-      /// Function to create a shared pointer to a server.
-      /// @param io_service the boost asio io_service used by the server.
-      /// @param event_callback the event callback function.
-      /// @param error_callback the error callback function.
-      /// @param port the port number to serve.
-      /// @param ipv6 whether to create an IPV6 server.
-      static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
-                                              event_callback_type event_callback,
-                                              error_callback_type error_callback,
-                                              unsigned short port,
-                                              bool ipv6)
-      { return boost::shared_ptr<server>(new server(io_service, event_callback,
-                                                    error_callback, port, ipv6)); }
-
       /// @fn start_accept
       /// Wait for connections.
       void start_accept()
@@ -187,6 +134,70 @@ namespace via
         acceptor_.async_accept(next_connection_->socket(),
                                boost::bind(&server::accept_handler, this,
                                            boost::asio::placeholders::error));
+      }
+
+    public:
+
+      /// The server constructor.
+      /// @param io_service the boost asio io_service used by the acceptor
+      /// and connections.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      explicit server(boost::asio::io_service& io_service,
+                      event_callback_type event_callback,
+                      error_callback_type error_callback) :
+        io_service_(io_service),
+        acceptor_(io_service),
+        next_connection_(),
+        connections_(),
+        password_(),
+        event_callback_(event_callback),
+        error_callback_(error_callback)
+      {}
+
+      /// @fn create
+      /// Function to create a shared pointer to a server.
+      /// @param io_service the boost asio io_service used by the server.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
+                                              event_callback_type event_callback,
+                                              error_callback_type error_callback)
+      { return boost::shared_ptr<server>(new server(io_service, event_callback,
+                                                    error_callback)); }
+
+      /// @fn accept_connections
+      /// Create the acceptor and wait for connections.
+      /// @param port the port number to serve.
+      /// @param address the address to listen on:
+      /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
+      /// @return true if successful, false if the acceptor was not opened.
+      bool accept_connections(unsigned short port, bool ipv6)
+      {
+        boost::asio::ip::tcp::resolver resolver(io_service_);
+        std::string address(ipv6 ? "0::0" : "0.0.0.0");
+        boost::asio::ip::tcp::resolver::query query(address, std::to_string(port));
+        boost::asio::ip::tcp::resolver::iterator
+            host_iterator(resolver.resolve(query));
+        if (host_iterator == boost::asio::ip::tcp::resolver::iterator())
+          return false;
+
+        // Open the acceptor with the option to reuse the address
+        // (i.e. SO_REUSEADDR).
+        boost::asio::ip::tcp::endpoint endpoint(*host_iterator);
+        acceptor_.open(endpoint.protocol());
+        acceptor_.set_option
+          (boost::asio::ip::tcp::acceptor::reuse_address(true));
+        boost::system::error_code ec;
+        acceptor_.bind(endpoint, ec);
+        if (ec)
+          return false;
+
+        acceptor_.listen();
+
+        start_accept();
+
+        return true;
       }
 
       /// @fn password

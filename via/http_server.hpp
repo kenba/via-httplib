@@ -135,15 +135,12 @@ namespace via
     /// @param has_clock if true the server shall always send a date header
     /// in the response. Default true.
     explicit http_server(boost::asio::io_service& io_service,
-        unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                          bool translate_head = true,
-                         bool has_clock = true,
-                         bool ipv6 = false) :
+                         bool has_clock = true) :
       server_(server_type::create(io_service,
         boost::bind(&http_server::event_handler, this, _1, _2),
         boost::bind(&http_server::error_handler, this,
-                    boost::asio::placeholders::error, _2),
-        port, ipv6)),
+                    boost::asio::placeholders::error, _2))),
       http_connections_(),
       http_request_signal_(),
       http_continue_signal_(),
@@ -154,9 +151,14 @@ namespace via
       has_clock_(has_clock)
     {}
 
-    /// Start accepting connections on the communications server.
-    void start_accept()
-    { server_->start_accept(); }
+    /// Start accepting connections on the communications server from the
+    /// given port.
+    /// @param port the port number to serve.
+    /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
+    /// @return true if successful, false if the acceptor was not opened.
+    bool accept_connections(unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
+                            bool ipv6 = false)
+    { return server_->accept_connections(port, ipv6); }
 
     /// Receive data packets on an underlying communications connection.
     /// @param connection a weak pointer to the underlying comms connection.
