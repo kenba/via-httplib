@@ -171,8 +171,8 @@ namespace via
       /// @param port the port number to serve.
       /// @param address the address to listen on:
       /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
-      /// @return true if successful, false if the acceptor was not opened.
-      bool accept_connections(unsigned short port, bool ipv6)
+      /// @return the boost error code, false if no error occured
+      boost::system::error_code accept_connections(unsigned short port, bool ipv6)
       {
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
@@ -184,11 +184,11 @@ namespace via
         boost::system::error_code ec;
         acceptor_.bind(endpoint, ec);
         if (ec)
-          return false;
+          return ec;
 
         acceptor_.listen();
         start_accept();
-        return true;
+        return ec;
       }
 
       /// @fn password
