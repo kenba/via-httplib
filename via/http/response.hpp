@@ -3,7 +3,7 @@
 #ifndef RESPONSE_HPP_VIA_HTTPLIB_
 #define RESPONSE_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -216,25 +216,32 @@ namespace via
         fail_(false)
       {}
 
-      /// Set the HTTP major version.
-      /// @param major_version the HTTP major version.
-      void set_major_version(int major_version)
-      { major_version_ = major_version; }
+      /// Set the response status for standard responses.
+      /// @param status the response status.
+      void set_status(response_status::status_code status)
+      {
+        status_ = status;
+        reason_phrase_ = response_status::reason_phrase(status);
+      }
+
+      /// Set the response status and reason phrase.
+      /// @param status the response status.
+      /// @param reason_phrase the the response reason phrase.
+      void set_status_and_reason(int status, const std::string& reason_phrase)
+      {
+        status_ = status;
+        reason_phrase_ = reason_phrase;
+      }
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
       void set_minor_version(int minor_version)
       { minor_version_ = minor_version; }
 
-      /// Set the response status.
-      /// @param status the response status.
-      void set_status(int status)
-      { status_ = status; }
-
-      /// Set the response reason phrase.
-      /// @param reason_phrase the response reason phrase.
-      void set_reason_phrase(const std::string& reason_phrase)
-      { reason_phrase_ = reason_phrase; }
+      /// Set the HTTP major version.
+      /// @param major_version the HTTP major version.
+      void set_major_version(int major_version)
+      { major_version_ = major_version; }
 
       /// Output as a string.
       /// @return a string containing the response line.
@@ -302,7 +309,7 @@ namespace via
 
       /// Accessor for the response message headers.
       /// @return a constant reference to the message_headers
-      const message_headers& header() const
+      const message_headers& headers() const
       { return headers_; }
 
       /// The size in the content_length header (if there is one)
@@ -336,7 +343,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tx_response : public response_line
     {
-      size_t      content_length_; ///< The length in a content header.
       std::string header_string_;  ///< The headers as a string.
       bool        is_chunked_;     ///< Whether the response will be chunked.
 
@@ -344,51 +350,45 @@ namespace via
 
       /// Constructor for a standard response.
       /// @param status
-      /// @param content_length
       /// @param header_string default blank
-      /// @param is_chunked
+      /// @param is_chunked default false
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_response(response_status::status_code status,
-                           size_t content_length = 0,
                            std::string header_string = "",
                            bool is_chunked = false,
                            int minor_version = 1,
                            int major_version = 1)
         : response_line(status, minor_version, major_version)
-        , content_length_(content_length)
         , header_string_(header_string)
         , is_chunked_(is_chunked)
       {}
 
       /// Constructor for non-standard responses.
-      /// @param status
       /// @param reason_phrase
-      /// @param content_length
+      /// @param status
       /// @param header_string default blank
       /// @param is_chunked default false
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit tx_response(int status,
-                           std::string reason_phrase,
-                           size_t content_length = 0,
+      explicit tx_response(std::string reason_phrase,
+                           int status,
                            std::string header_string = "",
                            bool is_chunked = false,
                            int minor_version = 1,
                            int major_version = 1)
         : response_line(status, reason_phrase, minor_version, major_version)
-        , content_length_(content_length)
         , header_string_(header_string)
         , is_chunked_(is_chunked)
       {}
 
-      /// Add a free form header to the response.
-      void add_header(std::string const& field, const std::string& value)
-      { header_string_ += header_field::to_header(field, value);  }
-
       /// Add a standard header to the response.
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
+
+      /// Add a free form header to the response.
+      void add_header(std::string const& field, const std::string& value)
+      { header_string_ += header_field::to_header(field, value);  }
 
       /// Add a Content-Type: message/http header for a TRACE response
       void add_content_http_header()
@@ -400,7 +400,12 @@ namespace via
       { return status() == response_status::CONTINUE; }
 
       /// The http message header string.
-      std::string message(bool has_clock) const
+      /// @param has_clock is the server has a clock then the date_header
+      /// will be sent in the response
+      /// @param content_length the size of the message body for the
+      /// content_length header.
+      /// @return The http message header as a std:string.
+      std::string message(bool has_clock, size_t content_length = 0) const
       {
         std::string output(response_line::to_string());
         output += header_field::server_header();
@@ -410,8 +415,8 @@ namespace via
 
         if (is_chunked_)
           output += header_field::chunked_encoding();
-        else // always send the content length...
-          output += header_field::content_length(content_length_);
+        else // always send the content length, even when zero
+          output += header_field::content_length(content_length);
         output += CRLF;
 
         return output;

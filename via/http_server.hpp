@@ -3,7 +3,7 @@
 #ifndef HTTP_SERVER_HPP_VIA_HTTPLIB_
 #define HTTP_SERVER_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -28,20 +28,42 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_server
   /// An HTTP server.
+  /// @param SocketAdaptor the type of socket to use, tcp or ssl
+  /// @param Container the type of container to use
+  /// @param use_strand if true use an asio::strand to wrap the handlers,
+  /// default false
+  /// @param translate_head if true the server shall always pass a HEAD request
+  /// to the application as a GET request.
+  /// @param has_clock if true the server shall always send a date header
+  /// in the response.
+  /// @param require_host if true the server shall require all requests to
+  /// include a "Host:" header field. Required by RFC2616.
+  /// @param trace_enabled if true the server will echo back the TRACE message
+  /// and all of it's headers in the body of the response.
+  /// Although required by RFC2616 it's considered a security vulnerability
+  /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
+  /// response.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char> >
+  template <typename SocketAdaptor,
+            typename Container = std::vector<char>,
+            bool use_strand = false,
+            bool translate_head = true,
+            bool has_clock = true,
+            bool require_host = true,
+            bool trace_enabled = false>
   class http_server
   {
   public:
 
-    /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container> connection_type;
-
     /// The server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container> server_type;
+    typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container> http_connection_type;
+    typedef http_connection<SocketAdaptor, Container, use_strand, 
+  translate_head, has_clock, require_host, trace_enabled> http_connection_type;
+
+    /// The underlying connection, TCP or SSL.
+    typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
     typedef std::map<void*, boost::shared_ptr<http_connection_type> >
@@ -60,26 +82,23 @@ namespace via
 
     /// The signal sent when a request is received.
     typedef boost::signals2::signal
-      <void (const boost::weak_ptr<http_connection_type>,
-                                  http::rx_request const&,
-                                  Container const&)> http_request_signal;
+      <void (boost::weak_ptr<http_connection_type>,
+             http::rx_request const&, Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
 
     /// The signal sent when a chunk is received.
     typedef boost::signals2::signal
-      <void (const boost::weak_ptr<http_connection_type>,
-                                  http::rx_chunk const&,
-                                  Container const&)> http_chunk_signal;
+      <void (boost::weak_ptr<http_connection_type>,
+             http::rx_chunk const&, Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
     /// The signal sent when a socket is disconnected.
     typedef boost::signals2::signal
-      <void (const boost::weak_ptr<http_connection_type>)>
-                                                   http_disconnected_signal;
+      <void (boost::weak_ptr<http_connection_type>)> http_disconnected_signal;
 
     /// The slot type associated with a socket disconnected signal.
     typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
@@ -92,9 +111,8 @@ namespace via
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
                                               /// the disconncted callback function
     http_disconnected_signal http_disconnected_signal_;
-    bool translate_head_;   ///< whether the server should translate head requests
-    bool continue_enabled_; ///< whether the server should send 100 Continue
-    bool has_clock_;        ///< whether the server has a clock
+    bool concatenate_chunks_; ///< true if the server does not have a chunk handler
+    bool continue_enabled_;   ///< whether the server should send 100 Continue
 
   public:
 
@@ -103,24 +121,27 @@ namespace via
     void request_received_event(http_request_signal_slot const& slot)
     { http_request_signal_.connect(slot); }
 
-    /// Connect the expects continue received slot.
+    /// Connect the chunk received slot.
+    /// @param slot the slot for the chunk received signal.
+    void chunk_received_event(http_chunk_signal_slot const& slot)
+    {
+      concatenate_chunks_ = false;
+      http_chunk_signal_.connect(slot);
+    }
+
+    /// Connect the expect continue received slot.
     /// If the application registers a slot for this event, then the
     /// application must determine how to respond to a request containing an
-    /// Expects: 100-continue header based upon it's other headers.
+    /// Expect: 100-continue header based upon it's other headers.
     /// Otherwise, the server will send a 100 Continue response, so that the
     /// client can continue to send the body of the request.
     /// @post disables automatic sending of a 100 Continue response
     /// @param slot the slot for the expects continue signal.
-    void request_expects_continue_event(http_request_signal_slot const& slot)
+    void request_expect_continue_event(http_request_signal_slot const& slot)
     {
       continue_enabled_ = false;
       http_continue_signal_.connect(slot);
     }
-
-    /// Connect the chunk received slot.
-    /// @param slot the slot for the chunk received signal.
-    void chunk_received_event(http_chunk_signal_slot const& slot)
-    { http_chunk_signal_.connect(slot); }
 
     /// Connect the disconnected slot.
     /// @param slot the slot for the socket disconnected signal.
@@ -129,14 +150,7 @@ namespace via
 
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
-    /// @param port the number of the comms port.
-    /// @param translate_head if true the server passes a HEAD request to the
-    /// application as a GET request. Default true.
-    /// @param has_clock if true the server shall always send a date header
-    /// in the response. Default true.
-    explicit http_server(boost::asio::io_service& io_service,
-                         bool translate_head = true,
-                         bool has_clock = true) :
+    explicit http_server(boost::asio::io_service& io_service) :
       server_(server_type::create(io_service,
         boost::bind(&http_server::event_handler, this, _1, _2),
         boost::bind(&http_server::error_handler, this,
@@ -146,9 +160,8 @@ namespace via
       http_continue_signal_(),
       http_chunk_signal_(),
       http_disconnected_signal_(),
-      translate_head_(translate_head),
-      continue_enabled_(true),
-      has_clock_(has_clock)
+      concatenate_chunks_(true),
+      continue_enabled_(true)
     {}
 
     /// Start accepting connections on the communications server from the
@@ -156,7 +169,7 @@ namespace via
     /// @param port the port number to serve.
     /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
     /// @return the boost error code, false if no error occured
-    boost::system::error_code  accept_connections
+    boost::system::error_code accept_connections
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                        bool ipv6 = false)
     { return server_->accept_connections(port, ipv6); }
@@ -176,9 +189,8 @@ namespace via
         else
         {
           http_connection = http_connection_type::create(connection,
-                                                         translate_head_,
-                                                         continue_enabled_,
-                                                         has_clock_);
+                                                         concatenate_chunks_,
+                                                         continue_enabled_);
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
         }

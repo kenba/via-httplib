@@ -3,7 +3,7 @@
 #ifndef REQUEST_HPP_VIA_HTTPLIB_
 #define REQUEST_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -294,7 +294,7 @@ namespace via
 
       /// Accessor for the request message headers.
       /// @return a constant reference to the message_headers
-      const message_headers& header() const
+      const message_headers& headers() const
       { return headers_; }
 
       /// The size in the content_length header (if there is one)
@@ -325,6 +325,16 @@ namespace via
         return major_version() >= 1 &&
                minor_version() >= 1 &&
                headers_.expect_continue();
+      }
+
+      /// Whether a request is missing a Host: header.
+      /// @return true if the request should have a host header, false
+      /// otherwise
+      bool missing_host_header() const
+      {
+        return major_version() == 1 &&
+               minor_version() == 1 &&
+               headers_.find(header_field::HOST).empty();
       }
 
       /// Accessor for the valid flag.
@@ -423,8 +433,11 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class request_receiver
     /// A template class to receive HTTP requests and any associated data.
+    /// @param Container the type of container in which the request is held.
+    /// @param translate_head whether the receiver passes a HEAD request to
+    /// the application as a GET request.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container>
+    template <typename Container, bool translate_head>
     class request_receiver
     {
       /// The template requires a typename to access the iterator
@@ -433,21 +446,25 @@ namespace via
       rx_request request_; ///< the received request
       rx_chunk   chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
-      bool       continue_sent_;  ///< a 100 Continue response has been sent
-      bool       translate_head_; ///< whether to translate HEADs to GETs
-      bool       is_head_;        ///< whether it's a HEAD request
+      bool       continue_sent_;   ///< a 100 Continue response has been sent
+      bool       is_head_;         ///< whether it's a HEAD request
+      bool       concatenate_chunks_; ///< concatenate chunk data into the body
+      size_t     rxed_chunk_size_; ///< the size of the received chunk
 
     public:
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
-      explicit request_receiver(bool translate_head) :
+      /// @param concatenate_chunks if true concatenate chunk data into the body
+      /// otherwise the body just contains the data for each chunk.
+      explicit request_receiver(bool concatenate_chunks) :
         request_(),
         chunk_(),
         body_(),
         continue_sent_(false),
-        translate_head_(translate_head),
-        is_head_(false)
+        is_head_(false),
+        concatenate_chunks_(concatenate_chunks),
+        rxed_chunk_size_(0)
       {}
 
       /// clear the request_receiver.
@@ -459,6 +476,7 @@ namespace via
         body_.clear();
         continue_sent_ = false;
         is_head_ = false;
+        rxed_chunk_size_ = 0;
       }
 
       /// set the continue_sent_ flag
@@ -520,7 +538,7 @@ namespace via
           {
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
-            if (is_head_ && translate_head_)
+            if (is_head_ && translate_head)
               request_.set_method(request_method::name(request_method::GET));
 
             return RX_VALID;
@@ -529,15 +547,17 @@ namespace via
         else // request_.is_chunked()
         {
           // If parsed the request header without a data chunk yet
-          if (request_parsed && (iter == end))
+          if (request_parsed && (iter == end) && !concatenate_chunks_)
             return RX_VALID;
 
           // If parsed a chunk and its data previously,
           // then clear it ready for the next chunk
-          if (chunk_.valid() && (chunk_.size() == body_.size()))
+          if (chunk_.valid() && (chunk_.size() == rxed_chunk_size_))
           {
             chunk_.clear();
-            body_.clear();
+            rxed_chunk_size_ = 0;
+            if (!concatenate_chunks_)
+              body_.clear();
           }
 
           if (!chunk_.valid())
@@ -557,11 +577,23 @@ namespace via
           }
 
           if (end > iter)
+          {
+            rxed_chunk_size_ += (end - iter);
             body_.insert(body_.end(), iter, end);
+          }
 
-          // return whether the body is complete
-          if (body_.size() >= chunk_.size())
-            return RX_CHUNK;
+          if (concatenate_chunks_)
+          {
+            // Determine whether this is the last chunk.
+            if (chunk_.is_last())
+              return RX_VALID;
+          }
+          else
+          {
+            // return whether the chunk body is complete
+            if (body_.size() >= chunk_.size())
+              return RX_CHUNK;
+          }
         }
 
         if (request_.expect_continue() && !continue_sent_)

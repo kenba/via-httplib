@@ -3,7 +3,7 @@
 #ifndef HTTP_CONNECTION_HPP_VIA_HTTPLIB_
 #define HTTP_CONNECTION_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -27,21 +27,45 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_connection
   /// An HTTP connection.
+  /// @param SocketAdaptor the type of socket to use, tcp or ssl
+  /// @param Container the type of container to use
+  /// @param use_strand if true use an asio::strand to wrap the handlers
+  /// @param translate_head if true the server shall always pass a HEAD request
+  /// to the application as a GET request.
+  /// @param has_clock if true the server shall always send a date header
+  /// in the response.
+  /// @param require_host if true the server shall require all requests to
+  /// include a "Host:" header field. Required by RFC2616.
+  /// @param trace_enabled if true the server will echo back the TRACE message
+  /// and all of it's headers in the body of the response.
+  /// Although required by RFC2616 it's considered a security vulnerability
+  /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
+  /// response.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char> >
+  template <typename SocketAdaptor,
+            typename Container,
+            bool use_strand,
+            bool translate_head,
+            bool has_clock,
+            bool require_host,
+            bool trace_enabled>
   class http_connection : public boost::enable_shared_from_this
-          <http_connection<SocketAdaptor, Container> >
+       <http_connection<SocketAdaptor, Container,
+         use_strand, translate_head, has_clock, require_host, trace_enabled> >
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container> connection_type;
+    typedef comms::connection<SocketAdaptor, Container, use_strand>
+                                                              connection_type;
 
     /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container> >
+    typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
+         use_strand, translate_head, has_clock, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
-    typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container> >
+    typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
+         use_strand, translate_head, has_clock, require_host, trace_enabled> >
        shared_pointer;
 
     /// The template requires a typename to access the iterator.
@@ -53,32 +77,28 @@ namespace via
     boost::weak_ptr<connection_type> connection_;
 
     /// The request receiver for this connection.
-    http::request_receiver<Container> rx_;
+    http::request_receiver<Container, translate_head> rx_;
 
     /// A flag to indicate that the server should always respond to an
     /// expect: 100-continue header with a 100 Continue response.
     bool continue_enabled_;
 
-    /// A flag to indicate that the server has a clock.
-    bool has_clock_;
-
     /// Constructor.
     /// Note: the constructor is private to ensure that an http_connection
     /// can only be created as a shared pointer by the create method.
     /// @param connection a weak pointer to the underlying connection.
+    /// @param concatenate_chunks if true the server shall always concatenate
+    /// chunk data into the request body, otherwise the body shall contain
+    /// the data for each chunk.
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
-    /// @param has_clock if true the server shall always send a date header
-    /// in the response.
     http_connection(boost::weak_ptr<connection_type> connection,
-                    bool translate_head,
-                    bool continue_enabled,
-                    bool has_clock) :
+                    bool concatenate_chunks,
+                    bool continue_enabled) :
       connection_(connection),
-      rx_(translate_head),
-      continue_enabled_(continue_enabled),
-      has_clock_(has_clock)
+      rx_(concatenate_chunks),
+      continue_enabled_(continue_enabled)
     {}
 
     /// Send a packet on the connection.
@@ -142,21 +162,18 @@ namespace via
     /// Create.
     /// A factory method to create a shared pointer to this type.
     /// @param connection a weak pointer to the underlying connection.
-    /// @param translate_head if true the server passes a HEAD request to the
-    /// application as a GET request.
+    /// @param concatenate_chunks if true the server shall always concatenate
+    /// chunk data into the request body, otherwise the body shall contain
+    /// the data for each chunk.
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
-    /// @param has_clock if true the server shall always send a date header
-    /// in the response.
     static shared_pointer create(boost::weak_ptr<connection_type> connection,
-                                 bool translate_head,
-                                 bool continue_enabled,
-                                 bool has_clock)
+                                 bool concatenate_chunks,
+                                 bool continue_enabled)
     { return shared_pointer(new http_connection(connection,
-                                                translate_head,
-                                                continue_enabled,
-                                                has_clock)); }
+                                                concatenate_chunks,
+                                                continue_enabled)); }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
@@ -197,31 +214,69 @@ namespace via
       http::receiver_parsing_state rx_state
           (rx_.receive(data.begin(), data.end()));
 
-      // Determine whether the server should send a 100 Continue response
-      if (continue_enabled_ && (rx_state == http::RX_EXPECT_CONTINUE))
+      // Handle special cases
+      switch (rx_state)
       {
+      case http::RX_EXPECT_CONTINUE:
+        // Determine whether the server should send a 100 Continue response
+        if (continue_enabled_)
+        {
 #if defined(BOOST_ASIO_HAS_MOVE)
-        send(http::tx_response(http::response_status::CONTINUE));
+          send(http::tx_response(http::response_status::CONTINUE));
 #else
-        http::tx_response continue_response(http::response_status::CONTINUE);
-        send(continue_response);
+          http::tx_response continue_response(http::response_status::CONTINUE);
+          send(continue_response);
 #endif // BOOST_ASIO_HAS_MOVE
-        rx_state = http::RX_INCOMPLETE;
-      }
-      // Determine whether this is a TRACE request,
-      // in which case the server reflects the message back.
-      else if ((rx_state == http::RX_VALID) && rx_.request().is_trace())
-      {
-        // Response is OK with a  Content-Type: message/http header
-        http::tx_response ok_response(http::response_status::OK);
-        ok_response.add_content_http_header();
+          rx_state = http::RX_INCOMPLETE;
+        }
+        break;
 
-        // The body of the response contains the TRACE request
-        std::string trace_request(rx_.request().to_string());
-        trace_request += rx_.request().header().to_string();
+      case http::RX_VALID:
+        // Determine whether this is a TRACE request
+        if (rx_.request().is_trace())
+        {
+          // if enabled, the server reflects the message back.
+          if (trace_enabled)
+          {
+            // Response is OK with a Content-Type: message/http header
+            http::tx_response ok_response(http::response_status::OK);
+            ok_response.add_content_http_header();
 
-        send(ok_response, trace_request.begin(), trace_request.end());
-        rx_state = http::RX_INVALID;
+            // The body of the response contains the TRACE request
+            std::string trace_request(rx_.request().to_string());
+            trace_request += rx_.request().headers().to_string();
+
+            send(ok_response, trace_request.begin(), trace_request.end());
+          }
+          else // otherwise, it responds with "Not Allowed"
+          {
+#if defined(BOOST_ASIO_HAS_MOVE)
+            send(http::tx_response(http::response_status::METHOD_NOT_ALLOWED));
+#else
+            http::tx_response not_allowed(http::response_status::METHOD_NOT_ALLOWED);
+            send(not_allowed);
+#endif // BOOST_ASIO_HAS_MOVE
+          }
+
+          // Set the state as invalid, since the server has responded to the request
+          rx_state = http::RX_INVALID;
+        }
+        else // Not a TRACE request
+        {
+          // A fully compliant HTTP server MUST reject a request without a Host header
+          if (rx_.request().missing_host_header() && require_host)
+          {
+            std::string missing_host("Request lacks Host Header");
+            http::tx_response bad_request(http::response_status::BAD_REQUEST);
+            send(bad_request, missing_host.begin(), missing_host.end());
+
+            rx_state = http::RX_INVALID;
+          }
+        }
+        break;
+
+      default:
+        ;
       }
 
       return rx_state;
@@ -233,7 +288,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock_));
+      std::string http_header(response.message(has_clock));
 
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
@@ -246,7 +301,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock_));
+      std::string http_header(response.message(has_clock));
 
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
@@ -260,7 +315,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock_));
+      std::string http_header(response.message(has_clock, body.size()));
 
       Container tx_message(body);
 
@@ -281,7 +336,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock_));
+      std::string http_header(response.message(has_clock, body.size()));
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -303,9 +358,10 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock_));
-
       size_t size(end - begin);
+      std::string http_header(response.message(has_clock, size));
+
+
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());

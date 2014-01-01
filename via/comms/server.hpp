@@ -3,7 +3,7 @@
 #ifndef SERVER_HPP_VIA_HTTPLIB_
 #define SERVER_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -26,14 +26,18 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class server
     /// A template class serving connections.
+    /// @param SocketAdaptor the type of socket to use, tcp or ssl
+    /// @param Container the type of container to use
+    /// @param use_strand if true use an asio::strand to wrap the handlers
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char> >
+    template <typename SocketAdaptor, typename Container = std::vector<char>,
+              bool use_strand = false>
     class server : boost::noncopyable
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container> connection_type;
+      typedef connection<SocketAdaptor, Container, use_strand> connection_type;
 
       /// a set of connections.
       typedef std::set<boost::shared_ptr<connection_type> > connections;
