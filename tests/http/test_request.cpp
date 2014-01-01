@@ -1,11 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-//
+//////////////////////////////////////////////////////////////////////////////
+/// @file test_request.cpp
+/// @brief Unit tests for the classes in requests.hpp.
 //////////////////////////////////////////////////////////////////////////////
 #include "../../via/http/request.hpp"
 #include <vector>
@@ -192,7 +194,7 @@ TEST(TestRequestParser, ValidGetVectorChar1)
   CHECK_EQUAL(1, the_request.major_version());
   CHECK_EQUAL(0, the_request.minor_version());
 
-  STRCMP_EQUAL("text", the_request.header().find("content").c_str());
+  STRCMP_EQUAL("text", the_request.headers().find("content").c_str());
   CHECK_EQUAL(0, the_request.content_length());
   CHECK(!the_request.is_chunked());
 }
@@ -212,7 +214,7 @@ TEST(TestRequestParser, ValidGetVectorUnsignedChar1)
   CHECK_EQUAL(1, the_request.major_version());
   CHECK_EQUAL(0, the_request.minor_version());
 
-  STRCMP_EQUAL("text", the_request.header().find("content").c_str());
+  STRCMP_EQUAL("text", the_request.headers().find("content").c_str());
   CHECK_EQUAL(0, the_request.content_length());
   CHECK(!the_request.is_chunked());
 }
@@ -230,7 +232,7 @@ TEST(TestRequestParser, ValidGet1)
   CHECK_EQUAL(1, the_request.major_version());
   CHECK_EQUAL(0, the_request.minor_version());
 
-  STRCMP_EQUAL("text", the_request.header().find("content").c_str());
+  STRCMP_EQUAL("text", the_request.headers().find("content").c_str());
   CHECK_EQUAL(0, the_request.content_length());
   CHECK(!the_request.is_chunked());
 }
@@ -253,7 +255,6 @@ TEST(TestRequestParser, ValidPost1)
 
 // Memory leaks in call to is_chunked according to Qt/MinGw
 // probably an issue with boost::regex
-//#if (__cplusplus >= 201103L)
 #ifdef _MSC_VER
 TEST(TestRequestParser, ValidChunked1)
 {
@@ -293,7 +294,6 @@ TEST(TestRequestParser, ValidChunked2)
   CHECK_EQUAL(0, the_request.minor_version());
 
   CHECK(the_request.is_chunked());
-//  CHECK(!the_request.is_complete());
   CHECK_EQUAL(9, request_data.end() - next);
 
   // TODO parse chunk...
@@ -357,7 +357,7 @@ TEST(TestRequestParser, ValidPostMultiLine2)
 
   std::string request_data2("ngth: 4\r\n\r\n");
   next = request_data2.begin();
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data2.end()));
   CHECK(request_data2.end() == next);
 
   CHECK_EQUAL(4, the_request.content_length());
@@ -414,7 +414,7 @@ TEST(TestRequestReceiver, ValidGet1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   std::string::const_iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data.end()));
   bool complete (rx_state == RX_VALID);
@@ -432,7 +432,7 @@ TEST(TestRequestReceiver, ValidGet2)
   std::string request_data1("G");
   std::string::const_iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
@@ -456,7 +456,7 @@ TEST(TestRequestReceiver, InValidGet1)
   std::string request_data1("g");
   std::string::const_iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
   CHECK(rx_state == RX_INVALID);
@@ -467,7 +467,7 @@ TEST(TestRequestReceiver, ValidPostQt1)
   std::string request_data1("P");
   std::string::const_iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
@@ -506,7 +506,63 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   std::string request_data1("P");
   std::string::const_iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  // Receiver concatenates chunks
+  request_receiver<std::string, false> the_request_receiver(true);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.end()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Transfer-Encoding: Chunked\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.end());
+  ok = (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  rx_request const& the_request(the_request_receiver.request());
+  STRCMP_EQUAL("POST", the_request.method().c_str());
+  STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
+  CHECK(the_request_receiver.body().empty());
+
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.end());
+  bool complete (rx_state == RX_INCOMPLETE);
+  CHECK(complete);
+
+  std::string body_data2("24\r\n0123456789abcdefghijkl");
+  next = body_data2.begin();
+  rx_state = the_request_receiver.receive(next, body_data2.end());
+  CHECK (rx_state == RX_INCOMPLETE);
+
+  std::string body_data3("mnopqrstuvwxyz");
+  next = body_data3.begin();
+  rx_state = the_request_receiver.receive(next, body_data3.end());
+  CHECK (rx_state == RX_INCOMPLETE);
+
+  std::string body_data4("0\r\n");
+  next = body_data4.begin();
+  rx_state = the_request_receiver.receive(next, body_data4.end());
+  CHECK (rx_state == RX_VALID);
+}
+#endif
+
+#ifdef _MSC_VER
+TEST(TestRequestReceiver, ValidPostChunk2)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  // Receiver does NOT concatenate_chunks
+  request_receiver<std::string, false> the_request_receiver(false);
   receiver_parsing_state rx_state
       (the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
@@ -546,6 +602,12 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_CHUNK);
+
+  std::string body_data4("0\r\n");
+  next = body_data4.begin();
+  rx_state = the_request_receiver.receive(next, body_data4.end());
+  CHECK (rx_state == RX_CHUNK);
 }
 #endif
+
 //////////////////////////////////////////////////////////////////////////////

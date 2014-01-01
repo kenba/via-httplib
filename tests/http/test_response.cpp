@@ -1,11 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-//
+//////////////////////////////////////////////////////////////////////////////
+/// @file test_response.cpp
+/// @brief Unit tests for the classes in response.hpp.
 //////////////////////////////////////////////////////////////////////////////
 #include "../../via/http/response.hpp"
 #include <vector>
@@ -196,10 +198,10 @@ TEST(TestResponseParser, ValidOK1)
   CHECK_EQUAL(1, the_response.major_version());
   CHECK_EQUAL(0, the_response.minor_version());
 
-  STRCMP_EQUAL("text", the_response.header().find("content").c_str());
+  STRCMP_EQUAL("text", the_response.headers().find("content").c_str());
   CHECK_EQUAL(0, the_response.content_length());
   CHECK(!the_response.is_chunked());
-  STRCMP_EQUAL("text", the_response.header().find("content").c_str());
+  STRCMP_EQUAL("text", the_response.headers().find("content").c_str());
 }
 
 TEST(TestResponseParser, ValidOK2)
@@ -221,9 +223,7 @@ TEST(TestResponseParser, ValidOK2)
   STRCMP_EQUAL("abcd", body.c_str());
 }
 
-
 // Memory leaks according to Qt/MinGw
-// New version not tested on Visual Studio yet
 #ifdef _MSC_VER
 TEST(TestResponseParser, ValidOKChunked1)
 {
@@ -260,7 +260,7 @@ TEST(TestResponseParser, ValidUnauthorised1)
   CHECK_EQUAL(0, the_response.minor_version());
 
   STRCMP_EQUAL("Challenge",
-    the_response.header().find(header_field::WWW_AUTHENTICATE).c_str());
+    the_response.headers().find(header_field::WWW_AUTHENTICATE).c_str());
   CHECK_EQUAL(0, the_response.content_length());
   CHECK(!the_response.is_chunked());
 }
@@ -299,24 +299,26 @@ TEST(TestResponseEncode, ResponseEncode1)
 {
   const std::string text("123456789abcdef");
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
+  correct_response += via::http::header_field::server_header();
   correct_response += "Content-Length: 15\r\n\r\n";
 
-  tx_response the_response(response_status::OK, text.size());
-  std::string resp_text(the_response.message());
+  tx_response the_response(response_status::OK);
+  std::string resp_text(the_response.message(false, text.size()));
 //  std::cout << resp_text << std::endl;
-//  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
+  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
 
 TEST(TestResponseEncode, ResponseEncode2)
 {
   const std::string text("123456789abcdef");
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
+  correct_response += via::http::header_field::server_header();
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
 
-  tx_response the_response(response_status::OK, 0, "", true);
-  std::string resp_text(the_response.message());
+  tx_response the_response(response_status::OK, "", true);
+  std::string resp_text(the_response.message(false));
 //  std::string resp_text(resp_data.begin(), resp_data.end());
-//  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
+  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -387,7 +389,7 @@ TEST(TestResponseReceiver, ValidOKChunked1)
   STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
   CHECK_EQUAL(1, the_response_receiver.response().major_version());
   CHECK_EQUAL(0, the_response_receiver.response().minor_version());
-//  CHECK(the_response_receiver.response().is_chunked());
+  CHECK(the_response_receiver.response().is_chunked());
   CHECK(the_response_receiver.body().empty());
 
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
@@ -408,4 +410,3 @@ TEST(TestResponseReceiver, ValidOKChunked1)
 }
 #endif
 //////////////////////////////////////////////////////////////////////////////
-
