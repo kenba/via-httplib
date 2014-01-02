@@ -27,6 +27,9 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_client
   /// An HTTP client.
+  /// @param SocketAdaptor the type of socket to use, tcp or ssl
+  /// @param Container the type of container to use
+  /// @param use_strand if true use an asio::strand to wrap the handlers
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
             bool use_strand = false>
@@ -38,8 +41,8 @@ namespace via
                                                               connection_type;
 
     /// A shared pointer to this type.
-    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container, use_strand> >
-       shared_pointer;
+    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
+                                                 use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -86,16 +89,19 @@ namespace via
     /// Constructor.
     /// @param io_service the asio io_service to use.
     explicit http_client(boost::asio::io_service& io_service) :
-      connection_(connection_type::create(io_service,
-           boost::bind(&http_client::event_handler, this, _1, _2),
-           boost::bind(&http_client::error_handler, this,
-                        boost::asio::placeholders::error, _2))),
+      connection_(connection_type::create(io_service)),
       rx_(),
       http_response_signal_(),
       http_chunk_signal_(),
       http_disconnected_signal_(),
       host_name_()
-    {}
+    {
+      connection_->set_event_callback
+          (boost::bind(&http_client::event_handler, this, _1, _2));
+      connection_->set_error_callback
+          (boost::bind(&http_client::error_handler, this,
+                       boost::asio::placeholders::error, _2));
+    }
 
   public:
 
@@ -128,7 +134,7 @@ namespace via
     bool connect(const std::string& host_name, std::string port_name = "http")
     {
       host_name_ = host_name;
-      if (port_name != "http")
+      if ((port_name != "http") && (port_name != "https"))
       {
         host_name_ += ":";
         host_name_ += port_name;
@@ -272,9 +278,8 @@ namespace via
     /// @param begin a constant iterator to the beginning of the chunk to send.
     /// @param end a constant iterator to the end of the chunk to send.
     /// @param extension the (optional) chunk extension.
-    /*
     template<typename ForwardIterator1, typename ForwardIterator2>
-    send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+    void send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
                     std::string extension = "")
     {
       size_t size(end - begin);
@@ -287,7 +292,6 @@ namespace via
       tx_message.insert(tx_message.end(), begin, end);
       send(tx_message);
     }
-    */
 
     /// Send the last HTTP chunk for a request.
     /// @param extension the (optional) chunk extension.
@@ -309,7 +313,8 @@ namespace via
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
-    void event_handler(int event, boost::weak_ptr<connection_type> connection)
+    void event_handler(int event,
+                       typename connection_type::weak_pointer connection)
     {
       switch(event)
       {
@@ -328,7 +333,7 @@ namespace via
     /// @param error the boost error_code.
     /// @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<connection_type> connection)
+                       typename connection_type::weak_pointer connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;

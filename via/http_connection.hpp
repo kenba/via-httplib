@@ -74,7 +74,7 @@ namespace via
   private:
 
     /// A weak pointer to underlying connection.
-    boost::weak_ptr<connection_type> connection_;
+    typename connection_type::weak_pointer connection_;
 
     /// The request receiver for this connection.
     http::request_receiver<Container, translate_head> rx_;
@@ -93,7 +93,7 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
-    http_connection(boost::weak_ptr<connection_type> connection,
+    http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
                     bool continue_enabled) :
       connection_(connection),
@@ -168,7 +168,7 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
-    static shared_pointer create(boost::weak_ptr<connection_type> connection,
+    static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
                                  bool continue_enabled)
     { return shared_pointer(new http_connection(connection,

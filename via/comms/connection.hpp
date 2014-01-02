@@ -78,6 +78,7 @@ namespace via
       boost::shared_ptr<std::deque<Container> > tx_queue_;     ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
+      bool connected_;                     ///< If the socket is connected.
 
       /// The default receive buffer size.
       static const size_t DEFAULT_BUFFER_SIZE = 8192;
@@ -92,23 +93,26 @@ namespace via
       /// Write data via the socket adaptor.
       void write_data()
       {
-        if (use_strand)
-          SocketAdaptor::write(&tx_queue_->front()[0],
-                                tx_queue_->front().size(),
-             strand_.wrap(
-             boost::bind(&connection::write_callback,
-                         weak_from_this(),
-                         boost::asio::placeholders::error,
-                         boost::asio::placeholders::bytes_transferred,
-                         tx_queue_)));
-        else
-          SocketAdaptor::write(&tx_queue_->front()[0],
-                                tx_queue_->front().size(),
-             boost::bind(&connection::write_callback,
-                         weak_from_this(),
-                         boost::asio::placeholders::error,
-                         boost::asio::placeholders::bytes_transferred,
-                         tx_queue_));
+        if (connected_ && !tx_queue_->empty())
+        {
+          if (use_strand)
+            SocketAdaptor::write(&tx_queue_->front()[0],
+                                  tx_queue_->front().size(),
+               strand_.wrap(
+               boost::bind(&connection::write_callback,
+                           weak_from_this(),
+                           boost::asio::placeholders::error,
+                           boost::asio::placeholders::bytes_transferred,
+                           tx_queue_)));
+          else
+            SocketAdaptor::write(&tx_queue_->front()[0],
+                                  tx_queue_->front().size(),
+               boost::bind(&connection::write_callback,
+                           weak_from_this(),
+                           boost::asio::placeholders::error,
+                           boost::asio::placeholders::bytes_transferred,
+                           tx_queue_));
+        }
       }
 
       /// @fn read_data
@@ -240,15 +244,18 @@ namespace via
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
-          if (error)
+          if (!error)
           {
-            pointer->shutdown();
-            pointer->signal_error(error);
+            pointer->connected_ = true;
+            if (!pointer->tx_queue_->empty())
+              pointer->write_data();
+            pointer->enable_reception();
+            pointer->event_callback_(CONNECTED, ptr);
           }
           else
           {
-            pointer->enable_reception();
-            pointer->event_callback_(CONNECTED, ptr);
+            pointer->shutdown();
+            pointer->signal_error(error);
           }
         }
       }
@@ -273,7 +280,7 @@ namespace via
         {
           if (!error)
             pointer->handshake(boost::bind(&connection::handshake_callback, ptr, 
-                               boost::asio::placeholders::error));
+                               boost::asio::placeholders::error), false);
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
@@ -292,6 +299,7 @@ namespace via
         }
       }
 
+      /// Constructor for server connections.
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
@@ -309,7 +317,26 @@ namespace via
         rx_buffer_(new Container()),
         tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
-        error_callback_(error_callback)
+        error_callback_(error_callback),
+        connected_(false)
+      {}
+
+      /// Constructor for client connections.
+      /// The constructor is private to ensure that it instances of the class
+      /// can only be created as shared pointers by calling the create
+      /// function below.
+      /// @param io_service the boost asio io_service used by the underlying
+      /// socket adaptor.
+      /// @param port_number required for UDP servers, default zero.
+      explicit connection(boost::asio::io_service& io_service,
+                          unsigned short port_number) :
+        SocketAdaptor(io_service, port_number),
+        strand_(io_service),
+        rx_buffer_(new Container()),
+        tx_queue_(new std::deque<Container>()),
+        event_callback_(),
+        error_callback_(),
+        connected_(false)
       {}
 
     public:
@@ -334,7 +361,7 @@ namespace via
       { close(); }
 
       /// @fn create
-      /// The factory function to create connections.
+      /// The factory function to create server connections.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
       /// @param event_callback the event callback function.
@@ -348,6 +375,25 @@ namespace via
         return shared_pointer(new connection(io_service, event_callback,
                                              error_callback, port_number));
       }
+
+      /// @fn create
+      /// The factory function to create client connections.
+      /// @param io_service the boost asio io_service used by the underlying
+      /// socket adaptor.
+      /// @param port_number required for UDP servers, default zero.
+      static shared_pointer create(boost::asio::io_service& io_service,
+                                   unsigned short port_number = 0)
+      { return shared_pointer(new connection(io_service, port_number)); }
+
+      /// Function to set the event callback function.
+      /// @param event_callback the event callback function.
+      void set_event_callback(event_callback_type event_callback)
+      { event_callback_ = event_callback; }
+
+      /// Function to set the error callback function.
+      /// @param error_callback the error callback function.
+      void set_error_callback(error_callback_type error_callback)
+      { error_callback_ = error_callback; }
 
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and

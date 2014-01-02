@@ -6,15 +6,16 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file simple_http_client.cpp
-/// @brief An example HTTP client.
+/// @file simple_https_client.cpp
+/// @brief An example HTTPS client.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/tcp_adaptor.hpp"
+#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_client.hpp"
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
+                                                            https_client_type;
 
 namespace
 {
@@ -34,8 +35,8 @@ int main(int argc, char *argv[])
   // Get a hostname and uri from the user (assume default http port)
   if (argc <= 2)
   {
-    std::cout << "Usage: simple_http_client [host] [uri]\n"
-              << "E.g. simple_http_client www.boost.org /LICENSE_1_0.txt"
+    std::cout << "Usage: simple_https_client [host] [uri]\n"
+              << "E.g. simple_https_client 127.0.0.1 /hello"
               << std::endl;
     return 1;
   }
@@ -49,12 +50,20 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create an http_client, attach the response handler
-    // and attempt to connect to the host on the standard http port (80)
-    http_client_type::shared_pointer http_client
-        (http_client_type::create(io_service));
+    // Create an http_client
+    https_client_type::shared_pointer http_client
+        (https_client_type::create(io_service));
+
+    // Set up SSL
+    std::string certificate_file = "cacert.pem";
+    boost::asio::ssl::context& ssl_context
+       (https_client_type::connection_type::ssl_context());
+    ssl_context.load_verify_file(certificate_file);
+
+    // attach the response handler
+    // and attempt to connect to the host on the standard https port (443)
     http_client->response_received_event(response_handler);
-    if (http_client->connect(host_name))
+    if (http_client->connect(host_name, "https"))
     {
       // Create an http request and send it to the host.
       via::http::tx_request request(via::http::request_method::GET, uri);

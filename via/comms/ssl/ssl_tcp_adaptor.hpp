@@ -91,7 +91,7 @@ namespace via
         /// @param handshake_handler the handshake callback function.
         /// @param is_server whether performing client or server handshaking,
         /// default client.
-        void handshake(ErrorHandler handshake_handler, bool is_server = false)
+        void handshake(ErrorHandler handshake_handler, bool is_server)
         {
           socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
                                             : boost::asio::ssl::stream_base::client, 
@@ -104,9 +104,6 @@ namespace via
         void connect_socket(ConnectHandler connectHandler,
                             boost::asio::ip::tcp::resolver::iterator host_iterator)
         {
-          socket_.set_verify_callback
-              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
-
           // Attempt to connect to the host
           boost::asio::async_connect(socket_.lowest_layer(), host_iterator,
                                      connectHandler);
@@ -155,6 +152,8 @@ namespace via
                      ConnectHandler connectHandler)
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
+          socket_.set_verify_callback
+              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
 
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
