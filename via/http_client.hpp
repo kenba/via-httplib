@@ -82,9 +82,18 @@ namespace via
     void send(Container const& packet)
     {
       rx_.clear();
-
       connection_->send_data(packet);
     }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send a packet on the connection.
+    /// @param packet the data packet to send.
+    void send(Container&& packet)
+    {
+      rx_.clear();
+      connection_->send_data(packet);
+    }
+#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Constructor.
     /// @param io_service the asio io_service to use.
@@ -193,6 +202,18 @@ namespace via
       send(tx_message);
     }
 
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send an HTTP request without a body.
+    /// @param request the request to send.
+    void send(http::tx_request&& request)
+    {
+      request.add_header(http::header_field::HOST, host_name_);
+      std::string http_header(request.message());
+      Container tx_message(http_header.begin(), http_header.end());
+      send(tx_message);
+    }
+#endif // BOOST_ASIO_HAS_MOVE
+
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
@@ -211,10 +232,10 @@ namespace via
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
-    void send(http::tx_request& request, Container&& body)
+    void send(http::tx_request&& request, Container&& body)
     {
       request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message());
+      std::string http_header(request.message(body.size()));
 
       Container tx_message(body);
       tx_message.insert(body.begin(),
@@ -232,9 +253,9 @@ namespace via
               ForwardIterator1 begin, ForwardIterator2 end)
     {
       request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message());
-
       size_t size(end - begin);
+      std::string http_header(request.message(size));
+
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
       tx_message.assign(http_header.begin(), http_header.end());

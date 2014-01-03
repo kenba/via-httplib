@@ -371,7 +371,7 @@ namespace via
       /// @param is_chunked default false
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit tx_response(std::string reason_phrase,
+      explicit tx_response(const std::string& reason_phrase,
                            int status,
                            std::string header_string = "",
                            bool is_chunked = false,

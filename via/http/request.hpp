@@ -358,7 +358,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tx_request : public request_line
     {
-      size_t      content_length_; ///< The length in a content header.
       std::string header_string_;  ///< The headers as a string.
       bool        is_chunked_;     ///< Whether the request will be chunked.
 
@@ -367,7 +366,6 @@ namespace via
       /// Constructor for a standard request.
       /// @param id
       /// @param uri
-      /// @param content_length
       /// @param header_string
       /// @param is_chunked
       /// @param minor_version default 1
@@ -380,7 +378,6 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line(id, uri, minor_version, major_version),
-        content_length_(content_length),
         header_string_(header_string),
         is_chunked_(is_chunked)
       {}
@@ -388,7 +385,6 @@ namespace via
       /// Constructor for non-standard requests.
       /// @param method
       /// @param uri
-      /// @param content_length
       /// @param header_string
       /// @param is_chunked
       /// @param minor_version default 1
@@ -401,7 +397,6 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line(method, uri, minor_version, major_version),
-        content_length_(content_length),
         header_string_(header_string),
         is_chunked_(is_chunked)
       {}
@@ -415,15 +410,18 @@ namespace via
       { header_string_ += header_field::to_header(id, value);  }
 
       /// The http message header string.
-      std::string message() const
+      /// @param content_length the size of the message body for the
+      /// content_length header.
+      /// @return The http message header as a std:string.
+      std::string message(size_t content_length = 0) const
       {
         std::string output(request_line::to_string());
         output += header_string_;
 
         if (is_chunked_)
           output += header_field::chunked_encoding();
-        else // always send the content length...
-          output += header_field::content_length(content_length_);
+        else // always send the content length, even when zero
+          output += header_field::content_length(content_length);
         output += CRLF;
 
         return output;

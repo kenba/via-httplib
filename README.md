@@ -7,39 +7,41 @@ The library's aim is to provide an asynchronous HTTP server that is fully compli
 with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
 wherever possible and a minimum of HTTP specific code in the application itself.
 
+Note: also supports HTTP and HTTPS clients.
+
 Requirements
 ------------
 
-+ The **Boost** library, especially `asio`, see [boost](http://www.boost.org/)
++ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/)
 
 + A reasonably up to date C++ compiler, see [old compilers](http://www.boost.org/users/news/old_compilers.html)
 
-+ For **HTTPS**, the **OpenSSL** library, see [openssl](http://www.openssl.org/)
++ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/)
 
 Getting Started
 ---------------
 
-Download the latest tagged version of **via-httplib** from
+Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
 and follow the instructions here: [Make](MAKE.md).  
 Or simply build the .cpp files into your application (there are only 8 of them).
 
-`via-http` lib depends on the **Boost** libraries.
-If Boost is not installed on your machine then download the latest package from
+`via-http` lib depends on the `boost` libraries.
+If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
 [boost getting started](http://www.boost.org/doc/libs/1_55_0/more/getting_started/index.html).
 
-The **Boost** `asio` library (and hence `via-httplib`) depends upon the
-**OpenSSL** library to implement SSL/TLS sockets.
-If you want to build an **HTTPS** server then you'll need to install the
-OpenSSL library as well.
-Please note that a plain **HTTP** server should **not** require **OpenSLL**.
+The `boost asio` library (and hence `via-httplib`) depends upon the
+`OpenSSL` library to implement SSL/TLS sockets.
+If you require an **HTTPS** server or client then you'll need to install the
+`OpenSSL` library as well.
+Please note that a plain HTTP server should *not* require `OpenSLL`.
 
-If **OpenSLL** is not installed on your machine then download the latest stable
+If `OpenSLL` is not installed on your machine then download the latest stable
 package from [openssl source](http://www.openssl.org/source/) and build it.
 Note: a binary distribution may be available for your machine,
 see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
-which could save you a lot of trouble, since building the OpenSSL binaries can
+which could save you a lot of trouble, since building the `OpenSSL` binaries can
 be a long and difficult process...  
 
 Example
@@ -129,6 +131,8 @@ e.g. a request from Internet Explorer on a Windows 7 PC:
     user-agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)
 
     Rx body:
+
+An equivalent simple HTTPS server can be found here:[`simple_https_server.cpp`](examples/server/simple_https_server.cpp)
 
 Further Information
 -------------------

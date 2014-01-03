@@ -1,16 +1,23 @@
 # User Guide #
 
-An application interfaces with **via-httplib** through the `http_server` template class.
+An application creates an HTTP server with **via-httplib** through the
+`http_server` template class.
 
-The application must configure and initialise an instance of `http_server`.
+Note: **via-httplib** may also be used to create HTTP clients see:
+[Clients](CLIENT.md)
+
+The application configures and initialises an instance of `http_server`.
 The `http_server` will then signal the application whenever a significant HTTP
 event occurs. Events that may be signalled by an instance of `http_server` are:
 
-+ `request_received_event` signalled when an HTTP request is received from a client.
-+ `chunk_received_event` signalled when an HTTP request chunk is received from a client.
-+ `request_expect_continue_event` signalled when an HTTP request contains an
-"Expect: 100-continue" header.
-+ `socket_disconnected_event` signalled when an HTTP client's socket disconnects.
++ `request_received_event`  
+   signalled when an HTTP request is received from a client.
++ `chunk_received_event`  
+   signalled when an HTTP request chunk is received from a client.
++ `request_expect_continue_event`  
+   signalled when an HTTP request contains an "Expect: 100-continue" header.
++ `socket_disconnected_event`  
+   signalled when an HTTP client's socket disconnects.
 
 An application need only handle the `request_received_event`, all of the other
 events are optional.
@@ -20,14 +27,14 @@ and the `io_service` must be run or polled after `http_server` has been initiali
 enable TCP communications.
 For more information see: [boost libs](http://www.boost.org/doc/libs/): Asio.
 
-## http_server ##
+## Class `http_server` ##
 
 The `http_server` template class is defined in `<via/http_server.hpp>`:
 
     namespace via
     {
       template <typename SocketAdaptor,
-                typename Container,
+                typename Container = std::vector<char>,
                 bool use_strand = false,
                 bool translate_head = true,
                 bool has_clock = true,
@@ -53,6 +60,7 @@ via::comms::ssl::ssl_tcp_adaptor for an HTTPS server.</td> </tr>
 </ul>
 std::string provides the simplest interface for HTML, XML, JSON, etc.<br>
 The vectors may be easier when sending or receiving binary data.
+Default: std::vector< char >
 </td> </tr>
 <tr> <td>use_strand</td> <td>Use an asio::strand to allow the execution of code in a
 multi-threaded program without the need for explicit locking, see: <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/strands.html">boost asio strands</a>.<br>
@@ -160,7 +168,7 @@ a request handler:
     /// register request_handler with the http_server
     http_server.request_received_event(request_handler);
 
-The application's request handler is key to how the application responds to HTTP requests.
+The application's request handler is key to how the application responds to HTTP requests.  
 They are described in more detail here: [Request Handlers](REQUEST.md).
 
 ### chunk\_received\_event ###
@@ -369,10 +377,10 @@ for example:
       return 1;
     }
  
-## Code Examples ##
+## Examples ##
 
-An example HTTP Server that incorporates the example code above:
+An HTTP Server that incorporates the example code above:
 [`example_http_server.cpp`](examples/server/example_http_server.cpp)
 
-An example HTTPS Server that incorporates the example code above:
+An HTTPS Server that incorporates the example code above:
 [`example_https_server.cpp`](examples/server/example_https_server.cpp)
