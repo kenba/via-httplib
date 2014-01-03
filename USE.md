@@ -37,7 +37,6 @@ The `http_server` template class is defined in `<via/http_server.hpp>`:
                 typename Container = std::vector<char>,
                 bool use_strand = false,
                 bool translate_head = true,
-                bool has_clock = true,
                 bool require_host = true,
                 bool trace_enabled = false>
       class http_server
@@ -67,13 +66,9 @@ multi-threaded program without the need for explicit locking, see: <a href="http
 Default: false.</td> </tr>
 <tr> <td>translate_head</td> <td>An HTTP HEAD request is identical to a GET request
 except that the server <b>MUST NOT</b> return a message-body in the response.<br>
-If set, then via-httplib passes HEAD requests to the application as GET requests
-and ensures that no body is sent in the response. Otherwise the application should handle HEAD requests itself.<br>
+If set, then http_server passes HEAD requests to the application as GET requests.<br>
+Note: http_server <b>never</b> sends a body in a response to a HEAD request.<br>
 Default: true.</td> </tr>
-<tr> <td>has_clock</td> <td>An HTTP response should normally contain a Date header. However, if the server does not have a clock that can provide a reasonable approximation
-of the current time, its responses <b>MUST NOT</b> include a Date header field.<br>
-If set, then via-httplib adds a Date header to all HTTP responses.<br>
-Default: true. </td> </tr>
 <tr> <td>require_host</td> <td>A client <b>MUST</b> include a Host header field in
 all HTTP/1.1 request messages.<br>
 If set, then via-httplib responds to all HTTP 1.1 requests <b>without</b> a Host
@@ -90,9 +85,9 @@ If set, then via-httplib sends the standard TRACE response.<br>
 Default: false. </td> </tr>
 </table>
 
-Note: the descriptions of the HEAD request, Date and Host headers above are
+Note: the descriptions of the HEAD request and Host header above are
 from [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html).
-Sections: 9.4, 14.18 and 14.23 respectively.
+Sections: 9.4 and 14.23 respectively.
 
 E.g.
 

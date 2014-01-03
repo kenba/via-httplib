@@ -120,19 +120,13 @@ The `tx_response` class is defined in `<via/http/response.hpp>`.
 The class has two Constructors:
 
     explicit tx_response(response_status::status_code status,
-                         std::string header_string = "",
-                         bool is_chunked = false,
-                         int minor_version = 1,
-                         int major_version = 1);
+                         std::string header_string = "");
 
 and
 
     explicit tx_response(const std::string& reason_phrase,
                          int status,
-                         std::string header_string = "",
-                         bool is_chunked = false,
-                         int minor_version = 1,
-                         int major_version = 1);
+                         std::string header_string = "");
 
 The first constructor just requires a `via::http::response_status::status_code`,
 this is an enumeration of the standard HTTP response status codes, see:
@@ -141,21 +135,12 @@ this is an enumeration of the standard HTTP response status codes, see:
 The second constructor requires a string and an integer.
 It enables the application to send a non-standard HTTP response status.
 
-The other parameters are the same for both constructors and described below:  
-
- + `header_string`: a string containing one or more response headers.
-    HTTP headers are just strings of the form "Header: Value\r\n" the application can
-    set any number of headers in this string.
- + `is_chunked`: a flag indicating whether the response body will be sent in "chunks",
-    default: false.
- + `minor_version`: the minor HTTP version number, set to zero for HTTP/1.0.
-    Default 1 for HTTP/1.1.  
-    Set to zero for HTTP/1.0
- + `major_version`: the major HTTP version number. Default 1 for HTTP/1.1.
-
+The other parameter for both is `header_string`: a string containing one or more
+response headers. HTTP headers are just strings of the form "Header: Value\r\n". The application can set any number of HTTP headers in this string, simply by concatenating
+them together in this parameter.
 
 There are also "set" and "add" functions in the `tx_response` class so that the 
-status, headers, etc. can be set after the class has been constructed, i.e.:  
+status and headers can be set after the class has been constructed, i.e.:  
 
  + `void set_status(response_status::status_code status)`  
     Set a standard HTTP response status (defined in `<via/http/response_status.hpp>`)
@@ -166,26 +151,25 @@ status, headers, etc. can be set after the class has been constructed, i.e.:
     to the response.
  + `void add_header(std::string const& field, const std::string& value)`  
     Add a non-standard header field  to the response.
- + `void set_minor_version(int minor_version)` Set the HTTP minor version.
- + `void set_major_version(int major_version)` Set the HTTP major version.
+ + `void add_date_header()`  
+    Add a `Date` header with the current date and time to the response.
+ + `void add_server_header()`  
+    Add a `Server` header with the current version of `via-httplib` to the response.
+ + `add_content_length_header(size_t size)`  
+    Add a `Content-Length` header with the given size to the response.
 
-### Response Headers ###
+### The `Content-Length` Header ###
 
-An application may set the HTTP response field headers using `header_string` in
-the `tx_response` Constructor or the `tx_response::add_header` methods or any 
-combination. However, be aware that `via-httplib` will set the following headers as
-described below and so the application should **NOT** set the following headers:
+Although not required by [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html),
+some browsers do not accept responses without a `Content-Length` Header, so the
+`tx_response` class ensures that it (or a `Transfer-Encoding` header, see
+[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 3)
+is always present.
 
- + **Content-Length**  
-   Set to the size of **all** message bodies, unless `is_chunked`.  
-   Even in response to a HEAD request when the message body is **not** sent to the client.
- + **Date**  
-   Set to the current data and time, unless `http_server` is configured with
-   `has_clock` = false.
- + **Transfer-Encoding: Chunked**  
-   Set whenever `is_chunked` is true in the the `tx_response` Constructor.
- + **Server**  
-   Always set to "Via-httplib/tag"
+In short, this means an application need never set a `Content-Length` header in
+`tx_response` unless `translate_head` is disabled (see class `http_server` above)
+and it's responding to a `HEAD` request using a send function without a body,
+see below.
 
 ## Sending Responses ##
 
@@ -223,7 +207,7 @@ There are two types of `send` functions:
    Sends a response without a body.
 + `bool send(http::tx_response& response, Container const& body);`  
    Send a response with a body. However, the body may be of zero length, in which case the body will not be sent in the HTTP response.
-   Note: a body will **never** be sent in response to a HEAD request although it's size may be set in the Content-Length header.
+   Note: a body will **never** be sent in response to a HEAD request although it's size may be used in the Content-Length header.
 
 All `http_connection send` functions return a boolean which is true if the connection
 is left open, false if the connection will be closed after the response has been sent.

@@ -218,7 +218,6 @@ The class has two Constructors:
     explicit tx_request(request_method::method_id id,
                         std::string uri,
                         std::string header_string = "",
-                        bool is_chunked = false,
                         int minor_version = 1,
                         int major_version = 1);
 and
@@ -226,7 +225,6 @@ and
     explicit tx_request(const std::string& method,
                         std::string uri,
                         std::string header_string = "",
-                        bool is_chunked = false,
                         int minor_version = 1,
                         int major_version = 1);
 
@@ -243,8 +241,6 @@ The other parameters are the same for both constructors and described below:
  + `header_string`: a string containing one or more response headers.
     HTTP headers are just strings of the form "Header: Value\r\n" the application can
     set any number of headers in this string.
- + `is_chunked`: a flag indicating whether the response body will be sent in "chunks",
-    default: false.
  + `minor_version`: the minor HTTP version number, set to zero for HTTP/1.0.
     Default 1 for HTTP/1.1.  
     Set to zero for HTTP/1.0
@@ -258,23 +254,23 @@ headers and HTTP version can be set after the class has been constructed, i.e.:
     to the request.
  + `void add_header(std::string const& field, const std::string& value)`  
     Add a non-standard header field  to the request.
+ + `add_content_length_header(size_t size)`  
+    Add a `Content-Length` header with the given size to the request.
  + `void set_minor_version(int minor_version)` Set the HTTP minor version.
  + `void set_major_version(int major_version)` Set the HTTP major version.
 
-### Request Headers ###
+### The `Content-Length` Header ###
 
-An application may set the HTTP request field headers using `header_string` in
-the `tx_request` Constructor or the `tx_request::add_header` methods or any 
-combination. However, be aware that `via-httplib` will set the following headers as
-described below and so the application should **NOT** set the following headers:
+Although not required by [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html),
+some servers do not accept requests without a `Content-Length` Header, so the
+`tx_request` class ensures that it (or a `Transfer-Encoding` header, see
+[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 3)
+is always present.
 
- + **Host**  
-   Set to the `host_name` given in the call to the `http_client::connect` function.
-   May also include the port number if the port is not "http" or "https".
- + **Content-Length**  
-   Set to the size of **all** message bodies, unless `is_chunked`. 
- + **Transfer-Encoding: Chunked**  
-   Set whenever `is_chunked` is true in the the `tx_request` Constructor.
+In short, this means an application need never set a `Content-Length` header in
+`tx_request`.  
+A `Content-Length` header should only be set with an `Expect: 100-continue` header,
+to set the `Content-Length` size without a body.
 
 ### Sending Requests ###
 
@@ -283,6 +279,16 @@ All requests are sent via the `http_client`, e.g.:
     // Create an http request and send it to the host.
     via::http::tx_request request(via::http::request_method::GET, uri);
     http_client->send(request);
+
+There are also functions for sending chunks, e.g.:
+
+    std::string a_chunk("An HTTP message chunk");
+    http_client->send_chunk(a_chunk);
+
+And for sending a message body after a `100-continue` response, e.g.:
+
+    std::string a_body("An HTTP message body");
+    http_client->send_body(a_body);
 
 ## Examples ##
 

@@ -343,43 +343,28 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tx_response : public response_line
     {
-      std::string header_string_;  ///< The headers as a string.
-      bool        is_chunked_;     ///< Whether the response will be chunked.
+      std::string header_string_; ///< The headers as a string.
 
     public:
 
       /// Constructor for a standard response.
       /// @param status
       /// @param header_string default blank
-      /// @param is_chunked default false
-      /// @param minor_version default 1
-      /// @param major_version default 1
       explicit tx_response(response_status::status_code status,
-                           std::string header_string = "",
-                           bool is_chunked = false,
-                           int minor_version = 1,
-                           int major_version = 1)
-        : response_line(status, minor_version, major_version)
-        , header_string_(header_string)
-        , is_chunked_(is_chunked)
+                           std::string header_string = "") :
+        response_line(status),
+        header_string_(header_string)
       {}
 
       /// Constructor for non-standard responses.
       /// @param reason_phrase
       /// @param status
       /// @param header_string default blank
-      /// @param is_chunked default false
-      /// @param minor_version default 1
-      /// @param major_version default 1
       explicit tx_response(const std::string& reason_phrase,
                            int status,
-                           std::string header_string = "",
-                           bool is_chunked = false,
-                           int minor_version = 1,
-                           int major_version = 1)
-        : response_line(status, reason_phrase, minor_version, major_version)
-        , header_string_(header_string)
-        , is_chunked_(is_chunked)
+                           std::string header_string = "") :
+        response_line(status, reason_phrase) ,
+        header_string_(header_string)
       {}
 
       /// Add a standard header to the response.
@@ -390,9 +375,17 @@ namespace via
       void add_header(std::string const& field, const std::string& value)
       { header_string_ += header_field::to_header(field, value);  }
 
-      /// Add a Content-Type: message/http header for a TRACE response
-      void add_content_http_header()
-      { header_string_ += header_field::content_http_header(); }
+      /// Add a Date header to the response.
+      void add_date_header()
+      { header_string_ += header_field::date_header(); }
+
+      /// Add a Server header to the response.
+      void add_server_header()
+      { header_string_ += header_field::server_header(); }
+
+      /// Add an http content length header line for the given size.
+      void add_content_length_header(size_t size)
+      { header_string_ += header_field::content_length(size); }
 
       /// Whether this is a continue response.
       /// @return true if this is a continue response, false otherwise.
@@ -400,22 +393,21 @@ namespace via
       { return status() == response_status::CONTINUE; }
 
       /// The http message header string.
-      /// @param has_clock is the server has a clock then the date_header
-      /// will be sent in the response
       /// @param content_length the size of the message body for the
       /// content_length header.
       /// @return The http message header as a std:string.
-      std::string message(bool has_clock, size_t content_length = 0) const
+      std::string message(size_t content_length = 0) const
       {
         std::string output(response_line::to_string());
-        output += header_field::server_header();
-        if (has_clock)
-          output += header_field::date_header();
         output += header_string_;
 
-        if (is_chunked_)
-          output += header_field::chunked_encoding();
-        else // always send the content length, even when zero
+        // Ensure that it's got a content length header unless
+        // a tranfer encoding is being applied.
+        bool no_content_length(std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::CONTENT_LENGTH)));
+        bool no_transfer_encoding(std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+        if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
 

@@ -297,13 +297,11 @@ TEST_GROUP(TestResponseEncode)
 
 TEST(TestResponseEncode, ResponseEncode1)
 {
-  const std::string text("123456789abcdef");
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
-  correct_response += via::http::header_field::server_header();
-  correct_response += "Content-Length: 15\r\n\r\n";
+  correct_response += "Content-Length: 0\r\n\r\n";
 
   tx_response the_response(response_status::OK);
-  std::string resp_text(the_response.message(false, text.size()));
+  std::string resp_text(the_response.message());
 //  std::cout << resp_text << std::endl;
   STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
@@ -313,13 +311,44 @@ TEST(TestResponseEncode, ResponseEncode2)
   const std::string text("123456789abcdef");
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
   correct_response += via::http::header_field::server_header();
+  correct_response += "Content-Length: 15\r\n\r\n";
+
+  tx_response the_response(response_status::OK);
+  the_response.add_server_header();
+  std::string resp_text(the_response.message(text.size()));
+//  std::cout << resp_text << std::endl;
+  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
+}
+
+TEST(TestResponseEncode, ResponseEncode3)
+{
+  const std::string text("123456789abcdef");
+  std::string correct_response ("HTTP/1.1 200 OK\r\n");
+  correct_response += via::http::header_field::server_header();
+  correct_response += "Content-Length: 15\r\n\r\n";
+
+  tx_response the_response(response_status::OK);
+  the_response.add_server_header();
+  the_response.add_content_length_header(text.size());
+  std::string resp_text(the_response.message());
+//  std::cout << resp_text << std::endl;
+  STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
+}
+
+TEST(TestResponseEncode, ResponseEncode4)
+{
+  const std::string text("123456789abcdef");
+  std::string correct_response ("HTTP/1.1 200 OK\r\n");
+//  correct_response += via::http::header_field::server_header();
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
 
-  tx_response the_response(response_status::OK, "", true);
-  std::string resp_text(the_response.message(false));
+  tx_response the_response(response_status::OK);
+  the_response.add_header(header_field::TRANSFER_ENCODING, "Chunked");
+  std::string resp_text(the_response.message());
 //  std::string resp_text(resp_data.begin(), resp_data.end());
   STRCMP_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
+
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////

@@ -47,6 +47,8 @@ namespace
 
       // The default response is 404 Not Found
       via::http::tx_response response(via::http::response_status::NOT_FOUND);
+      response.add_server_header();
+      response.add_date_header();
       if (request.uri() == "/hello")
       {
         if ((request.method() == "GET") || (request.method() == "PUT"))

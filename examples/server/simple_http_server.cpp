@@ -27,6 +27,8 @@ namespace
     std::cout << "Rx body: "    << body << std::endl;
 
     via::http::tx_response response(via::http::response_status::OK);
+    response.add_server_header();
+    response.add_date_header();
     weak_ptr.lock()->send(response);
   }
 }

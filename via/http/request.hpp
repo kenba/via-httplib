@@ -358,47 +358,38 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tx_request : public request_line
     {
-      std::string header_string_;  ///< The headers as a string.
-      bool        is_chunked_;     ///< Whether the request will be chunked.
+      std::string header_string_; ///< The headers as a string.
 
     public:
 
       /// Constructor for a standard request.
       /// @param id
       /// @param uri
-      /// @param header_string
-      /// @param is_chunked
+      /// @param header_string default blank
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_request(request_method::method_id id,
                           std::string uri,
-                          size_t content_length = 0,
                           std::string header_string = "",
-                          bool is_chunked = false,
                           int minor_version = 1,
                           int major_version = 1) :
         request_line(id, uri, minor_version, major_version),
-        header_string_(header_string),
-        is_chunked_(is_chunked)
+        header_string_(header_string)
       {}
 
       /// Constructor for non-standard requests.
       /// @param method
       /// @param uri
-      /// @param header_string
-      /// @param is_chunked
+      /// @param header_string default blank
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit tx_request(const std::string& method,
                           std::string uri,
-                          size_t content_length = 0,
                           std::string header_string = "",
-                          bool is_chunked = false,
                           int minor_version = 1,
                           int major_version = 1) :
         request_line(method, uri, minor_version, major_version),
-        header_string_(header_string),
-        is_chunked_(is_chunked)
+        header_string_(header_string)
       {}
 
       /// Add a free form header to the request.
@@ -409,6 +400,10 @@ namespace via
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
 
+      /// Add an http content length header line for the given size.
+      void add_content_length_header(size_t size)
+      { header_string_ += header_field::content_length(size); }
+
       /// The http message header string.
       /// @param content_length the size of the message body for the
       /// content_length header.
@@ -418,9 +413,13 @@ namespace via
         std::string output(request_line::to_string());
         output += header_string_;
 
-        if (is_chunked_)
-          output += header_field::chunked_encoding();
-        else // always send the content length, even when zero
+        // Ensure that it's got a content length header unless
+        // a tranfer encoding is being applied.
+        bool no_content_length(std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::CONTENT_LENGTH)));
+        bool no_transfer_encoding(std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+        if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
 

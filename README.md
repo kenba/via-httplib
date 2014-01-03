@@ -3,9 +3,8 @@ via-httplib
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
-The library's aim is to provide an asynchronous HTTP server that is fully compliant
-with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
-wherever possible and a minimum of HTTP specific code in the application itself.
+The library's aim is to provide an asynchronous HTTP server that complies with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
+wherever possible.
 
 Note: also supports HTTP and HTTPS clients.
 
@@ -70,6 +69,8 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	    std::cout << "Rx body: "    << body << std::endl;
 	
 	    via::http::tx_response response(via::http::response_status::OK);
+        response.add_server_header();
+        response.add_date_header();
 	    weak_ptr.lock()->send(response);
 	  }
 	}

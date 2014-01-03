@@ -36,6 +36,40 @@ namespace
                      + std::string("<body><h1>200 Accepted</h1></body>\r\n")
                      + std::string("</html>\r\n"));
 
+  /// A function to send a response to a request.
+  void respond_to_request(https_connection::weak_pointer weak_ptr)
+  {
+    https_connection::shared_pointer connection(weak_ptr.lock());
+    if (connection)
+    {
+      // Get the last request sent on this connection.
+      via::http::rx_request const& request(connection->request());
+
+      // The default response is 404 Not Found
+      via::http::tx_response response(via::http::response_status::NOT_FOUND);
+      response.add_server_header();
+      response.add_date_header();
+      if (request.uri() == "/hello")
+      {
+        if ((request.method() == "GET") || (request.method() == "PUT"))
+          response.set_status(via::http::response_status::OK);
+        else
+        {
+          response.set_status(via::http::response_status::METHOD_NOT_ALLOWED);
+          response.add_header(via::http::header_field::ALLOW, "GET, PUT");
+        }
+      }
+
+      if ((request.method() == "GET") &&
+          (response.status() == via::http::response_status::OK))
+        connection->send(response, response_body);
+      else
+        connection->send(response);
+    }
+    else
+      std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
+  }
+
   /// The handler for incoming HTTP requests.
   /// Prints the request and determines whether the request is chunked.
   /// If not, it responds with a 200 OK response with some HTML in the body.
@@ -47,29 +81,8 @@ namespace
     std::cout << "Rx headers: " << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
-    // The default response is 404 Not Found
-    via::http::tx_response response(via::http::response_status::NOT_FOUND);
-    if (request.uri() == "/hello")
-    {
-       if (request.method() == "GET")
-         response.set_status(via::http::response_status::OK);
-       else
-       {
-         response.set_status(via::http::response_status::METHOD_NOT_ALLOWED);
-         response.add_header(via::http::header_field::ALLOW, "GET");
-       }
-    }
-
-    https_connection::shared_pointer connection(weak_ptr.lock());
-    if (connection)
-    {
-      if (response.status() == via::http::response_status::OK)
-        connection->send(response, response_body);
-      else
-        connection->send(response);
-    }
-    else
-      std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
+    if (!request.is_chunked())
+      respond_to_request(weak_ptr);
   }
 
   /// The handler for incoming HTTP chunks.
@@ -87,16 +100,7 @@ namespace
 
     // Only send a response to the last chunk.
     if (chunk.is_last())
-    {
-      https_connection::shared_pointer connection(weak_ptr.lock());
-      if (connection)
-      {
-        via::http::tx_response response(via::http::response_status::OK);
-        connection->send(response);
-      }
-      else
-        std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
-    }
+      respond_to_request(weak_ptr);
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -135,8 +139,8 @@ int main(int argc, char *argv[])
   // Get a port number from the user
   if (argc <= 1)
   {
-    std::cerr << "Usage: complete_http_server [port number]\n"
-              << "E.g. complete_https_server 80"
+    std::cerr << "Usage: example_https_server [port number]\n"
+              << "E.g. example_https_server 443"
               << std::endl;
     return 1;
   }

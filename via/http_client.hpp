@@ -237,9 +237,8 @@ namespace via
       request.add_header(http::header_field::HOST, host_name_);
       std::string http_header(request.message(body.size()));
 
-      Container tx_message(body);
-      tx_message.insert(body.begin(),
-                        http_header.begin(), http_header.end());
+      body.insert(body.begin(),
+                  http_header.begin(), http_header.end());
       send(body);
     }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -288,9 +287,8 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       std::string chunk_string(chunk_header.to_string());
 
-      Container tx_message(chunk);
-      tx_message.insert(chunk.begin(),
-                        chunk_string.begin(), chunk_string.end());
+      chunk.insert(chunk.begin(),
+                   chunk_string.begin(), chunk_string.end());
       send(chunk);
     }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -326,6 +324,18 @@ namespace via
       Container tx_message(chunk_string.begin(), chunk_string.end());
       send(tx_message);
     }
+
+    /// Send a message body on the connection.
+    /// @param body the body to send.
+    void send_body(Container const& body)
+    { send(body); }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send a message body on the connection.
+    /// @param body the body to send.
+    void send_body(Container&& body)
+    { send(body); }
+#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Disconnect the underlying connection.
     void disconnect()

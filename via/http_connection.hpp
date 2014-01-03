@@ -32,8 +32,6 @@ namespace via
   /// @param use_strand if true use an asio::strand to wrap the handlers
   /// @param translate_head if true the server shall always pass a HEAD request
   /// to the application as a GET request.
-  /// @param has_clock if true the server shall always send a date header
-  /// in the response.
   /// @param require_host if true the server shall require all requests to
   /// include a "Host:" header field. Required by RFC2616.
   /// @param trace_enabled if true the server will echo back the TRACE message
@@ -46,12 +44,11 @@ namespace via
             typename Container,
             bool use_strand,
             bool translate_head,
-            bool has_clock,
             bool require_host,
             bool trace_enabled>
   class http_connection : public boost::enable_shared_from_this
        <http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, has_clock, require_host, trace_enabled> >
+         use_strand, translate_head, require_host, trace_enabled> >
   {
   public:
     /// The underlying connection, TCP or SSL.
@@ -60,12 +57,12 @@ namespace via
 
     /// A weak pointer to this type.
     typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, has_clock, require_host, trace_enabled> >
+         use_strand, translate_head, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
     typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, has_clock, require_host, trace_enabled> >
+         use_strand, translate_head, require_host, trace_enabled> >
        shared_pointer;
 
     /// The template requires a typename to access the iterator.
@@ -239,8 +236,8 @@ namespace via
           if (trace_enabled)
           {
             // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::OK);
-            ok_response.add_content_http_header();
+            http::tx_response ok_response(http::response_status::OK,
+                                   http::header_field::content_http_header());
 
             // The body of the response contains the TRACE request
             std::string trace_request(rx_.request().to_string());
@@ -288,7 +285,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock));
+      std::string http_header(response.message());
 
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
@@ -301,7 +298,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock));
+      std::string http_header(response.message());
 
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
@@ -315,7 +312,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock, body.size()));
+      std::string http_header(response.message(body.size()));
 
       Container tx_message(body);
 
@@ -336,7 +333,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(has_clock, body.size()));
+      std::string http_header(response.message(body.size()));
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -359,8 +356,7 @@ namespace via
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       size_t size(end - begin);
-      std::string http_header(response.message(has_clock, size));
-
+      std::string http_header(response.message(size));
 
       Container tx_message;
       tx_message.reserve(http_header.size() + size);

@@ -387,17 +387,31 @@ TEST(TestRequestEncode, RequestEncode2)
   correct_request += "Content-Length: 15\r\n\r\n";
  // correct_request += text;
 
-  tx_request the_request(request_method::POST, "/uri", 15);
-  std::string req_text(the_request.message());
+  tx_request the_request(request_method::POST, "/uri");
+  std::string req_text(the_request.message(text.size()));
   STRCMP_EQUAL(correct_request.c_str(), req_text.c_str());
 }
 
 TEST(TestRequestEncode, RequestEncode3)
 {
+  std::string text("123456789abcdef");
+  std::string correct_request("POST /uri HTTP/1.1\r\n");
+  correct_request += "Content-Length: 15\r\n\r\n";
+ // correct_request += text;
+
+  tx_request the_request(request_method::POST, "/uri");
+  the_request.add_content_length_header(text.size());
+  std::string req_text(the_request.message());
+  STRCMP_EQUAL(correct_request.c_str(), req_text.c_str());
+}
+
+TEST(TestRequestEncode, RequestEncode4)
+{
   std::string correct_request("POST /uri HTTP/1.1\r\n");
   correct_request += "Transfer-Encoding: Chunked\r\n\r\n";
 
-  tx_request the_request(request_method::POST, "/uri", true, "", true);
+  tx_request the_request(request_method::POST, "/uri");
+  the_request.add_header(header_field::TRANSFER_ENCODING, "Chunked");
   std::string req_text(the_request.message());
   STRCMP_EQUAL(correct_request.c_str(), req_text.c_str());
 }

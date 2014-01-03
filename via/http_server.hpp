@@ -34,8 +34,6 @@ namespace via
   /// default false
   /// @param translate_head if true the server shall always pass a HEAD request
   /// to the application as a GET request.
-  /// @param has_clock if true the server shall always send a date header
-  /// in the response.
   /// @param require_host if true the server shall require all requests to
   /// include a "Host:" header field. Required by RFC2616.
   /// @param trace_enabled if true the server will echo back the TRACE message
@@ -48,7 +46,6 @@ namespace via
             typename Container = std::vector<char>,
             bool use_strand = false,
             bool translate_head = true,
-            bool has_clock = true,
             bool require_host = true,
             bool trace_enabled = false>
   class http_server
@@ -60,7 +57,7 @@ namespace via
 
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor, Container, use_strand, 
-  translate_head, has_clock, require_host, trace_enabled> http_connection_type;
+          translate_head, require_host, trace_enabled> http_connection_type;
 
     /// The underlying connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
