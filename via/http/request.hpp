@@ -441,12 +441,11 @@ namespace via
       typedef typename Container::const_iterator Container_const_iterator;
 
       rx_request request_; ///< the received request
-      rx_chunk   chunk_;   ///< the received chunk
+      rx_chunk<Container> chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
       bool       concatenate_chunks_; ///< concatenate chunk data into the body
-      size_t     rxed_chunk_size_; ///< the size of the received chunk
 
     public:
 
@@ -460,8 +459,7 @@ namespace via
         body_(),
         continue_sent_(false),
         is_head_(false),
-        concatenate_chunks_(concatenate_chunks),
-        rxed_chunk_size_(0)
+        concatenate_chunks_(concatenate_chunks)
       {}
 
       /// clear the request_receiver.
@@ -473,7 +471,6 @@ namespace via
         body_.clear();
         continue_sent_ = false;
         is_head_ = false;
-        rxed_chunk_size_ = 0;
       }
 
       /// set the continue_sent_ flag
@@ -491,7 +488,7 @@ namespace via
 
       /// Accessor for the received chunk.
       /// @return a constant reference to the received chunk.
-      rx_chunk const& chunk() const
+      rx_chunk<Container> const& chunk() const
       { return chunk_; }
 
       /// Accessor for the request body / last chunk data.
@@ -502,7 +499,7 @@ namespace via
       /// Receive data for an HTTP request, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      receiver_parsing_state receive(Container_const_iterator iter,
+      receiver_parsing_state receive(Container_const_iterator& iter,
                                      Container_const_iterator end)
       {
         // building a request
@@ -543,58 +540,49 @@ namespace via
         }
         else // request_.is_chunked()
         {
-          // If parsed the request header without a data chunk yet
-          if (request_parsed && (iter == end) && !concatenate_chunks_)
-            return RX_VALID;
-
           // If parsed a chunk and its data previously,
           // then clear it ready for the next chunk
-          if (chunk_.valid() && (chunk_.size() == rxed_chunk_size_))
-          {
+          if (chunk_.valid())
             chunk_.clear();
-            rxed_chunk_size_ = 0;
-            if (!concatenate_chunks_)
-              body_.clear();
-          }
 
-          if (!chunk_.valid())
+          // failed to parse request
+          if (!chunk_.parse(iter, end))
           {
-            // failed to parse request
-            if (!chunk_.parse(iter, end))
+            // if a parsing error (not run out of data)
+            if (iter != end)
             {
-              // if a parsing error (not run out of data)
-              if (iter != end)
-              {
-                clear();
-                return RX_INVALID;
-              }
-              else
-                return RX_INCOMPLETE;
+              clear();
+              return RX_INVALID;
             }
           }
 
-          if (end > iter)
+          // If parsed the request header, respond if necessary
+          if (request_parsed)
           {
-            rxed_chunk_size_ += (end - iter);
-            body_.insert(body_.end(), iter, end);
+            if (request_.expect_continue() && !continue_sent_)
+              return RX_EXPECT_CONTINUE;
+            else
+            {
+              if (!concatenate_chunks_)
+                return RX_VALID;
+            }
           }
 
-          if (concatenate_chunks_)
+          // A complete chunk has been parsed..
+          if (chunk_.valid())
           {
-            // Determine whether this is the last chunk.
-            if (chunk_.is_last())
-              return RX_VALID;
-          }
-          else
-          {
-            // return whether the chunk body is complete
-            if (body_.size() >= chunk_.size())
+            if (concatenate_chunks_)
+            {
+              if (chunk_.is_last())
+                return RX_VALID;
+              else
+                body_.insert(body_.end(),
+                             chunk_.data().begin(), chunk_.data().end());
+            }
+            else
               return RX_CHUNK;
           }
         }
-
-        if (request_.expect_continue() && !continue_sent_)
-          return RX_EXPECT_CONTINUE;
 
         return RX_INCOMPLETE;
       }

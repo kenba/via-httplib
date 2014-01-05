@@ -426,7 +426,7 @@ namespace via
       typedef typename Container::const_iterator Container_const_iterator;
 
       rx_response response_; ///< the received response
-      rx_chunk    chunk_;    ///< the received chunk
+      rx_chunk<Container> chunk_;    ///< the received chunk
       Container   body_;     ///< the response body or data for the last chunk
 
     public:
@@ -455,7 +455,7 @@ namespace via
 
       /// Accessor for the received chunk.
       /// @return a constant reference to the received chunk.
-      rx_chunk const& chunk() const
+      rx_chunk<Container> const& chunk() const
       { return chunk_; }
 
       /// Accessor for the response body / last chunk data.
@@ -466,13 +466,15 @@ namespace via
       /// Receive data for an HTTP response, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      receiver_parsing_state receive(Container_const_iterator iter,
+      receiver_parsing_state receive(Container_const_iterator& iter,
                                      Container_const_iterator end)
       {
         // building a response
         bool response_parsed(!response_.valid());
         if (response_parsed)
         {
+          chunk_.clear();
+
           // failed to parse response
           if (!response_.parse(iter, end))
           {
@@ -500,40 +502,28 @@ namespace via
         }
         else // response_.is_chunked()
         {
-          // If parsed the response header without a data chunk yet
-          if (response_parsed && (iter == end))
-            return RX_VALID;
-
           // If parsed a chunk and its data previously,
           // then clear it ready for the next chunk
-          if ((chunk_.valid() > 0) &&
-              (chunk_.size() == body_.size()))
-          {
+          if (chunk_.valid())
             chunk_.clear();
-            body_.clear();
-          }
 
-          if (!chunk_.valid())
+          // failed to parse request
+          if (!chunk_.parse(iter, end))
           {
-            // failed to parse request
-            if (!chunk_.parse(iter, end))
+            // if a parsing error (not run out of data)
+            if (iter != end)
             {
-              // if a parsing error (not run out of data)
-              if (iter != end)
-              {
-                clear();
-                return RX_INVALID;
-              }
-              else
-                return RX_INCOMPLETE;
+              clear();
+              return RX_INVALID;
             }
           }
 
-          if (end > iter)
-            body_.insert(body_.end(), iter, end);
+          // If parsed the response header, pass it to the application
+          if (response_parsed)
+            return RX_VALID;
 
-          // return whether the body is complete
-          if (body_.size() >= chunk_.size())
+          // A complete chunk has been parsed..
+          if (chunk_.valid())
             return RX_CHUNK;
         }
 

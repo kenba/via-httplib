@@ -171,10 +171,15 @@ namespace via
     /// @class rx_chunk
     /// A class to receive an HTTP chunk.
     //////////////////////////////////////////////////////////////////////////
+    template <typename Container>
     class rx_chunk : public chunk_header
     {
-      message_headers headers_; ///< the HTTP headers for the chunk
-      bool valid_;              ///< true if the chunk is valid
+      /// The template requires a typename to access the iterator
+      typedef typename Container::const_iterator Container_const_iterator;
+
+      Container data_;         ///< the data contained in the chunk
+      message_headers trailers_; ///< the HTTP field headers for the last chunk
+      bool valid_;               ///< true if the chunk is valid
 
     public:
 
@@ -182,7 +187,8 @@ namespace via
       /// Sets all member variables to their initial state.
       explicit rx_chunk() :
         chunk_header(),
-        headers_(),
+        data_(),
+        trailers_(),
         valid_(false)
       {}
 
@@ -191,7 +197,8 @@ namespace via
       void clear()
       {
         chunk_header::clear();
-        headers_.clear();
+        data_.clear();
+        trailers_.clear();
         valid_ =  false;
       }
 
@@ -200,7 +207,8 @@ namespace via
       void swap(rx_chunk& other)
       {
         chunk_header::swap(other);
-        headers_.swap(other.headers_);
+        data_.swap(other.data_);
+        trailers_.swap(other.trailers_);
         std::swap(valid_, other.valid_);
       }
 
@@ -212,25 +220,62 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      bool parse(Container_const_iterator& iter, Container_const_iterator end)
       {
         if (!chunk_header::valid() && !chunk_header::parse(iter, end))
           return false;
 
         // Only the last chunk has a trailer.
-        if (chunk_header::is_last() &&
-            !headers_.valid() && !headers_.parse_trailer(iter, end))
-          return false;
+        if (chunk_header::is_last())
+        {
+          if (!trailers_.parse(iter, end))
+            return false;
+        }
+        else // get the data
+        {
+          size_t required(chunk_header::size() - data_.size());
+          size_t rx_size(end - iter);
+
+          // received buffer contains more than just the required data
+          if (rx_size > required)
+          {
+            if (required > 0)
+            {
+              Container_const_iterator next(iter + required);
+              data_.insert(data_.end(), iter, next);
+              iter = next;
+            }
+
+            // Chunk must end in CRLF, allow just LF
+            if ('\r' == *iter)
+              ++iter;
+
+            if ((iter == end) || ('\n' != *iter))
+              return false;
+
+            ++iter;
+          }
+          else // not enough received data, just add it to data
+          {
+            data_.insert(data_.end(), iter, end);
+            iter = end;
+            return false;
+          }
+        }
 
         valid_ = true;
         return valid_;
       }
 
-      /// Accessor for the chunk message headers.
-      /// @return a constant reference to the message_headers
-      const message_headers& header() const
-      { return headers_; }
+      /// Accessor for the chunk message trailers.
+      /// @return a constant reference to the trailer message_headers
+      const message_headers& trailers() const
+      { return trailers_; }
+
+      /// Accessor for the chunk message data.
+      /// @return a constant reference to the data
+      const Container& data() const
+      { return data_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.

@@ -34,6 +34,7 @@ TEST(TestChunkLineParser, EmptyChunk1)
   STRCMP_EQUAL("0",  the_chunk.hex_size().c_str());
   STRCMP_EQUAL("", the_chunk.extension().c_str());
   CHECK_EQUAL(0, the_chunk.size());
+  CHECK(the_chunk.is_last());
 }
 
 TEST(TestChunkLineParser, EmptyChunk2)
@@ -47,6 +48,7 @@ TEST(TestChunkLineParser, EmptyChunk2)
   STRCMP_EQUAL("0",  the_chunk.hex_size().c_str());
   STRCMP_EQUAL("", the_chunk.extension().c_str());
   CHECK_EQUAL(0, the_chunk.size());
+  CHECK(the_chunk.is_last());
 }
 
 TEST(TestChunkLineParser, ValidString1)
@@ -60,6 +62,7 @@ TEST(TestChunkLineParser, ValidString1)
   STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
   STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
   CHECK_EQUAL(15, the_chunk.size());
+  CHECK(!the_chunk.is_last());
 }
 
 TEST(TestChunkLineParser, ValidString2)
@@ -73,6 +76,7 @@ TEST(TestChunkLineParser, ValidString2)
   BYTES_EQUAL('A', *next);
   STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
   CHECK_EQUAL(15, the_chunk.size());
+  CHECK(!the_chunk.is_last());
 }
 
 TEST(TestChunkLineParser, ValidString3)
@@ -87,6 +91,7 @@ TEST(TestChunkLineParser, ValidString3)
   STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
   STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
   CHECK_EQUAL(15, the_chunk.size());
+  CHECK(!the_chunk.is_last());
 }
 
 TEST(TestChunkLineParser, MultipleString1)
@@ -138,6 +143,31 @@ TEST(TestChunkEncoder, ValidChunk1)
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
+TEST_GROUP(TestLastChunkEncoder)
+{
+};
+
+TEST(TestLastChunkEncoder, EmptyChunk1)
+{
+  std::string empty_string("");
+  last_chunk the_chunk(empty_string, empty_string);
+  std::string chunk_string(the_chunk.message());
+
+  STRCMP_EQUAL("0\r\n\r\n", chunk_string.c_str());
+}
+
+TEST(TestLastChunkEncoder, EmptyChunk2)
+{
+  std::string empty_string("");
+  last_chunk the_chunk("extension", empty_string);
+  std::string chunk_string(the_chunk.message());
+
+  STRCMP_EQUAL("0; extension\r\n\r\n", chunk_string.c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
 TEST_GROUP(TestChunkParser)
 {
 };
@@ -145,22 +175,85 @@ TEST_GROUP(TestChunkParser)
 TEST(TestChunkParser, ValidChunk1)
 {
   std::string chunk_data("f;\r\n");
+  chunk_data += "123456789abcdef\r\n";
   std::string::const_iterator next(chunk_data.begin());
 
-  rx_chunk the_chunk;
+  rx_chunk<std::string> the_chunk;
   CHECK(the_chunk.parse(next, chunk_data.end()));
   CHECK_EQUAL(15, the_chunk.size());
+  BYTES_EQUAL('1', the_chunk.data().front());
+  BYTES_EQUAL('f', the_chunk.data().back());
+}
+
+TEST(TestChunkParser, ValidChunk2)
+{
+  std::string chunk_data("f;\n");
+  chunk_data += "123456789abcdef\n";
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk;
+  CHECK(the_chunk.parse(next, chunk_data.end()));
+  CHECK_EQUAL(15, the_chunk.size());
+  BYTES_EQUAL('1', the_chunk.data().front());
+  BYTES_EQUAL('f', the_chunk.data().back());
+}
+
+TEST(TestChunkParser, ValidChunk3)
+{
+  std::string chunk_data("f;\r\n");
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk;
+  CHECK(!the_chunk.parse(next, chunk_data.end()));
+
+  std::string chunk_data1("123456789abcdef\r\n");
+  next = chunk_data1.begin();
+  CHECK(the_chunk.parse(next, chunk_data1.end()));
+
+  CHECK_EQUAL(15, the_chunk.size());
+  BYTES_EQUAL('1', the_chunk.data().front());
+  BYTES_EQUAL('f', the_chunk.data().back());
+}
+
+TEST(TestChunkParser, ValidChunk4)
+{
+  std::string chunk_data("f");
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk;
+  CHECK(!the_chunk.parse(next, chunk_data.end()));
+
+  std::string chunk_data1(";\r\n123456789abcdef\r\n");
+  next = chunk_data1.begin();
+  CHECK(the_chunk.parse(next, chunk_data1.end()));
+
+  CHECK_EQUAL(15, the_chunk.size());
+  BYTES_EQUAL('1', the_chunk.data().front());
+  BYTES_EQUAL('f', the_chunk.data().back());
+}
+
+TEST(TestChunkParser, ValidLastChunk1)
+{
+  std::string chunk_data("0\r\n\r\n");
+  std::string::const_iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk;
+  CHECK(the_chunk.parse(next, chunk_data.end()));
+  CHECK_EQUAL(0, the_chunk.size());
+  CHECK(the_chunk.valid());
+  CHECK(the_chunk.is_last());
 }
 
 TEST(TestChunkParser, ValidChunkTrailer1)
 {
   std::string chunk_data("0\r\n");
-  chunk_data += "Accept-Encoding: gzip\r\n";
+  chunk_data += "Accept-Encoding: gzip\r\n\r\n";
   std::string::const_iterator next(chunk_data.begin());
 
-  rx_chunk the_chunk;
+  rx_chunk<std::string> the_chunk;
   CHECK(the_chunk.parse(next, chunk_data.end()));
   CHECK_EQUAL(0, the_chunk.size());
+  CHECK(the_chunk.is_last());
 }
 //////////////////////////////////////////////////////////////////////////////
 

@@ -85,10 +85,13 @@ namespace via
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
 
+    /// The chunk type
+    typedef typename http::rx_chunk<Container> chunk_type;
+
     /// The signal sent when a chunk is received.
     typedef boost::signals2::signal
       <void (boost::weak_ptr<http_connection_type>,
-             http::rx_chunk const&, Container const&)> http_chunk_signal;
+             chunk_type const&, Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
@@ -211,7 +214,7 @@ namespace via
         case http::RX_CHUNK:
           http_chunk_signal_(http_connection,
                              http_connection->chunk(),
-                             http_connection->body());
+                             http_connection->chunk().data());
           break;
 
         case http::RX_INVALID:

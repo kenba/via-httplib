@@ -100,6 +100,36 @@ namespace via
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
+    bool send(Container const& packet)
+    {
+      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+      {
+        tcp_pointer->send_data(packet);
+        return true;
+      }
+      else
+        return false;
+    }
+
+#if defined(BOOST_ASIO_HAS_MOVE)
+    /// Send a packet on the connection.
+    /// @param packet the data packet to send.
+    bool send(Container&& packet)
+    {
+      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+      {
+        tcp_pointer->send_data(packet);
+        return true;
+      }
+      else
+        return false;
+    }
+#endif  // BOOST_ASIO_HAS_MOVE
+
+    /// Send a packet on the connection.
+    /// @param packet the data packet to send.
     /// @param is_continue whether this is a 100 Continue response
     bool send(Container const& packet, bool is_continue)
     {
@@ -179,7 +209,7 @@ namespace via
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk const& chunk() const
+    http::rx_chunk<Container> const& chunk() const
     { return rx_.chunk(); }
 
     /// Accessor for the body.
@@ -380,6 +410,7 @@ namespace via
       Container tx_message(chunk);
       tx_message.insert(tx_message.begin(),
                         chunk_string.begin(), chunk_string.end());
+      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(tx_message);
     }
 
@@ -395,6 +426,7 @@ namespace via
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
+      chunk.insert(chunk.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(chunk);
     }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -411,10 +443,9 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       std::string chunk_string(chunk_header.to_string());
 
-      Container tx_message;
-      tx_message.reserve(chunk_string.size() + size);
-      tx_message.assign(chunk_string.begin(), chunk_string.end());
+      Container tx_message(chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), begin, end);
+      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(tx_message);
     }
 

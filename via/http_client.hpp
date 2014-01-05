@@ -54,9 +54,12 @@ namespace via
     /// The slot type associated with a response received signal.
     typedef typename http_response_signal::slot_type http_response_signal_slot;
 
+    /// The chunk type
+    typedef typename http::rx_chunk<Container> chunk_type;
+
     /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal<void (http::rx_chunk const&,
-                                         Container const&)> http_chunk_signal;
+    typedef boost::signals2::signal<void (chunk_type const&,
+                                          Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
@@ -181,7 +184,7 @@ namespace via
         return;
 
       case http::RX_CHUNK:
-        http_chunk_signal_(rx_.chunk(), rx_.body());
+        http_chunk_signal_(rx_.chunk(), rx_.chunk().data());
         return;
 
       case http::RX_INVALID:
@@ -274,6 +277,8 @@ namespace via
       Container tx_message(chunk);
       tx_message.insert(tx_message.begin(),
                         chunk_string.begin(), chunk_string.end());
+      tx_message.insert(tx_message.end(),
+                        http::CRLF.begin(), http::CRLF.end());
       send(tx_message);
     }
 
@@ -289,6 +294,8 @@ namespace via
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
+      chunk.insert(chunk.end(),
+                   http::CRLF.begin(), http::CRLF.end());
       send(chunk);
     }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -309,6 +316,8 @@ namespace via
       tx_message.reserve(chunk_string.size() + size);
       tx_message.assign(chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), begin, end);
+      tx_message.insert(tx_message.end(),
+                        http::CRLF.begin(), http::CRLF.end());
       send(tx_message);
     }
 

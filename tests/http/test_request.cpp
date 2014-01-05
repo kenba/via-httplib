@@ -259,7 +259,7 @@ TEST(TestRequestParser, ValidPost1)
 TEST(TestRequestParser, ValidChunked1)
 {
   std::string request_data
-    ("POST abc HTTP/1.0\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
+    ("POST abc HTTP/1.1\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
@@ -267,7 +267,7 @@ TEST(TestRequestParser, ValidChunked1)
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abc", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
-  CHECK_EQUAL(0, the_request.minor_version());
+  CHECK_EQUAL(1, the_request.minor_version());
 
   CHECK_EQUAL(0, the_request.content_length());
   CHECK(the_request.is_chunked());
@@ -281,8 +281,8 @@ TEST(TestRequestParser, ValidChunked1)
 #ifdef _MSC_VER
 TEST(TestRequestParser, ValidChunked2)
 {
-  std::string REQUEST_LINE
-    ("POST abc HTTP/1.0\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
+  std::string REQUEST_LINE("POST abc HTTP/1.1\r\n");
+  REQUEST_LINE += "Transfer-Encoding: Chunked\r\n\r\n";
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<char>::const_iterator next(request_data.begin());
   rx_request the_request;
@@ -291,12 +291,11 @@ TEST(TestRequestParser, ValidChunked2)
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abc", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
-  CHECK_EQUAL(0, the_request.minor_version());
+  CHECK_EQUAL(1, the_request.minor_version());
 
+  CHECK(the_request.valid());
   CHECK(the_request.is_chunked());
-  CHECK_EQUAL(9, request_data.end() - next);
 
-  // TODO parse chunk...
 }
 #endif
 
@@ -515,6 +514,7 @@ TEST(TestRequestReceiver, ValidPostQt1)
 }
 
 #ifdef _MSC_VER
+
 TEST(TestRequestReceiver, ValidPostChunk1)
 {
   std::string request_data1("P");
@@ -546,7 +546,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
   CHECK(the_request_receiver.body().empty());
 
-  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
   bool complete (rx_state == RX_INCOMPLETE);
@@ -557,12 +557,12 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   rx_state = the_request_receiver.receive(next, body_data2.end());
   CHECK (rx_state == RX_INCOMPLETE);
 
-  std::string body_data3("mnopqrstuvwxyz");
+  std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_INCOMPLETE);
 
-  std::string body_data4("0\r\n");
+  std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
   rx_state = the_request_receiver.receive(next, body_data4.end());
   CHECK (rx_state == RX_VALID);
@@ -570,6 +570,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
 #endif
 
 #ifdef _MSC_VER
+
 TEST(TestRequestReceiver, ValidPostChunk2)
 {
   std::string request_data1("P");
@@ -601,7 +602,7 @@ TEST(TestRequestReceiver, ValidPostChunk2)
   STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
   CHECK(the_request_receiver.body().empty());
 
-  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
   bool complete (rx_state == RX_CHUNK);
@@ -612,12 +613,12 @@ TEST(TestRequestReceiver, ValidPostChunk2)
   rx_state = the_request_receiver.receive(next, body_data2.end());
   CHECK (rx_state == RX_INCOMPLETE);
 
-  std::string body_data3("mnopqrstuvwxyz");
+  std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_CHUNK);
 
-  std::string body_data4("0\r\n");
+  std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
   rx_state = the_request_receiver.receive(next, body_data4.end());
   CHECK (rx_state == RX_CHUNK);

@@ -198,6 +198,18 @@ TEST_GROUP(TestHeadersParser)
 {
 };
 
+TEST(TestHeadersParser, ValidEmptyHeaderString)
+{
+  std::string header_data("\r\n");
+  std::string::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+  CHECK(the_headers.valid());
+//  std::cout << the_headers.to_string() << std::endl;
+}
+
 TEST(TestHeadersParser, ValidSingleHeaderString1)
 {
   std::string header_data("Content: abcdefgh\r\n\r\n");
@@ -265,58 +277,5 @@ TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
 
   STRCMP_EQUAL("Chunked",
                the_headers.find(header_field::TRANSFER_ENCODING).c_str());
-}
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestTrailerParser)
-{
-};
-
-TEST(TestTrailerParser, ValidSingleHeader1)
-{
-  std::string header_data("Content: abcdefgh\r\n");
-  std::string::const_iterator header_next(header_data.begin());
-
-  message_headers the_headers;
-  CHECK(the_headers.parse_trailer(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
-//  std::cout << the_headers.to_string() << std::endl;
-}
-
-TEST(TestTrailerParser, ValidMultipleHeader1)
-{
-  std::string HEADER_LINE("Content-Type: application/json\r\n");
-  HEADER_LINE += "Connection: Keep-Alive\r\n";
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
-
-  message_headers the_headers;
-  CHECK(the_headers.parse_trailer(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
-}
-
-TEST(TestTrailerParser, ValidMultipleHeaderMultiLine1)
-{
-  std::string HEADER_LINE("Content-Type: application/json\r\n");
-  HEADER_LINE += "Connection: Keep-A";
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
-
-  message_headers the_headers;
-  CHECK(!the_headers.parse_trailer(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
-
-  std::string HEADER_LINE2("live\r\n");
-  std::vector<char> header_data2(HEADER_LINE2.begin(), HEADER_LINE2.end());
-  header_next = header_data2.begin();
-  CHECK(the_headers.parse_trailer(header_next, header_data2.end()));
-  CHECK(header_data2.end() == header_next);
-
-  STRCMP_EQUAL("application/json",
-               the_headers.find(header_field::CONTENT_TYPE).c_str());
-  STRCMP_EQUAL("Keep-Alive",
-               the_headers.find(header_field::CONNECTION).c_str());
 }
 //////////////////////////////////////////////////////////////////////////////

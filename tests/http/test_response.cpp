@@ -421,7 +421,7 @@ TEST(TestResponseReceiver, ValidOKChunked1)
   CHECK(the_response_receiver.response().is_chunked());
   CHECK(the_response_receiver.body().empty());
 
-  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz");
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
   bool complete (rx_state == RX_CHUNK);
@@ -432,10 +432,65 @@ TEST(TestResponseReceiver, ValidOKChunked1)
   rx_state = the_response_receiver.receive(next, body_data2.end());
   CHECK (rx_state == RX_INCOMPLETE);
 
-  std::string body_data3("mnopqrstuvwxyz");
+  std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_response_receiver.receive(next, body_data3.end());
   CHECK (rx_state == RX_CHUNK);
+}
+
+TEST(TestResponseReceiver, ValidOKChunked2)
+{
+  std::string response_data1("HTTP/1.1 200 OK\r\n");
+  response_data1 += "Server: Via-httplib/0.14\r\n";
+  response_data1 += "Transfer-Encoding: Chunked\r\n";
+
+  std::string::const_iterator next(response_data1.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data1.end()));
+  CHECK(rx_state == RX_INCOMPLETE);
+
+  std::string response_data("\r\n15");
+  next = response_data.begin();
+
+  rx_state = the_response_receiver.receive(next, response_data.end());
+  CHECK(rx_state == RX_VALID);
+  CHECK_EQUAL(200, the_response_receiver.response().status());
+  STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
+  CHECK_EQUAL(1, the_response_receiver.response().major_version());
+  CHECK_EQUAL(1, the_response_receiver.response().minor_version());
+  CHECK(the_response_receiver.response().is_chunked());
+  CHECK(the_response_receiver.body().empty());
+
+  std::string body_data("\r\nHTTP chunk number: 1\n\r\n");
+  next = body_data.begin();
+  rx_state = the_response_receiver.receive(next, body_data.end());
+  bool complete (rx_state == RX_CHUNK);
+  CHECK(complete);
+  CHECK (!the_response_receiver.chunk().is_last());
+
+  CHECK_EQUAL(the_response_receiver.chunk().size(),
+              the_response_receiver.chunk().data().size());
+    
+  std::string body_data2("16\r\nHTTP chunk ");
+  next = body_data2.begin();
+  rx_state = the_response_receiver.receive(next, body_data2.end());
+  CHECK (rx_state == RX_INCOMPLETE);
+
+  std::string body_data3("number: 21\n\r\n");
+  next = body_data3.begin();
+  rx_state = the_response_receiver.receive(next, body_data3.end());
+  CHECK (rx_state == RX_CHUNK);
+  CHECK (!the_response_receiver.chunk().is_last());
+  CHECK_EQUAL(the_response_receiver.chunk().size(),
+              the_response_receiver.chunk().data().size());
+
+  std::string body_data4("0\r\n\r\n");
+  next = body_data4.begin();
+  rx_state = the_response_receiver.receive(next, body_data4.end());
+  CHECK (rx_state == RX_CHUNK);
+  CHECK (the_response_receiver.chunk().is_last());
 }
 #endif
 //////////////////////////////////////////////////////////////////////////////

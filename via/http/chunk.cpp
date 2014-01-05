@@ -98,6 +98,7 @@ namespace via
       output += CRLF;
       output += trailer_string_;
 
+      output += CRLF;
       return output;
     }
     //////////////////////////////////////////////////////////////////////////
