@@ -8,28 +8,32 @@ it as a series of chunks. This allows dynamically produced content to be transfe
 ## Receiving Chunks ##
 
 `via-httplib` Server and Client applications may receive HTTP chunks by registering
-a handler for the `chunk_received_event`, see [User Guide](USE.md) and
-[Clients](CLIENT.md).
+a handler for the `chunk_received_event` from `http_connection` and `http_client`
+respectively, see [User Guide](USE.md) and [Clients](CLIENT.md).
 
-If a server application doesn't register a handler for this event then `http_server` will concatenate the received chunks into the body of the request and send the
-`request_received_event` when the last chunk has been received.
-This enables a server to receive PUT or POST requests where a client has sent a
-large message body in chunks.
+If a server application doesn't register a handler for this event then `http_server`
+will concatenate the received chunks into the body of the request and send a
+`request_received_event` when the last chunk is received.
+This way, a server may receive chunked HTTP PUT or POST requests from a
+client without handling the chunks itself.
 
-If a client application doesn't register a handler for this event then any
-received response chunks will be lost. The application cannot then be considered
-an HTTP/1.1 application, so it should send all requests with the minor HTTP version
-set to zero.
+If a client application doesn't register a handler for this event then all the
+chunks received in a chunked message will be lost. The application cannot be
+considered to be a compliant HTTP/1.1 application without a chunk handler,
+so it should send all requests with the minor HTTP version set to zero.
+I.e. they should be HTTP/1.0 requests.
 
 ## Sending Chunks ##
 
-Servers and Clients can send chunks using the `send_chunk` and `last_chunk` methods
-of `http_connection` and `http_client` respectively.
+An HTTP/1.1 Server or Client may send chunks after the HTTP `response` or `request`
+message. However, the `response` or `request` **must** contain a Transfer-Encoding
+header field containing anything other than "identity`.
+See [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 2.
+E.g.: Transfer-Encoding: Chunked
 
-Note: chunks should only be sent after the `response` or `request` and
-the `response` or `request` **must** contain a Transfer-Encoding header field
-containing anything other than "identity`.
-See [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 2
+
+Servers and Clients may send chunks using the `send_chunk` and `last_chunk` methods
+of `http_connection` and `http_client` respectively.
 
 The `http_connection` and `http_client` versions of `send_chunk` and `last_chunk`
 are very similar, the only difference being that the server versions return a

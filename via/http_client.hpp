@@ -175,8 +175,9 @@ namespace via
     {
       // attempt to read the data
       Container data(connection_->rx_buffer());
-      http::receiver_parsing_state rx_state(rx_.receive(data.begin(),
-                                                        data.end()));
+      Container_const_iterator iter(data.begin());
+      http::receiver_parsing_state rx_state(rx_.receive(iter, data.end()));
+
       switch (rx_state)
       {
       case http::RX_VALID:

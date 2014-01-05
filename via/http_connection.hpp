@@ -238,8 +238,8 @@ namespace via
 
       // read the data
       Container const& data(tcp_pointer->rx_buffer());
-      http::receiver_parsing_state rx_state
-          (rx_.receive(data.begin(), data.end()));
+      Container_const_iterator iter(data.begin());
+      http::receiver_parsing_state rx_state(rx_.receive(iter, data.end()));
 
       // Handle special cases
       switch (rx_state)
