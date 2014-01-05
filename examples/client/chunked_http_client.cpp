@@ -1,87 +1,128 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "via/http_client.hpp"
+/// @file chunked_http_client.cpp
+/// @brief An example HTTP client to send and receive chunks.
+//////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
+#include "via/http_client.hpp"
+#include <strstream>
 #include <iostream>
 
-// The http_client type. Note: this example uses a string for the Container.
+/// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
-  /// The response callback function.
-  /// Prints the response headers and body to std::cout.
-  /// @param response the http response headers
-  /// @param body the body (if any) associated with the response.
-  void response_receiver(via::http::rx_response const& response,
-                         std::string const& body)
-  {
-    std::cout << response.to_string()
-              << response.header().to_string()
-              << body << std::endl;
-  }
+  /// The number of chunks to send in a request.
+  const int CHUNKS_TO_SEND(5);
 
-  /// The chunk callback function.
-  /// Prints the chunk header and body to std::cout.
-  /// Defined in case the site responds with a chunked message.
-  /// @param chunk the http chunk header
-  /// @param body the body (if any) associated with the chunk.
-  void chunk_receiver(via::http::rx_chunk const& chunk,
-                      std::string const& body)
-  {
-    std::cout << chunk.to_string() << "\n"
-              << body << std::endl;
-  }
+  /// The number of chunks sent so far.
+  int count(0);
 
   /// The period to call the timeout handler in milliseconds.
   unsigned int TIMEOUT_PERIOD(100);
 
+  /// A deadline timer to send the chunks to the server.
+  boost::shared_ptr<boost::asio::deadline_timer> chunk_timer;
+
+  // An http_client.
+  // Declared here so that it can be used in the response_handler and
+  // send_a_chunk function.
+  http_client_type::shared_pointer http_client;
+
   /// Something to send in the chunks.
-  std::string chunk_text("An http chunk\r\n");
+  const std::string chunk_text("HTTP chunk number: ");
 
-  /// A timeout callback function. Used to send the chunks.
-  void timeout_handler(boost::asio::deadline_timer* send_timer,
-                       http_client_type::shared_pointer http_client)
+  /// Send a chunnk to the server.
+  bool send_a_chunk()
   {
-    /// The number of chunks to send.
-    static size_t chunk_count(5);
-
-    if (chunk_count > 0)
+    if (++count < CHUNKS_TO_SEND)
     {
-      http_client->send_chunk(chunk_text);
+      std::strstream chunk_stream;
+      chunk_stream << chunk_text;
+      chunk_stream << count << "\n" << std::ends;
 
-      // reset the timer to call this function again
-      send_timer->expires_from_now
-                   (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-      send_timer->async_wait
-                   (boost::bind(timeout_handler, send_timer, http_client));
+      std::string chunk_to_send(chunk_stream.str());
+
+      std::cout << "chunk_to_send: " << chunk_to_send << std::endl;
+
+      http_client->send_chunk(chunk_to_send);
+      return true;
     }
     else
       http_client->last_chunk();
 
-    --chunk_count;
+    return false;
   }
 
-  /// The stop callback function.
-  /// Exits the application.
-  /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop()
+  /// A timeout callback function. Used to send the chunks.
+  void timeout_handler(const boost::system::error_code& ec)
   {
-    std::cout << "Exit, shutting down" << std::endl;
-    exit(0);
+    if (ec != boost::asio::error::operation_aborted)
+    {
+      if (send_a_chunk())
+      {
+        // reset the timer to call this function again
+        chunk_timer->expires_from_now
+            (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
+        chunk_timer->async_wait(boost::bind(&timeout_handler,
+                                boost::asio::placeholders::error));
+      }
+    }
   }
 
+  /// The handler for incoming HTTP responses.
+  /// Prints the response.
+  void response_handler(via::http::rx_response const& response,
+                        std::string const& body)
+  {
+    std::cout << "Rx response: " << response.to_string();
+    std::cout << "Rx headers: "  << response.headers().to_string();
+    std::cout << "Rx body: "     << body << std::endl;
+
+    if (response.status() == via::http::response_status::CONTINUE)
+    {
+      std::cout << "Rx is CONTINUE" << std::endl;
+
+      chunk_timer->expires_from_now
+          (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
+      chunk_timer->async_wait(boost::bind(&timeout_handler,
+                              boost::asio::placeholders::error));
+    }
+    else
+    {
+      if (!response.is_chunked())
+        exit(0);
+    }
+  }
+
+  /// The handler for incoming HTTP chunks.
+  /// Prints the chunk header and data to std::cout.
+  void chunk_handler(http_chunk_type const& chunk, std::string const& data)
+  {
+    std::cout << "Rx chunk: " << chunk.to_string() << "\n";
+    std::cout << "Rx data: "  << data << std::endl;
+
+    if (chunk.is_last())
+    {
+      std::cout << "Rx last chunk" << std::endl;
+      exit(0);
+    }
+  }
+
+  /// The handler for the HTTP socket disconnecting.
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    handle_stop();
+    exit(0);
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -93,7 +134,7 @@ int main(int argc, char *argv[])
   if (argc <= 2)
   {
     std::cout << "Usage: chunked_http_client [host] [uri]\n"
-              << "E.g. chunked_http_client localhost /echo_test"
+              << "E.g. chunked_http_client 127.0.0.1 /hello"
               << std::endl;
     return 1;
   }
@@ -104,56 +145,36 @@ int main(int argc, char *argv[])
             << " uri: " << uri << std::endl;
   try
   {
-    // create an io_service for the tcp port
+    // The asio io_service.
     boost::asio::io_service io_service;
 
-    // create an http_client
-    http_client_type::shared_pointer http_client
-        (http_client_type::create(io_service));
+    /// A deadline timer to send the chunks to the server.
+    chunk_timer.reset
+      (new boost::asio::deadline_timer(io_service,
+                             boost::posix_time::milliseconds(TIMEOUT_PERIOD)));
 
-    // connect the response and chunk received callback functions
-    http_client->response_received_event(response_receiver);
-    http_client->chunk_received_event(chunk_receiver);
+    // Create an http_client
+    http_client = http_client_type::create(io_service);
+
+    // Attach the callback handlers
+    // and attempt to connect to the host on the standard http port (80)
+    http_client->response_received_event(response_handler);
+    http_client->chunk_received_event(chunk_handler);
     http_client->disconnected_event(disconnected_handler);
-
-    // attempt to connect to the host on the standard http port (80)
-    if (http_client->connect(host_name))
-    {
-      // create an http request
-      // Note: adds a "connection close" header since we're only sending
-      // one request, so we'll get the server to close the connection after
-      // it's response
-      via::http::tx_request request(via::http::request_method::PUT, uri);
-      request.add_header(via::http::header_field::TRANSFER_ENCODING,
-                         "chunked");
-      request.add_header(via::http::header_field::CONNECTION, "close");
-
-      // send the request to the host.
-      http_client->send(request);
-
-      // set up a timer to send chunks.
-      boost::asio::deadline_timer chunk_timer
-          (io_service, boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-      chunk_timer.async_wait
-          (boost::bind(timeout_handler, &chunk_timer, http_client));
-
-      // The signal set is used to register for termination notifications
-      boost::asio::signal_set signals_(io_service);
-      signals_.add(SIGINT);
-      signals_.add(SIGTERM);
-#if defined(SIGQUIT)
-      signals_.add(SIGQUIT);
-#endif // #if defined(SIGQUIT)
-      signals_.async_wait(boost::bind(&handle_stop));
-
-      // run the io_service to start communications
-      io_service.run();
-    }
-    else
+    if (!http_client->connect(host_name))
     {
       std::cout << "Could not resolve host: " << host_name << std::endl;
       return 1;
     }
+
+    // Create an http request and send it to the host.
+    via::http::tx_request request(via::http::request_method::PUT, uri);
+    request.add_header(via::http::header_field::TRANSFER_ENCODING, "Chunked");
+    request.add_header(via::http::header_field::EXPECT, "100-continue");
+    http_client->send(request);
+
+    // run the io_service to start communications
+    io_service.run();
   }
   catch (std::exception& e)
   {

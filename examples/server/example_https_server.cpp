@@ -17,6 +17,7 @@
 typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
                                                             https_server_type;
 typedef https_server_type::http_connection_type https_connection;
+typedef https_server_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
@@ -92,15 +93,19 @@ namespace
   /// @param chunk the http chunk header
   /// @param body the body (if any) associated with the chunk.
   void chunk_handler(https_connection::weak_pointer weak_ptr,
-                     via::http::rx_chunk const& chunk,
-                     std::string const& body)
+                     http_chunk_type const& chunk,
+                     std::string const& data)
   {
     std::cout << "Rx chunk: " << chunk.to_string() << "\n";
-    std::cout << "Rx body: "    << body << std::endl;
+    std::cout << "Chunk data: "    << data << std::endl;
 
     // Only send a response to the last chunk.
     if (chunk.is_last())
+    {
+      std::cout << "Last chunk, extension: " << chunk.extension() << "\n";
+      std::cout << "trailers: " << chunk.trailers().to_string() << std::endl;
       respond_to_request(weak_ptr);
+    }
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -109,7 +114,7 @@ namespace
   /// response.
   void expect_continue_handler(https_connection::weak_pointer weak_ptr,
                                via::http::rx_request const& request,
-                               std::string const& body)
+                               std::string const& /* body */)
   {
     static const size_t MAX_LENGTH(1048576);
 

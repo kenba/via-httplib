@@ -15,6 +15,7 @@
 
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::chunk_type http_chunk_type;
 
 namespace
 {
@@ -23,9 +24,26 @@ namespace
   void response_handler(via::http::rx_response const& response,
                         std::string const& body)
   {
-    std::cout << response.to_string()
-              << response.headers().to_string()
-              << body << std::endl;
+    std::cout << "Rx response: " << response.to_string();
+    std::cout << "Rx headers: "  << response.headers().to_string();
+    std::cout << "Rx body: "     << body << std::endl;
+
+    if (!response.is_chunked())
+      exit(0);
+  }
+
+  /// The handler for incoming HTTP chunks.
+  /// Prints the chunk header and data to std::cout.
+  void chunk_handler(http_chunk_type const& chunk, std::string const& data)
+  {
+    std::cout << "Rx chunk: " << chunk.to_string();
+    std::cout << "Chunk data: " << data << std::endl;
+
+    if (chunk.is_last())
+    {
+      std::cout << "Rx last chunk" << std::endl;
+      exit(0);
+    }
   }
 }
 
@@ -54,20 +72,19 @@ int main(int argc, char *argv[])
     http_client_type::shared_pointer http_client
         (http_client_type::create(io_service));
     http_client->response_received_event(response_handler);
-    if (http_client->connect(host_name))
-    {
-      // Create an http request and send it to the host.
-      via::http::tx_request request(via::http::request_method::GET, uri);
-      http_client->send(request);
-
-      // run the io_service to start communications
-      io_service.run();
-    }
-    else
+    http_client->chunk_received_event(chunk_handler);
+    if (!http_client->connect(host_name))
     {
       std::cout << "Error, could not resolve host: " << host_name << std::endl;
       return 1;
     }
+
+    // Create an http request and send it to the host.
+    via::http::tx_request request(via::http::request_method::GET, uri);
+    http_client->send(request);
+
+    // run the io_service to start communications
+    io_service.run();
   }
   catch (std::exception& e)
   {

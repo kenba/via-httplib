@@ -1,23 +1,23 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file simple_https_client.cpp
-/// @brief An example HTTPS client.
+/// @file example_http_client.cpp
+/// @brief An example HTTP client with chunk and disconnected handlers.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
+#include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
 #include <iostream>
 
-/// Define an HTTPS client using std::string to store message bodies
-typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
-                                                            https_client_type;
-typedef https_client_type::chunk_type http_chunk_type;
+/// Define an HTTP client using std::string to store message bodies
+typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::chunk_type http_chunk_type;
 
+//////////////////////////////////////////////////////////////////////////////
 namespace
 {
   /// The handler for incoming HTTP requests.
@@ -46,22 +46,33 @@ namespace
       exit(0);
     }
   }
-}
 
+  /// The handler for the HTTP socket disconnecting.
+  void disconnected_handler()
+  {
+    std::cout << "Socket disconnected" << std::endl;
+    exit(0);
+  }
+}
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
   // Get a hostname and uri from the user (assume default http port)
-  if (argc <= 2)
+  if (argc <= 3)
   {
-    std::cout << "Usage: simple_https_client [host] [uri]\n"
-              << "E.g. simple_https_client 127.0.0.1 /hello"
+    std::cout << "Usage: example_http_client [host] [method] [uri]\n"
+              << "E.g. example_http_client 127.0.0.1 GET /hello"
               << std::endl;
     return 1;
   }
 
   std::string host_name(argv[1]);
-  std::string uri(argv[2]);
+  std::string method(argv[2]);
+  std::string uri(argv[3]);
   std::cout << "HTTP client host: " << host_name
+            << " method: " << method
             << " uri: " << uri << std::endl;
   try
   {
@@ -69,26 +80,22 @@ int main(int argc, char *argv[])
     boost::asio::io_service io_service;
 
     // Create an http_client
-    https_client_type::shared_pointer http_client
-        (https_client_type::create(io_service));
+    http_client_type::shared_pointer http_client
+        (http_client_type::create(io_service));
 
-    // Set up SSL
-    std::string certificate_file = "cacert.pem";
-    boost::asio::ssl::context& ssl_context
-       (https_client_type::connection_type::ssl_context());
-    ssl_context.load_verify_file(certificate_file);
-
-    // attach the response handler
-    // and attempt to connect to the host on the standard https port (443)
+    // Attach the callback handlers
+    // and attempt to connect to the host on the standard http port (80)
     http_client->response_received_event(response_handler);
-    if (!http_client->connect(host_name, "https"))
+    http_client->chunk_received_event(chunk_handler);
+    http_client->disconnected_event(disconnected_handler);
+    if (!http_client->connect(host_name))
     {
-      std::cout << "Error, could not resolve host: " << host_name << std::endl;
+      std::cout << "Could not resolve host: " << host_name << std::endl;
       return 1;
     }
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::GET, uri);
+    via::http::tx_request request(method, uri);
     http_client->send(request);
 
     // run the io_service to start communications
