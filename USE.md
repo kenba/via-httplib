@@ -183,11 +183,13 @@ chunk has been received, just like a normal request.
 
 The `chunk_received_event` method is defined as:
 
+    /// The chunk type
+    typedef typename http::rx_chunk<Container> chunk_type;
+
     /// The signal sent when a chunk is received.
     typedef boost::signals2::signal
-            <void (boost::weak_ptr<http_connection_type>,
-                                   http::rx_chunk const&,
-                                   Container const&)> http_chunk_signal;
+      <void (boost::weak_ptr<http_connection_type>,
+             chunk_type const&, Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
@@ -199,10 +201,12 @@ The application's chunk handler must match the function signature defined by
 `http_chunk_signal` above. The example code below shows how to declare and register
 a chunk handler:
 
+    typedef http_server_type::chunk_type http_chunk_type;
+
     /// The application's chunk handler.
     void chunk_handler(http_connection::weak_pointer weak_ptr,
-                       via::http::rx_chunk const& chunk,
-                       std::string const& body)
+                       http_chunk_type const& chunk,
+                       std::string const& data)
     {
     ...
     }
@@ -210,8 +214,11 @@ a chunk handler:
     /// register chunk_handler with the http_server
     http_server.chunk_received_event(chunk_handler);
 
-If an application registers a `chunk_handler` and it receives a chunked request, then it
-must send an HTTP response to the client when the last chunk of the request is received, **not** in the request handler. See: Receiving Chunked Requests: TODO.
+If an application registers a `chunk_handler` and it receives a chunked request,
+then it must send an HTTP response to the client when the last chunk of the request
+is received, **not** in the request handler. See: `example_http_server.cpp` below.  
+
+For information on chunks see: [Chunked Transfer Encoding](CHUNKS.md)
 
 ### request\_expect\_continue\_event ###
 
@@ -379,3 +386,4 @@ An HTTP Server that incorporates the example code above:
 
 An HTTPS Server that incorporates the example code above:
 [`example_https_server.cpp`](examples/server/example_https_server.cpp)
+

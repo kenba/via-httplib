@@ -1,0 +1,78 @@
+# Chunked Transfer Encoding #
+
+All HTTP/1.1 applications **MUST** be able to receive and decode "chunked"
+transfer-coding, see [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html)
+section 3.6.1. Chunked encoding modifies the body of a message in order to transfer
+it as a series of chunks. This allows dynamically produced content to be transferred.
+
+## Receiving Chunks ##
+
+`via-httplib` Server and Client applications may receive HTTP chunks by registering
+a handler for the `chunk_received_event`, see [User Guide](USE.md) and
+[Clients](CLIENT.md).
+
+If a server application doesn't register a handler for this event then `http_server` will concatenate the received chunks into the body of the request and send the
+`request_received_event` when the last chunk has been received.
+This enables a server to receive PUT or POST requests where a client has sent a
+large message body in chunks.
+
+If a client application doesn't register a handler for this event then any
+received response chunks will be lost. The application cannot then be considered
+an HTTP/1.1 application, so it should send all requests with the minor HTTP version
+set to zero.
+
+## Sending Chunks ##
+
+Servers and Clients can send chunks using the `send_chunk` and `last_chunk` methods
+of `http_connection` and `http_client` respectively.
+
+Note: chunks should only be sent after the `response` or `request` and
+the `response` or `request` **must** contain a Transfer-Encoding header field
+containing anything other than "identity`.
+See [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 2
+
+The `http_connection` and `http_client` versions of `send_chunk` and `last_chunk`
+are very similar, the only difference being that the server versions return a
+boolean indicating whether the connection is still open.  
+
+### Server ###
+
+`http_connection` chunk functions, see `<via/http_connection.hpp>`:
+
+    bool send_chunk(Container const& chunk, std::string extension = "");
+
+    bool last_chunk(std::string extension = "",
+                    std::string trailer_string = "");
+
+The `extension` and `trailer_string` are defined in
+[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 3.6.1.
+
+A server's chunks must be sent via an `http_connection` pointer, like requests.
+So the application must store the `http_connection::weak_pointer` from the
+request handler to that it may send chunks later.
+
+Whenever a server application stores `http_connection` pointers in order to send
+asynchronous responses or chunks it should always store them as
+`http_connection::weak_pointer` **NOT** `http_connection::shared_pointer`.
+Otherwise it will become a co-owner of the connection and `http_server` will not
+be able to delete it.
+
+### Client ###
+
+`http_client` chunk functions, see `<via/http_client.hpp>`:
+
+    void send_chunk(Container const& chunk, std::string extension = "");
+
+    void last_chunk(std::string extension = "",
+                    std::string trailer_string = "");
+
+A client's chunks must be sent via an `http_client` pointer.
+However, since the client owns the pointer, it can store the pointer however it wishes.
+
+## Examples ##
+
+An HTTP Server that sends a chunked response to GET /hello:
+[`chunked_http_server.cpp`](examples/server/chunked_http_server.cpp)
+
+An HTTP Client that sends a chunked request to PUT /hello:
+[`chunked_http_client.cpp`](examples/client/chunked_http_client.cpp)

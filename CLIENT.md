@@ -112,7 +112,7 @@ register a response handler:
 
     /// The application's response handler.
     void response_handler(via::http::rx_response const& response,
-                        std::string const& body)
+                          std::string const& body)
     {
     ...
     }
@@ -133,16 +133,19 @@ onwards, both HTTP requests and responses may contain "chunked" bodies. In which
 the body may be sent in a number of "chunks". The application may process the chunks as
 they are received. However, a "chunked" HTTP response is not complete until the last chunk has been received.
 
-An application need not register a `chunk_handler` with `http_client`.
+An application does not *need* to register a `chunk_handler` with `http_client`.
 However, if the application doesn't register a handler for this event then
-it cannot be considered an HTTP 1.1 client and requests shall be sent as HTTP 1.0
-requests.
+it cannot be considered an HTTP 1.1 client and will not be able to receive
+HTTP `chunks` from a server.
 
 The `chunk_received_event` method is defined as:
 
+    /// The chunk type
+    typedef typename http::rx_chunk<Container> chunk_type;
+
     /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal<void (http::rx_chunk const&,
-                                         Container const&)> http_chunk_signal;
+    typedef boost::signals2::signal<void (chunk_type const&,
+                                          Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
@@ -154,15 +157,18 @@ The application's chunk handler must match the function signature defined by
 `http_chunk_signal` above. The example code below shows how to declare and register
 a chunk handler:
 
+    typedef http_client_type::chunk_type http_chunk_type;
+
     /// The application's chunk handler.
-    void chunk_handler(via::http::rx_chunk const& chunk,
-                       std::string const& body)
+    void chunk_handler(http_chunk_type const& chunk, std::string const& data)
     {
     ...
     }
 
     /// register chunk_handler with the http_client
     http_client->chunk_received_event(chunk_handler);
+
+For information on chunks see: [Chunked Transfer Encoding](CHUNKS.md)
 
 ### disconnected\_event ###
 
@@ -297,3 +303,9 @@ A simple HTTP Client:
 
 A simple HTTPS Client:
 [`simple_https_client.cpp`](examples/client/simple_https_client.cpp)
+
+A example HTTP Client with all of the handlers defined:
+[`example_http_client.cpp`](examples/client/example_http_client.cpp)
+
+An HTTP Client that sends a chunked request to PUT /hello:
+[`chunked_http_client.cpp`](examples/client/chunked_http_client.cpp)
