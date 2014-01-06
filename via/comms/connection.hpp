@@ -247,6 +247,7 @@ namespace via
           if (!error)
           {
             pointer->connected_ = true;
+            pointer->no_delay();
             if (!pointer->tx_queue_->empty())
               pointer->write_data();
             pointer->enable_reception();

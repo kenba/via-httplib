@@ -145,6 +145,19 @@ namespace via
       /// The server constructor.
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
+      explicit server(boost::asio::io_service& io_service) :
+        io_service_(io_service),
+        acceptor_(io_service),
+        next_connection_(),
+        connections_(),
+        password_(),
+        event_callback_(),
+        error_callback_()
+      {}
+
+      /// The server constructor.
+      /// @param io_service the boost asio io_service used by the acceptor
+      /// and connections.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
       explicit server(boost::asio::io_service& io_service,
@@ -158,6 +171,12 @@ namespace via
         event_callback_(event_callback),
         error_callback_(error_callback)
       {}
+
+      /// @fn create
+      /// Function to create a shared pointer to a server.
+      /// @param io_service the boost asio io_service used by the server.
+      static boost::shared_ptr<server> create(boost::asio::io_service& io_service)
+      { return boost::shared_ptr<server>(new server(io_service)); }
 
       /// @fn create
       /// Function to create a shared pointer to a server.
@@ -213,6 +232,15 @@ namespace via
             (boost::bind(&server::password, this));
       }
 
+      /// @fn set_event_callback
+      /// Set the event_callback function.
+      void set_event_callback(event_callback_type event_callback)
+      { event_callback_ = event_callback; }
+
+      /// @fn set_error_callback
+      /// Set the error_callback function.
+      void set_error_callback(error_callback_type error_callback)
+      { error_callback_ = error_callback; }
     };
   }
 }

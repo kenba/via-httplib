@@ -151,10 +151,7 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     explicit http_server(boost::asio::io_service& io_service) :
-      server_(server_type::create(io_service,
-        boost::bind(&http_server::event_handler, this, _1, _2),
-        boost::bind(&http_server::error_handler, this,
-                    boost::asio::placeholders::error, _2))),
+      server_(server_type::create(io_service)),
       http_connections_(),
       http_request_signal_(),
       http_continue_signal_(),
@@ -162,7 +159,13 @@ namespace via
       http_disconnected_signal_(),
       concatenate_chunks_(true),
       continue_enabled_(true)
-    {}
+    {
+      server_->set_event_callback
+          (boost::bind(&http_server::event_handler, this, _1, _2));
+      server_->set_error_callback
+          (boost::bind(&http_server::error_handler, this,
+                        boost::asio::placeholders::error, _2));
+    }
 
     /// Start accepting connections on the communications server from the
     /// given port.

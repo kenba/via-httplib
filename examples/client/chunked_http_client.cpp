@@ -11,7 +11,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
-#include <strstream>
+#include <sstream>
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
@@ -46,7 +46,7 @@ namespace
   {
     if (++count < CHUNKS_TO_SEND)
     {
-      std::strstream chunk_stream;
+      std::stringstream chunk_stream;
       chunk_stream << chunk_text;
       chunk_stream << count << "\n" << std::ends;
 

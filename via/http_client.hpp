@@ -355,7 +355,7 @@ namespace via
     /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
     void event_handler(int event,
-                       typename connection_type::weak_pointer connection)
+                       typename connection_type::weak_pointer /* weak_ptr */)
     {
       switch(event)
       {
@@ -374,7 +374,7 @@ namespace via
     /// @param error the boost error_code.
     /// @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       typename connection_type::weak_pointer connection)
+                       typename connection_type::weak_pointer /* weak_ptr */)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
