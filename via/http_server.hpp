@@ -11,7 +11,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file http_server.hpp
-/// @brief Just contains the http_server template class.
+/// @brief Contains the http_server template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
@@ -28,10 +28,22 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_server
   /// An HTTP server.
-  /// @param SocketAdaptor the type of socket to use, tcp or ssl
-  /// @param Container the type of container to use
+  /// The class can be configured to use either tcp or ssl sockets depending
+  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor respectively.
+  /// @see http_connection
+  /// @see comms::connection
+  /// @see comms::tcp_adaptor
+  /// @see comms::ssl::ssl_tcp_adaptor
+  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor
+  /// @param Container the container to use for the tx buffer, default
+  /// std::vector<char>.
+  /// It must contain a contiguous array of bytes. E.g. std::string or
+  /// std::array<char, size>
+  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
-  /// default false
+  /// default false.
   /// @param translate_head if true the server shall always pass a HEAD request
   /// to the application as a GET request.
   /// @param require_host if true the server shall require all requests to
@@ -44,6 +56,7 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container = std::vector<char>,
+            size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
             bool use_strand = false,
             bool translate_head = true,
             bool require_host = true,
@@ -53,10 +66,10 @@ namespace via
   public:
 
     /// The server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
+    typedef comms::server<SocketAdaptor, Container, buffer_size, use_strand> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, use_strand, 
+    typedef http_connection<SocketAdaptor, Container, buffer_size, use_strand,
           translate_head, require_host, trace_enabled> http_connection_type;
 
     /// The underlying connection, TCP or SSL.
@@ -274,9 +287,9 @@ namespace via
 
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
-    /// @param connection a weak ponter to the underlying comms connection.
+    // @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<connection_type> /* connection */)
+                       boost::weak_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;

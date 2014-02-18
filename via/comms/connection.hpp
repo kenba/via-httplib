@@ -19,39 +19,74 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <vector>
 #include <deque>
+// if C++11 or Visual Studio 2010 or newer
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+  #include <array>
+#else
+  #include <tr1/array>
+#endif
 
 namespace via
 {
   namespace comms
   {
+    /// The default size of the receive buffer.
+    enum { DEFAULT_BUFFER_SIZE = 8192 };
+
     //////////////////////////////////////////////////////////////////////////
     /// @class connection
-    /// A template class providing buffering to the socket adaptors.
-    /// @param SocketAdaptor the type of socket to use, tcp or ssl
-    /// @param Container the type of container to use
-    /// @param use_strand if true use an asio::strand to wrap the handlers
+    /// A template class that buffers tcp or ssl comms sockets.
+    /// The class can be configured to use either tcp or ssl sockets depending
+    /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+    /// ssl::ssl_tcp_adaptor respectively.
+    /// The other template parameters configure the type of container to use
+    /// for the transmit buffers, the size of the receive buffer and
+    /// whether to use asio::strand for an io_service running in multiple
+    /// treads.
+    /// @see tcp_adaptor
+    /// @see ssl::ssl_tcp_adaptor
+    /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+    /// ssl::ssl_tcp_adaptor
+    /// @param Container the container to use for the tx buffer, default
+    /// std::vector<char>.
+    /// It must contain a contiguous array of bytes. E.g. std::string or
+    /// std::array<char, size>
+    /// @param buffer_size the size of the receive buffer, default 8192 bytes.
+    /// @param use_strand if true use an asio::strand to wrap the handlers,
+    /// default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename SocketAdaptor, typename Container = std::vector<char>,
+              size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
               bool use_strand = false>
     class connection : public SocketAdaptor,
         public boost::enable_shared_from_this
-            <connection<SocketAdaptor, Container, use_strand> >
+            <connection<SocketAdaptor, Container, buffer_size, use_strand> >
     {
     public:
 
-      /// a weak pointer to a connection.
-      typedef typename boost::weak_ptr<connection<SocketAdaptor, Container, use_strand> >
+      /// A weak pointer to a connection.
+      typedef typename boost::weak_ptr<connection<SocketAdaptor, Container,
+                                                  buffer_size, use_strand> >
          weak_pointer;
 
-      /// a shared pointer to a connection.
-      typedef typename boost::shared_ptr<connection<SocketAdaptor, Container, use_strand> >
+      /// A shared pointer to a connection.
+      typedef typename boost::shared_ptr<connection<SocketAdaptor, Container,
+                                                    buffer_size, use_strand> >
          shared_pointer;
 
-      /// the enable_shared_from_this type of this class.
+      /// The enable_shared_from_this type of this class.
       typedef typename boost::enable_shared_from_this
-                  <connection<SocketAdaptor, Container, use_strand> > enable;
+                  <connection<SocketAdaptor, Container,
+                              buffer_size, use_strand> > enable;
 
-      /// the resolver_iterator type of the SocketAdaptor
+      /// The type of the receive buffer
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      typedef typename std::array<char, buffer_size> RxBuffer;
+#else
+      typedef typename std::tr1::array<char, buffer_size> RxBuffer;
+#endif
+
+      /// The resolver_iterator type of the SocketAdaptor
       typedef typename SocketAdaptor::resolver_iterator resolver_iterator;
 
       /// Event callback function type.
@@ -74,14 +109,12 @@ namespace via
 
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
-      boost::shared_ptr<Container> rx_buffer_;                 ///< The receive buffer.
-      boost::shared_ptr<std::deque<Container> > tx_queue_;     ///< The transmit buffers.
+      boost::shared_ptr<RxBuffer > rx_buffer_; ///< The receive buffer.
+      boost::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
+      size_t rx_size_;                     ///< The size of the received msg.
       bool connected_;                     ///< If the socket is connected.
-
-      /// The default receive buffer size.
-      static const size_t DEFAULT_BUFFER_SIZE = 8192;
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -120,7 +153,7 @@ namespace via
       void read_data()
       {
         if (use_strand)
-          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size(),
+          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size,
               strand_.wrap(
               boost::bind(&connection::read_callback,
                           weak_from_this(),
@@ -128,7 +161,7 @@ namespace via
                           boost::asio::placeholders::bytes_transferred,
                           rx_buffer_)));
         else
-          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size(),
+          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size,
               boost::bind(&connection::read_callback,
                           weak_from_this(),
                           boost::asio::placeholders::error,
@@ -159,10 +192,12 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the size of the received data packet.
+      /// @param rx_buffer a shared pointer to the receive buffer to control
+      /// object lifetime.
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
                                 size_t bytes_transferred,
-                                boost::shared_ptr<Container> /*rx_buffer*/)
+                                boost::shared_ptr<RxBuffer >) // rx_buffer)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -182,7 +217,7 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
-        rx_buffer_->resize(bytes_transferred);
+        rx_size_ = bytes_transferred;
         event_callback_(RECEIVED, weak_from_this());
         enable_reception();
       }
@@ -195,10 +230,12 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the size of the sent data packet.
+      /// @param tx_queue a shared pointer to the transmit buffers to control
+      /// object lifetime.
       static void write_callback(weak_pointer ptr,
                                  boost::system::error_code const& error,
                                  size_t bytes_transferred,
-                                 boost::shared_ptr<std::deque<Container> > /* tx_queue */)
+                                 boost::shared_ptr<std::deque<Container> >) // tx_queue)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -308,17 +345,16 @@ namespace via
       /// socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      /// @param port_number the port number (only applies to UDP servers).
       explicit connection(boost::asio::io_service& io_service,
                           event_callback_type event_callback,
-                          error_callback_type error_callback,
-                          unsigned short port_number) :
-        SocketAdaptor(io_service, port_number),
+                          error_callback_type error_callback) :
+        SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_(new Container()),
+        rx_buffer_(new RxBuffer()),
         tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
         error_callback_(error_callback),
+        rx_size_(0),
         connected_(false)
       {}
 
@@ -328,70 +364,62 @@ namespace via
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      /// @param port_number required for UDP servers, default zero.
-      explicit connection(boost::asio::io_service& io_service,
-                          unsigned short port_number) :
-        SocketAdaptor(io_service, port_number),
+      explicit connection(boost::asio::io_service& io_service) :
+        SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_(new Container()),
+        rx_buffer_(new RxBuffer()),
         tx_queue_(new std::deque<Container>()),
         event_callback_(),
         error_callback_(),
+        rx_size_(0),
         connected_(false)
       {}
 
     public:
 
-      /// @fn buffer_size
-      /// Get/set the buffer size.
-      /// Can be called with a size to set the buffer_size. Otherwise,
-      /// used to get the buffer_size.
-      /// Note: the call to set the buffer_size MUST be the first call of
-      /// the function, otherwise the DEFAULT_BUFFER_SIZE will be used.
-      /// @param size the desired buffer_size.
-      /// @return the buffer_size.
-      static size_t buffer_size(size_t size = DEFAULT_BUFFER_SIZE)
-      {
-        static size_t buffer_size_(size);
-        return buffer_size_;
-      }
-
-      /// The destructor closes the connections to ensure that all of the
-      /// callback functions are cancelled.
+      /// The destructor calls close to ensure that all of the socket's
+      /// callback functions are cancelled so that the object can (eventually)
+      /// be destroyed.
+      ///
+      /// Note: the constructors are declared as private to ensure that the
+      /// class may only be constructed as a shared pointer via the create
+      /// static functions.
+      /// @see create
       ~connection()
       { close(); }
 
-      /// @fn create
       /// The factory function to create server connections.
-      /// @param io_service the boost asio io_service used by the underlying
-      /// socket adaptor.
+      /// @pre the event_callback and error_callback functions must exist.
+      /// E.g. if either of them are class member functions then the class
+      /// MUST have been constructed BEFORE this function is called.
+      /// @param io_service the boost asio io_service for the socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      /// @param port_number required for UDP servers, default zero.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    event_callback_type event_callback,
-                                   error_callback_type error_callback,
-                                   unsigned short port_number = 0)
+                                   error_callback_type error_callback)
       {
         return shared_pointer(new connection(io_service, event_callback,
-                                             error_callback, port_number));
+                                             error_callback));
       }
 
-      /// @fn create
       /// The factory function to create client connections.
-      /// @param io_service the boost asio io_service used by the underlying
-      /// socket adaptor.
-      /// @param port_number required for UDP servers, default zero.
-      static shared_pointer create(boost::asio::io_service& io_service,
-                                   unsigned short port_number = 0)
-      { return shared_pointer(new connection(io_service, port_number)); }
+      /// @param io_service the boost asio io_service for the socket adaptor.
+      static shared_pointer create(boost::asio::io_service& io_service)
+      { return shared_pointer(new connection(io_service)); }
 
+      /// @fn set_event_callback
       /// Function to set the event callback function.
+      /// For use with the client connection factory function.
+      /// @see create(boost::asio::io_service& io_service)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback)
       { event_callback_ = event_callback; }
 
+      /// @fn set_error_callback
       /// Function to set the error callback function.
+      /// For use with the client connection factory function.
+      /// @see create(boost::asio::io_service& io_service)
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
@@ -399,7 +427,8 @@ namespace via
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
       /// port.
-      /// @pre To be called by "client" connections only.
+      /// @pre To be called by "client" connections only after the event
+      /// callbacks have been set.
       /// Server connections are accepted by the server instead.
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
@@ -413,6 +442,8 @@ namespace via
 
       /// @fn start
       /// Start the handshake for a server connection.
+      /// @pre To be called by "server" connections only after its accepted
+      /// the connection.
       void start()
       {
         SocketAdaptor::start(boost::bind(&connection::handshake_callback,
@@ -427,6 +458,7 @@ namespace via
 
       /// @fn close
       /// Close the underlying socket adaptor.
+      /// Cancels all of the socket's callback functions.
       void close()
       { SocketAdaptor::close(); }
 
@@ -435,21 +467,28 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_buffer_->resize(buffer_size());
+        rx_size_ = 0,
         read_data();
       }
 
       /// @fn rx_buffer
       /// Accessor for the receive buffer.
-      /// @pre Only valid within the receive even callback function.
-      /// @return the data packet at the head of the receive queue.
-      Container const& rx_buffer()
-      { return *rx_buffer_; }
+      /// @pre Only valid within the receive event callback function.
+      /// @return the receive buffer.
+      char const* rx_buffer() const
+      { return &(*rx_buffer_)[0]; }
+
+      /// @fn size
+      /// Accessor for receive buffer packet size.
+      /// @pre Only valid within the receive event callback function.
+      /// @return the size of the received packet.
+      size_t size() const
+      { return rx_size_; }
 
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
-      /// The data added to the back of the transmit queue and sends the
-      /// packet if the queue was empty.
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
       /// @param packet the data packet to write.
       void send_data(Container const& packet)
       {
@@ -463,8 +502,8 @@ namespace via
 #if defined(BOOST_ASIO_HAS_MOVE)
       /// @fn send_data(Container&& packet)
       /// Send a packet of data, move version for C++11.
-      /// The data added to the back of the transmit queue and sends the
-      /// packet if the queue was empty.
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
       /// @param packet the data packet to write.
       void send_data(Container&& packet)
       {
@@ -477,10 +516,11 @@ namespace via
 #endif // BOOST_ASIO_HAS_MOVE
 
       /// @fn send_data(ForwardIterator1 begin, ForwardIterator2 end)
-      /// Send a packet of data.
-      /// As above, but this function takes a pair of iterators, so the data
-      /// doesn't have to be held in the same type of container as the
-      /// connection has been instantiated with.
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
+      /// This function takes a pair of iterators, so the data doesn't have
+      /// to be held in the same type of container as the connection has been
+      /// instantiated with.
       /// @param begin iterator to the beginning of the data to write.
       /// @param end iterator to the end of the data to write.
       template<typename ForwardIterator1, typename ForwardIterator2>

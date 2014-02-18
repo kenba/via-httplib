@@ -67,7 +67,7 @@ namespace via
         valid_(false)
       {}
 
-      /// clear the chunk_header.
+      /// Clear the chunk_header.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -79,7 +79,7 @@ namespace via
         valid_ =  false;
       }
 
-      /// swap member variables with another chunk_header.
+      /// Swap member variables with another chunk_header.
       /// @param other the other chunk_header
       void swap(chunk_header& other)
       {

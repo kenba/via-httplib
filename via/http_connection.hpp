@@ -11,8 +11,8 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file http_connection.hpp
-/// @brief Just contains the http_connection template class as used by the
-/// http_server template class.
+/// @brief Contains the http_connection template class.
+/// @see http_server
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
@@ -27,9 +27,21 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_connection
   /// An HTTP connection.
-  /// @param SocketAdaptor the type of socket to use, tcp or ssl
-  /// @param Container the type of container to use
-  /// @param use_strand if true use an asio::strand to wrap the handlers
+  /// The class can be configured to use either tcp or ssl sockets depending
+  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor respectively.
+  /// @see comms::connection
+  /// @see comms::tcp_adaptor
+  /// @see comms::ssl::ssl_tcp_adaptor
+  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor
+  /// @param Container the container to use for the tx buffer, default
+  /// std::vector<char>.
+  /// It must contain a contiguous array of bytes. E.g. std::string or
+  /// std::array<char, size>
+  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
+  /// @param use_strand if true use an asio::strand to wrap the handlers,
+  /// default false.
   /// @param translate_head if true the server shall always pass a HEAD request
   /// to the application as a GET request.
   /// @param require_host if true the server shall require all requests to
@@ -42,27 +54,28 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container,
+            size_t buffer_size,
             bool use_strand,
             bool translate_head,
             bool require_host,
             bool trace_enabled>
   class http_connection : public boost::enable_shared_from_this
-       <http_connection<SocketAdaptor, Container,
+       <http_connection<SocketAdaptor, Container, buffer_size,
          use_strand, translate_head, require_host, trace_enabled> >
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, use_strand>
+    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
                                                               connection_type;
 
     /// A weak pointer to this type.
     typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, require_host, trace_enabled> >
+         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
     typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, require_host, trace_enabled> >
+         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        shared_pointer;
 
     /// The template requires a typename to access the iterator.

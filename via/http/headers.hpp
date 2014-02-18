@@ -94,8 +94,6 @@ namespace via
       /// @retval iter an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the buffer.
-      /// @retval name the header field name (lowercase).
-      /// @retval value the header field value.
       /// @return true if a valid HTTP header, false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
       bool parse(ForwardIterator1& iter, ForwardIterator2 end)
@@ -133,7 +131,13 @@ namespace via
 
     //////////////////////////////////////////////////////////////////////////
     /// @class message_headers
-    /// The collection of HTTP headers received with a request or response.
+    /// The collection of HTTP headers received with a request, response or a
+    /// chunk (trailers).
+    /// Note: the parse function converts the received field names into lower
+    /// case before storing them in a map for efficient access.
+    /// @see rx_request
+    /// @see rx_response
+    /// @see rx_chunk
     //////////////////////////////////////////////////////////////////////////
     class message_headers
     {
@@ -154,7 +158,7 @@ namespace via
         valid_(false)
       {}
 
-      /// clear the message_headers.
+      /// Clear the message_headers.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -163,7 +167,7 @@ namespace via
         valid_ = false;
       }
 
-      /// swap member variables with another message_headers.
+      /// Swap member variables with another message_headers.
       /// @param other the other message_headers
       void swap(message_headers& other)
       {

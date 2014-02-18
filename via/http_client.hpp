@@ -11,7 +11,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file http_client.hpp
-/// @brief Just contains the http_client template class.
+/// @brief Contains the http_client template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
@@ -27,22 +27,34 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_client
   /// An HTTP client.
-  /// @param SocketAdaptor the type of socket to use, tcp or ssl
-  /// @param Container the type of container to use
-  /// @param use_strand if true use an asio::strand to wrap the handlers
+  /// The class can be configured to use either tcp or ssl sockets depending
+  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor respectively.
+  /// @see comms::connection
+  /// @see comms::tcp_adaptor
+  /// @see comms::ssl::ssl_tcp_adaptor
+  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+  /// ssl::ssl_tcp_adaptor
+  /// @param Container the container to use for the tx buffer, default
+  /// std::vector<char>.
+  /// It must contain a contiguous array of bytes. E.g. std::string or
+  /// std::array<char, size>
+  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
+  /// @param use_strand if true use an asio::strand to wrap the handlers,
+  /// default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
-            bool use_strand = false>
+            size_t buffer_size = comms::DEFAULT_BUFFER_SIZE, bool use_strand = false>
   class http_client
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, use_strand>
+    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
                                                               connection_type;
 
     /// A shared pointer to this type.
     typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
-                                                 use_strand> > shared_pointer;
+                                                 buffer_size, use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -353,9 +365,9 @@ namespace via
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
-    /// @param connection a weak ponter to the underlying comms connection.
+    // @param weak_ptr a weak ponter to the underlying comms connection.
     void event_handler(int event,
-                       typename connection_type::weak_pointer /* weak_ptr */)
+                       typename connection_type::weak_pointer) // weak_ptr)
     {
       switch(event)
       {
@@ -372,9 +384,9 @@ namespace via
 
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
-    /// @param connection a weak ponter to the underlying comms connection.
+    // @param weak_ptr a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       typename connection_type::weak_pointer /* weak_ptr */)
+                       typename connection_type::weak_pointer) // weak_ptr)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;

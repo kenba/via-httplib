@@ -35,6 +35,7 @@ The `http_server` template class is defined in `<via/http_server.hpp>`:
     {
       template <typename SocketAdaptor,
                 typename Container = std::vector<char>,
+                size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
                 bool use_strand = false,
                 bool translate_head = true,
                 bool require_host = true,
@@ -61,6 +62,7 @@ std::string provides the simplest interface for HTML, XML, JSON, etc.<br>
 The vectors may be easier when sending or receiving binary data.
 Default: std::vector< char >
 </td> </tr>
+<tr> <td>buffer_size</td> <td>The size of the receive buffer, default 8192 bytes.</td> </tr>
 <tr> <td>use_strand</td> <td>Use an asio::strand to allow the execution of code in a
 multi-threaded program without the need for explicit locking, see: <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/strands.html">boost asio strands</a>.<br>
 Default: false.</td> </tr>

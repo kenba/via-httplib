@@ -84,7 +84,7 @@ namespace via
         fail_(false)
       {}
 
-      /// clear the response_line.
+      /// Clear the response_line.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -100,7 +100,7 @@ namespace via
         fail_ = false;
       }
 
-      /// swap member variables with another response_line.
+      /// Swap member variables with another response_line.
       /// @param other the other response_line
       void swap(response_line& other)
       {
@@ -172,9 +172,10 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
-      /// Status constructor for standard responses.
-      /// This is the usual contructor to use when creating an http response.
-      /// @param status the response status code @see response_status
+      /// Constructor for creating a response for one of the standard
+      /// responses defined in RFC2616.
+      /// @see http::response_status::status_code
+      /// @param status the response status code
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit response_line(response_status::status_code status,
@@ -192,14 +193,13 @@ namespace via
         fail_(false)
       {}
 
-      /// Free form constructor.
-      /// This contructor should only be used for non-standard http responses.
+      /// Constructor for creating a non-standard response.
       /// @param status the response status
-      /// @param reason_phrase default blank
+      /// @param reason_phrase the reason phrase for the response status.
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit response_line(int status,
-                             std::string reason_phrase = "",
+                             std::string reason_phrase,
                              int minor_version = 1,
                              int major_version = 1) :
         major_version_(major_version),
@@ -217,6 +217,7 @@ namespace via
       {}
 
       /// Set the response status for standard responses.
+      /// @see http::response_status::status_code
       /// @param status the response status.
       void set_status(response_status::status_code status)
       {
@@ -267,7 +268,7 @@ namespace via
         valid_(false)
       {}
 
-      /// clear the rx_response.
+      /// Clear the rx_response.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -276,7 +277,7 @@ namespace via
         valid_ =  false;
       }
 
-      /// swap member variables with another rx_response.
+      /// Swap member variables with another rx_response.
       /// @param other the other rx_response
       void swap(rx_response& other)
       {
@@ -328,6 +329,8 @@ namespace via
       { return valid_; }
 
       /// Whether the connection should be kept alive.
+      /// I.e. if the request is HTTP 1.1 and there is not a connection: close
+      /// header field.
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
@@ -347,8 +350,10 @@ namespace via
 
     public:
 
-      /// Constructor for a standard response.
-      /// @param status
+      /// Constructor for creating a response for one of the standard
+      /// responses defined in RFC2616.
+      /// @see http::response_status::status_code
+      /// @param status the response status code
       /// @param header_string default blank
       explicit tx_response(response_status::status_code status,
                            std::string header_string = "") :
@@ -356,9 +361,9 @@ namespace via
         header_string_(header_string)
       {}
 
-      /// Constructor for non-standard responses.
-      /// @param reason_phrase
-      /// @param status
+      /// Constructor for creating a non-standard response.
+      /// @param reason_phrase the reason phrase for the response status.
+      /// @param status the response status
       /// @param header_string default blank
       explicit tx_response(const std::string& reason_phrase,
                            int status,
@@ -368,10 +373,15 @@ namespace via
       {}
 
       /// Add a standard header to the response.
+      /// @see http::header_field::field_id
+      /// @param id the header field id
+      /// @param value the header field value
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
 
       /// Add a free form header to the response.
+      /// @param field the header field name
+      /// @param value the header field value
       void add_header(std::string const& field, const std::string& value)
       { header_string_ += header_field::to_header(field, value);  }
 
@@ -417,7 +427,7 @@ namespace via
 
     //////////////////////////////////////////////////////////////////////////
     /// @class response_receiver
-        /// A template class to receive HTTP responses and any associated data.
+    /// A template class to receive HTTP responses and any associated data.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container>
     class response_receiver

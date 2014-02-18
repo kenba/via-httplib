@@ -11,7 +11,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file ssl_tcp_adaptor.hpp
-/// @brief The specific adaptor for ssl tcp connections.
+/// @brief Contains the ssl_tcp_adaptor socket adaptor class.
 /// Only include this file if you need an HTTPS server or client. SSL support
 /// is provided by the OpenSSL library which must be included with this file.
 //////////////////////////////////////////////////////////////////////////////
@@ -32,6 +32,10 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       /// @class ssl_tcp_adaptor
       /// This class enables the connection class to use ssl tcp sockets.
+      /// This class and tcp_adaptor provide a common interface that
+      /// enables connection to be configured for either tcp or ssl sockets.
+      /// @see connection
+      /// @see tcp_adaptor
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
@@ -47,14 +51,15 @@ namespace via
 #endif
                                                ConnectHandler;
 
-        boost::asio::io_service& io_service_; ///< The asio io_service.
+        /// The asio io_service.
+        boost::asio::io_service& io_service_;
         /// The asio SSL TCP socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
         boost::asio::ip::tcp::resolver::iterator host_iterator_;
 
         /// @fn resolve_host
-        /// resolves the host name and port.
+        /// Resolves the host name and port.
         /// @param host_name the host name.
         /// @param port_name the host port.
         boost::asio::ip::tcp::resolver::iterator resolve_host
@@ -76,11 +81,9 @@ namespace via
         static bool verify_certificate(bool preverified,
                                        boost::asio::ssl::verify_context& ctx)
         {
-          // In this example we can simply print the certificate's subject name.
           char subject_name[256];
           X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
           X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-
           return preverified;
         }
 
@@ -89,8 +92,7 @@ namespace via
         /// @fn handshake
         /// Asynchorously performs the ssl handshake.
         /// @param handshake_handler the handshake callback function.
-        /// @param is_server whether performing client or server handshaking,
-        /// default client.
+        /// @param is_server whether performing client or server handshaking
         void handshake(ErrorHandler handshake_handler, bool is_server)
         {
           socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
@@ -100,20 +102,19 @@ namespace via
 
         /// @fn connect_socket
         /// Attempts to connect to the given resolver iterator.
-        /// @param itr the resolver iterator.
-        void connect_socket(ConnectHandler connectHandler,
+        /// @param connect_handler the connect callback function.
+        /// @param host_iterator the resolver iterator.
+        void connect_socket(ConnectHandler connect_handler,
                             boost::asio::ip::tcp::resolver::iterator host_iterator)
         {
           // Attempt to connect to the host
           boost::asio::async_connect(socket_.lowest_layer(), host_iterator,
-                                     connectHandler);
+                                     connect_handler);
         }
 
         /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
-        /// @param port_number not required for tcp connections.
-        explicit ssl_tcp_adaptor(boost::asio::io_service& io_service,
-                                 unsigned short /*port_number*/) :
+        explicit ssl_tcp_adaptor(boost::asio::io_service& io_service) :
           io_service_(io_service),
           socket_(io_service_, ssl_context()),
           host_iterator_()
@@ -148,8 +149,9 @@ namespace via
         /// Server connections are accepted by the server instead.
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
+        /// @param connect_handler the handler to call when connected.
         bool connect(const char* host_name, const char* port_name,
-                     ConnectHandler connectHandler)
+                     ConnectHandler connect_handler)
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
           socket_.set_verify_callback
@@ -159,7 +161,7 @@ namespace via
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
             return false;
 
-          connect_socket(connectHandler, host_iterator_);
+          connect_socket(connect_handler, host_iterator_);
           return true;
         }
 
@@ -167,6 +169,7 @@ namespace via
         /// The ssl tcp socket read function.
         /// @param ptr pointer to the receive buffer.
         /// @param size the size of the receive buffer.
+        /// @param read_handler the handler for received messages.
         void read(void* ptr, size_t size, CommsHandler read_handler)
         {
           socket_.async_read_some
@@ -177,6 +180,7 @@ namespace via
         /// The ssl tcp socket write function.
         /// @param ptr pointer to the send buffer.
         /// @param size the size of the send buffer.
+        /// @param write_handler the handler called after a message is sent.
         void write(void const* ptr, size_t size, CommsHandler write_handler)
         {
           boost::asio::async_write

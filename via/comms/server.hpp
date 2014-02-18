@@ -25,24 +25,42 @@ namespace via
   {
     //////////////////////////////////////////////////////////////////////////
     /// @class server
-    /// A template class serving connections.
-    /// @param SocketAdaptor the type of socket to use, tcp or ssl
-    /// @param Container the type of container to use
-    /// @param use_strand if true use an asio::strand to wrap the handlers
+    /// A template class for implementing a tcp or ssl server using buffered
+    /// connections.
+    /// The class can be configured to use either tcp or ssl sockets depending
+    /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+    /// ssl::ssl_tcp_adaptor respectively.
+    /// The other template parameters configure the type of container to use
+    /// for the transmit buffers, the size of the receive buffer and
+    /// whether to use asio::strand for an io_service running in multiple
+    /// treads.
+    /// @see connection
+    /// @see tcp_adaptor
+    /// @see ssl::ssl_tcp_adaptor
+    /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+    /// ssl::ssl_tcp_adaptor
+    /// @param Container the container to use for the tx buffer, default
+    /// std::vector<char>.
+    /// It must contain a contiguous array of bytes. E.g. std::string or
+    /// std::array<char, size>
+    /// @param buffer_size the size of the receive buffer, default 8192 bytes.
+    /// @param use_strand if true use an asio::strand to wrap the handlers,
+    /// default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename SocketAdaptor, typename Container = std::vector<char>,
-              bool use_strand = false>
+              size_t buffer_size = DEFAULT_BUFFER_SIZE, bool use_strand = false>
     class server : boost::noncopyable
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container, use_strand> connection_type;
+      typedef connection<SocketAdaptor, Container, buffer_size, use_strand>
+                                                              connection_type;
 
-      /// a set of connections.
+      /// A set of connections.
       typedef std::set<boost::shared_ptr<connection_type> > connections;
 
-      /// an iterator to the connections;
+      /// An iterator to the connections;
       typedef typename connections::iterator connections_iterator;
 
       /// Event callback function type.
@@ -143,6 +161,10 @@ namespace via
     public:
 
       /// The server constructor.
+      /// @post the event_callback and error_callback functions MUST be set
+      /// AFTER this constructor has been called.
+      /// @see set_event_callback
+      /// @see set_error_callback
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
       explicit server(boost::asio::io_service& io_service) :
@@ -156,6 +178,9 @@ namespace via
       {}
 
       /// The server constructor.
+      /// @pre the event_callback and error_callback functions must exist.
+      /// E.g. if either of them are class member functions then the class
+      /// MUST have been constructed BEFORE this constructor is called.
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
       /// @param event_callback the event callback function.
@@ -172,14 +197,19 @@ namespace via
         error_callback_(error_callback)
       {}
 
-      /// @fn create
       /// Function to create a shared pointer to a server.
+      /// @post the event_callback and error_callback functions MUST be set
+      /// AFTER this function has been called.
+      /// @see set_event_callback
+      /// @see set_error_callback
       /// @param io_service the boost asio io_service used by the server.
       static boost::shared_ptr<server> create(boost::asio::io_service& io_service)
       { return boost::shared_ptr<server>(new server(io_service)); }
 
-      /// @fn create
       /// Function to create a shared pointer to a server.
+      /// @pre the event_callback and error_callback functions must exist.
+      /// E.g. if either of them are class member functions then the class
+      /// MUST have been constructed BEFORE this function is called.
       /// @param io_service the boost asio io_service used by the server.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
@@ -192,8 +222,7 @@ namespace via
       /// @fn accept_connections
       /// Create the acceptor and wait for connections.
       /// @param port the port number to serve.
-      /// @param address the address to listen on:
-      /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
+      /// @param ipv6 true for an IPV6 server, false for IPV4.
       /// @return the boost error code, false if no error occured
       boost::system::error_code accept_connections(unsigned short port, bool ipv6)
       {
@@ -234,11 +263,21 @@ namespace via
 
       /// @fn set_event_callback
       /// Set the event_callback function.
+      /// For use with the Constructor or create function that doesn't take
+      /// an event_callback parameter.
+      /// @see server(boost::asio::io_service& io_service)
+      /// @see create(boost::asio::io_service& io_service)
+      /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback)
       { event_callback_ = event_callback; }
 
       /// @fn set_error_callback
       /// Set the error_callback function.
+      /// For use with the Constructor or create function that doesn't take
+      /// an error_callback parameter.
+      /// @see server(boost::asio::io_service& io_service)
+      /// @see create(boost::asio::io_service& io_service)
+      /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
     };

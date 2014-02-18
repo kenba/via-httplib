@@ -82,7 +82,7 @@ namespace via
         fail_(false)
       {}
 
-      /// clear the request_line.
+      /// Clear the request_line.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -97,7 +97,7 @@ namespace via
         fail_ = false;
       }
 
-      /// swap member variables with another request_line.
+      /// Swap member variables with another request_line.
       /// @param other the other request_line
       void swap(request_line& other)
       {
@@ -168,9 +168,11 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
-      /// Id constructor
-      /// @param id the HTTP request method id, @see request_method
-      /// @param uri
+      /// Constructor for creating a request for one of the standard methods
+      /// defined in RFC2616.
+      /// @see http::request_method::method_id
+      /// @param id the HTTP request method id
+      /// @param uri the HTTP uri, default blank
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit request_line(request_method::method_id id,
@@ -188,9 +190,9 @@ namespace via
         fail_(false)
       {}
 
-      /// Free form constructor
+      /// Constructor for creating a request with a non-standard method.
       /// @param method the HTTP request method name
-      /// @param uri
+      /// @param uri the HTTP uri, default blank
       /// @param minor_version default 1
       /// @param major_version default 1
       explicit request_line(const std::string& method,
@@ -252,7 +254,7 @@ namespace via
         valid_(false)
       {}
 
-      /// clear the rx_request.
+      /// Clear the rx_request.
       /// Sets all member variables to their initial state.
       void clear()
       {
@@ -261,7 +263,7 @@ namespace via
         valid_ =  false;
       }
 
-      /// swap member variables with another rx_request.
+      /// Swap member variables with another rx_request.
       /// @param other the other rx_request
       void swap(rx_request& other)
       {
@@ -278,7 +280,7 @@ namespace via
       ///   - the start of the next http response, or
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
-      /// @return true if parsed ok false otherwise.
+      /// @return true if parsed ok, false otherwise.
       template<typename ForwardIterator1, typename ForwardIterator2>
       bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
@@ -328,6 +330,8 @@ namespace via
       }
 
       /// Whether a request is missing a Host: header.
+      /// I.e. if the request is HTTP 1.1 then it should contain a host
+      /// header field.
       /// @return true if the request should have a host header, false
       /// otherwise
       bool missing_host_header() const
@@ -343,6 +347,8 @@ namespace via
       { return valid_; }
 
       /// Whether the connection should be kept alive.
+      /// I.e. if the request is HTTP 1.1 and there is not a connection: close
+      /// header field.
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
@@ -362,9 +368,11 @@ namespace via
 
     public:
 
-      /// Constructor for a standard request.
-      /// @param id
-      /// @param uri
+      /// Constructor for creating a request for one of the standard methods
+      /// defined in RFC2616.
+      /// @see http::request_method::method_id
+      /// @param id the HTTP request method id
+      /// @param uri the HTTP uri
       /// @param header_string default blank
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -377,9 +385,9 @@ namespace via
         header_string_(header_string)
       {}
 
-      /// Constructor for non-standard requests.
-      /// @param method
-      /// @param uri
+      /// Constructor for creating a request with a non-standard method.
+      /// @param method the HTTP request method name
+      /// @param uri the HTTP uri
       /// @param header_string default blank
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -393,14 +401,20 @@ namespace via
       {}
 
       /// Add a free form header to the request.
+      /// @param field the header field name
+      /// @param value the header field value
       void add_header(std::string const& field, const std::string& value)
       { header_string_ += header_field::to_header(field, value);  }
 
       /// Add a standard header to the request.
+      /// @see http::header_field::field_id
+      /// @param id the header field id
+      /// @param value the header field value
       void add_header(header_field::field_id id, const std::string& value)
       { header_string_ += header_field::to_header(id, value);  }
 
       /// Add an http content length header line for the given size.
+      /// @param size the size of the message body.
       void add_content_length_header(size_t size)
       { header_string_ += header_field::content_length(size); }
 

@@ -11,7 +11,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file tcp_adaptor.hpp
-/// @brief The specific adaptor for tcp connections.
+/// @brief Contains the tcp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
 
@@ -22,6 +22,10 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class tcp_adaptor
     /// This class enables the connection class to use tcp sockets.
+    /// This class and ssl_tcp_adaptor provide a common interface that
+    /// enables connection to be configured for either tcp or ssl sockets.
+    /// @see connection
+    /// @see ssl::ssl_tcp_adaptor
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
@@ -60,8 +64,8 @@ namespace via
       /// Performs the SSL handshake. Since this isn't an SSL socket, it just
       /// calls the handshake_handler with a success error code.
       /// @param handshake_handler the handshake callback function.
-      /// @param is_server whether performing client or server handshaking,
-      /// not used by un-encrypted sockets.
+      // @param is_server whether performing client or server handshaking,
+      // not used by un-encrypted sockets.
       void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
         boost::system::error_code ec; // Default is success
@@ -78,9 +82,7 @@ namespace via
 
       /// The tcp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
-      /// @param port_number not required for tcp connections.
-      explicit tcp_adaptor(boost::asio::io_service& io_service,
-                           unsigned short /*port_number*/) :
+      explicit tcp_adaptor(boost::asio::io_service& io_service) :
         io_service_(io_service),
         socket_(io_service_),
         host_iterator_()
@@ -104,6 +106,7 @@ namespace via
       /// Server connections are accepted by the server instead.
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
+      /// @param connectHandler the handler to call when connected.
       bool connect(const char* host_name, const char* port_name,
                    ConnectHandler connectHandler)
       {
@@ -119,6 +122,7 @@ namespace via
       /// The tcp socket read function.
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
+      /// @param read_handler the handler for received messages.
       void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         socket_.async_read_some
@@ -129,6 +133,7 @@ namespace via
       /// The tcp socket write function.
       /// @param ptr pointer to the send buffer.
       /// @param size the size of the send buffer.
+      /// @param write_handler the handler called after a message is sent.
       void write(void const* ptr, size_t size, CommsHandler write_handler)
       {
         boost::asio::async_write

@@ -11,7 +11,9 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file socket_adaptor.hpp
-/// @brief Type definitions used by connection socket adaptors.
+/// @brief Type definitions used by the connection socket adaptors.
+/// @see tcp_adaptor
+/// @see ssl_tcp_adaptor
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -36,6 +38,7 @@ namespace via
       DISCONNECTED ///< The socket is now disconnected.
     };
 
+    /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
@@ -43,8 +46,9 @@ namespace via
 #else
     typedef std::tr1::function<void (boost::system::error_code const&)>
 #endif
-                                           ErrorHandler;
+                                               ErrorHandler;
 
+    /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
