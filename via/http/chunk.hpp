@@ -174,9 +174,6 @@ namespace via
     template <typename Container>
     class rx_chunk : public chunk_header
     {
-      /// The template requires a typename to access the iterator
-      typedef typename Container::const_iterator Container_const_iterator;
-
       Container data_;         ///< the data contained in the chunk
       message_headers trailers_; ///< the HTTP field headers for the last chunk
       bool valid_;               ///< true if the chunk is valid
@@ -220,7 +217,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      bool parse(Container_const_iterator& iter, Container_const_iterator end)
+      template<typename ForwardIterator1, typename ForwardIterator2>
+      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
       {
         if (!chunk_header::valid() && !chunk_header::parse(iter, end))
           return false;
@@ -241,7 +239,7 @@ namespace via
           {
             if (required > 0)
             {
-              Container_const_iterator next(iter + required);
+              ForwardIterator1 next(iter + required);
               data_.insert(data_.end(), iter, next);
               iter = next;
             }

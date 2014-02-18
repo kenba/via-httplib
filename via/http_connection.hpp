@@ -68,6 +68,9 @@ namespace via
     typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
                                                               connection_type;
 
+    /// The connection receive buffer type.
+    typedef typename connection_type::RxBuffer rx_buffer_type;
+
     /// A weak pointer to this type.
     typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
          buffer_size, use_strand, translate_head, require_host, trace_enabled> >
@@ -250,9 +253,11 @@ namespace via
         return http::RX_INCOMPLETE;
 
       // read the data
-      Container const& data(tcp_pointer->rx_buffer());
-      Container_const_iterator iter(data.begin());
-      http::receiver_parsing_state rx_state(rx_.receive(iter, data.end()));
+      rx_buffer_type const& data(tcp_pointer->rx_buffer());
+      typename rx_buffer_type::const_iterator iter(data.begin());
+      typename rx_buffer_type::const_iterator end(iter);
+      end += tcp_pointer->size();
+      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
 
       // Handle special cases
       switch (rx_state)

@@ -52,6 +52,9 @@ namespace via
     typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
                                                               connection_type;
 
+    /// The connection receive buffer type.
+    typedef typename connection_type::RxBuffer rx_buffer_type;
+
     /// A shared pointer to this type.
     typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
                                                  buffer_size, use_strand> > shared_pointer;
@@ -186,9 +189,11 @@ namespace via
     void receive_handler()
     {
       // attempt to read the data
-      Container data(connection_->rx_buffer());
-      Container_const_iterator iter(data.begin());
-      http::receiver_parsing_state rx_state(rx_.receive(iter, data.end()));
+      rx_buffer_type const& data(connection_->rx_buffer());
+      typename rx_buffer_type::const_iterator iter(data.begin());
+      typename rx_buffer_type::const_iterator end(iter);
+      end += connection_->size();
+      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
 
       switch (rx_state)
       {

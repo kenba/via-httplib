@@ -451,9 +451,6 @@ namespace via
     template <typename Container, bool translate_head>
     class request_receiver
     {
-      /// The template requires a typename to access the iterator
-      typedef typename Container::const_iterator Container_const_iterator;
-
       rx_request request_; ///< the received request
       rx_chunk<Container> chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
@@ -513,8 +510,9 @@ namespace via
       /// Receive data for an HTTP request, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      receiver_parsing_state receive(Container_const_iterator& iter,
-                                     Container_const_iterator end)
+      template<typename ForwardIterator1, typename ForwardIterator2>
+      receiver_parsing_state receive(ForwardIterator1& iter,
+                                     ForwardIterator2 end)
       {
         // building a request
         bool request_parsed(!request_.valid());

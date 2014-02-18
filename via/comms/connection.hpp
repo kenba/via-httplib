@@ -475,8 +475,8 @@ namespace via
       /// Accessor for the receive buffer.
       /// @pre Only valid within the receive event callback function.
       /// @return the receive buffer.
-      char const* rx_buffer() const
-      { return &(*rx_buffer_)[0]; }
+      RxBuffer const& rx_buffer() const
+      { return *rx_buffer_; }
 
       /// @fn size
       /// Accessor for receive buffer packet size.
