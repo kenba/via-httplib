@@ -88,6 +88,11 @@ namespace via
       event_callback_type event_callback_;   ///< The event callback function.
       error_callback_type error_callback_;   ///< The error callback function.
 
+      /// The send and receive timeouts, in milliseconds, zero is disabled.
+      int timeout_;
+      bool no_delay_;                        ///< The tcp no delay status.
+      bool keep_alive_;                      ///< The tcp keep alive status.
+
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
       /// new connection.
@@ -106,7 +111,7 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
-            next_connection_->start();
+            next_connection_->start(no_delay_, keep_alive_, timeout_);
             connections_.insert(next_connection_);
             next_connection_.reset();
           }
@@ -174,7 +179,10 @@ namespace via
         connections_(),
         password_(),
         event_callback_(),
-        error_callback_()
+        error_callback_(),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false)
       {}
 
       /// The server constructor.
@@ -194,7 +202,10 @@ namespace via
         connections_(),
         password_(),
         event_callback_(event_callback),
-        error_callback_(error_callback)
+        error_callback_(error_callback),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false)
       {}
 
       /// Function to create a shared pointer to a server.
@@ -280,6 +291,27 @@ namespace via
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
+
+      /// @fn set_no_delay
+      /// Set the tcp no delay status for all future connections.
+      /// @param enable if true it disables the Nagle algorithm.
+      void set_no_delay(bool enable)
+      { no_delay_ = enable; }
+
+      /// @fn set_keep_alive
+      /// Set the tcp keep alive status for all future connections.
+      /// @param enable if true enables the tcp socket keep alive status.
+      void set_keep_alive(bool enable)
+      { keep_alive_ = enable; }
+
+      /// @fn set_timeout
+      /// Set the send and receive timeout value for all future connections.
+      /// @pre sockets may remain open forever
+      /// @post sockets will close if no activity has occured after the
+      /// timeout period.
+      /// @param timeout the timeout in milliseconds.
+      void set_timeout(int timeout)
+      { timeout_ = timeout; }
     };
   }
 }

@@ -220,11 +220,6 @@ namespace via
         bool is_disconnect(boost::system::error_code const& error)
         { return (boost::asio::error::connection_reset == error); }
 
-        /// @fn no_delay
-        /// Disable the nagle algorithm (no delay) on the socket.
-        void no_delay()
-        { socket_.lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true)); }
-
         /// @fn socket
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.

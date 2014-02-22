@@ -128,6 +128,9 @@ namespace via
       connection_->set_error_callback
           (boost::bind(&http_client::error_handler, this,
                        boost::asio::placeholders::error, _2));
+      // Set no delay, i.e. disable the Nagle algorithm
+      // An http_client will want to send messages immediately
+      connection_->set_no_delay(true);
     }
 
   public:
@@ -396,6 +399,11 @@ namespace via
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
     }
+
+    /// Accessor function for the comms connection.
+    /// @return a shared pointer to the connection
+    boost::shared_ptr<connection_type> connection()
+    { return connection_; }
   };
 }
 

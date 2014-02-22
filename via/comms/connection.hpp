@@ -114,6 +114,10 @@ namespace via
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
       size_t rx_size_;                     ///< The size of the received msg.
+      /// The send and receive timeouts, in milliseconds, zero is disabled.
+      int timeout_;
+      bool no_delay_;                      ///< The tcp no delay status.
+      bool keep_alive_;                    ///< The tcp keep alive status.
       bool connected_;                     ///< If the socket is connected.
 
       /// @fn weak_from_this
@@ -284,7 +288,7 @@ namespace via
           if (!error)
           {
             pointer->connected_ = true;
-            pointer->no_delay();
+            pointer->set_socket_options();
             if (!pointer->tx_queue_->empty())
               pointer->write_data();
             pointer->enable_reception();
@@ -355,6 +359,9 @@ namespace via
         event_callback_(event_callback),
         error_callback_(error_callback),
         rx_size_(0),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false),
         connected_(false)
       {}
 
@@ -372,8 +379,69 @@ namespace via
         event_callback_(),
         error_callback_(),
         rx_size_(0),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false),
         connected_(false)
       {}
+
+      /// Set the socket's tcp no delay status.
+      /// If no_delay_ is set it disables the Nagle algorithm on the socket.
+      void no_delay()
+      {
+          SocketAdaptor::socket().set_option
+              (boost::asio::ip::tcp::no_delay(no_delay_));
+      }
+
+      /// Set the socket's tcp keep alive status.
+      void keep_alive()
+      {
+          SocketAdaptor::socket().set_option
+              (boost::asio::socket_base::keep_alive(keep_alive_));
+      }
+
+      /// Set the socket's tcp send and receive timeouts.
+      /// Note: asio does not directly support timeouts at the moment.
+      /// This code is an amalgamation of two different answers on
+      /// StackOverflow, see:
+      /// http://stackoverflow.com/questions/20188718/configuring-tcp-keep-alive-with-boostasio
+      /// and the 2nd answer to the question it's a duplicate of.
+      void tcp_timeouts()
+      {
+#if defined _WIN32 || defined WIN32 || defined _WIN64 || defined WIN64 \
+  || defined  WINNT || defined OS_WIN64
+        // use windows-specific time
+        SocketAdaptor::socket().set_option(boost::asio::detail::
+                   socket_option::integer<SOL_SOCKET, SO_RCVTIMEO>(timeout_));
+        SocketAdaptor::socket().set_option(boost::asio::detail::
+                   socket_option::integer<SOL_SOCKET, SO_SNDTIMEO>(timeout_));
+#else
+        // assume everything else is posix
+        struct timeval tv;
+        tv.tv_sec  = timeout_ / 1000;
+        tv.tv_usec = 1000 * (timeout_ % 1000);
+        setsockopt(SocketAdaptor::socket().native(), SOL_SOCKET, SO_RCVTIMEO,
+                   reinterpret_cast<const char*>(&tv), sizeof(tv));
+        setsockopt(SocketAdaptor::socket().native(), SOL_SOCKET, SO_SNDTIMEO,
+                   reinterpret_cast<const char*>(&tv), sizeof(tv));
+#endif
+      }
+
+      /// @fn set_socket_options
+      /// Disable the nagle algorithm (no delay) on the socket and
+      /// (optionally) enable keep alive on the socket and set the tcp
+      /// send and receive timeouts.
+      void set_socket_options()
+      {
+        if (no_delay_)
+          no_delay();
+
+        if (keep_alive_)
+          keep_alive();
+
+        if (timeout_ > 0)
+          tcp_timeouts();
+      }
 
     public:
 
@@ -444,8 +512,15 @@ namespace via
       /// Start the handshake for a server connection.
       /// @pre To be called by "server" connections only after its accepted
       /// the connection.
-      void start()
+      /// @param no_delay whether to enable tcp no delay
+      /// @param keep_alive whether to enable tcp keep alive
+      /// @param timeout the send and receive timeouts, in milliseconds,
+      /// zero is disabled
+      void start(bool no_delay, bool keep_alive, int timeout)
       {
+        no_delay_   = no_delay;
+        keep_alive_ = keep_alive;
+        timeout_    = timeout;
         SocketAdaptor::start(boost::bind(&connection::handshake_callback,
                                          weak_from_this(),
                                          boost::asio::placeholders::error));
@@ -530,6 +605,35 @@ namespace via
         send_data(buffer);
       }
 
+      /// @fn set_no_delay
+      /// Set the tcp no delay status.
+      /// @param enable enable/disable tcp no delay.
+      void set_no_delay(bool enable)
+      {
+        no_delay_ = enable;
+        if (connected_)
+          no_delay();
+      }
+
+      /// @fn set_keep_alive
+      /// Set the tcp keep alive status.
+      /// @param enable enable/disable tcp keep alive.
+      void set_keep_alive(bool enable)
+      {
+        keep_alive_ = enable;
+        if (connected_)
+          keep_alive();
+      }
+
+      /// @fn set_timeout
+      /// Set the tcp send and receive timeouts.
+      /// @param timeout the tcp send and receive timeout in milliseconds.
+      void set_timeout(int timeout)
+      {
+        timeout_ = timeout;
+        if (connected_)
+          tcp_timeouts();
+      }
     };
 
   }

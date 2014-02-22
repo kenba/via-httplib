@@ -178,6 +178,9 @@ namespace via
       server_->set_error_callback
           (boost::bind(&http_server::error_handler, this,
                         boost::asio::placeholders::error, _2));
+      // Set no delay, i.e. disable the Nagle algorithm
+      // An http_server will want to send messages immediately
+      server_->set_no_delay(true);
     }
 
     /// Start accepting connections on the communications server from the
@@ -294,6 +297,20 @@ namespace via
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
     }
+
+    /// @fn set_keep_alive
+    /// Set the tcp keep alive status for all future connections.
+    /// @param enable if true enables the tcp socket keep alive status.
+    void set_keep_alive(bool enable)
+    { server_->set_keep_alive(enable); }
+
+    /// Set the send and receive timeout value for all future connections.
+    /// @pre sockets may remain open forever
+    /// @post sockets will close if no activity has occured after the
+    /// timeout period.
+    /// @param timeout the timeout in milliseconds.
+    void set_timeout(int timeout)
+    { server_->set_timeout(timeout); }
 
     /// Set the password for an SSL connection.
     /// Note: only valid for SSL connections, do NOT call for TCP servers.
