@@ -16,7 +16,7 @@
 namespace
 {
   /// The server name for the server header.
-  const std::string	SERVER_NAME             ("Via-httplib/0.16");
+  const std::string	SERVER_NAME             ("Via-httplib/1.0.0");
 
   /// The message/http content for a TRACE response
   const std::string	MESSAGE_HTTP            ("message/http");
