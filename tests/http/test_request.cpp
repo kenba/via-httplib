@@ -34,7 +34,7 @@ TEST(TestRequestLineParser, ValidGetVectorChar1)
   std::vector<char>::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -50,7 +50,7 @@ TEST(TestRequestLineParser, ValidGetVectorUnsignedChar1)
   std::vector<unsigned char>::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -65,7 +65,7 @@ TEST(TestRequestLineParser, ValidGet1)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -80,7 +80,7 @@ TEST(TestRequestLineParser, ValidGet2)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -95,7 +95,7 @@ TEST(TestRequestLineParser, ValidGet3)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   BYTES_EQUAL('A', *next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -110,7 +110,7 @@ TEST(TestRequestLineParser, InValidMethod1)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(!the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("G", the_request.method().c_str());
   STRCMP_EQUAL("", the_request.uri().c_str());
   CHECK_EQUAL(0, the_request.major_version());
@@ -124,7 +124,7 @@ TEST(TestRequestLineParser, InValidUri1)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(!the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklm", the_request.uri().c_str());
   CHECK_EQUAL(0, the_request.major_version());
@@ -138,7 +138,7 @@ TEST(TestRequestLineParser, ValidGet4)
   std::string::const_iterator next(request_data.begin());
 
   request_line the_request;
-  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(!the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -146,7 +146,7 @@ TEST(TestRequestLineParser, ValidGet4)
 
   std::string request_data2("TP/1.2\r\n");
   next = request_data2.begin();
-  CHECK(the_request.parse(next, request_data2.end()));
+  CHECK(the_request.parse(next, request_data2.cend()));
   CHECK(request_data2.end() == next);
   CHECK_EQUAL(1, the_request.major_version());
   CHECK_EQUAL(2, the_request.minor_version());
@@ -187,7 +187,7 @@ TEST(TestRequestParser, ValidGetVectorChar1)
   std::vector<char>::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
@@ -207,7 +207,7 @@ TEST(TestRequestParser, ValidGetVectorUnsignedChar1)
   std::vector<unsigned char>::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
@@ -225,7 +225,7 @@ TEST(TestRequestParser, ValidGet1)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("GET", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
@@ -243,7 +243,7 @@ TEST(TestRequestParser, ValidPost1)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
@@ -254,8 +254,6 @@ TEST(TestRequestParser, ValidPost1)
 }
 
 // Memory leaks in call to is_chunked according to Qt/MinGw
-// probably an issue with boost::regex
-#ifdef _MSC_VER
 TEST(TestRequestParser, ValidChunked1)
 {
   std::string request_data
@@ -263,7 +261,7 @@ TEST(TestRequestParser, ValidChunked1)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abc", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
@@ -275,10 +273,8 @@ TEST(TestRequestParser, ValidChunked1)
 
   // TODO parse chunk...
 }
-#endif
 
 // Memory leaks according to Qt/MinGw
-#ifdef _MSC_VER
 TEST(TestRequestParser, ValidChunked2)
 {
   std::string REQUEST_LINE("POST abc HTTP/1.1\r\n");
@@ -287,7 +283,7 @@ TEST(TestRequestParser, ValidChunked2)
   std::vector<char>::const_iterator next(request_data.begin());
   rx_request the_request;
 
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abc", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
@@ -297,7 +293,6 @@ TEST(TestRequestParser, ValidChunked2)
   CHECK(the_request.is_chunked());
 
 }
-#endif
 
 TEST(TestRequestParser, ValidPostQt1)
 {
@@ -313,7 +308,7 @@ TEST(TestRequestParser, ValidPostQt1)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(the_request.parse(next, request_data.end()));
+  CHECK(the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
@@ -326,12 +321,12 @@ TEST(TestRequestParser, ValidPostMultiLine1)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(!the_request.parse(next, request_data.cend()));
   CHECK(request_data.end() == next);
 
   std::string request_data2("de HTTP/1.0\r\nContent-Length: 4\r\n\r\n");
   next = request_data2.begin();
-  CHECK(the_request.parse(next, request_data2.end()));
+  CHECK(the_request.parse(next, request_data2.cend()));
   CHECK(request_data2.end() == next);
 
   STRCMP_EQUAL("POST", the_request.method().c_str());
@@ -348,7 +343,7 @@ TEST(TestRequestParser, ValidPostMultiLine2)
   std::string::const_iterator next(request_data.begin());
 
   rx_request the_request;
-  CHECK(!the_request.parse(next, request_data.end()));
+  CHECK(!the_request.parse(next, request_data.cend()));
   STRCMP_EQUAL("POST", the_request.method().c_str());
   STRCMP_EQUAL("abcde", the_request.uri().c_str());
   CHECK_EQUAL(1, the_request.major_version());
@@ -356,7 +351,7 @@ TEST(TestRequestParser, ValidPostMultiLine2)
 
   std::string request_data2("ngth: 4\r\n\r\n");
   next = request_data2.begin();
-  CHECK(the_request.parse(next, request_data2.end()));
+  CHECK(the_request.parse(next, request_data2.cend()));
   CHECK(request_data2.end() == next);
 
   CHECK_EQUAL(4, the_request.content_length());
@@ -429,7 +424,7 @@ TEST(TestRequestReceiver, ValidGet1)
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data.end()));
+      (the_request_receiver.receive(next, request_data.cend()));
   bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
@@ -447,13 +442,13 @@ TEST(TestRequestReceiver, ValidGet2)
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data1.end()));
+      (the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string request_data2("ET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   next = request_data2.begin();
-  rx_state = the_request_receiver.receive(next, request_data2.end());
+  rx_state = the_request_receiver.receive(next, request_data2.cend());
   bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
@@ -471,7 +466,7 @@ TEST(TestRequestReceiver, InValidGet1)
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data1.end()));
+      (the_request_receiver.receive(next, request_data1.cend()));
   CHECK(rx_state == RX_INVALID);
 }
 
@@ -482,7 +477,7 @@ TEST(TestRequestReceiver, ValidPostQt1)
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data1.end()));
+      (the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
@@ -496,13 +491,13 @@ TEST(TestRequestReceiver, ValidPostQt1)
   request_data += "User-Agent: Mozilla/5.0\r\n";
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
-  rx_state = the_request_receiver.receive(next, request_data.end());
+  rx_state = the_request_receiver.receive(next, request_data.cend());
   ok = (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string body_data("abcdefghijklmnopqrstuvwxyz");
   next = body_data.begin();
-  rx_state = the_request_receiver.receive(next, body_data.end());
+  rx_state = the_request_receiver.receive(next, body_data.cend());
   bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
@@ -513,8 +508,6 @@ TEST(TestRequestReceiver, ValidPostQt1)
   STRCMP_EQUAL(body_data.c_str(), the_request_receiver.body().c_str());
 }
 
-#ifdef _MSC_VER
-
 TEST(TestRequestReceiver, ValidPostChunk1)
 {
   std::string request_data1("P");
@@ -523,7 +516,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   // Receiver concatenates chunks
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data1.end()));
+      (the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
@@ -537,7 +530,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
   request_data += "User-Agent: Mozilla/5.0\r\n";
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
-  rx_state = the_request_receiver.receive(next, request_data.end());
+  rx_state = the_request_receiver.receive(next, request_data.cend());
   ok = (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
@@ -548,28 +541,25 @@ TEST(TestRequestReceiver, ValidPostChunk1)
 
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
-  rx_state = the_request_receiver.receive(next, body_data.end());
+  rx_state = the_request_receiver.receive(next, body_data.cend());
   bool complete (rx_state == RX_INCOMPLETE);
   CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
-  rx_state = the_request_receiver.receive(next, body_data2.end());
+  rx_state = the_request_receiver.receive(next, body_data2.cend());
   CHECK (rx_state == RX_INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
-  rx_state = the_request_receiver.receive(next, body_data3.end());
+  rx_state = the_request_receiver.receive(next, body_data3.cend());
   CHECK (rx_state == RX_INCOMPLETE);
 
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
-  rx_state = the_request_receiver.receive(next, body_data4.end());
+  rx_state = the_request_receiver.receive(next, body_data4.cend());
   CHECK (rx_state == RX_VALID);
 }
-#endif
-
-#ifdef _MSC_VER
 
 TEST(TestRequestReceiver, ValidPostChunk2)
 {
@@ -579,7 +569,7 @@ TEST(TestRequestReceiver, ValidPostChunk2)
   // Receiver does NOT concatenate_chunks
   request_receiver<std::string, false> the_request_receiver(false);
   receiver_parsing_state rx_state
-      (the_request_receiver.receive(next, request_data1.end()));
+      (the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
@@ -593,7 +583,7 @@ TEST(TestRequestReceiver, ValidPostChunk2)
   request_data += "User-Agent: Mozilla/5.0\r\n";
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
-  rx_state = the_request_receiver.receive(next, request_data.end());
+  rx_state = the_request_receiver.receive(next, request_data.cend());
   ok = (rx_state == RX_VALID);
   CHECK(ok);
 
@@ -604,25 +594,109 @@ TEST(TestRequestReceiver, ValidPostChunk2)
 
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
-  rx_state = the_request_receiver.receive(next, body_data.end());
+  rx_state = the_request_receiver.receive(next, body_data.cend());
   bool complete (rx_state == RX_CHUNK);
   CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
-  rx_state = the_request_receiver.receive(next, body_data2.end());
+  rx_state = the_request_receiver.receive(next, body_data2.cend());
   CHECK (rx_state == RX_INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
-  rx_state = the_request_receiver.receive(next, body_data3.end());
+  rx_state = the_request_receiver.receive(next, body_data3.cend());
   CHECK (rx_state == RX_CHUNK);
 
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
-  rx_state = the_request_receiver.receive(next, body_data4.end());
+  rx_state = the_request_receiver.receive(next, body_data4.cend());
   CHECK (rx_state == RX_CHUNK);
 }
-#endif
+
+TEST(TestRequestReceiver, InvalidPostHeader1)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string, false> the_request_receiver(true);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.cend()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Length: 4z\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.cend());
+  ok = (rx_state == RX_INVALID);
+  CHECK(ok);
+}
+
+TEST(TestRequestReceiver, InvalidPostHeader2)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string, false> the_request_receiver(true);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.cend()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n\r\n"; // Note: extra CRLF
+  request_data += "Content-Length: 26\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.cend());
+  ok = (rx_state == RX_LENGTH_REQUIRED);
+  CHECK(ok);
+}
+
+TEST(TestRequestReceiver, InvalidPostHeader3)
+{
+  std::string request_data1("P");
+  std::string::const_iterator next(request_data1.begin());
+
+  request_receiver<std::string, false> the_request_receiver(true);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.cend()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Content-Length: 26\r\n";
+  request_data += "Connection: Keep-Alive\r\n\r\n"; // Note: extra CRLF
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.cend());
+  ok = (rx_state == RX_VALID);
+  CHECK(ok);
+
+  CHECK(the_request_receiver.body().size() ==
+        the_request_receiver.request().content_length());
+
+  // std::cout << "Body size: " << the_request_receiver.body().size();
+
+  the_request_receiver.clear();
+  std::string body_data("abcdefghijklmnopqrstuvwxyz");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.cend());
+  // std::cout << "rx_state: " << rx_state;
+  ok = (rx_state == RX_INVALID);
+  CHECK(ok);
+}
 
 //////////////////////////////////////////////////////////////////////////////

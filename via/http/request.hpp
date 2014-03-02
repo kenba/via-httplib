@@ -536,11 +536,38 @@ namespace via
         assert(request_.valid());
         if (!request_.is_chunked())
         {
-          if (end > iter)
-            body_.insert(body_.end(), iter, end);
+          // if there is a content length header, ensure it's valid
+          size_t content_length(request_.content_length());
+          if (content_length == CONTENT_LENGTH_INVALID)
+          {
+            clear();
+            return RX_INVALID;
+          }
+
+          // if there's a message body then insist on a content length header
+          long rx_size(end - iter);
+          if ((rx_size > 0) && (content_length == 0) &&
+              request_.headers().find(header_field::CONTENT_LENGTH).empty())
+          {
+            clear();
+            return RX_LENGTH_REQUIRED;
+          }
+
+          // received buffer contains more than the required data
+          long required(content_length - body_.size());
+          if (rx_size > required)
+          {
+              ForwardIterator1 next(iter + required);
+              body_.insert(body_.end(), iter, next);
+          }
+          else // received buffer <= required data
+          {
+            if (end > iter)
+              body_.insert(body_.end(), iter, end);
+          }
 
           // determine whether the body is complete
-          if (body_.size() >= request_.content_length())
+          if (body_.size() == request_.content_length())
           {
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request

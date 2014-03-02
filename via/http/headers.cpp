@@ -106,8 +106,8 @@ namespace via
       if (content_length.empty())
         return 0;
 
-      // Return the length from the content length field.
-      return std::strtoul(content_length.c_str(), 0, 10);;
+      // Get the length from the content length field.
+      return from_dec_string(content_length);
     }
     //////////////////////////////////////////////////////////////////////////
     

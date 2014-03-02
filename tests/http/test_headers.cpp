@@ -278,4 +278,61 @@ TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
   STRCMP_EQUAL("Chunked",
                the_headers.find(header_field::TRANSFER_ENCODING).c_str());
 }
+
+TEST(TestHeadersParser, ValidContentLength1)
+{
+  // Simple number
+  std::string HEADER_LINE("Content-Length: 4\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+
+  CHECK_EQUAL(4, the_headers.content_length());
+}
+
+// A invalid content length http header line.
+TEST(TestHeadersParser, InValidContentLength1)
+{
+  // Alpha before number
+  std::string HEADER_LINE("Content-Length: z4\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+
+  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+}
+
+TEST(TestHeadersParser, InValidContentLength2)
+{
+  // Alpha after number
+  std::string HEADER_LINE("Content-Length: 4z\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+
+  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+}
+
+TEST(TestHeadersParser, InValidContentLength3)
+{
+  // Number is too big
+  std::string HEADER_LINE("Content-Length: 999999999999999999999\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::const_iterator header_next(header_data.begin());
+
+  message_headers the_headers;
+  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(header_data.end() == header_next);
+
+  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+}
 //////////////////////////////////////////////////////////////////////////////

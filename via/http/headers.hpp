@@ -21,6 +21,10 @@ namespace via
 {
   namespace http
   {
+    /// @enum content_length_error gives an error states for an invalid
+    /// content length header.
+    enum content_length_error
+    { CONTENT_LENGTH_INVALID = ULONG_MAX };
 
     /// @enum receiver_parsing_state is valid for both the request and
     /// response receivers.
@@ -231,8 +235,9 @@ namespace via
       { return find(header_field::lowercase_name(id)); }
 
       /// If there is a Content-Length field return its size.
-      /// @return the size of the Content-Length field.
-      /// Zero if it was not found or invalid.
+      /// @return the value of the Content-Length field or
+      /// CONTENT_LENGTH_INVALID if it was invalid.
+      /// May also return zero if it was not found.
       size_t content_length() const;
 
       /// Whether Chunked Transfer Coding is applied to the message.

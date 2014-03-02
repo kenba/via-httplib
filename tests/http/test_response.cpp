@@ -76,7 +76,7 @@ TEST(TestResponseLineParser, ValidOkVectorChar1)
   std::vector<char>::const_iterator next(response_data.begin());
 
   response_line the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -92,7 +92,7 @@ TEST(TestResponseLineParser, ValidOkVectorUnsignedChar1)
   std::vector<unsigned char>::const_iterator next(response_data.begin());
 
   response_line the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -107,7 +107,7 @@ TEST(TestResponseLineParser, ValidOk1)
   std::string::const_iterator next(response_data.begin());
 
   response_line the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -122,7 +122,7 @@ TEST(TestResponseLineParser, ValidOk2)
   std::string::const_iterator next(response_data.begin());
 
   response_line the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -137,7 +137,7 @@ TEST(TestResponseLineParser, ValidOk3)
   std::string::const_iterator next(response_data.begin());
 
   response_line the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   BYTES_EQUAL(' ', *next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -160,7 +160,7 @@ TEST(TestResponseLineEncoder, ValidOkString1)
 
 TEST(TestResponseLineEncoder, ValidOkString2)
 {
-  response_line the_response(200);
+  response_line the_response(200, "OK");
   std::string response_string(the_response.to_string());
   STRCMP_EQUAL("HTTP/1.1 200 OK\r\n", response_string.c_str());
 }
@@ -174,7 +174,7 @@ TEST(TestResponseLineEncoder, ValidNonstandardString1)
 
 TEST(TestResponseLineEncoder, ValidNonstandardString2)
 {
-  response_line the_response(199);
+  response_line the_response(199, "");
   std::string response_string(the_response.to_string());
   STRCMP_EQUAL("HTTP/1.1 199 \r\n", response_string.c_str());
 }
@@ -191,7 +191,7 @@ TEST(TestResponseParser, ValidOK1)
   std::string::const_iterator next(response_data.begin());
 
   rx_response the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -210,7 +210,7 @@ TEST(TestResponseParser, ValidOK2)
   std::string::const_iterator next(response_data.begin());
 
   rx_response the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK(response_data.begin() != next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -224,7 +224,6 @@ TEST(TestResponseParser, ValidOK2)
 }
 
 // Memory leaks according to Qt/MinGw
-#ifdef _MSC_VER
 TEST(TestResponseParser, ValidOKChunked1)
 {
   std::string response_data
@@ -232,7 +231,7 @@ TEST(TestResponseParser, ValidOKChunked1)
   std::string::const_iterator next(response_data.begin());
 
   rx_response the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
   CHECK_EQUAL(1, the_response.major_version());
@@ -243,7 +242,6 @@ TEST(TestResponseParser, ValidOKChunked1)
 
     // TODO parse chunk...
 }
-#endif
 
 TEST(TestResponseParser, ValidUnauthorised1)
 {
@@ -253,7 +251,7 @@ TEST(TestResponseParser, ValidUnauthorised1)
   std::vector<char>::const_iterator next(response_data.begin());
 
   rx_response the_response;
-  CHECK(the_response.parse(next, response_data.end()));
+  CHECK(the_response.parse(next, response_data.cend()));
   CHECK_EQUAL(401, the_response.status());
   STRCMP_EQUAL("Unauthorized", the_response.reason_phrase().c_str());
   CHECK_EQUAL(1, the_response.major_version());
@@ -271,7 +269,7 @@ TEST(TestResponseParser, ValidOKMultiLine1)
   std::string::const_iterator next(response_data.begin());
 
   rx_response the_response;
-  CHECK(!the_response.parse(next, response_data.end()));
+  CHECK(!the_response.parse(next, response_data.cend()));
   CHECK(response_data.end() == next);
   CHECK_EQUAL(200, the_response.status());
   STRCMP_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -280,7 +278,7 @@ TEST(TestResponseParser, ValidOKMultiLine1)
 
   std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
   next = response_data2.begin();
-  CHECK(the_response.parse(next, response_data2.end()));
+  CHECK(the_response.parse(next, response_data2.cend()));
 
   CHECK(!the_response.is_chunked());
   CHECK_EQUAL(4, the_response.content_length());
@@ -363,13 +361,13 @@ TEST(TestResponseReceiver, ValidOK1)
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
-      (the_response_receiver.receive(next, response_data.end()));
+      (the_response_receiver.receive(next, response_data.cend()));
   bool ok (rx_state == RX_INCOMPLETE);
   CHECK(ok);
 
   std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
   next = response_data2.begin();
-  rx_state = the_response_receiver.receive(next, response_data2.end());
+  rx_state = the_response_receiver.receive(next, response_data2.cend());
   bool complete (rx_state == RX_VALID);
   CHECK(complete);
 
@@ -383,6 +381,24 @@ TEST(TestResponseReceiver, ValidOK1)
   STRCMP_EQUAL("abcd", body.c_str());
 }
 
+TEST(TestResponseReceiver, ValidOK2)
+{
+  std::string response_data("HTTP/1.0 200 OK\r\n");
+  response_data += "Server: Via-httplib/0.14\r\n";
+  response_data += "Content-Length: 4\r\n";
+  response_data += "\r\nabcd\r\n"; // extra chars at end of body
+  std::string::const_iterator next(response_data.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data.cend()));
+  bool ok (rx_state == RX_VALID);
+  CHECK(ok);
+
+  std::string body(the_response_receiver.body());
+  STRCMP_EQUAL("abcd", body.c_str());
+}
+
 TEST(TestResponseReceiver, InValidOK1)
 {
   std::string response_data("P");
@@ -390,11 +406,10 @@ TEST(TestResponseReceiver, InValidOK1)
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
-      (the_response_receiver.receive(next, response_data.end()));
+      (the_response_receiver.receive(next, response_data.cend()));
   CHECK (rx_state == RX_INVALID);
 }
 
-#ifdef _MSC_VER
 TEST(TestResponseReceiver, ValidOKChunked1)
 {
   std::string response_data1("H");
@@ -402,7 +417,7 @@ TEST(TestResponseReceiver, ValidOKChunked1)
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
-      (the_response_receiver.receive(next, response_data1.end()));
+      (the_response_receiver.receive(next, response_data1.cend()));
   CHECK(rx_state == RX_INCOMPLETE);
 
   std::string response_data("TTP/1.0 200 OK\r\n");
@@ -412,7 +427,7 @@ TEST(TestResponseReceiver, ValidOKChunked1)
   response_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = response_data.begin();
 
-  rx_state = the_response_receiver.receive(next, response_data.end());
+  rx_state = the_response_receiver.receive(next, response_data.cend());
   CHECK(rx_state == RX_VALID);
   CHECK_EQUAL(200, the_response_receiver.response().status());
   STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
@@ -423,18 +438,18 @@ TEST(TestResponseReceiver, ValidOKChunked1)
 
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
-  rx_state = the_response_receiver.receive(next, body_data.end());
+  rx_state = the_response_receiver.receive(next, body_data.cend());
   bool complete (rx_state == RX_CHUNK);
   CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
-  rx_state = the_response_receiver.receive(next, body_data2.end());
+  rx_state = the_response_receiver.receive(next, body_data2.cend());
   CHECK (rx_state == RX_INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
-  rx_state = the_response_receiver.receive(next, body_data3.end());
+  rx_state = the_response_receiver.receive(next, body_data3.cend());
   CHECK (rx_state == RX_CHUNK);
 }
 
@@ -448,13 +463,13 @@ TEST(TestResponseReceiver, ValidOKChunked2)
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
-      (the_response_receiver.receive(next, response_data1.end()));
+      (the_response_receiver.receive(next, response_data1.cend()));
   CHECK(rx_state == RX_INCOMPLETE);
 
   std::string response_data("\r\n15");
   next = response_data.begin();
 
-  rx_state = the_response_receiver.receive(next, response_data.end());
+  rx_state = the_response_receiver.receive(next, response_data.cend());
   CHECK(rx_state == RX_VALID);
   CHECK_EQUAL(200, the_response_receiver.response().status());
   STRCMP_EQUAL("OK", the_response_receiver.response().reason_phrase().c_str());
@@ -465,7 +480,7 @@ TEST(TestResponseReceiver, ValidOKChunked2)
 
   std::string body_data("\r\nHTTP chunk number: 1\n\r\n");
   next = body_data.begin();
-  rx_state = the_response_receiver.receive(next, body_data.end());
+  rx_state = the_response_receiver.receive(next, body_data.cend());
   bool complete (rx_state == RX_CHUNK);
   CHECK(complete);
   CHECK (!the_response_receiver.chunk().is_last());
@@ -475,12 +490,12 @@ TEST(TestResponseReceiver, ValidOKChunked2)
     
   std::string body_data2("16\r\nHTTP chunk ");
   next = body_data2.begin();
-  rx_state = the_response_receiver.receive(next, body_data2.end());
+  rx_state = the_response_receiver.receive(next, body_data2.cend());
   CHECK (rx_state == RX_INCOMPLETE);
 
   std::string body_data3("number: 21\n\r\n");
   next = body_data3.begin();
-  rx_state = the_response_receiver.receive(next, body_data3.end());
+  rx_state = the_response_receiver.receive(next, body_data3.cend());
   CHECK (rx_state == RX_CHUNK);
   CHECK (!the_response_receiver.chunk().is_last());
   CHECK_EQUAL(the_response_receiver.chunk().size(),
@@ -488,9 +503,37 @@ TEST(TestResponseReceiver, ValidOKChunked2)
 
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
-  rx_state = the_response_receiver.receive(next, body_data4.end());
+  rx_state = the_response_receiver.receive(next, body_data4.cend());
   CHECK (rx_state == RX_CHUNK);
   CHECK (the_response_receiver.chunk().is_last());
 }
-#endif
+
+TEST(TestResponseReceiver, InvalidOK2)
+{
+  std::string response_data("HTTP/1.0 200 OK\r\n");
+  response_data += "Content-Length: 4z\r\n";
+  response_data += "\r\nabcd";
+  std::string::const_iterator next(response_data.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data.cend()));
+  bool ok (rx_state == RX_INVALID);
+  CHECK(ok);
+}
+
+TEST(TestResponseReceiver, InvalidOK3)
+{
+  std::string response_data("HTTP/1.0 200 OK\r\n");
+  response_data += "Server: Via-httplib/0.14\r\n";
+  response_data += "\r\nabcd";
+  std::string::const_iterator next(response_data.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data.cend()));
+  bool ok (rx_state == RX_LENGTH_REQUIRED);
+  CHECK(ok);
+}
+
 //////////////////////////////////////////////////////////////////////////////

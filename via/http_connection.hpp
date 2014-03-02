@@ -262,6 +262,25 @@ namespace via
       // Handle special cases
       switch (rx_state)
       {
+      case http::RX_INVALID:
+#if defined(BOOST_ASIO_HAS_MOVE)
+        send(http::tx_response(http::response_status::BAD_REQUEST));
+#else
+        http::tx_response bad_request(http::response_status::BAD_REQUEST);
+        send(bad_request);
+#endif // BOOST_ASIO_HAS_MOVE
+        break;
+
+      case http::RX_LENGTH_REQUIRED:
+#if defined(BOOST_ASIO_HAS_MOVE)
+        send(http::tx_response(http::response_status::LENGTH_REQUIRED));
+#else
+        http::tx_response length_required(http::response_status::LENGTH_REQUIRED);
+        send(length_required);
+#endif // BOOST_ASIO_HAS_MOVE
+        rx_state = http::RX_INVALID;
+        break;
+
       case http::RX_EXPECT_CONTINUE:
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)

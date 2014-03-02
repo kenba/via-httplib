@@ -15,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <cctype>
 #include <string>
+#include <climits>
 
 namespace via
 {
@@ -68,15 +69,20 @@ namespace via
     /// @return the http string for the given version.
     std::string http_version(int major_version, int minor_version);
 
-    /// Convert a string representng a hexadecimal number to an unsigned int.
+    /// Convert a string representing a hexadecimal number to an unsigned int.
     /// @param hex_string the string containing a vald hexadecimal number
-    /// @return the number represented by the string. Zero if invalid.
+    /// @return the number represented by the string, ULONG_MAX if invalid.
     size_t from_hex_string(const std::string& hex_string);
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
     /// @return the string containing the number in hexadecimal.
     std::string to_hex_string(size_t number);
+
+    /// Convert a string representing a decimal number to an unsigned int.
+    /// @param dec_string the string containing a vald decimal number
+    /// @return the number represented by the string, ULONG_MAX if invalid.
+    size_t from_dec_string(const std::string& dec_string);
 
     /// Convert an int into a decimal string.
     /// @param number to be represented

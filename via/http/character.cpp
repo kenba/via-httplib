@@ -46,7 +46,40 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     size_t from_hex_string(const std::string& hex_string)
     {
-      return strtoul(hex_string.c_str(), 0, 16);
+      std::string::const_iterator iter(hex_string.begin());
+      for (; iter != hex_string.end(); ++iter)
+        if (!std::isxdigit(*iter))
+          return ULONG_MAX;
+
+      // Get the length from the hex_string.
+      // Note: strtoul may return zero for a string containing zero or if
+      // no valid conversion could be performed. It may also return
+      // ULONG_MAX if the number is to big...
+      size_t length(std::strtoul(hex_string.c_str(), 0, 16));
+      if ((length == 0) && (hex_string[0] != '0'))
+        return ULONG_MAX;
+      else
+        return length;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    size_t from_dec_string(const std::string& dec_string)
+    {
+      std::string::const_iterator iter(dec_string.begin());
+      for (; iter != dec_string.end(); ++iter)
+        if (!std::isdigit(*iter))
+          return ULONG_MAX;
+
+      // Get the length from the dec_string.
+      // Note: strtoul may return zero for a string containing zero or if
+      // no valid conversion could be performed. It may also return
+      // ULONG_MAX if the number is to big...
+      size_t length(std::strtoul(dec_string.c_str(), 0, 10));
+      if ((length == 0) && (dec_string[0] != '0'))
+        return ULONG_MAX;
+      else
+        return length;
     }
     //////////////////////////////////////////////////////////////////////////
 

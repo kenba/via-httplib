@@ -236,13 +236,6 @@ namespace via
                              http_connection->chunk().data());
           break;
 
-        case http::RX_INVALID:
-        {
-          http::tx_response response(http::response_status::BAD_REQUEST, 0);
-          http_connection->send(response);
-        }
-          break;
-
         default:
           break;
         }
