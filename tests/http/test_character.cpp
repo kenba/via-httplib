@@ -26,7 +26,7 @@ TEST_GROUP(TestHexString)
 TEST(TestHexString, ValidDigits1)
 {
   std::string hex_string("10");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
   CHECK_EQUAL(16, value);
 }
@@ -34,7 +34,7 @@ TEST(TestHexString, ValidDigits1)
 TEST(TestHexString, ValidHex1)
 {
   std::string hex_string("abcdef");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
   CHECK_EQUAL(0xABCDEF, value);
 }
@@ -42,7 +42,7 @@ TEST(TestHexString, ValidHex1)
 TEST(TestHexString, InvalidHex1)
 {
   std::string hex_string("0xabcdef");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
   CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
@@ -50,7 +50,7 @@ TEST(TestHexString, InvalidHex1)
 TEST(TestHexString, InvalidHex2)
 {
   std::string hex_string("abcdefx");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
   CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
@@ -58,7 +58,7 @@ TEST(TestHexString, InvalidHex2)
 TEST(TestHexString, InvalidHex3)
 {
   std::string hex_string("ffffffffff");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
   CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
@@ -72,7 +72,7 @@ TEST_GROUP(TestDecString)
 TEST(TestDecString, ValidDigits1)
 {
   std::string dec_string("10");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
   CHECK_EQUAL(10, value);
 }
@@ -80,7 +80,7 @@ TEST(TestDecString, ValidDigits1)
 TEST(TestDecString, ValidDec1)
 {
   std::string dec_string("0");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
   CHECK_EQUAL(0, value);
 }
@@ -88,7 +88,7 @@ TEST(TestDecString, ValidDec1)
 TEST(TestDecString, InvalidDec1)
 {
   std::string dec_string("123456x");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
   CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
@@ -96,7 +96,7 @@ TEST(TestDecString, InvalidDec1)
 TEST(TestDecString, InvalidDec2)
 {
   std::string dec_string("10000000000000000");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
   CHECK_EQUAL(size_t(ULONG_MAX), value);
 }

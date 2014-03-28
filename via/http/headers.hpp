@@ -3,7 +3,7 @@
 #ifndef HEADERS_HPP_VIA_HTTPLIB_
 #define HEADERS_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
 #include "character.hpp"
-#include <map>
+#include <unordered_map>
 
 namespace via
 {
@@ -139,7 +139,7 @@ namespace via
     /// The collection of HTTP headers received with a request, response or a
     /// chunk (trailers).
     /// Note: the parse function converts the received field names into lower
-    /// case before storing them in a map for efficient access.
+    /// case before storing them in a unordered_map for efficient access.
     /// @see rx_request
     /// @see rx_response
     /// @see rx_chunk
@@ -147,9 +147,7 @@ namespace via
     class message_headers
     {
       /// The HTTP message header fields.
-      /// Note: A C++11 unordered_map or a hash_map would be better
-      /// But hash_map is non-standard. TODO template?
-      std::map<std::string, std::string> fields_;
+      std::unordered_map<std::string, std::string> fields_;
       field_line field_; ///< the current field being parsed
       bool       valid_; ///< true if the headers are valid
 
@@ -220,7 +218,7 @@ namespace via
       /// @param name the field name (in lower case)
       /// @param value the field value.
       void add(const std::string& name, const std::string& value)
-      { fields_.insert(std::map<std::string, std::string>::value_type
+      { fields_.insert(std::unordered_map<std::string, std::string>::value_type
                      (name, value)); }
 
       /// Find the value for a given header name.

@@ -16,11 +16,10 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
+#include <memory>
 #include <deque>
 #include <iostream>
-#include <boost/bind.hpp>
 
 namespace via
 {
@@ -56,7 +55,7 @@ namespace via
     typedef typename connection_type::RxBuffer rx_buffer_type;
 
     /// A shared pointer to this type.
-    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container,
                                                  buffer_size, use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
@@ -88,7 +87,7 @@ namespace via
 
   private:
 
-    boost::shared_ptr<connection_type> connection_; ///< the comms connection
+    std::shared_ptr<connection_type> connection_; ///< the comms connection
     http::response_receiver<Container> rx_;       ///< the response receiver
     http_response_signal http_response_signal_;   ///< the response callback function
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
@@ -124,10 +123,11 @@ namespace via
       host_name_()
     {
       connection_->set_event_callback
-          (boost::bind(&http_client::event_handler, this, _1, _2));
+          (std::bind(&http_client::event_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       connection_->set_error_callback
-          (boost::bind(&http_client::error_handler, this,
-                       boost::asio::placeholders::error, _2));
+          (std::bind(&http_client::error_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_client will want to send messages immediately
       connection_->set_no_delay(true);
@@ -193,11 +193,11 @@ namespace via
     {
       // attempt to read the data
       rx_buffer_type const& data(connection_->rx_buffer());
-      typename rx_buffer_type::const_iterator iter(data.begin());
-      typename rx_buffer_type::const_iterator end(iter);
+      auto iter(data.begin());
+      auto end(iter);
       end += connection_->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
 
+      auto rx_state(rx_.receive(iter, end));
       switch (rx_state)
       {
       case http::RX_VALID:
@@ -402,7 +402,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
-    boost::shared_ptr<connection_type> connection()
+    std::shared_ptr<connection_type> connection()
     { return connection_; }
   };
 }

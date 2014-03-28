@@ -31,7 +31,7 @@ TEST(TestRequestLineParser, ValidGetVectorChar1)
 {
   std::string REQUEST_LINE("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
-  std::vector<char>::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -47,7 +47,7 @@ TEST(TestRequestLineParser, ValidGetVectorUnsignedChar1)
 {
   std::string REQUEST_LINE("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
   std::vector<unsigned char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
-  std::vector<unsigned char>::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -62,7 +62,7 @@ TEST(TestRequestLineParser, ValidGetVectorUnsignedChar1)
 TEST(TestRequestLineParser, ValidGet1)
 {
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -77,7 +77,7 @@ TEST(TestRequestLineParser, ValidGet1)
 TEST(TestRequestLineParser, ValidGet2)
 {
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\n");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -92,7 +92,7 @@ TEST(TestRequestLineParser, ValidGet2)
 TEST(TestRequestLineParser, ValidGet3)
 {
   std::string request_data("GET\tabcdefghijklmnopqrstuvwxyz \t HTTP/1.0\nA");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -107,7 +107,7 @@ TEST(TestRequestLineParser, ValidGet3)
 TEST(TestRequestLineParser, InValidMethod1)
 {
   std::string request_data("GeT abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n ");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(!the_request.parse(next, request_data.cend()));
@@ -121,7 +121,7 @@ TEST(TestRequestLineParser, InValidMethod1)
 TEST(TestRequestLineParser, InValidUri1)
 {
   std::string request_data("GET abcdefghijklm\tnopqrstuvwxyz HTTP/1.0\r\n ");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(!the_request.parse(next, request_data.cend()));
@@ -135,7 +135,7 @@ TEST(TestRequestLineParser, InValidUri1)
 TEST(TestRequestLineParser, ValidGet4)
 {
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HT");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_line the_request;
   CHECK(!the_request.parse(next, request_data.cend()));
@@ -184,7 +184,7 @@ TEST(TestRequestParser, ValidGetVectorChar1)
 {
   std::string REQUEST_LINE("GET abcde HTTP/1.0\r\nContent: text\r\n\r\n");
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
-  std::vector<char>::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -204,7 +204,7 @@ TEST(TestRequestParser, ValidGetVectorUnsignedChar1)
 {
   std::string REQUEST_LINE("GET abcde HTTP/1.0\r\nContent: text\r\n\r\n");
   std::vector<unsigned char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
-  std::vector<unsigned char>::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -222,7 +222,7 @@ TEST(TestRequestParser, ValidGetVectorUnsignedChar1)
 TEST(TestRequestParser, ValidGet1)
 {
   std::string request_data("GET abcde HTTP/1.0\r\nContent: text\r\n\r\n");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -240,7 +240,7 @@ TEST(TestRequestParser, ValidGet1)
 TEST(TestRequestParser, ValidPost1)
 {
   std::string request_data("POST abcde HTTP/1.0\r\nContent-Length: 4\r\n\r\nabcd");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -258,7 +258,7 @@ TEST(TestRequestParser, ValidChunked1)
 {
   std::string request_data
     ("POST abc HTTP/1.1\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -280,7 +280,7 @@ TEST(TestRequestParser, ValidChunked2)
   std::string REQUEST_LINE("POST abc HTTP/1.1\r\n");
   REQUEST_LINE += "Transfer-Encoding: Chunked\r\n\r\n";
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
-  std::vector<char>::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
   rx_request the_request;
 
   CHECK(the_request.parse(next, request_data.cend()));
@@ -305,7 +305,7 @@ TEST(TestRequestParser, ValidPostQt1)
   request_data += "Accept-Language: en-GB,*\r\n";
   request_data += "User-Agent: Mozilla/5.0\r\n";
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(the_request.parse(next, request_data.cend()));
@@ -318,7 +318,7 @@ TEST(TestRequestParser, ValidPostQt1)
 TEST(TestRequestParser, ValidPostMultiLine1)
 {
   std::string request_data("POST abc");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(!the_request.parse(next, request_data.cend()));
@@ -340,7 +340,7 @@ TEST(TestRequestParser, ValidPostMultiLine1)
 TEST(TestRequestParser, ValidPostMultiLine2)
 {
   std::string request_data("POST abcde HTTP/1.0\r\nContent-Le");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   rx_request the_request;
   CHECK(!the_request.parse(next, request_data.cend()));
@@ -420,7 +420,7 @@ TEST_GROUP(TestRequestReceiver)
 TEST(TestRequestReceiver, ValidGet1)
 {
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
-  std::string::const_iterator next(request_data.begin());
+  auto next(request_data.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -438,7 +438,7 @@ TEST(TestRequestReceiver, ValidGet1)
 TEST(TestRequestReceiver, ValidGet2)
 {
   std::string request_data1("G");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -462,7 +462,7 @@ TEST(TestRequestReceiver, ValidGet2)
 TEST(TestRequestReceiver, InValidGet1)
 {
   std::string request_data1("g");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -473,7 +473,7 @@ TEST(TestRequestReceiver, InValidGet1)
 TEST(TestRequestReceiver, ValidPostQt1)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -511,7 +511,7 @@ TEST(TestRequestReceiver, ValidPostQt1)
 TEST(TestRequestReceiver, ValidPostChunk1)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   // Receiver concatenates chunks
   request_receiver<std::string, false> the_request_receiver(true);
@@ -564,7 +564,7 @@ TEST(TestRequestReceiver, ValidPostChunk1)
 TEST(TestRequestReceiver, ValidPostChunk2)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   // Receiver does NOT concatenate_chunks
   request_receiver<std::string, false> the_request_receiver(false);
@@ -617,7 +617,7 @@ TEST(TestRequestReceiver, ValidPostChunk2)
 TEST(TestRequestReceiver, InvalidPostHeader1)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -637,7 +637,7 @@ TEST(TestRequestReceiver, InvalidPostHeader1)
 TEST(TestRequestReceiver, InvalidPostHeader2)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state
@@ -663,7 +663,7 @@ TEST(TestRequestReceiver, InvalidPostHeader2)
 TEST(TestRequestReceiver, InvalidPostHeader3)
 {
   std::string request_data1("P");
-  std::string::const_iterator next(request_data1.begin());
+  auto next(request_data1.cbegin());
 
   request_receiver<std::string, false> the_request_receiver(true);
   receiver_parsing_state rx_state

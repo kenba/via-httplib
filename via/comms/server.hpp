@@ -14,7 +14,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
 #include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
 #include <set>
 #include <string>
 #include <sstream>
@@ -58,7 +57,7 @@ namespace via
                                                               connection_type;
 
       /// A set of connections.
-      typedef std::set<boost::shared_ptr<connection_type> > connections;
+      typedef std::set<std::shared_ptr<connection_type> > connections;
 
       /// An iterator to the connections;
       typedef typename connections::iterator connections_iterator;
@@ -77,7 +76,7 @@ namespace via
       boost::asio::ip::tcp::acceptor acceptor_;
 
       /// The next connection to be accepted.
-      boost::shared_ptr<connection_type> next_connection_;
+      std::shared_ptr<connection_type> next_connection_;
 
       /// The connections established with this server.
       connections connections_;
@@ -126,15 +125,15 @@ namespace via
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, boost::weak_ptr<connection_type> ptr)
+      void event_handler(int event, std::weak_ptr<connection_type> ptr)
       {
         event_callback_(event, ptr);
         if (event == DISCONNECTED)
         {
-          if (boost::shared_ptr<connection_type> connection = ptr.lock())
+          if (auto connection = ptr.lock())
           {
             // search for the connection to delete
-            connections_iterator iter(connections_.find(connection));
+            auto iter(connections_.find(connection));
             if (iter != connections_.end())
               connections_.erase(iter);
           }
@@ -147,7 +146,7 @@ namespace via
       /// @param connection a weak_pointer to the connection that sent the
       /// error.
       void error_handler(const boost::system::error_code& error,
-                         boost::weak_ptr<connection_type> connection)
+                         std::weak_ptr<connection_type> connection)
       { error_callback_(error, connection); }
 
       /// @fn start_accept
@@ -155,12 +154,15 @@ namespace via
       void start_accept()
       {
         next_connection_ = connection_type::create(io_service_,
-                                boost::bind(&server::event_handler, this, _1, _2),
-                                boost::bind(&server::error_handler, this,
-                                            boost::asio::placeholders::error, _2));
+                                std::bind(&server::event_handler, this,
+                                          std::placeholders::_1,
+                                          std::placeholders::_2),
+                                std::bind(&server::error_handler, this,
+                                          std::placeholders::_1,
+                                          std::placeholders::_2));
         acceptor_.async_accept(next_connection_->socket(),
-                               boost::bind(&server::accept_handler, this,
-                                           boost::asio::placeholders::error));
+                               std::bind(&server::accept_handler, this,
+                                         std::placeholders::_1));
       }
 
     public:
@@ -214,8 +216,8 @@ namespace via
       /// @see set_event_callback
       /// @see set_error_callback
       /// @param io_service the boost asio io_service used by the server.
-      static boost::shared_ptr<server> create(boost::asio::io_service& io_service)
-      { return boost::shared_ptr<server>(new server(io_service)); }
+      static std::shared_ptr<server> create(boost::asio::io_service& io_service)
+      { return std::shared_ptr<server>(new server(io_service)); }
 
       /// Function to create a shared pointer to a server.
       /// @pre the event_callback and error_callback functions must exist.
@@ -224,10 +226,10 @@ namespace via
       /// @param io_service the boost asio io_service used by the server.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
+      static std::shared_ptr<server> create(boost::asio::io_service& io_service,
                                               event_callback_type event_callback,
                                               error_callback_type error_callback)
-      { return boost::shared_ptr<server>(new server(io_service, event_callback,
+      { return std::shared_ptr<server>(new server(io_service, event_callback,
                                                     error_callback)); }
 
       /// @fn accept_connections
@@ -269,7 +271,7 @@ namespace via
       {
         password_ = password;
         connection_type::ssl_context().set_password_callback
-            (boost::bind(&server::password, this));
+            (std::bind(&server::password, this));
       }
 
       /// @fn set_event_callback

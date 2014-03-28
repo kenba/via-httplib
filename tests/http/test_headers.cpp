@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -29,7 +29,7 @@ TEST(TestFieldLineParser, ValidSingleVectorChar1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -43,7 +43,7 @@ TEST(TestFieldLineParser, ValidSingleVectorUnsignedhar1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n");
   std::vector<unsigned char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<unsigned char>::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -57,7 +57,7 @@ TEST(TestFieldLineParser, ValidSingleVectorUnsignedhar1)
 TEST(TestFieldLineParser, ValidSingleString1)
 {
   std::string header_data("Content: abcdefgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -70,7 +70,7 @@ TEST(TestFieldLineParser, ValidSingleString1)
 TEST(TestFieldLineParser, ValidSingleString2)
 {
   std::string header_data("Content: abcdefgh\r\nA");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -84,7 +84,7 @@ TEST(TestFieldLineParser, ValidSingleString2)
 TEST(TestFieldLineParser, ValidSingleLine3)
 {
   std::string header_data("Content:abcdefgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -97,7 +97,7 @@ TEST(TestFieldLineParser, ValidSingleLine3)
 TEST(TestFieldLineParser, ValidSingleLine4)
 {
   std::string header_data("Accept-Charset: abcdefgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -111,7 +111,7 @@ TEST(TestFieldLineParser, ValidSingleLine4)
 TEST(TestFieldLineParser, InValidSingleLine1)
 {
   std::string header_data(" Content:abcdefgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(!field.parse(next, header_data.end()));
@@ -121,7 +121,7 @@ TEST(TestFieldLineParser, InValidSingleLine1)
 TEST(TestFieldLineParser, InValidSingleLine2)
 {
   std::string header_data("Content abcdefgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(!field.parse(next, header_data.end()));
@@ -131,7 +131,7 @@ TEST(TestFieldLineParser, InValidSingleLine2)
 TEST(TestFieldLineParser, ValidMultiString1)
 {
   std::string header_data("Content: ab\r\n cd\r\n  ef\r\n\tgh\r\n");
-  std::string::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -145,7 +145,7 @@ TEST(TestFieldLineParser, ValidMultiLine1)
 {
   std::string HEADER_LINE("Content: ab\r\n cd\r\n  ef\r\n\tgh\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator next(header_data.begin());
+  auto next(header_data.cbegin());
 
   field_line field;
   CHECK(field.parse(next, header_data.end()));
@@ -158,7 +158,7 @@ TEST(TestFieldLineParser, ValidMultiLine1)
 TEST(TestFieldLineParser, ValidMultiMsg1)
 {
   std::string header_data1("Accept-Char");
-  std::string::const_iterator next(header_data1.begin());
+  auto next(header_data1.cbegin());
 
   field_line field;
   CHECK(!field.parse(next, header_data1.end()));
@@ -176,7 +176,7 @@ TEST(TestFieldLineParser, ValidMultiMsg1)
 TEST(TestFieldLineParser, ValidMultiMsg2)
 {
   std::string header_data1("Accept-Charset: abcd");
-  std::string::const_iterator next(header_data1.begin());
+  auto next(header_data1.cbegin());
 
   field_line field;
   CHECK(!field.parse(next, header_data1.end()));
@@ -201,7 +201,7 @@ TEST_GROUP(TestHeadersParser)
 TEST(TestHeadersParser, ValidEmptyHeaderString)
 {
   std::string header_data("\r\n");
-  std::string::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -213,7 +213,7 @@ TEST(TestHeadersParser, ValidEmptyHeaderString)
 TEST(TestHeadersParser, ValidSingleHeaderString1)
 {
   std::string header_data("Content: abcdefgh\r\n\r\n");
-  std::string::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -225,7 +225,7 @@ TEST(TestHeadersParser, ValidSingleHeader1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -238,7 +238,7 @@ TEST(TestHeadersParser, ValidMultipleHeader1)
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\n";
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -250,7 +250,7 @@ TEST(TestHeadersParser, ValidMultipleHeader2)
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\nA";
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -263,7 +263,7 @@ TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Enco";
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(!the_headers.parse(header_next, header_data.end()));
@@ -284,7 +284,7 @@ TEST(TestHeadersParser, ValidContentLength1)
   // Simple number
   std::string HEADER_LINE("Content-Length: 4\r\n\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -299,7 +299,7 @@ TEST(TestHeadersParser, InValidContentLength1)
   // Alpha before number
   std::string HEADER_LINE("Content-Length: z4\r\n\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -313,7 +313,7 @@ TEST(TestHeadersParser, InValidContentLength2)
   // Alpha after number
   std::string HEADER_LINE("Content-Length: 4z\r\n\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));
@@ -327,7 +327,7 @@ TEST(TestHeadersParser, InValidContentLength3)
   // Number is too big
   std::string HEADER_LINE("Content-Length: 999999999999999999999\r\n\r\n");
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
-  std::vector<char>::const_iterator header_next(header_data.begin());
+  auto header_next(header_data.cbegin());
 
   message_headers the_headers;
   CHECK(the_headers.parse(header_next, header_data.end()));

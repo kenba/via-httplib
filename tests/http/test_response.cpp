@@ -73,7 +73,7 @@ TEST(TestResponseLineParser, ValidOkVectorChar1)
 {
   std::string RESPONSE_LINE("HTTP/1.0 200 OK\r\n");
   std::vector<char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
-  std::vector<char>::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -89,7 +89,7 @@ TEST(TestResponseLineParser, ValidOkVectorUnsignedChar1)
 {
   std::string RESPONSE_LINE("HTTP/1.0 200 OK\r\n");
   std::vector<unsigned char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
-  std::vector<unsigned char>::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -104,7 +104,7 @@ TEST(TestResponseLineParser, ValidOkVectorUnsignedChar1)
 TEST(TestResponseLineParser, ValidOk1)
 {
   std::string response_data("HTTP/1.0 200 OK\r\n");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -119,7 +119,7 @@ TEST(TestResponseLineParser, ValidOk1)
 TEST(TestResponseLineParser, ValidOk2)
 {
   std::string response_data("HTTP/1.0 200 OK\n");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -134,7 +134,7 @@ TEST(TestResponseLineParser, ValidOk2)
 TEST(TestResponseLineParser, ValidOk3)
 {
   std::string response_data("HTTP/1.0\t200\t OK\n ");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_line the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -188,7 +188,7 @@ TEST_GROUP(TestResponseParser)
 TEST(TestResponseParser, ValidOK1)
 {
   std::string response_data("HTTP/1.0 200 OK\r\nContent: text\r\n\r\n");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   rx_response the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -207,7 +207,7 @@ TEST(TestResponseParser, ValidOK1)
 TEST(TestResponseParser, ValidOK2)
 {
   std::string response_data("HTTP/1.0 200 OK\r\nContent-Length: 4\r\n\r\nabcd");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   rx_response the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -228,7 +228,7 @@ TEST(TestResponseParser, ValidOKChunked1)
 {
   std::string response_data
     ("HTTP/1.0 200 OK\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   rx_response the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -248,7 +248,7 @@ TEST(TestResponseParser, ValidUnauthorised1)
   std::string RESPONSE_LINE
     ("HTTP/1.0\t401\t Unauthorized\r\nWWW-Authenticate: Challenge\r\n\r\n");
   std::vector<char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
-  std::vector<char>::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   rx_response the_response;
   CHECK(the_response.parse(next, response_data.cend()));
@@ -266,7 +266,7 @@ TEST(TestResponseParser, ValidUnauthorised1)
 TEST(TestResponseParser, ValidOKMultiLine1)
 {
   std::string response_data("HTTP/1.0 200 OK\r\nC");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   rx_response the_response;
   CHECK(!the_response.parse(next, response_data.cend()));
@@ -357,7 +357,7 @@ TEST_GROUP(TestResponseReceiver)
 TEST(TestResponseReceiver, ValidOK1)
 {
   std::string response_data("HTTP/1.0 200 OK\r\nC");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -387,7 +387,7 @@ TEST(TestResponseReceiver, ValidOK2)
   response_data += "Server: Via-httplib/0.14\r\n";
   response_data += "Content-Length: 4\r\n";
   response_data += "\r\nabcd\r\n"; // extra chars at end of body
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -402,7 +402,7 @@ TEST(TestResponseReceiver, ValidOK2)
 TEST(TestResponseReceiver, InValidOK1)
 {
   std::string response_data("P");
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -413,7 +413,7 @@ TEST(TestResponseReceiver, InValidOK1)
 TEST(TestResponseReceiver, ValidOKChunked1)
 {
   std::string response_data1("H");
-  std::string::const_iterator next(response_data1.begin());
+  auto next(response_data1.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -459,7 +459,7 @@ TEST(TestResponseReceiver, ValidOKChunked2)
   response_data1 += "Server: Via-httplib/0.14\r\n";
   response_data1 += "Transfer-Encoding: Chunked\r\n";
 
-  std::string::const_iterator next(response_data1.begin());
+  auto next(response_data1.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -513,7 +513,7 @@ TEST(TestResponseReceiver, InvalidOK2)
   std::string response_data("HTTP/1.0 200 OK\r\n");
   response_data += "Content-Length: 4z\r\n";
   response_data += "\r\nabcd";
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state
@@ -525,9 +525,9 @@ TEST(TestResponseReceiver, InvalidOK2)
 TEST(TestResponseReceiver, InvalidOK3)
 {
   std::string response_data("HTTP/1.0 200 OK\r\n");
-  response_data += "Server: Via-httplib/0.14\r\n";
+  response_data += "Server: Via-httplib/1.1.0\r\n";
   response_data += "\r\nabcd";
-  std::string::const_iterator next(response_data.begin());
+  auto next(response_data.cbegin());
 
   response_receiver<std::string> the_response_receiver;
   receiver_parsing_state rx_state

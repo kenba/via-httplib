@@ -17,8 +17,7 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <memory>
 #include <deque>
 #include <iostream>
 
@@ -59,7 +58,7 @@ namespace via
             bool translate_head,
             bool require_host,
             bool trace_enabled>
-  class http_connection : public boost::enable_shared_from_this
+  class http_connection : public std::enable_shared_from_this
        <http_connection<SocketAdaptor, Container, buffer_size,
          use_strand, translate_head, require_host, trace_enabled> >
   {
@@ -72,12 +71,12 @@ namespace via
     typedef typename connection_type::RxBuffer rx_buffer_type;
 
     /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container,
          buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
-    typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container,
          buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        shared_pointer;
 
@@ -118,7 +117,7 @@ namespace via
     /// @param packet the data packet to send.
     bool send(Container const& packet)
     {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -133,7 +132,7 @@ namespace via
     /// @param packet the data packet to send.
     bool send(Container&& packet)
     {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -155,7 +154,7 @@ namespace via
       else
         rx_.clear();
 
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -183,7 +182,7 @@ namespace via
       else
         rx_.clear();
 
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -248,16 +247,16 @@ namespace via
     http::receiver_parsing_state receive()
     {
       // attempt to get the pointer
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (!tcp_pointer)
         return http::RX_INCOMPLETE;
 
       // read the data
-      rx_buffer_type const& data(tcp_pointer->rx_buffer());
-      typename rx_buffer_type::const_iterator iter(data.begin());
-      typename rx_buffer_type::const_iterator end(iter);
+      auto data(tcp_pointer->rx_buffer());
+      auto iter(data.cbegin());
+      auto end(iter);
       end += tcp_pointer->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
+      auto rx_state(rx_.receive(iter, end));
 
       // Handle special cases
       switch (rx_state)
@@ -266,10 +265,10 @@ namespace via
 #if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::BAD_REQUEST));
 #else
-      {
+        {
         http::tx_response bad_request(http::response_status::BAD_REQUEST);
         send(bad_request);
-      }
+        }
 #endif // BOOST_ASIO_HAS_MOVE
         break;
 
@@ -277,10 +276,10 @@ namespace via
 #if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::LENGTH_REQUIRED));
 #else
-      {
+        {
         http::tx_response length_required(http::response_status::LENGTH_REQUIRED);
         send(length_required);
-      }
+        }
 #endif // BOOST_ASIO_HAS_MOVE
         rx_state = http::RX_INVALID;
         break;
@@ -420,9 +419,9 @@ namespace via
     /// @param response the response to send.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
+    template<typename ForwardIterator>
     bool send(http::tx_response& response,
-              ForwardIterator1 begin, ForwardIterator2 end)
+              ForwardIterator begin, ForwardIterator end)
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
@@ -476,8 +475,8 @@ namespace via
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
     /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    bool send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+    template<typename ForwardIterator>
+    bool send_chunk(ForwardIterator begin, ForwardIterator end,
                     std::string extension = "")
     {
       size_t size(end - begin);

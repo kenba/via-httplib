@@ -295,8 +295,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!response_line::valid() && !response_line::parse(iter, end))
           return false;
@@ -473,9 +473,9 @@ namespace via
       /// Receive data for an HTTP response, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      receiver_parsing_state receive(ForwardIterator1& iter,
-                                     ForwardIterator2 end)
+      template<typename ForwardIterator>
+      receiver_parsing_state receive(ForwardIterator& iter,
+                                     ForwardIterator end)
       {
         // building a response
         bool response_parsed(!response_.valid());
@@ -502,7 +502,7 @@ namespace via
         if (!response_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
-          size_t content_length(response_.content_length());
+          auto content_length(response_.content_length());
           if (content_length == CONTENT_LENGTH_INVALID)
           {
             clear();
@@ -522,7 +522,7 @@ namespace via
           // received buffer contains more than the required data
           if (rx_size > required)
           {
-              ForwardIterator1 next(iter + required);
+              auto next(iter + required);
               body_.insert(body_.end(), iter, next);
           }
           else // received buffer <= required data

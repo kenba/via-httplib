@@ -3,7 +3,7 @@
 #ifndef SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -39,18 +39,6 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        /// A connection hander callback function type.
-        /// @param error the (boost) error code.
-        /// @param host_iterator the resolver_iterator
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-        typedef std::function<void (boost::system::error_code const&,
-                                    boost::asio::ip::tcp::resolver::iterator)>
-#else
-        typedef std::tr1::function<void (boost::system::error_code const&,
-                                         boost::asio::ip::tcp::resolver::iterator)>
-#endif
-                                               ConnectHandler;
-
         /// The asio io_service.
         boost::asio::io_service& io_service_;
         /// The asio SSL TCP socket.
@@ -155,7 +143,8 @@ namespace via
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
           socket_.set_verify_callback
-              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
+              (std::bind(&ssl_tcp_adaptor::verify_certificate,
+                         std::placeholders::_1, std::placeholders::_2));
 
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())

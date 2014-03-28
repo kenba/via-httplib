@@ -3,7 +3,7 @@
 #ifndef CHUNK_HPP_VIA_HTTPLIB_
 #define CHUNK_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -96,8 +96,8 @@ namespace via
       /// If parsed sucessfully, it will refer to the start of the data.
       /// @param end the end of the buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while ((iter != end) && (CHUNK_END != state_))
         {
@@ -217,8 +217,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!chunk_header::valid() && !chunk_header::parse(iter, end))
           return false;
@@ -239,7 +239,7 @@ namespace via
           {
             if (required > 0)
             {
-              ForwardIterator1 next(iter + required);
+              auto next(iter + required);
               data_.insert(data_.end(), iter, next);
               iter = next;
             }

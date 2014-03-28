@@ -3,7 +3,7 @@
 #ifndef TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -29,18 +29,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
-      /// A connection hander callback function type.
-      /// @param error the (boost) error code.
-      /// @param host_iterator the resolver_iterator
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      typedef std::function<void (boost::system::error_code const&,
-                                  boost::asio::ip::tcp::resolver::iterator)>
-#else
-      typedef std::tr1::function<void (boost::system::error_code const&,
-                                       boost::asio::ip::tcp::resolver::iterator)>
-#endif
-                                             ConnectHandler;
-
       boost::asio::io_service& io_service_; ///< The asio io_service.
       boost::asio::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.

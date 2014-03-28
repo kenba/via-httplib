@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -9,31 +9,15 @@
 #include "headers.hpp"
 #include <cstdlib>
 #include <algorithm>
-
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-  #include <regex>
-#else
-  //#include <tr1/regex>
-  // std::tr1::regex doesn't link in Qt, so use boost instead...
-  #include <boost/regex.hpp>
-#endif
+#include <regex>
 
 namespace
 {
   const std::string EMPTY_STRING("");
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   const std::regex REGEX_IDENTITY(".*identity.*", std::regex::icase);
   const std::regex REGEX_CLOSE(".*close.*", std::regex::icase);
   const std::regex REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
-#else
-  //const std::tr1::regex REGEX_IDENTITY(".*identity.*", std::tr1::regex::icase);
-  const boost::regex REGEX_IDENTITY(".*identity.*", boost::regex::icase);
-  const boost::regex REGEX_CLOSE(".*close.*", boost::regex::icase);
-  const boost::regex REGEX_CONTINUE(".*100-continue.*", boost::regex::icase);
-#endif
 }
 
 namespace via
@@ -88,8 +72,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const
     {
-      std::map<std::string, std::string>::const_iterator iter
-        (fields_.find(name));
+      auto iter(fields_.find(name));
 
       if (iter != fields_.end())
         return iter->second;
@@ -119,13 +102,7 @@ namespace via
       if (xfer_encoding.empty())
         return false;
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
       return (!std::regex_match(xfer_encoding, REGEX_IDENTITY));
-#else
-      //return (!std::tr1::regex_match(xfer_encoding, REGEX_IDENTITY));
-      return (!boost::regex_match(xfer_encoding, REGEX_IDENTITY));
-#endif
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -137,13 +114,7 @@ namespace via
       if (connection.empty())
         return false;
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
       return (std::regex_match(connection, REGEX_CLOSE));
-#else
-      //return (std::tr1::regex_match(xfer_encoding, REGEX_CLOSE));
-      return (boost::regex_match(connection, REGEX_CLOSE));
-#endif
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -155,13 +126,7 @@ namespace via
       if (connection.empty())
         return false;
 
-      // if C++11 or Visual Studio 2010 or newer
-      #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-            return (std::regex_match(connection, REGEX_CONTINUE));
-      #else
-            //return (std::tr1::regex_match(xfer_encoding, REGEX_CONTINUE));
-            return (boost::regex_match(connection, REGEX_CONTINUE));
-      #endif
+      return (std::regex_match(connection, REGEX_CONTINUE));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -169,9 +134,8 @@ namespace via
     std::string message_headers::to_string() const
     {
       std::string output;
-      for (std::map<std::string, std::string>::const_iterator
-           iter(fields_.begin()); iter != fields_.end(); ++iter)
-        output += header_field::to_header(iter->first, iter->second);
+      for (const auto& elem : fields_)
+        output += header_field::to_header(elem.first, elem.second);
 
       output += "\r\n";
       return output;
