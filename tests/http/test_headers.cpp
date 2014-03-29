@@ -11,229 +11,223 @@
 #include <vector>
 #include <iostream>
 
-#ifdef _MSC_VER
-// cpputest\MemoryLeakWarningPlugin.h: C++11 exception specification deprecated
-#pragma warning (disable:4290)
-#endif
-#include "CppUTest/TestHarness.h"
+#define BOOST_TEST_MODULE test_headers
+#include <boost/test/unit_test.hpp>
 
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestFieldLineParser)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestFieldLineParser)
 
 // A single http header line in a vector of chars.
-TEST(TestFieldLineParser, ValidSingleVectorChar1)
+BOOST_AUTO_TEST_CASE(ValidSingleVectorChar1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 // A single http header line in a vector of unsigned chars.
-TEST(TestFieldLineParser, ValidSingleVectorUnsignedhar1)
+BOOST_AUTO_TEST_CASE(ValidSingleVectorUnsignedhar1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n");
-  std::vector<unsigned char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<unsigned char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 
 // A single http header line in a string.
-TEST(TestFieldLineParser, ValidSingleString1)
+BOOST_AUTO_TEST_CASE(ValidSingleString1)
 {
   std::string header_data("Content: abcdefgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 // A single http header line in a string with an extra character.
-TEST(TestFieldLineParser, ValidSingleString2)
+BOOST_AUTO_TEST_CASE(ValidSingleString2)
 {
   std::string header_data("Content: abcdefgh\r\nA");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() != next);
-  BYTES_EQUAL('A', *next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() != next);
+  BOOST_CHECK_EQUAL('A', *next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 // A single http header line in a string without a space after the :.
-TEST(TestFieldLineParser, ValidSingleLine3)
+BOOST_AUTO_TEST_CASE(ValidSingleLine3)
 {
   std::string header_data("Content:abcdefgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 // A standard single http header line in a string.
-TEST(TestFieldLineParser, ValidSingleLine4)
+BOOST_AUTO_TEST_CASE(ValidSingleLine4)
 {
   std::string header_data("Accept-Charset: abcdefgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
-               field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+                    field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
 // A single http header line in a string, but starting with a space.
-TEST(TestFieldLineParser, InValidSingleLine1)
+BOOST_AUTO_TEST_CASE(InValidSingleLine1)
 {
   std::string header_data(" Content:abcdefgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data.cend()));
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
 }
 
 // A single http header line in a string, but without a :.
-TEST(TestFieldLineParser, InValidSingleLine2)
+BOOST_AUTO_TEST_CASE(InValidSingleLine2)
 {
   std::string header_data("Content abcdefgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data.cend()));
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
 }
 
 // A multiple http header line in a string
-TEST(TestFieldLineParser, ValidMultiString1)
+BOOST_AUTO_TEST_CASE(ValidMultiString1)
 {
   std::string header_data("Content: ab\r\n cd\r\n  ef\r\n\tgh\r\n");
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("ab cd ef gh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().c_str());
 }
 
 // A multiple http header line in a vector of chars
-TEST(TestFieldLineParser, ValidMultiLine1)
+BOOST_AUTO_TEST_CASE(ValidMultiLine1)
 {
   std::string HEADER_LINE("Content: ab\r\n cd\r\n  ef\r\n\tgh\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.cend()));
-  CHECK(header_data.end() == next);
-  STRCMP_EQUAL("content",  field.name().c_str());
-  STRCMP_EQUAL("ab cd ef gh", field.value().c_str());
+  BOOST_CHECK(field.parse(next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == next);
+  BOOST_CHECK_EQUAL("content",  field.name().c_str());
+  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().c_str());
 }
 
 // A standard single http header line in two strings.
-TEST(TestFieldLineParser, ValidMultiMsg1)
+BOOST_AUTO_TEST_CASE(ValidMultiMsg1)
 {
   std::string header_data1("Accept-Char");
   auto next(header_data1.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data1.cend()));
-  CHECK(header_data1.end() == next);
+  BOOST_CHECK(!field.parse(next, header_data1.cend()));
+  BOOST_CHECK(header_data1.cend() == next);
 
   std::string header_data2("set: abcdefgh\r\n");
-  next = header_data2.begin();
-  CHECK(field.parse(next, header_data2.cend()));
-  CHECK(header_data2.end() == next);
-  STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
-               field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  next = header_data2.cbegin();
+  BOOST_CHECK(field.parse(next, header_data2.cend()));
+  BOOST_CHECK(header_data2.cend() == next);
+  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+                    field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
-TEST(TestFieldLineParser, ValidMultiMsg2)
+BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
 {
   std::string header_data1("Accept-Charset: abcd");
   auto next(header_data1.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data1.cend()));
-  CHECK(header_data1.end() == next);
+  BOOST_CHECK(!field.parse(next, header_data1.cend()));
+  BOOST_CHECK(header_data1.cend() == next);
 
   std::string header_data2("efgh\r\n");
-  next = header_data2.begin();
-  CHECK(field.parse(next, header_data2.cend()));
-  CHECK(header_data2.end() == next);
-  STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
-               field.name().c_str());
-  STRCMP_EQUAL("abcdefgh", field.value().c_str());
+  next = header_data2.cbegin();
+  BOOST_CHECK(field.parse(next, header_data2.cend()));
+  BOOST_CHECK(header_data2.cend() == next);
+  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+    field.name().c_str());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
-
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestHeadersParser)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestHeadersParser)
 
-TEST(TestHeadersParser, ValidEmptyHeaderString)
+BOOST_AUTO_TEST_CASE(ValidEmptyHeaderString)
 {
   std::string header_data("\r\n");
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() == header_next);
-  CHECK(the_headers.valid());
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
+  BOOST_CHECK(the_headers.valid());
 //  std::cout << the_headers.to_string() << std::endl;
 }
 
-TEST(TestHeadersParser, ValidSingleHeaderString1)
+BOOST_AUTO_TEST_CASE(ValidSingleHeaderString1)
 {
   std::string header_data("Content: abcdefgh\r\n\r\n");
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
 
-TEST(TestHeadersParser, ValidSingleHeader1)
+BOOST_AUTO_TEST_CASE(ValidSingleHeader1)
 {
   std::string HEADER_LINE("Content: abcdefgh\r\n\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
 
-TEST(TestHeadersParser, ValidMultipleHeader1)
+BOOST_AUTO_TEST_CASE(ValidMultipleHeader1)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\n";
@@ -241,11 +235,11 @@ TEST(TestHeadersParser, ValidMultipleHeader1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 }
 
-TEST(TestHeadersParser, ValidMultipleHeader2)
+BOOST_AUTO_TEST_CASE(ValidMultipleHeader2)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\nA";
@@ -253,12 +247,12 @@ TEST(TestHeadersParser, ValidMultipleHeader2)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() != header_next);
-  BYTES_EQUAL('A', *header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() != header_next);
+  BOOST_CHECK_EQUAL('A', *header_next);
 }
 
-TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
+BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Enco";
@@ -266,20 +260,20 @@ TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(!the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.end() == header_next);
+  BOOST_CHECK(!the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 
   std::string HEADER_LINE2("ding: \t Chunked\r\n\r\n");
   std::vector<char> header_data2(HEADER_LINE2.cbegin(), HEADER_LINE2.cend());
   header_next = header_data2.cbegin();
-  CHECK(the_headers.parse(header_next, header_data2.cend()));
-  CHECK(header_data2.end() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data2.cend()));
+  BOOST_CHECK(header_data2.cend() == header_next);
 
-  STRCMP_EQUAL("Chunked",
-               the_headers.find(header_field::TRANSFER_ENCODING).c_str());
+  BOOST_CHECK_EQUAL("Chunked",
+                    the_headers.find(header_field::TRANSFER_ENCODING).c_str());
 }
 
-TEST(TestHeadersParser, ValidContentLength1)
+BOOST_AUTO_TEST_CASE(ValidContentLength1)
 {
   // Simple number
   std::string HEADER_LINE("Content-Length: 4\r\n\r\n");
@@ -287,42 +281,42 @@ TEST(TestHeadersParser, ValidContentLength1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.cend() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 
-  CHECK_EQUAL(4, the_headers.content_length());
+  BOOST_CHECK_EQUAL(4, the_headers.content_length());
 }
 
 // A invalid content length http header line.
-TEST(TestHeadersParser, InValidContentLength1)
+BOOST_AUTO_TEST_CASE(InValidContentLength1)
 {
   // Alpha before number
   std::string HEADER_LINE("Content-Length: z4\r\n\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.cend() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 
-  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }
 
-TEST(TestHeadersParser, InValidContentLength2)
+BOOST_AUTO_TEST_CASE(InValidContentLength2)
 {
   // Alpha after number
   std::string HEADER_LINE("Content-Length: 4z\r\n\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.cend() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 
-  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }
 
-TEST(TestHeadersParser, InValidContentLength3)
+BOOST_AUTO_TEST_CASE(InValidContentLength3)
 {
   // Number is too big
   std::string HEADER_LINE("Content-Length: 999999999999999999999\r\n\r\n");
@@ -330,9 +324,11 @@ TEST(TestHeadersParser, InValidContentLength3)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.cend()));
-  CHECK(header_data.cend() == header_next);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
 
-  CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
