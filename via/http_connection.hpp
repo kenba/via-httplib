@@ -127,7 +127,6 @@ namespace via
         return false;
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     bool send(Container&& packet)
@@ -141,7 +140,6 @@ namespace via
       else
         return false;
     }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
@@ -170,7 +168,6 @@ namespace via
       return false;
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     /// @param is_continue whether this is a 100 Continue response
@@ -197,7 +194,6 @@ namespace via
                   << std::endl;
       return false;
     }
-#endif
 
   public:
 
@@ -262,25 +258,11 @@ namespace via
       switch (rx_state)
       {
       case http::RX_INVALID:
-#if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::BAD_REQUEST));
-#else
-        {
-        http::tx_response bad_request(http::response_status::BAD_REQUEST);
-        send(bad_request);
-        }
-#endif // BOOST_ASIO_HAS_MOVE
         break;
 
       case http::RX_LENGTH_REQUIRED:
-#if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::LENGTH_REQUIRED));
-#else
-        {
-        http::tx_response length_required(http::response_status::LENGTH_REQUIRED);
-        send(length_required);
-        }
-#endif // BOOST_ASIO_HAS_MOVE
         rx_state = http::RX_INVALID;
         break;
 
@@ -288,12 +270,7 @@ namespace via
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)
         {
-#if defined(BOOST_ASIO_HAS_MOVE)
           send(http::tx_response(http::response_status::CONTINUE));
-#else
-          http::tx_response continue_response(http::response_status::CONTINUE);
-          send(continue_response);
-#endif // BOOST_ASIO_HAS_MOVE
           rx_state = http::RX_INCOMPLETE;
         }
         break;
@@ -316,14 +293,7 @@ namespace via
             send(ok_response, trace_request.begin(), trace_request.end());
           }
           else // otherwise, it responds with "Not Allowed"
-          {
-#if defined(BOOST_ASIO_HAS_MOVE)
             send(http::tx_response(http::response_status::METHOD_NOT_ALLOWED));
-#else
-            http::tx_response not_allowed(http::response_status::METHOD_NOT_ALLOWED);
-            send(not_allowed);
-#endif // BOOST_ASIO_HAS_MOVE
-          }
 
           // Set the state as invalid, since the server has responded to the request
           rx_state = http::RX_INVALID;
@@ -361,7 +331,6 @@ namespace via
       return send(tx_message, response.is_continue());
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response without a body.
     /// @param response the response to send.
     bool send(http::tx_response&& response)
@@ -373,7 +342,6 @@ namespace via
       Container tx_message(http_header.begin(), http_header.end());
       return send(tx_message, response.is_continue());
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
@@ -395,7 +363,6 @@ namespace via
       return send(tx_message, response.is_continue());
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response with a body.
     /// @param response the response to send.
     /// @param body the body to send
@@ -413,7 +380,6 @@ namespace via
                   http_header.begin(), http_header.end());
       return send(body, response.is_continue());
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
@@ -454,7 +420,6 @@ namespace via
       return send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
@@ -469,7 +434,6 @@ namespace via
       chunk.insert(chunk.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(chunk);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP body chunk.
     /// @param begin a constant iterator to the beginning of the body to send.

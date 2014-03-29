@@ -52,7 +52,7 @@ namespace via
         HEADER_VALUE_LS, ///< the header value leading white space
         HEADER_VALUE,    ///< the header value
         HEADER_LF,       ///< the line feed (if any)
-        HEADER_END
+        HEADER_END       ///< the end of the header field line
       };
 
     private:
@@ -100,8 +100,8 @@ namespace via
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the buffer.
       /// @return true if a valid HTTP header, false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while ((iter != end) && (HEADER_END != state_))
         {
@@ -184,8 +184,8 @@ namespace via
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while (iter != end && !is_end_of_line(*iter))
         {

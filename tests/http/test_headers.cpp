@@ -32,7 +32,7 @@ TEST(TestFieldLineParser, ValidSingleVectorChar1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("abcdefgh", field.value().c_str());
@@ -46,7 +46,7 @@ TEST(TestFieldLineParser, ValidSingleVectorUnsignedhar1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("abcdefgh", field.value().c_str());
@@ -60,7 +60,7 @@ TEST(TestFieldLineParser, ValidSingleString1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("abcdefgh", field.value().c_str());
@@ -73,7 +73,7 @@ TEST(TestFieldLineParser, ValidSingleString2)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() != next);
   BYTES_EQUAL('A', *next);
   STRCMP_EQUAL("content",  field.name().c_str());
@@ -87,7 +87,7 @@ TEST(TestFieldLineParser, ValidSingleLine3)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("abcdefgh", field.value().c_str());
@@ -100,7 +100,7 @@ TEST(TestFieldLineParser, ValidSingleLine4)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
                field.name().c_str());
@@ -114,7 +114,7 @@ TEST(TestFieldLineParser, InValidSingleLine1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data.end()));
+  CHECK(!field.parse(next, header_data.cend()));
 }
 
 // A single http header line in a string, but without a :.
@@ -124,7 +124,7 @@ TEST(TestFieldLineParser, InValidSingleLine2)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data.end()));
+  CHECK(!field.parse(next, header_data.cend()));
 }
 
 // A multiple http header line in a string
@@ -134,7 +134,7 @@ TEST(TestFieldLineParser, ValidMultiString1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("ab cd ef gh", field.value().c_str());
@@ -148,7 +148,7 @@ TEST(TestFieldLineParser, ValidMultiLine1)
   auto next(header_data.cbegin());
 
   field_line field;
-  CHECK(field.parse(next, header_data.end()));
+  CHECK(field.parse(next, header_data.cend()));
   CHECK(header_data.end() == next);
   STRCMP_EQUAL("content",  field.name().c_str());
   STRCMP_EQUAL("ab cd ef gh", field.value().c_str());
@@ -161,12 +161,12 @@ TEST(TestFieldLineParser, ValidMultiMsg1)
   auto next(header_data1.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data1.end()));
+  CHECK(!field.parse(next, header_data1.cend()));
   CHECK(header_data1.end() == next);
 
   std::string header_data2("set: abcdefgh\r\n");
   next = header_data2.begin();
-  CHECK(field.parse(next, header_data2.end()));
+  CHECK(field.parse(next, header_data2.cend()));
   CHECK(header_data2.end() == next);
   STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
                field.name().c_str());
@@ -179,12 +179,12 @@ TEST(TestFieldLineParser, ValidMultiMsg2)
   auto next(header_data1.cbegin());
 
   field_line field;
-  CHECK(!field.parse(next, header_data1.end()));
+  CHECK(!field.parse(next, header_data1.cend()));
   CHECK(header_data1.end() == next);
 
   std::string header_data2("efgh\r\n");
   next = header_data2.begin();
-  CHECK(field.parse(next, header_data2.end()));
+  CHECK(field.parse(next, header_data2.cend()));
   CHECK(header_data2.end() == next);
   STRCMP_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
                field.name().c_str());
@@ -204,7 +204,7 @@ TEST(TestHeadersParser, ValidEmptyHeaderString)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() == header_next);
   CHECK(the_headers.valid());
 //  std::cout << the_headers.to_string() << std::endl;
@@ -216,7 +216,7 @@ TEST(TestHeadersParser, ValidSingleHeaderString1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
@@ -228,7 +228,7 @@ TEST(TestHeadersParser, ValidSingleHeader1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
 }
@@ -237,11 +237,11 @@ TEST(TestHeadersParser, ValidMultipleHeader1)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\n";
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() == header_next);
 }
 
@@ -249,11 +249,11 @@ TEST(TestHeadersParser, ValidMultipleHeader2)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\nA";
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
+  CHECK(the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() != header_next);
   BYTES_EQUAL('A', *header_next);
 }
@@ -262,17 +262,17 @@ TEST(TestHeadersParser, ValidMultipleHeaderMultiLine1)
 {
   std::string HEADER_LINE("Content-Length: \t4\r\n");
   HEADER_LINE += "Transfer-Enco";
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(!the_headers.parse(header_next, header_data.end()));
+  CHECK(!the_headers.parse(header_next, header_data.cend()));
   CHECK(header_data.end() == header_next);
 
   std::string HEADER_LINE2("ding: \t Chunked\r\n\r\n");
-  std::vector<char> header_data2(HEADER_LINE2.begin(), HEADER_LINE2.end());
-  header_next = header_data2.begin();
-  CHECK(the_headers.parse(header_next, header_data2.end()));
+  std::vector<char> header_data2(HEADER_LINE2.cbegin(), HEADER_LINE2.cend());
+  header_next = header_data2.cbegin();
+  CHECK(the_headers.parse(header_next, header_data2.cend()));
   CHECK(header_data2.end() == header_next);
 
   STRCMP_EQUAL("Chunked",
@@ -283,12 +283,12 @@ TEST(TestHeadersParser, ValidContentLength1)
 {
   // Simple number
   std::string HEADER_LINE("Content-Length: 4\r\n\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
+  CHECK(the_headers.parse(header_next, header_data.cend()));
+  CHECK(header_data.cend() == header_next);
 
   CHECK_EQUAL(4, the_headers.content_length());
 }
@@ -302,8 +302,8 @@ TEST(TestHeadersParser, InValidContentLength1)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
+  CHECK(the_headers.parse(header_next, header_data.cend()));
+  CHECK(header_data.cend() == header_next);
 
   CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }
@@ -316,8 +316,8 @@ TEST(TestHeadersParser, InValidContentLength2)
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
+  CHECK(the_headers.parse(header_next, header_data.cend()));
+  CHECK(header_data.cend() == header_next);
 
   CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }
@@ -326,12 +326,12 @@ TEST(TestHeadersParser, InValidContentLength3)
 {
   // Number is too big
   std::string HEADER_LINE("Content-Length: 999999999999999999999\r\n\r\n");
-  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
   message_headers the_headers;
-  CHECK(the_headers.parse(header_next, header_data.end()));
-  CHECK(header_data.end() == header_next);
+  CHECK(the_headers.parse(header_next, header_data.cend()));
+  CHECK(header_data.cend() == header_next);
 
   CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
 }

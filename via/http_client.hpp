@@ -102,7 +102,6 @@ namespace via
       connection_->send_data(packet);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     void send(Container&& packet)
@@ -110,7 +109,6 @@ namespace via
       rx_.clear();
       connection_->send_data(packet);
     }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Constructor.
     /// @param io_service the asio io_service to use.
@@ -226,7 +224,6 @@ namespace via
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP request without a body.
     /// @param request the request to send.
     void send(http::tx_request&& request)
@@ -236,7 +233,6 @@ namespace via
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
@@ -252,7 +248,6 @@ namespace via
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
@@ -265,15 +260,14 @@ namespace via
                   http_header.begin(), http_header.end());
       send(body);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
+    template<typename ForwardIterator>
     bool send(http::tx_request& request,
-              ForwardIterator1 begin, ForwardIterator2 end)
+              ForwardIterator begin, ForwardIterator end)
     {
       request.add_header(http::header_field::HOST, host_name_);
       size_t size(end - begin);
@@ -303,7 +297,6 @@ namespace via
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
@@ -319,14 +312,13 @@ namespace via
                    http::CRLF.begin(), http::CRLF.end());
       send(chunk);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP body chunk.
     /// @param begin a constant iterator to the beginning of the chunk to send.
     /// @param end a constant iterator to the end of the chunk to send.
     /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    void send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+    template<typename ForwardIterator>
+    void send_chunk(ForwardIterator begin, ForwardIterator end,
                     std::string extension = "")
     {
       size_t size(end - begin);
@@ -360,12 +352,10 @@ namespace via
     void send_body(Container const& body)
     { send(body); }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a message body on the connection.
     /// @param body the body to send.
     void send_body(Container&& body)
     { send(body); }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Disconnect the underlying connection.
     void disconnect()

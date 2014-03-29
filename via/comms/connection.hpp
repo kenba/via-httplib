@@ -553,7 +553,6 @@ namespace via
           write_data();
       }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
       /// @fn send_data(Container&& packet)
       /// Send a packet of data, move version for C++11.
       /// The packet is added to the back of the transmit queue and sent if
@@ -567,9 +566,8 @@ namespace via
         if (notWriting)
           write_data();
       }
-#endif // BOOST_ASIO_HAS_MOVE
 
-      /// @fn send_data(ForwardIterator1 begin, ForwardIterator2 end)
+      /// @fn send_data(ForwardIterator begin, ForwardIterator end)
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.
       /// This function takes a pair of iterators, so the data doesn't have
@@ -577,8 +575,8 @@ namespace via
       /// instantiated with.
       /// @param begin iterator to the beginning of the data to write.
       /// @param end iterator to the end of the data to write.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      void send_data(ForwardIterator1 begin, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      void send_data(ForwardIterator begin, ForwardIterator end)
       {
         Container buffer(begin, end);
         send_data(buffer);
