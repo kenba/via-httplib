@@ -228,8 +228,8 @@ namespace via
       /// Find the value for a given header id.
       /// @param id the id of the header.
       /// @return the value, blank if not found
-      const std::string& find(header_field::field_id id) const
-      { return find(header_field::lowercase_name(id)); }
+      const std::string& find(header_field::id field_id) const
+      { return find(header_field::lowercase_name(field_id)); }
 
       /// If there is a Content-Length field return its size.
       /// @return the value of the Content-Length field or

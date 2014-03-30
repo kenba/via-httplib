@@ -170,16 +170,16 @@ namespace via
 
       /// Constructor for creating a request for one of the standard methods
       /// defined in RFC2616.
-      /// @see http::request_method::method_id
-      /// @param id the HTTP request method id
+      /// @see http::request_method::id
+      /// @param method_id the HTTP request method id
       /// @param uri the HTTP uri, default blank
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit request_line(request_method::method_id id,
+      explicit request_line(request_method::id method_id,
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_{request_method::name(id)},
+        method_{request_method::name(method_id)},
         uri_{uri},
         major_version_{major_version},
         minor_version_{minor_version},
@@ -307,12 +307,12 @@ namespace via
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
       bool is_head() const
-      { return request_method::name(request_method::method_id::HEAD) == method(); }
+      { return request_method::name(request_method::id::HEAD) == method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
       bool is_trace() const
-      { return request_method::name(request_method::method_id::TRACE) == method(); }
+      { return request_method::name(request_method::id::TRACE) == method(); }
 
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
@@ -338,7 +338,7 @@ namespace via
       {
         return major_version() == 1 &&
                minor_version() == 1 &&
-               headers_.find(header_field::field_id::HOST).empty();
+               headers_.find(header_field::id::HOST).empty();
       }
 
       /// Accessor for the valid flag.
@@ -370,18 +370,18 @@ namespace via
 
       /// Constructor for creating a request for one of the standard methods
       /// defined in RFC2616.
-      /// @see http::request_method::method_id
-      /// @param id the HTTP request method id
+      /// @see http::request_method::id
+      /// @param method_id the HTTP request method id
       /// @param uri the HTTP uri
       /// @param header_string default blank
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit tx_request(request_method::method_id id,
+      explicit tx_request(request_method::id method_id,
                           std::string uri,
                           std::string header_string = "",
                           int minor_version = 1,
                           int major_version = 1) :
-        request_line{id, uri, minor_version, major_version},
+        request_line{method_id, uri, minor_version, major_version},
         header_string_{header_string}
       {}
 
@@ -410,8 +410,8 @@ namespace via
       /// @see http::header_field::field_id
       /// @param id the header field id
       /// @param value the header field value
-      void add_header(header_field::field_id id, const std::string& value)
-      { header_string_ += header_field::to_header(id, value);  }
+      void add_header(header_field::id field_id, const std::string& value)
+      { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add an http content length header line for the given size.
       /// @param size the size of the message body.
@@ -430,9 +430,9 @@ namespace via
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
         bool no_content_length{std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::field_id::CONTENT_LENGTH))};
+              (header_field::standard_name(header_field::id::CONTENT_LENGTH))};
         bool no_transfer_encoding{std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::field_id::TRANSFER_ENCODING))};
+              (header_field::standard_name(header_field::id::TRANSFER_ENCODING))};
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -547,7 +547,7 @@ namespace via
           // if there's a message body then insist on a content length header
           long rx_size(end - iter);
           if ((rx_size > 0) && (content_length == 0) &&
-              request_.headers().find(header_field::field_id::CONTENT_LENGTH).empty())
+              request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;
@@ -572,7 +572,7 @@ namespace via
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head)
-              request_.set_method(request_method::name(request_method::method_id::GET));
+              request_.set_method(request_method::name(request_method::id::GET));
 
             return RX_VALID;
           }

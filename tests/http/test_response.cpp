@@ -23,35 +23,35 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
 {
   // Informational 1xx
   BOOST_CHECK_EQUAL("Continue",
-    response_status::reason_phrase(response_status::CONTINUE).c_str());
+    response_status::reason_phrase(response_status::code::CONTINUE).c_str());
 
   // Successful 2xx
   BOOST_CHECK_EQUAL("OK",
-    response_status::reason_phrase(response_status::OK).c_str());
+    response_status::reason_phrase(response_status::code::OK).c_str());
   BOOST_CHECK_EQUAL("Created",
-    response_status::reason_phrase(response_status::CREATED).c_str());
+    response_status::reason_phrase(response_status::code::CREATED).c_str());
 
   // Redirection 3xx
   BOOST_CHECK_EQUAL("Moved Permanently",
-    response_status::reason_phrase(response_status::MOVED_PERMANENTLY).c_str());
+    response_status::reason_phrase(response_status::code::MOVED_PERMANENTLY).c_str());
 
   // Client Error 4xx
   BOOST_CHECK_EQUAL("Bad Request",
-    response_status::reason_phrase(response_status::BAD_REQUEST).c_str());
+    response_status::reason_phrase(response_status::code::BAD_REQUEST).c_str());
   BOOST_CHECK_EQUAL("Unauthorized",
-    response_status::reason_phrase(response_status::UNAUTHORISED).c_str());
+    response_status::reason_phrase(response_status::code::UNAUTHORISED).c_str());
   BOOST_CHECK_EQUAL("Not Found",
-    response_status::reason_phrase(response_status::NOT_FOUND).c_str());
+    response_status::reason_phrase(response_status::code::NOT_FOUND).c_str());
   BOOST_CHECK_EQUAL("Method Not Allowed",
-    response_status::reason_phrase(response_status::METHOD_NOT_ALLOWED).c_str());
+    response_status::reason_phrase(response_status::code::METHOD_NOT_ALLOWED).c_str());
 
   // Server Error 5xx
   BOOST_CHECK_EQUAL("Internal Server Error",
-    response_status::reason_phrase(response_status::INTERNAL_SERVER_ERROR).c_str());
+    response_status::reason_phrase(response_status::code::INTERNAL_SERVER_ERROR).c_str());
   BOOST_CHECK_EQUAL("Service Unavailable",
-    response_status::reason_phrase(response_status::SERVICE_UNAVAILABLE).c_str());
+    response_status::reason_phrase(response_status::code::SERVICE_UNAVAILABLE).c_str());
   BOOST_CHECK_EQUAL("HTTP Version not supported",
-    response_status::reason_phrase(response_status::HTTP_VERSION_NOT_SUPPORTED).c_str());
+    response_status::reason_phrase(response_status::code::HTTP_VERSION_NOT_SUPPORTED).c_str());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_SUITE(TestResponseLineEncoder)
 
 BOOST_AUTO_TEST_CASE(ValidOkString1)
 {
-  response_line the_response(response_status::OK);
+  response_line the_response(response_status::code::OK);
   std::string response_string(the_response.to_string());
   BOOST_CHECK_EQUAL("HTTP/1.1 200 OK\r\n", response_string.c_str());
 }
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
   BOOST_CHECK_EQUAL(0, the_response.minor_version());
 
   BOOST_CHECK_EQUAL("Challenge",
-    the_response.headers().find(header_field::field_id::WWW_AUTHENTICATE).c_str());
+    the_response.headers().find(header_field::id::WWW_AUTHENTICATE).c_str());
   BOOST_CHECK_EQUAL(0, the_response.content_length());
   BOOST_CHECK(!the_response.is_chunked());
 }
@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE(ResponseEncode1)
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
   correct_response += "Content-Length: 0\r\n\r\n";
 
-  tx_response the_response(response_status::OK);
+  tx_response the_response(response_status::code::OK);
   std::string resp_text(the_response.message());
 //  std::cout << resp_text << std::endl;
   BOOST_CHECK_EQUAL(correct_response.c_str(), resp_text.c_str());
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(ResponseEncode2)
   correct_response += via::http::header_field::server_header();
   correct_response += "Content-Length: 15\r\n\r\n";
 
-  tx_response the_response(response_status::OK);
+  tx_response the_response(response_status::code::OK);
   the_response.add_server_header();
   std::string resp_text(the_response.message(text.size()));
 //  std::cout << resp_text << std::endl;
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(ResponseEncode3)
   correct_response += via::http::header_field::server_header();
   correct_response += "Content-Length: 15\r\n\r\n";
 
-  tx_response the_response(response_status::OK);
+  tx_response the_response(response_status::code::OK);
   the_response.add_server_header();
   the_response.add_content_length_header(text.size());
   std::string resp_text(the_response.message());
@@ -332,8 +332,8 @@ BOOST_AUTO_TEST_CASE(ResponseEncode4)
 //  correct_response += via::http::header_field::server_header();
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
 
-  tx_response the_response(response_status::OK);
-  the_response.add_header(header_field::field_id::TRANSFER_ENCODING, "Chunked");
+  tx_response the_response(response_status::code::OK);
+  the_response.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
   std::string resp_text(the_response.message());
 //  std::string resp_text(resp_data.begin(), resp_data.end());
   BOOST_CHECK_EQUAL(correct_response.c_str(), resp_text.c_str());

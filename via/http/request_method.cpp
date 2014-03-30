@@ -11,7 +11,7 @@
 
 namespace
 {
-  // The following strings are for the standard request methods defined in 
+  // The following strings are for the standard request methods defined in
   // RFC2616 section 9.
   const std::string METHODS[] =
   {
@@ -33,8 +33,8 @@ namespace via
     namespace request_method
     {
       //////////////////////////////////////////////////////////////////////////
-      const std::string& name(method_id id)
-      { return METHODS[static_cast<int>(id)]; }
+      const std::string& name(id method_id)
+      { return METHODS[static_cast<int>(method_id)]; }
       //////////////////////////////////////////////////////////////////////////
     }
   }

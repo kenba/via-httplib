@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine4)
   BOOST_CHECK(field.parse(next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                     (header_field::field_id::ACCEPT_CHARSET).c_str(),
+                     (header_field::id::ACCEPT_CHARSET).c_str(),
                       field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg1)
   BOOST_CHECK(field.parse(next, header_data2.cend()));
   BOOST_CHECK(header_data2.cend() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                    (header_field::field_id::ACCEPT_CHARSET).c_str(),
+                    (header_field::id::ACCEPT_CHARSET).c_str(),
                     field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
   BOOST_CHECK(field.parse(next, header_data2.cend()));
   BOOST_CHECK(header_data2.cend() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                    (header_field::field_id::ACCEPT_CHARSET).c_str(),
+                    (header_field::id::ACCEPT_CHARSET).c_str(),
                      field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
 
   BOOST_CHECK_EQUAL("Chunked",
                     the_headers.find
-                    (header_field::field_id::TRANSFER_ENCODING).c_str());
+                    (header_field::id::TRANSFER_ENCODING).c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ValidContentLength1)

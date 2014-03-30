@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(ValidGetString1)
 
 BOOST_AUTO_TEST_CASE(ValidGetId1)
 {
-  request_line the_request(request_method::method_id::GET, "/hello/world");
+  request_line the_request(request_method::id::GET, "/hello/world");
   std::string request_string(the_request.to_string());
   BOOST_CHECK_EQUAL("GET /hello/world HTTP/1.1\r\n", request_string.c_str());
 }
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(RequestEncode1)
 {
   std::string correct_request("GET /uri HTTP/1.1\r\n");
   correct_request += "Content-Length: 0\r\n\r\n";
-  tx_request the_request(request_method::method_id::GET, "/uri");
+  tx_request the_request(request_method::id::GET, "/uri");
 
   std::string req_text(the_request.message());
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE(RequestEncode2)
   correct_request += "Content-Length: 15\r\n\r\n";
  // correct_request += text;
 
-  tx_request the_request(request_method::method_id::POST, "/uri");
+  tx_request the_request(request_method::id::POST, "/uri");
   std::string req_text(the_request.message(text.size()));
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
 }
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(RequestEncode3)
   correct_request += "Content-Length: 15\r\n\r\n";
  // correct_request += text;
 
-  tx_request the_request(request_method::method_id::POST, "/uri");
+  tx_request the_request(request_method::id::POST, "/uri");
   the_request.add_content_length_header(text.size());
   std::string req_text(the_request.message());
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
@@ -394,8 +394,8 @@ BOOST_AUTO_TEST_CASE(RequestEncode4)
   std::string correct_request("POST /uri HTTP/1.1\r\n");
   correct_request += "Transfer-Encoding: Chunked\r\n\r\n";
 
-  tx_request the_request(request_method::method_id::POST, "/uri");
-  the_request.add_header(header_field::field_id::TRANSFER_ENCODING, "Chunked");
+  tx_request the_request(request_method::id::POST, "/uri");
+  the_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
   std::string req_text(the_request.message());
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
 }

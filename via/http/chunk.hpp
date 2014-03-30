@@ -306,8 +306,8 @@ namespace via
       { trailer_string_ += header_field::to_header(field, value);  }
 
       /// Add a standard trailer to the chunk.
-      void add_trailer(header_field::field_id id, std::string const& value)
-      { trailer_string_ += header_field::to_header(id, value);  }
+      void add_trailer(header_field::id field_id, std::string const& value)
+      { trailer_string_ += header_field::to_header(field_id, value);  }
 
       /// The http message header string.
       std::string message() const;

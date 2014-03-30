@@ -218,7 +218,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request& request)
     {
-      request.add_header(http::header_field::field_id::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -228,7 +228,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request&& request)
     {
-      request.add_header(http::header_field::field_id::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -239,7 +239,7 @@ namespace via
     /// @param body the body to send
     void send(http::tx_request& request, Container const& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header{request.message()};
 
       Container tx_message(body);
@@ -253,7 +253,7 @@ namespace via
     /// @param body the body to send
     void send(http::tx_request&& request, Container&& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header{request.message(body.size())};
 
       body.insert(body.begin(),
@@ -269,7 +269,7 @@ namespace via
     bool send(http::tx_request& request,
               ForwardIterator begin, ForwardIterator end)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       size_t size(end - begin);
       std::string http_header{request.message(size)};
 

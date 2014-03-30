@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     }
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::GET, uri);
+    via::http::tx_request request(via::http::request_method::id::GET, uri);
     http_client->send(request);
 
     // run the io_service to start communications

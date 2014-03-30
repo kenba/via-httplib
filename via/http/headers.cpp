@@ -57,7 +57,7 @@ namespace via
       case HEADER_LF:
         if ('\n' == c)
           state_ = HEADER_END;
-        else 
+        else
           return false;
         break;
 
@@ -80,12 +80,12 @@ namespace via
         return EMPTY_STRING;
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     size_t message_headers::content_length() const
     {
       // Find whether there is a content length field.
-      const std::string& content_length{find(header_field::field_id::CONTENT_LENGTH)};
+      const std::string& content_length{find(header_field::id::CONTENT_LENGTH)};
       if (content_length.empty())
         return 0;
 
@@ -93,12 +93,12 @@ namespace via
       return from_dec_string(content_length);
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     bool message_headers::is_chunked() const
     {
       // Find whether there is a transfer encoding header.
-      const std::string& xfer_encoding{find(header_field::field_id::TRANSFER_ENCODING)};
+      const std::string& xfer_encoding{find(header_field::id::TRANSFER_ENCODING)};
       if (xfer_encoding.empty())
         return false;
 
@@ -110,7 +110,7 @@ namespace via
     bool message_headers::close_connection() const
     {
       // Find whether there is a connection header.
-      const std::string& connection{find(header_field::field_id::CONNECTION)};
+      const std::string& connection{find(header_field::id::CONNECTION)};
       if (connection.empty())
         return false;
 
@@ -122,7 +122,7 @@ namespace via
     bool message_headers::expect_continue() const
     {
       // Find whether there is a expect header.
-      const std::string& connection{find(header_field::field_id::EXPECT)};
+      const std::string& connection{find(header_field::id::EXPECT)};
       if (connection.empty())
         return false;
 

@@ -23,7 +23,7 @@ namespace via
     namespace header_field
     {
       /// Ids for the standard headers defined in RFC2616.
-      enum class field_id
+      enum class id
       {
         // General Header Fields
         CACHE_CONTROL,
@@ -85,12 +85,12 @@ namespace via
       /// Lookup the RFC2616 standard name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616.
-      const std::string& standard_name(field_id id);
+      const std::string& standard_name(id field_id);
 
       /// Lookup the lowercase name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616 converted to lowercase.
-      const std::string& lowercase_name(field_id id);
+      const std::string& lowercase_name(id field_id);
 
       /// Format the field name and value into an http header line.
       /// @param name header field name.
@@ -101,7 +101,7 @@ namespace via
       /// Format the field id and value into an http header line.
       /// @param id header field id.
       /// @param value header field value.
-      std::string to_header(field_id id, std::string const& value);
+      std::string to_header(id field_id, std::string const& value);
 
       /// Create an http header line for the current date and time.
       std::string date_header();

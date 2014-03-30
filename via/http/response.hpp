@@ -154,6 +154,11 @@ namespace via
       int status() const
       { return status_; }
 
+      /// Whether this is a continue response.
+      /// @return true if this is a continue response, false otherwise.
+      bool is_continue() const
+      { return status_ == static_cast<int>(response_status::code::CONTINUE); }
+
       /// Accessor for the response reason string.
       /// @return the response reason string.
       const std::string& reason_phrase() const
@@ -174,17 +179,17 @@ namespace via
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
+      /// @see http::response_status::code
+      /// @param status_code the response status code
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit response_line(response_status::status_code status,
+      explicit response_line(response_status::code status_code,
                              int minor_version = 1,
                              int major_version = 1) :
         major_version_{major_version},
         minor_version_{minor_version},
-        status_{status},
-        reason_phrase_{response_status::reason_phrase(status)},
+        status_{static_cast<int>(status_code)},
+        reason_phrase_{response_status::reason_phrase(status_code)},
         state_{RESP_HTTP_END},
         major_read_{true},
         minor_read_{true},
@@ -194,7 +199,7 @@ namespace via
       {}
 
       /// Constructor for creating a non-standard response.
-      /// @param status the response status
+      /// @param status the response status code
       /// @param reason_phrase the reason phrase for the response status.
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -207,7 +212,7 @@ namespace via
         status_{status},
         reason_phrase_{!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::status_code>(status))},
+                    (static_cast<response_status::code>(status))},
         state_{RESP_HTTP_END},
         major_read_{true},
         minor_read_{true},
@@ -219,10 +224,10 @@ namespace via
       /// Set the response status for standard responses.
       /// @see http::response_status::status_code
       /// @param status the response status.
-      void set_status(response_status::status_code status)
+      void set_status(response_status::code status_code)
       {
-        status_ = static_cast<int>(status);
-        reason_phrase_ = response_status::reason_phrase(status);
+        status_ = static_cast<int>(status_code);
+        reason_phrase_ = response_status::reason_phrase(status_code);
       }
 
       /// Set the response status and reason phrase.
@@ -352,12 +357,12 @@ namespace via
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
+      /// @see http::response_status::code
+      /// @param status_code the response status code
       /// @param header_string default blank
-      explicit tx_response(response_status::status_code status,
+      explicit tx_response(response_status::code status_code,
                            std::string header_string = "") :
-        response_line{status},
+        response_line{status_code},
         header_string_{header_string}
       {}
 
@@ -376,8 +381,8 @@ namespace via
       /// @see http::header_field::field_id
       /// @param id the header field id
       /// @param value the header field value
-      void add_header(header_field::field_id id, const std::string& value)
-      { header_string_ += header_field::to_header(id, value);  }
+      void add_header(header_field::id field_id, const std::string& value)
+      { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the response.
       /// @param field the header field name
@@ -397,11 +402,6 @@ namespace via
       void add_content_length_header(size_t size)
       { header_string_ += header_field::content_length(size); }
 
-      /// Whether this is a continue response.
-      /// @return true if this is a continue response, false otherwise.
-      bool is_continue() const
-      { return status() == response_status::CONTINUE; }
-
       /// The http message header string.
       /// @param content_length the size of the message body for the
       /// content_length header.
@@ -414,9 +414,9 @@ namespace via
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
         bool no_content_length{std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::field_id::CONTENT_LENGTH))};
+              (header_field::standard_name(header_field::id::CONTENT_LENGTH))};
         bool no_transfer_encoding{std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::field_id::TRANSFER_ENCODING))};
+              (header_field::standard_name(header_field::id::TRANSFER_ENCODING))};
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -513,7 +513,7 @@ namespace via
           long rx_size(end - iter);
           long required(content_length - body_.size());
           if ((rx_size > 0) && (content_length == 0) &&
-              response_.headers().find(header_field::field_id::CONTENT_LENGTH).empty())
+              response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;

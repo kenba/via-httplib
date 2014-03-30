@@ -88,7 +88,7 @@ namespace
     std::cout << "Rx headers: "  << response.headers().to_string();
     std::cout << "Rx body: "     << body << std::endl;
 
-    if (response.status() == via::http::response_status::CONTINUE)
+    if (response.is_continue())
     {
       std::cout << "Rx is CONTINUE" << std::endl;
 
@@ -168,9 +168,9 @@ int main(int argc, char *argv[])
     }
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::PUT, uri);
-    request.add_header(via::http::header_field::TRANSFER_ENCODING, "Chunked");
-    request.add_header(via::http::header_field::EXPECT, "100-continue");
+    via::http::tx_request request(via::http::request_method::id::PUT, uri);
+    request.add_header(via::http::header_field::id::TRANSFER_ENCODING, "Chunked");
+    request.add_header(via::http::header_field::id::EXPECT, "100-continue");
     http_client->send(request);
 
     // run the io_service to start communications

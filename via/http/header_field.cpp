@@ -160,13 +160,13 @@ namespace via
     namespace header_field
     {
       ////////////////////////////////////////////////////////////////////////
-      const std::string& standard_name(field_id id)
-      { return HEADERS[static_cast<int>(id)]; }
+      const std::string& standard_name(id field_id)
+      { return HEADERS[static_cast<int>(field_id)]; }
        ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      const std::string& lowercase_name(field_id id)
-      { return LC_HEADERS[static_cast<int>(id)]; }
+      const std::string& lowercase_name(id field_id)
+      { return LC_HEADERS[static_cast<int>(field_id)]; }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
@@ -176,8 +176,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      std::string to_header(field_id id, std::string const& value)
-      { return to_header(standard_name(id), value); }
+      std::string to_header(id field_id, std::string const& value)
+      { return to_header(standard_name(field_id), value); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
@@ -189,28 +189,28 @@ namespace via
         time_t uTime;
         time(&uTime);
         strftime(dateBuffer, 30, DATE_FORMAT.c_str(), std::gmtime(&uTime));
-        return to_header(header_field::field_id::DATE, dateBuffer);
+        return to_header(header_field::id::DATE, dateBuffer);
       }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string server_header()
-      { return to_header(header_field::field_id::SERVER, SERVER_NAME); }
+      { return to_header(header_field::id::SERVER, SERVER_NAME); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string content_http_header()
-      { return to_header(header_field::field_id::CONTENT_TYPE, MESSAGE_HTTP); }
+      { return to_header(header_field::id::CONTENT_TYPE, MESSAGE_HTTP); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string content_length(size_t size)
-      { return to_header(header_field::field_id::CONTENT_LENGTH, to_dec_string(size)); }
+      { return to_header(header_field::id::CONTENT_LENGTH, to_dec_string(size)); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string chunked_encoding()
-      { return to_header(header_field::field_id::TRANSFER_ENCODING, CHUNKED); }
+      { return to_header(header_field::id::TRANSFER_ENCODING, CHUNKED); }
       ////////////////////////////////////////////////////////////////////////
     }
   }

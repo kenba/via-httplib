@@ -258,11 +258,11 @@ namespace via
       switch (rx_state)
       {
       case http::RX_INVALID:
-        send(http::tx_response(http::response_status::BAD_REQUEST));
+        send(http::tx_response(http::response_status::code::BAD_REQUEST));
         break;
 
       case http::RX_LENGTH_REQUIRED:
-        send(http::tx_response(http::response_status::LENGTH_REQUIRED));
+        send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
         rx_state = http::RX_INVALID;
         break;
 
@@ -270,7 +270,7 @@ namespace via
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)
         {
-          send(http::tx_response(http::response_status::CONTINUE));
+          send(http::tx_response(http::response_status::code::CONTINUE));
           rx_state = http::RX_INCOMPLETE;
         }
         break;
@@ -283,7 +283,7 @@ namespace via
           if (trace_enabled)
           {
             // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::OK,
+            http::tx_response ok_response(http::response_status::code::OK,
                                    http::header_field::content_http_header());
 
             // The body of the response contains the TRACE request
@@ -293,7 +293,7 @@ namespace via
             send(ok_response, trace_request.begin(), trace_request.end());
           }
           else // otherwise, it responds with "Not Allowed"
-            send(http::tx_response(http::response_status::METHOD_NOT_ALLOWED));
+            send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
 
           // Set the state as invalid, since the server has responded to the request
           rx_state = http::RX_INVALID;
@@ -304,7 +304,7 @@ namespace via
           if (rx_.request().missing_host_header() && require_host)
           {
             std::string missing_host{"Request lacks Host Header"};
-            http::tx_response bad_request(http::response_status::BAD_REQUEST);
+            http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
             send(bad_request, missing_host.begin(), missing_host.end());
 
             rx_state = http::RX_INVALID;
