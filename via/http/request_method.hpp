@@ -29,7 +29,7 @@ namespace via
       /// Ids for the standard methods defined in RFC2616.
       /// They are intended to be used in conjunction with the function
       /// method_name to encode and decode the method from a request.
-      enum method_id
+      enum class method_id
       {
         OPTIONS,
         GET,

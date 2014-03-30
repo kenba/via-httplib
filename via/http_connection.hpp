@@ -108,9 +108,9 @@ namespace via
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
                     bool continue_enabled) :
-      connection_(connection),
-      rx_(concatenate_chunks),
-      continue_enabled_(continue_enabled)
+      connection_{connection},
+      rx_{concatenate_chunks},
+      continue_enabled_{continue_enabled}
     {}
 
     /// Send a packet on the connection.
@@ -146,7 +146,7 @@ namespace via
     /// @param is_continue whether this is a 100 Continue response
     bool send(Container const& packet, bool is_continue)
     {
-      bool keep_alive(rx_.request().keep_alive());
+      bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
         rx_.set_continue_sent();
       else
@@ -173,7 +173,7 @@ namespace via
     /// @param is_continue whether this is a 100 Continue response
     bool send(Container&& packet, bool is_continue)
     {
-      bool keep_alive(rx_.request().keep_alive());
+      bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
         rx_.set_continue_sent();
       else
@@ -209,9 +209,9 @@ namespace via
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
                                  bool continue_enabled)
-    { return shared_pointer(new http_connection(connection,
+    { return shared_pointer{new http_connection{connection,
                                                 concatenate_chunks,
-                                                continue_enabled)); }
+                                                continue_enabled}}; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
@@ -303,7 +303,7 @@ namespace via
           // A fully compliant HTTP server MUST reject a request without a Host header
           if (rx_.request().missing_host_header() && require_host)
           {
-            std::string missing_host("Request lacks Host Header");
+            std::string missing_host{"Request lacks Host Header"};
             http::tx_response bad_request(http::response_status::BAD_REQUEST);
             send(bad_request, missing_host.begin(), missing_host.end());
 
@@ -325,10 +325,10 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header{response.message()};
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(Container{http_header.begin(), http_header.end()},
+                  response.is_continue());
     }
 
     /// Send an HTTP response without a body.
@@ -337,10 +337,10 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header{response.message()};
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(Container{http_header.begin(), http_header.end()},
+                  response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -350,9 +350,9 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
+      std::string http_header{response.message(body.size())};
 
-      Container tx_message(body);
+      Container tx_message{body};
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -370,7 +370,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
+      std::string http_header{response.message(body.size())};
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -392,7 +392,7 @@ namespace via
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       size_t size(end - begin);
-      std::string http_header(response.message(size));
+      std::string http_header{response.message(size)};
 
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
@@ -409,11 +409,11 @@ namespace via
     /// @param extension the (optional) chunk extension.
     bool send_chunk(Container const& chunk, std::string extension = "")
     {
-      size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      size_t size{chunk.size()};
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message(chunk);
+      Container tx_message{chunk};
       tx_message.insert(tx_message.begin(),
                         chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
@@ -425,9 +425,9 @@ namespace via
     /// @param extension the (optional) chunk extension.
     bool send_chunk(Container&& chunk, std::string extension = "")
     {
-      size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      size_t size{chunk.size()};
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
@@ -444,10 +444,10 @@ namespace via
                     std::string extension = "")
     {
       size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
+      Container tx_message{chunk_string.begin(), chunk_string.end()};
       tx_message.insert(tx_message.end(), begin, end);
       tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(tx_message);
@@ -459,11 +459,10 @@ namespace via
     bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
-      http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      http::last_chunk last_chunk{extension, trailer_string};
+      std::string chunk_string{last_chunk.message()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      return send(tx_message);
+      return send(Container{chunk_string.begin(), chunk_string.end()});
     }
 
     /// Disconnect the underlying connection.

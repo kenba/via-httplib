@@ -332,17 +332,17 @@ namespace via
       explicit connection(boost::asio::io_service& io_service,
                           event_callback_type event_callback,
                           error_callback_type error_callback) :
-        SocketAdaptor(io_service),
-        strand_(io_service),
-        rx_buffer_(new RxBuffer()),
-        tx_queue_(new std::deque<Container>()),
-        event_callback_(event_callback),
-        error_callback_(error_callback),
-        rx_size_(0),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false)
+        SocketAdaptor{io_service},
+        strand_{io_service},
+        rx_buffer_{new RxBuffer{}},
+        tx_queue_{new std::deque<Container>{}},
+        event_callback_{event_callback},
+        error_callback_{error_callback},
+        rx_size_{0},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false},
+        connected_{false}
       {}
 
       /// Constructor for client connections.
@@ -352,17 +352,17 @@ namespace via
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
       explicit connection(boost::asio::io_service& io_service) :
-        SocketAdaptor(io_service),
-        strand_(io_service),
-        rx_buffer_(new RxBuffer()),
-        tx_queue_(new std::deque<Container>()),
-        event_callback_(),
-        error_callback_(),
-        rx_size_(0),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false)
+        SocketAdaptor{io_service},
+        strand_{io_service},
+        rx_buffer_{new RxBuffer{}},
+        tx_queue_{new std::deque<Container>{}},
+        event_callback_{},
+        error_callback_{},
+        rx_size_{0},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false},
+        connected_{false}
       {}
 
       /// Set the socket's tcp no delay status.
@@ -447,14 +447,14 @@ namespace via
                                    event_callback_type event_callback,
                                    error_callback_type error_callback)
       {
-        return shared_pointer(new connection(io_service, event_callback,
-                                             error_callback));
+        return shared_pointer{new connection{io_service, event_callback,
+                                             error_callback}};
       }
 
       /// The factory function to create client connections.
       /// @param io_service the boost asio io_service for the socket adaptor.
       static shared_pointer create(boost::asio::io_service& io_service)
-      { return shared_pointer(new connection(io_service)); }
+      { return shared_pointer{new connection{io_service}}; }
 
       /// @fn set_event_callback
       /// Function to set the event callback function.

@@ -72,16 +72,16 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_line() :
-        major_version_(0),
-        minor_version_(0),
-        status_(0),
-        reason_phrase_(""),
-        state_(RESP_HTTP),
-        major_read_(false),
-        minor_read_(false),
-        status_read_(false),
-        valid_(false),
-        fail_(false)
+        major_version_{0},
+        minor_version_{0},
+        status_{0},
+        reason_phrase_{""},
+        state_{RESP_HTTP},
+        major_read_{false},
+        minor_read_{false},
+        status_read_{false},
+        valid_{false},
+        fail_{false}
       {}
 
       /// Clear the response_line.
@@ -131,7 +131,7 @@ namespace via
       {
         while ((iter != end) && (RESP_HTTP_END != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
@@ -181,16 +181,16 @@ namespace via
       explicit response_line(response_status::status_code status,
                              int minor_version = 1,
                              int major_version = 1) :
-        major_version_(major_version),
-        minor_version_(minor_version),
-        status_(status),
-        reason_phrase_(response_status::reason_phrase(status)),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        status_read_(true),
-        valid_(true),
-        fail_(false)
+        major_version_{major_version},
+        minor_version_{minor_version},
+        status_{status},
+        reason_phrase_{response_status::reason_phrase(status)},
+        state_{RESP_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        status_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Constructor for creating a non-standard response.
@@ -202,18 +202,18 @@ namespace via
                              std::string reason_phrase,
                              int minor_version = 1,
                              int major_version = 1) :
-        major_version_(major_version),
-        minor_version_(minor_version),
-        status_(status),
-        reason_phrase_(!reason_phrase.empty() ? reason_phrase :
+        major_version_{major_version},
+        minor_version_{minor_version},
+        status_{status},
+        reason_phrase_{!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::status_code>(status))),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        status_read_(true),
-        valid_(true),
-        fail_(false)
+                    (static_cast<response_status::status_code>(status))},
+        state_{RESP_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        status_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Set the response status for standard responses.
@@ -221,7 +221,7 @@ namespace via
       /// @param status the response status.
       void set_status(response_status::status_code status)
       {
-        status_ = status;
+        status_ = static_cast<int>(status);
         reason_phrase_ = response_status::reason_phrase(status);
       }
 
@@ -263,9 +263,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_response() :
-        response_line(),
-        headers_(),
-        valid_(false)
+        response_line{},
+        headers_{},
+        valid_{false}
       {}
 
       /// Clear the rx_response.
@@ -357,8 +357,8 @@ namespace via
       /// @param header_string default blank
       explicit tx_response(response_status::status_code status,
                            std::string header_string = "") :
-        response_line(status),
-        header_string_(header_string)
+        response_line{status},
+        header_string_{header_string}
       {}
 
       /// Constructor for creating a non-standard response.
@@ -368,8 +368,8 @@ namespace via
       explicit tx_response(const std::string& reason_phrase,
                            int status,
                            std::string header_string = "") :
-        response_line(status, reason_phrase) ,
-        header_string_(header_string)
+        response_line{status, reason_phrase},
+        header_string_{header_string}
       {}
 
       /// Add a standard header to the response.
@@ -408,15 +408,15 @@ namespace via
       /// @return The http message header as a std:string.
       std::string message(size_t content_length = 0) const
       {
-        std::string output(response_line::to_string());
+        std::string output{response_line::to_string()};
         output += header_string_;
 
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
-        bool no_content_length(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::CONTENT_LENGTH)));
-        bool no_transfer_encoding(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+        bool no_content_length{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::field_id::CONTENT_LENGTH))};
+        bool no_transfer_encoding{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::field_id::TRANSFER_ENCODING))};
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -441,9 +441,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_receiver() :
-        response_(),
-        chunk_(),
-        body_()
+        response_{},
+        chunk_{},
+        body_{}
       {}
 
       /// clear the response_receiver.
@@ -478,7 +478,7 @@ namespace via
                                      ForwardIterator end)
       {
         // building a response
-        bool response_parsed(!response_.valid());
+        bool response_parsed{!response_.valid()};
         if (response_parsed)
         {
           chunk_.clear();
@@ -513,7 +513,7 @@ namespace via
           long rx_size(end - iter);
           long required(content_length - body_.size());
           if ((rx_size > 0) && (content_length == 0) &&
-              response_.headers().find(header_field::CONTENT_LENGTH).empty())
+              response_.headers().find(header_field::field_id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;

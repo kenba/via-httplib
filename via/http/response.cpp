@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -134,7 +134,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     std::string response_line::to_string() const
     {
-      std::string output(http_version(major_version_, minor_version_));
+      std::string output{http_version(major_version_, minor_version_)};
       output += ' ' + to_dec_string(status_)
               + ' ' + reason_phrase_
               + CRLF;

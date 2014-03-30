@@ -163,14 +163,14 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     explicit http_server(boost::asio::io_service& io_service) :
-      server_(server_type::create(io_service)),
-      http_connections_(),
-      http_request_signal_(),
-      http_continue_signal_(),
-      http_chunk_signal_(),
-      http_disconnected_signal_(),
-      concatenate_chunks_(true),
-      continue_enabled_(true)
+      server_{server_type::create(io_service)},
+      http_connections_{},
+      http_request_signal_{},
+      http_continue_signal_{},
+      http_chunk_signal_{},
+      http_disconnected_signal_{},
+      concatenate_chunks_{true},
+      continue_enabled_{true}
     {
       server_->set_event_callback
           (std::bind(&http_server::event_handler, this,

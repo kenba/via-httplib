@@ -59,12 +59,12 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit chunk_header() :
-        size_(0),
-        hex_size_(""),
-        extension_(""),
-        state_(CHUNK_SIZE_LS),
-        size_read_(false),
-        valid_(false)
+        size_{0},
+        hex_size_{""},
+        extension_{""},
+        state_{CHUNK_SIZE_LS},
+        size_read_{false},
+        valid_{false}
       {}
 
       /// Clear the chunk_header.
@@ -101,7 +101,7 @@ namespace via
       {
         while ((iter != end) && (CHUNK_END != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if (!parse_char(c))
             return false;
         }
@@ -144,9 +144,9 @@ namespace via
       /// @param extension the chunk extension (default blank).
       explicit chunk_header(size_t size,
                             std::string extension = "")
-        : size_(size)
-        , hex_size_(to_hex_string(size))
-        , extension_(extension)
+        : size_{size}
+        , hex_size_{to_hex_string(size)}
+        , extension_{extension}
       {}
 
       /// Set the size of the chunk.
@@ -183,10 +183,10 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_chunk() :
-        chunk_header(),
-        data_(),
-        trailers_(),
-        valid_(false)
+        chunk_header{},
+        data_{},
+        trailers_{},
+        valid_{false}
       {}
 
       /// clear the rx_chunk.
@@ -239,7 +239,7 @@ namespace via
           {
             if (required > 0)
             {
-              auto next(iter + required);
+              ForwardIterator next{iter + required};
               data_.insert(data_.end(), iter, next);
               iter = next;
             }
@@ -297,8 +297,8 @@ namespace via
       /// @param trailer_string the (optional) chunk trailers.
       explicit last_chunk(std::string const& extension,
                           std::string const& trailer_string) :
-        extension_(extension),
-        trailer_string_(trailer_string)
+        extension_{extension},
+        trailer_string_{trailer_string}
       {}
 
       /// Add a free form trailer to the chunk.

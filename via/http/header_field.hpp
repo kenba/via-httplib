@@ -23,7 +23,7 @@ namespace via
     namespace header_field
     {
       /// Ids for the standard headers defined in RFC2616.
-      enum field_id
+      enum class field_id
       {
         // General Header Fields
         CACHE_CONTROL,

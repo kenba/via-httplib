@@ -71,15 +71,15 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit request_line() :
-        method_(),
-        uri_(),
-        major_version_(0),
-        minor_version_(0),
-        state_(REQ_METHOD),
-        major_read_(false),
-        minor_read_(false),
-        valid_(false),
-        fail_(false)
+        method_{},
+        uri_{},
+        major_version_{0},
+        minor_version_{0},
+        state_{REQ_METHOD},
+        major_read_{false},
+        minor_read_{false},
+        valid_{false},
+        fail_{false}
       {}
 
       /// Clear the request_line.
@@ -127,7 +127,7 @@ namespace via
       {
         while ((iter != end) && (REQ_HTTP_END != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
@@ -179,15 +179,15 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_(request_method::name(id)),
-        uri_(uri),
-        major_version_(major_version),
-        minor_version_(minor_version),
-        state_(REQ_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        valid_(true),
-        fail_(false)
+        method_{request_method::name(id)},
+        uri_{uri},
+        major_version_{major_version},
+        minor_version_{minor_version},
+        state_{REQ_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Constructor for creating a request with a non-standard method.
@@ -199,15 +199,15 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_(method),
-        uri_(uri),
-        major_version_(major_version),
-        minor_version_(minor_version),
-        state_(REQ_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        valid_(true),
-        fail_(false)
+        method_{method},
+        uri_{uri},
+        major_version_{major_version},
+        minor_version_{minor_version},
+        state_{REQ_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Set the request method.
@@ -249,9 +249,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_request() :
-        request_line(),
-        headers_(),
-        valid_(false)
+        request_line{},
+        headers_{},
+        valid_{false}
       {}
 
       /// Clear the rx_request.
@@ -307,12 +307,12 @@ namespace via
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
       bool is_head() const
-      { return request_method::name(request_method::HEAD) == method(); }
+      { return request_method::name(request_method::method_id::HEAD) == method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
       bool is_trace() const
-      { return request_method::name(request_method::TRACE) == method(); }
+      { return request_method::name(request_method::method_id::TRACE) == method(); }
 
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
@@ -338,7 +338,7 @@ namespace via
       {
         return major_version() == 1 &&
                minor_version() == 1 &&
-               headers_.find(header_field::HOST).empty();
+               headers_.find(header_field::field_id::HOST).empty();
       }
 
       /// Accessor for the valid flag.
@@ -381,8 +381,8 @@ namespace via
                           std::string header_string = "",
                           int minor_version = 1,
                           int major_version = 1) :
-        request_line(id, uri, minor_version, major_version),
-        header_string_(header_string)
+        request_line{id, uri, minor_version, major_version},
+        header_string_{header_string}
       {}
 
       /// Constructor for creating a request with a non-standard method.
@@ -396,8 +396,8 @@ namespace via
                           std::string header_string = "",
                           int minor_version = 1,
                           int major_version = 1) :
-        request_line(method, uri, minor_version, major_version),
-        header_string_(header_string)
+        request_line{method, uri, minor_version, major_version},
+        header_string_{header_string}
       {}
 
       /// Add a free form header to the request.
@@ -429,10 +429,10 @@ namespace via
 
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
-        bool no_content_length(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::CONTENT_LENGTH)));
-        bool no_transfer_encoding(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+        bool no_content_length{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::field_id::CONTENT_LENGTH))};
+        bool no_transfer_encoding{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::field_id::TRANSFER_ENCODING))};
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -465,12 +465,12 @@ namespace via
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
       explicit request_receiver(bool concatenate_chunks) :
-        request_(),
-        chunk_(),
-        body_(),
-        continue_sent_(false),
-        is_head_(false),
-        concatenate_chunks_(concatenate_chunks)
+        request_{},
+        chunk_{},
+        body_{},
+        continue_sent_{false},
+        is_head_{false},
+        concatenate_chunks_{concatenate_chunks}
       {}
 
       /// clear the request_receiver.
@@ -515,7 +515,7 @@ namespace via
                                      ForwardIterator end)
       {
         // building a request
-        bool request_parsed(!request_.valid());
+        bool request_parsed{!request_.valid()};
         if (request_parsed)
         {
           // failed to parse request
@@ -547,7 +547,7 @@ namespace via
           // if there's a message body then insist on a content length header
           long rx_size(end - iter);
           if ((rx_size > 0) && (content_length == 0) &&
-              request_.headers().find(header_field::CONTENT_LENGTH).empty())
+              request_.headers().find(header_field::field_id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;
@@ -572,7 +572,7 @@ namespace via
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head)
-              request_.set_method(request_method::name(request_method::GET));
+              request_.set_method(request_method::name(request_method::method_id::GET));
 
             return RX_VALID;
           }

@@ -13,11 +13,11 @@
 
 namespace
 {
-  const std::string EMPTY_STRING("");
+  const std::string EMPTY_STRING{""};
 
-  const std::regex REGEX_IDENTITY(".*identity.*", std::regex::icase);
-  const std::regex REGEX_CLOSE(".*close.*", std::regex::icase);
-  const std::regex REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
+  const std::regex REGEX_IDENTITY{".*identity.*", std::regex::icase};
+  const std::regex REGEX_CLOSE{".*close.*", std::regex::icase};
+  const std::regex REGEX_CONTINUE{".*100-continue.*", std::regex::icase};
 }
 
 namespace via
@@ -85,7 +85,7 @@ namespace via
     size_t message_headers::content_length() const
     {
       // Find whether there is a content length field.
-      const std::string& content_length(find(header_field::CONTENT_LENGTH));
+      const std::string& content_length{find(header_field::field_id::CONTENT_LENGTH)};
       if (content_length.empty())
         return 0;
 
@@ -98,7 +98,7 @@ namespace via
     bool message_headers::is_chunked() const
     {
       // Find whether there is a transfer encoding header.
-      const std::string& xfer_encoding(find(header_field::TRANSFER_ENCODING));
+      const std::string& xfer_encoding{find(header_field::field_id::TRANSFER_ENCODING)};
       if (xfer_encoding.empty())
         return false;
 
@@ -110,7 +110,7 @@ namespace via
     bool message_headers::close_connection() const
     {
       // Find whether there is a connection header.
-      const std::string& connection(find(header_field::CONNECTION));
+      const std::string& connection{find(header_field::field_id::CONNECTION)};
       if (connection.empty())
         return false;
 
@@ -122,7 +122,7 @@ namespace via
     bool message_headers::expect_continue() const
     {
       // Find whether there is a expect header.
-      const std::string& connection(find(header_field::EXPECT));
+      const std::string& connection{find(header_field::field_id::EXPECT)};
       if (connection.empty())
         return false;
 

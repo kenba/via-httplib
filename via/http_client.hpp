@@ -113,12 +113,12 @@ namespace via
     /// Constructor.
     /// @param io_service the asio io_service to use.
     explicit http_client(boost::asio::io_service& io_service) :
-      connection_(connection_type::create(io_service)),
-      rx_(),
-      http_response_signal_(),
-      http_chunk_signal_(),
-      http_disconnected_signal_(),
-      host_name_()
+      connection_{connection_type::create(io_service)},
+      rx_{},
+      http_response_signal_{},
+      http_chunk_signal_{},
+      http_disconnected_signal_{},
+      host_name_{}
     {
       connection_->set_event_callback
           (std::bind(&http_client::event_handler, this,
@@ -138,7 +138,7 @@ namespace via
     /// @param io_service the boost asio io_service used by the underlying
     /// connection.
     static shared_pointer create(boost::asio::io_service& io_service)
-    { return shared_pointer(new http_client(io_service)); }
+    { return shared_pointer{new http_client{io_service}}; }
 
     /// Connect the response received slot.
     /// @param slot the slot for the response received signal.
@@ -218,7 +218,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::field_id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -228,7 +228,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request&& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::field_id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -240,7 +240,7 @@ namespace via
     void send(http::tx_request& request, Container const& body)
     {
       request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message());
+      std::string http_header{request.message()};
 
       Container tx_message(body);
       tx_message.insert(tx_message.begin(),
@@ -254,7 +254,7 @@ namespace via
     void send(http::tx_request&& request, Container&& body)
     {
       request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message(body.size()));
+      std::string http_header{request.message(body.size())};
 
       body.insert(body.begin(),
                   http_header.begin(), http_header.end());
@@ -271,11 +271,9 @@ namespace via
     {
       request.add_header(http::header_field::HOST, host_name_);
       size_t size(end - begin);
-      std::string http_header(request.message(size));
+      std::string http_header{request.message(size)};
 
-      Container tx_message;
-      tx_message.reserve(http_header.size() + size);
-      tx_message.assign(http_header.begin(), http_header.end());
+      Container tx_message(http_header.begin(), http_header.end());
       tx_message.insert(tx_message.end(), begin, end);
       return send(tx_message);
     }
@@ -286,8 +284,8 @@ namespace via
     void send_chunk(Container const& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       Container tx_message(chunk);
       tx_message.insert(tx_message.begin(),
@@ -303,8 +301,8 @@ namespace via
     void send_chunk(Container&& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
@@ -322,12 +320,10 @@ namespace via
                     std::string extension = "")
     {
       size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message;
-      tx_message.reserve(chunk_string.size() + size);
-      tx_message.assign(chunk_string.begin(), chunk_string.end());
+      Container tx_message(chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), begin, end);
       tx_message.insert(tx_message.end(),
                         http::CRLF.begin(), http::CRLF.end());
@@ -340,11 +336,10 @@ namespace via
     void last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
-      http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      http::last_chunk last_chunk{extension, trailer_string};
+      std::string chunk_string{last_chunk.message()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      send(tx_message);
+      send(Container{chunk_string.begin(), chunk_string.end()});
     }
 
     /// Send a message body on the connection.

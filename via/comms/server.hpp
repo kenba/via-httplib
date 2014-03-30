@@ -176,15 +176,15 @@ namespace via
       /// and connections.
       explicit server(boost::asio::io_service& io_service) :
         io_service_(io_service),
-        acceptor_(io_service),
-        next_connection_(),
-        connections_(),
-        password_(),
-        event_callback_(),
-        error_callback_(),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
+        acceptor_{io_service},
+        next_connection_{},
+        connections_{},
+        password_{},
+        event_callback_{},
+        error_callback_{},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false}
       {}
 
       /// The server constructor.
@@ -199,15 +199,15 @@ namespace via
                       event_callback_type event_callback,
                       error_callback_type error_callback) :
         io_service_(io_service),
-        acceptor_(io_service),
-        next_connection_(),
-        connections_(),
-        password_(),
-        event_callback_(event_callback),
-        error_callback_(error_callback),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
+        acceptor_{io_service},
+        next_connection_{},
+        connections_{},
+        password_{},
+        event_callback_{event_callback},
+        error_callback_{error_callback},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false}
       {}
 
       /// Function to create a shared pointer to a server.
@@ -217,7 +217,7 @@ namespace via
       /// @see set_error_callback
       /// @param io_service the boost asio io_service used by the server.
       static std::shared_ptr<server> create(boost::asio::io_service& io_service)
-      { return std::shared_ptr<server>(new server(io_service)); }
+      { return std::shared_ptr<server>{new server{io_service}}; }
 
       /// Function to create a shared pointer to a server.
       /// @pre the event_callback and error_callback functions must exist.
@@ -229,8 +229,8 @@ namespace via
       static std::shared_ptr<server> create(boost::asio::io_service& io_service,
                                               event_callback_type event_callback,
                                               error_callback_type error_callback)
-      { return std::shared_ptr<server>(new server(io_service, event_callback,
-                                                    error_callback)); }
+      { return std::shared_ptr<server>{new server{io_service, event_callback,
+                                                  error_callback}}; }
 
       /// @fn accept_connections
       /// Create the acceptor and wait for connections.
@@ -242,7 +242,7 @@ namespace via
         // Open the acceptor with the option to reuse the address
         // (i.e. SO_REUSEADDR).
         boost::asio::ip::tcp::endpoint endpoint
-          (ipv6 ? boost::asio::ip::tcp::v6() : boost::asio::ip::tcp::v4(), port);
+          {ipv6 ? boost::asio::ip::tcp::v6() : boost::asio::ip::tcp::v4(), port};
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option
           (boost::asio::ip::tcp::acceptor::reuse_address(true));

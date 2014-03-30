@@ -14,7 +14,7 @@ namespace via
 {
   namespace http
   {
-    const std::string CRLF("\r\n");
+    const std::string CRLF{"\r\n"};
 
     //////////////////////////////////////////////////////////////////////////
     bool is_separator(char c)
@@ -35,7 +35,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     std::string http_version(int major_version, int minor_version)
     {
-      std::string output("HTTP/");
+      std::string output{"HTTP/"};
       std::stringstream version;
       version << major_version << '.' << minor_version;
       output += version.str();
