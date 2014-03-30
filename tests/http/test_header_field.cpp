@@ -6,14 +6,12 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/header_field.hpp"
+#include "via/http/header_field.hpp"
+#include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string.hpp>
 #include <vector>
 #include <iostream>
 #include <cstring>
-
-#define BOOST_TEST_MODULE test_header_field
-#include <boost/test/unit_test.hpp>
 
 using namespace via::http;
 
@@ -22,8 +20,8 @@ BOOST_AUTO_TEST_SUITE(TestHeaderFields)
 
 BOOST_AUTO_TEST_CASE(NamesEqual)
 {
-  for (int i(header_field::CACHE_CONTROL);
-       i <= header_field::EXTENSION_HEADER; ++i)
+  for (int i(static_cast<int>(header_field::field_id::CACHE_CONTROL));
+       i <= static_cast<int>(header_field::field_id::EXTENSION_HEADER); ++i)
   {
     header_field::field_id id(static_cast<header_field::field_id>(i));
     std::string lowerName(boost::algorithm::to_lower_copy(standard_name(id)));
@@ -48,7 +46,7 @@ BOOST_AUTO_TEST_CASE(ToHeaderEnum)
   std::string value("ISO-8859-1");
   std::string line("Accept-Charset: ISO-8859-1\r\n");
 
-  std::string result(header_field::to_header(header_field::ACCEPT_CHARSET, value));
+  std::string result(header_field::to_header(header_field::field_id::ACCEPT_CHARSET, value));
 
   BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }

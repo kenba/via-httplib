@@ -6,12 +6,10 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/chunk.hpp"
+#include "via/http/chunk.hpp"
+#include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-
-#define BOOST_TEST_MODULE test_chunk
-#include <boost/test/unit_test.hpp>
 
 using namespace via::http;
 

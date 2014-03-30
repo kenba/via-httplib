@@ -7,12 +7,10 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/headers.hpp"
+#include "via/http/headers.hpp"
+#include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-
-#define BOOST_TEST_MODULE test_headers
-#include <boost/test/unit_test.hpp>
 
 using namespace via::http;
 
@@ -97,8 +95,9 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine4)
   field_line field;
   BOOST_CHECK(field.parse(next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == next);
-  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
-                    field.name().c_str());
+  BOOST_CHECK_EQUAL(header_field::lowercase_name
+                     (header_field::field_id::ACCEPT_CHARSET).c_str(),
+                      field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
@@ -163,7 +162,8 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg1)
   next = header_data2.cbegin();
   BOOST_CHECK(field.parse(next, header_data2.cend()));
   BOOST_CHECK(header_data2.cend() == next);
-  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
+  BOOST_CHECK_EQUAL(header_field::lowercase_name
+                    (header_field::field_id::ACCEPT_CHARSET).c_str(),
                     field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
@@ -181,8 +181,9 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
   next = header_data2.cbegin();
   BOOST_CHECK(field.parse(next, header_data2.cend()));
   BOOST_CHECK(header_data2.cend() == next);
-  BOOST_CHECK_EQUAL(header_field::lowercase_name(header_field::ACCEPT_CHARSET).c_str(),
-    field.name().c_str());
+  BOOST_CHECK_EQUAL(header_field::lowercase_name
+                    (header_field::field_id::ACCEPT_CHARSET).c_str(),
+                     field.name().c_str());
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
@@ -270,7 +271,8 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
   BOOST_CHECK(header_data2.cend() == header_next);
 
   BOOST_CHECK_EQUAL("Chunked",
-                    the_headers.find(header_field::TRANSFER_ENCODING).c_str());
+                    the_headers.find
+                    (header_field::field_id::TRANSFER_ENCODING).c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ValidContentLength1)

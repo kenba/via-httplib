@@ -9,12 +9,10 @@
 /// @file test_response.cpp
 /// @brief Unit tests for the classes in response.hpp.
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/response.hpp"
+#include "via/http/response.hpp"
+#include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-
-#define BOOST_TEST_MODULE test_response
-#include <boost/test/unit_test.hpp>
 
 using namespace via::http;
 
@@ -253,7 +251,7 @@ BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
   BOOST_CHECK_EQUAL(0, the_response.minor_version());
 
   BOOST_CHECK_EQUAL("Challenge",
-    the_response.headers().find(header_field::WWW_AUTHENTICATE).c_str());
+    the_response.headers().find(header_field::field_id::WWW_AUTHENTICATE).c_str());
   BOOST_CHECK_EQUAL(0, the_response.content_length());
   BOOST_CHECK(!the_response.is_chunked());
 }
@@ -335,7 +333,7 @@ BOOST_AUTO_TEST_CASE(ResponseEncode4)
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
 
   tx_response the_response(response_status::OK);
-  the_response.add_header(header_field::TRANSFER_ENCODING, "Chunked");
+  the_response.add_header(header_field::field_id::TRANSFER_ENCODING, "Chunked");
   std::string resp_text(the_response.message());
 //  std::string resp_text(resp_data.begin(), resp_data.end());
   BOOST_CHECK_EQUAL(correct_response.c_str(), resp_text.c_str());
@@ -480,7 +478,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
 
   BOOST_CHECK_EQUAL(the_response_receiver.chunk().size(),
                     the_response_receiver.chunk().data().size());
-    
+
   std::string body_data2("16\r\nHTTP chunk ");
   next = body_data2.begin();
   rx_state = the_response_receiver.receive(next, body_data2.cend());
