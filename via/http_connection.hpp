@@ -213,6 +213,12 @@ namespace via
                                                 concatenate_chunks,
                                                 continue_enabled}}; }
 
+    /// Copy constructor deleted.
+    http_connection(http_connection const&)=delete;
+
+    /// Assignment operator deleted.
+    http_connection& operator=(http_connection const&)=delete;
+
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
     http::rx_request const& request() const

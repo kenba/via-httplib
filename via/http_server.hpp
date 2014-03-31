@@ -183,6 +183,12 @@ namespace via
       server_->set_no_delay(true);
     }
 
+    /// Copy constructor deleted.
+    http_server(http_server const&)=delete;
+
+    /// Assignment operator deleted.
+    http_server& operator=(http_server const&)=delete;
+
     /// Start accepting connections on the communications server from the
     /// given port.
     /// @param port the port number to serve.
@@ -355,6 +361,13 @@ namespace via
       return error;
     }
 
+    /// @fn close
+    /// Close the http server and all of the connections associated with it.
+    void close()
+    {
+      http_connections_.clear();
+      server_->close();
+    }
   };
 
 }

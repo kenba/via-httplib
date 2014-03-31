@@ -365,6 +365,12 @@ namespace via
         connected_{false}
       {}
 
+      /// Copy constructor deleted.
+      connection(connection const&)=delete;
+
+      /// Assignment operator deleted.
+      connection& operator=(connection const&)=delete;
+
       /// Set the socket's tcp no delay status.
       /// If no_delay_ is set it disables the Nagle algorithm on the socket.
       void no_delay()
