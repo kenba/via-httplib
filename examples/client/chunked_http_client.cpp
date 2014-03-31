@@ -76,6 +76,8 @@ namespace
         chunk_timer->async_wait(boost::bind(&timeout_handler,
                                 boost::asio::placeholders::error));
       }
+      else
+        chunk_timer->cancel();
     }
   }
 
@@ -100,7 +102,7 @@ namespace
     else
     {
       if (!response.is_chunked())
-        exit(0);
+        http_client.reset();
     }
   }
 
@@ -114,7 +116,7 @@ namespace
     if (chunk.is_last())
     {
       std::cout << "Rx last chunk" << std::endl;
-      exit(0);
+      http_client.reset();
     }
   }
 
@@ -122,7 +124,8 @@ namespace
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    exit(0);
+    chunk_timer->cancel();
+    http_client.reset();
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -130,18 +133,20 @@ namespace
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
+  std::string app_name(argv[0]);
+
   // Get a hostname and uri from the user (assume default http port)
-  if (argc <= 2)
+  if (argc != 3)
   {
-    std::cout << "Usage: chunked_http_client [host] [uri]\n"
-              << "E.g. chunked_http_client 127.0.0.1 /hello"
+    std::cout << "Usage: " << app_name << " [host] [uri]\n"
+              << "E.g. "   << app_name << " localhost /hello"
               << std::endl;
     return 1;
   }
 
   std::string host_name(argv[1]);
   std::string uri(argv[2]);
-  std::cout << "HTTP client host: " << host_name
+  std::cout << app_name <<" host: " << host_name
             << " uri: " << uri << std::endl;
   try
   {
@@ -175,6 +180,8 @@ int main(int argc, char *argv[])
 
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {

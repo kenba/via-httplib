@@ -20,6 +20,11 @@ typedef https_client_type::chunk_type http_chunk_type;
 
 namespace
 {
+  // An https_client.
+  // Declared here so that it can be used in the response_handler and
+  // chunk_handler.
+  https_client_type::shared_pointer http_client;
+
   /// The handler for incoming HTTP requests.
   /// Prints the response.
   void response_handler(via::http::rx_response const& response,
@@ -30,7 +35,7 @@ namespace
     std::cout << "Rx body: "     << body << std::endl;
 
     if (!response.is_chunked())
-      exit(0);
+      http_client.reset();
   }
 
   /// The handler for incoming HTTP chunks.
@@ -43,25 +48,27 @@ namespace
     if (chunk.is_last())
     {
       std::cout << "Rx last chunk" << std::endl;
-      exit(0);
+      http_client.reset();
     }
   }
 }
 
 int main(int argc, char *argv[])
 {
+  std::string app_name(argv[0]);
+
   // Get a hostname and uri from the user (assume default http port)
-  if (argc <= 2)
+  if (argc != 3)
   {
-    std::cout << "Usage: simple_https_client [host] [uri]\n"
-              << "E.g. simple_https_client 127.0.0.1 /hello"
+    std::cout << "Usage: " << app_name << " [host] [uri]\n"
+              << "E.g. "   << app_name << " localhost /hello"
               << std::endl;
     return 1;
   }
 
   std::string host_name(argv[1]);
   std::string uri(argv[2]);
-  std::cout << "HTTP client host: " << host_name
+  std::cout << app_name <<" host: " << host_name
             << " uri: " << uri << std::endl;
   try
   {
@@ -69,8 +76,7 @@ int main(int argc, char *argv[])
     boost::asio::io_service io_service;
 
     // Create an http_client
-    https_client_type::shared_pointer http_client
-        (https_client_type::create(io_service));
+    http_client = https_client_type::create(io_service);
 
     // Set up SSL
     std::string certificate_file = "cacert.pem";
@@ -93,6 +99,8 @@ int main(int argc, char *argv[])
 
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {

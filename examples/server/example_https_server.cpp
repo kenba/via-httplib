@@ -25,10 +25,10 @@ namespace
   /// The stop callback function.
   /// Exits the application.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop()
+  void handle_stop(https_server_type* http_server)
   {
-    std::cout << "Exit, shutting down" << std::endl;
-    exit(0);
+    std::cout << "Shutting down" << std::endl;
+    http_server->close();
   }
 
   /// A string to send in responses.
@@ -141,37 +141,34 @@ namespace
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
+  std::string app_name(argv[0]);
+  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
+
   // Get a port number from the user
-  if (argc <= 1)
+  if (argc > 2)
   {
-    std::cerr << "Usage: example_https_server [port number]\n"
-              << "E.g. example_https_server 443"
+    std::cerr << "Usage: " << app_name << " [port number]\n"
+              << "E.g. "   << app_name << " " << port_number
               << std::endl;
     return 1;
   }
+  else if (argc == 2)
+  {
+    std::string port(argv[1]);
+    port_number = atoi(port.c_str());
+  }
+
+  std::cout << app_name << ": " << port_number << std::endl;
 
   // The values for the SSL functions
   std::string password         = "test";
   std::string certificate_file = "cacert.pem";
   std::string private_key_file = "privkey.pem";
 
-  std::string port(argv[1]);
-  unsigned short portNumber(atoi(port.c_str()));
-  std::cout << "HTTPS server port: " << portNumber << std::endl;
-
   try
   {
     // create an io_service for the server
     boost::asio::io_service io_service;
-
-    // The signal set is used to register for termination notifications
-    boost::asio::signal_set signals_(io_service);
-    signals_.add(SIGINT);
-    signals_.add(SIGTERM);
-#if defined(SIGQUIT)
-    signals_.add(SIGQUIT);
-#endif // #if defined(SIGQUIT)
-    signals_.async_wait(boost::bind(&handle_stop));
 
     // create an https_server
     https_server_type https_server(io_service);
@@ -193,15 +190,26 @@ int main(int argc, char *argv[])
     https_server.socket_disconnected_event(disconnected_handler);
 
     // start accepting http connections on the given port
-    error = https_server.accept_connections(portNumber);
+    error = https_server.accept_connections(port_number);
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
       return 1;
     }
 
+    // The signal set is used to register for termination notifications
+    boost::asio::signal_set signals_(io_service);
+    signals_.add(SIGINT);
+    signals_.add(SIGTERM);
+#if defined(SIGQUIT)
+    signals_.add(SIGQUIT);
+#endif // #if defined(SIGQUIT)
+    signals_.async_wait(boost::bind(&handle_stop, &https_server));
+
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {
