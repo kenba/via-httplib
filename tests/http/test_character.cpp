@@ -7,96 +7,92 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 #include "../../via/http/character.hpp"
+#include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-
-#ifdef _MSC_VER
-// cpputest\MemoryLeakWarningPlugin.h: C++11 exception specification deprecated
-#pragma warning (disable:4290)
-#endif
-#include "CppUTest/TestHarness.h"
 
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestHexString)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestHexString)
 
-TEST(TestHexString, ValidDigits1)
+BOOST_AUTO_TEST_CASE(ValidDigits1)
 {
   std::string hex_string("10");
   size_t value(from_hex_string(hex_string));
 
-  CHECK_EQUAL(16, value);
+  BOOST_CHECK_EQUAL(16, value);
 }
 
-TEST(TestHexString, ValidHex1)
+BOOST_AUTO_TEST_CASE(ValidHex1)
 {
   std::string hex_string("abcdef");
   size_t value(from_hex_string(hex_string));
 
-  CHECK_EQUAL(0xABCDEF, value);
+  BOOST_CHECK_EQUAL(0xABCDEF, value);
 }
 
-TEST(TestHexString, InvalidHex1)
+BOOST_AUTO_TEST_CASE(InvalidHex1)
 {
   std::string hex_string("0xabcdef");
   size_t value(from_hex_string(hex_string));
 
-  CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
 
-TEST(TestHexString, InvalidHex2)
+BOOST_AUTO_TEST_CASE(InvalidHex2)
 {
   std::string hex_string("abcdefx");
   size_t value(from_hex_string(hex_string));
 
-  CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
 
-TEST(TestHexString, InvalidHex3)
+BOOST_AUTO_TEST_CASE(InvalidHex3)
 {
   std::string hex_string("ffffffffff");
   size_t value(from_hex_string(hex_string));
 
-  CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestDecString)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestDecString)
 
-TEST(TestDecString, ValidDigits1)
+BOOST_AUTO_TEST_CASE(ValidDigits1)
 {
   std::string dec_string("10");
   size_t value(from_dec_string(dec_string));
 
-  CHECK_EQUAL(10, value);
+  BOOST_CHECK_EQUAL(10, value);
 }
 
-TEST(TestDecString, ValidDec1)
+BOOST_AUTO_TEST_CASE(ValidDec1)
 {
   std::string dec_string("0");
   size_t value(from_dec_string(dec_string));
 
-  CHECK_EQUAL(0, value);
+  BOOST_CHECK_EQUAL(0, value);
 }
 
-TEST(TestDecString, InvalidDec1)
+BOOST_AUTO_TEST_CASE(InvalidDec1)
 {
   std::string dec_string("123456x");
   size_t value(from_dec_string(dec_string));
 
-  CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
 
-TEST(TestDecString, InvalidDec2)
+BOOST_AUTO_TEST_CASE(InvalidDec2)
 {
   std::string dec_string("10000000000000000");
   size_t value(from_dec_string(dec_string));
 
-  CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////

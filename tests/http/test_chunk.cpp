@@ -6,254 +6,254 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/chunk.hpp"
+#include "via/http/chunk.hpp"
+#include <boost/test/unit_test.hpp>
 #include <vector>
 #include <iostream>
-
-#ifdef _MSC_VER
-// cpputest\MemoryLeakWarningPlugin.h: C++11 exception specification deprecated
-#pragma warning (disable:4290)
-#endif
-#include "CppUTest/TestHarness.h"
 
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestChunkLineParser)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestChunkLineParser)
 
-TEST(TestChunkLineParser, EmptyChunk1)
+BOOST_AUTO_TEST_CASE(EmptyChunk1)
 {
   std::string chunk_data("0\r\n");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() == next);
-  STRCMP_EQUAL("0",  the_chunk.hex_size().c_str());
-  STRCMP_EQUAL("", the_chunk.extension().c_str());
-  CHECK_EQUAL(0, the_chunk.size());
-  CHECK(the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() == next);
+  BOOST_CHECK_EQUAL("0",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
+  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK(the_chunk.is_last());
 }
 
-TEST(TestChunkLineParser, EmptyChunk2)
+BOOST_AUTO_TEST_CASE(EmptyChunk2)
 {
   std::string chunk_data("0;\r\n");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() == next);
-  STRCMP_EQUAL("0",  the_chunk.hex_size().c_str());
-  STRCMP_EQUAL("", the_chunk.extension().c_str());
-  CHECK_EQUAL(0, the_chunk.size());
-  CHECK(the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() == next);
+  BOOST_CHECK_EQUAL("0",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
+  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK(the_chunk.is_last());
 }
 
-TEST(TestChunkLineParser, ValidString1)
+BOOST_AUTO_TEST_CASE(ValidString1)
 {
   std::string chunk_data("f; some rubbish\r\n");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() == next);
-  STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
-  STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
-  CHECK_EQUAL(15, the_chunk.size());
-  CHECK(!the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() == next);
+  BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK(!the_chunk.is_last());
 }
 
-TEST(TestChunkLineParser, ValidString2)
+BOOST_AUTO_TEST_CASE(ValidString2)
 {
   std::string chunk_data("f\r\nA");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() != next);
-  BYTES_EQUAL('A', *next);
-  STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
-  CHECK_EQUAL(15, the_chunk.size());
-  CHECK(!the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() != next);
+  BOOST_CHECK_EQUAL('A', *next);
+  BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK(!the_chunk.is_last());
 }
 
-TEST(TestChunkLineParser, ValidString3)
+BOOST_AUTO_TEST_CASE(ValidString3)
 {
   std::string chunk_data("f; some rubbish\r\nA");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() != next);
-  BYTES_EQUAL('A', *next);
-  STRCMP_EQUAL("f",  the_chunk.hex_size().c_str());
-  STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
-  CHECK_EQUAL(15, the_chunk.size());
-  CHECK(!the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() != next);
+  BOOST_CHECK_EQUAL('A', *next);
+  BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK(!the_chunk.is_last());
 }
 
-TEST(TestChunkLineParser, MultipleString1)
+BOOST_AUTO_TEST_CASE(MultipleString1)
 {
   std::string chunk_data("2f; some rubbish\r\n");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(!the_chunk.parse(next, chunk_data.begin() +1));
-  CHECK(chunk_data.end() != next);
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK(chunk_data.end() == next);
-  STRCMP_EQUAL("2f",  the_chunk.hex_size().c_str());
-  STRCMP_EQUAL("some rubbish", the_chunk.extension().c_str());
-  CHECK_EQUAL(47, the_chunk.size());
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.begin() +1));
+  BOOST_CHECK(chunk_data.end() != next);
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(chunk_data.end() == next);
+  BOOST_CHECK_EQUAL("2f",  the_chunk.hex_size().c_str());
+  BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
+  BOOST_CHECK_EQUAL(47, the_chunk.size());
 }
 
-TEST(TestChunkLineParser, InValidString1)
+BOOST_AUTO_TEST_CASE(InValidString1)
 {
   std::string chunk_data("g;\r\n");
   std::string::const_iterator next(chunk_data.begin());
 
   chunk_header the_chunk;
-  CHECK(!the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.end()));
 }
+
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestChunkEncoder)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestChunkEncoder)
 
-TEST(TestChunkEncoder, EmptyChunk1)
+BOOST_AUTO_TEST_CASE(EmptyChunk1)
 {
   chunk_header the_chunk(0);
   std::string chunk_string(the_chunk.to_string());
 
-  STRCMP_EQUAL("0\r\n",  chunk_string.c_str());
+  BOOST_CHECK_EQUAL("0\r\n",  chunk_string.c_str());
 }
 
-TEST(TestChunkEncoder, ValidChunk1)
+BOOST_AUTO_TEST_CASE(ValidChunk1)
 {
   chunk_header the_chunk(15);
   std::string chunk_string(the_chunk.to_string());
 
-  STRCMP_EQUAL("f\r\n",  chunk_string.c_str());
+  BOOST_CHECK_EQUAL("f\r\n",  chunk_string.c_str());
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestLastChunkEncoder)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestLastChunkEncoder)
 
-TEST(TestLastChunkEncoder, EmptyChunk1)
+BOOST_AUTO_TEST_CASE(EmptyChunk1)
 {
   std::string empty_string("");
   last_chunk the_chunk(empty_string, empty_string);
   std::string chunk_string(the_chunk.message());
 
-  STRCMP_EQUAL("0\r\n\r\n", chunk_string.c_str());
+  BOOST_CHECK_EQUAL("0\r\n\r\n", chunk_string.c_str());
 }
 
-TEST(TestLastChunkEncoder, EmptyChunk2)
+BOOST_AUTO_TEST_CASE(EmptyChunk2)
 {
   std::string empty_string("");
   last_chunk the_chunk("extension", empty_string);
   std::string chunk_string(the_chunk.message());
 
-  STRCMP_EQUAL("0; extension\r\n\r\n", chunk_string.c_str());
+  BOOST_CHECK_EQUAL("0; extension\r\n\r\n", chunk_string.c_str());
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestChunkParser)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestChunkParser)
 
-TEST(TestChunkParser, ValidChunk1)
+BOOST_AUTO_TEST_CASE(ValidChunk1)
 {
   std::string chunk_data("f;\r\n");
   chunk_data += "123456789abcdef\r\n";
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK_EQUAL(15, the_chunk.size());
-  BYTES_EQUAL('1', the_chunk.data().front());
-  BYTES_EQUAL('f', the_chunk.data().back());
+  BOOST_CHECK(the_chunk.parse(next, end));
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data().front());
+  BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
 
-TEST(TestChunkParser, ValidChunk2)
+BOOST_AUTO_TEST_CASE(ValidChunk2)
 {
   std::string chunk_data("f;\n");
   chunk_data += "123456789abcdef\n";
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK_EQUAL(15, the_chunk.size());
-  BYTES_EQUAL('1', the_chunk.data().front());
-  BYTES_EQUAL('f', the_chunk.data().back());
+  BOOST_CHECK(the_chunk.parse(next, end));
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data().front());
+  BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
 
-TEST(TestChunkParser, ValidChunk3)
+BOOST_AUTO_TEST_CASE(ValidChunk3)
 {
   std::string chunk_data("f;\r\n");
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(!the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(!the_chunk.parse(next, end));
 
   std::string chunk_data1("123456789abcdef\r\n");
   next = chunk_data1.begin();
-  CHECK(the_chunk.parse(next, chunk_data1.end()));
+  end  = chunk_data1.end();
+  BOOST_CHECK(the_chunk.parse(next, end));
 
-  CHECK_EQUAL(15, the_chunk.size());
-  BYTES_EQUAL('1', the_chunk.data().front());
-  BYTES_EQUAL('f', the_chunk.data().back());
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data().front());
+  BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
 
-TEST(TestChunkParser, ValidChunk4)
+BOOST_AUTO_TEST_CASE(ValidChunk4)
 {
   std::string chunk_data("f");
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(!the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK(!the_chunk.parse(next, end));
 
   std::string chunk_data1(";\r\n123456789abcdef\r\n");
   next = chunk_data1.begin();
-  CHECK(the_chunk.parse(next, chunk_data1.end()));
+  end  = chunk_data1.end();
+  BOOST_CHECK(the_chunk.parse(next, end));
 
-  CHECK_EQUAL(15, the_chunk.size());
-  BYTES_EQUAL('1', the_chunk.data().front());
-  BYTES_EQUAL('f', the_chunk.data().back());
+  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data().front());
+  BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
 
-TEST(TestChunkParser, ValidLastChunk1)
+BOOST_AUTO_TEST_CASE(ValidLastChunk1)
 {
   std::string chunk_data("0\r\n\r\n");
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK_EQUAL(0, the_chunk.size());
-  CHECK(the_chunk.valid());
-  CHECK(the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, end));
+  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK(the_chunk.valid());
+  BOOST_CHECK(the_chunk.is_last());
 }
 
-TEST(TestChunkParser, ValidChunkTrailer1)
+BOOST_AUTO_TEST_CASE(ValidChunkTrailer1)
 {
   std::string chunk_data("0\r\n");
   chunk_data += "Accept-Encoding: gzip\r\n\r\n";
   std::string::const_iterator next(chunk_data.begin());
+  std::string::const_iterator end(chunk_data.end());
 
   rx_chunk<std::string> the_chunk;
-  CHECK(the_chunk.parse(next, chunk_data.end()));
-  CHECK_EQUAL(0, the_chunk.size());
-  CHECK(the_chunk.is_last());
+  BOOST_CHECK(the_chunk.parse(next, end));
+  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK(the_chunk.is_last());
 }
-//////////////////////////////////////////////////////////////////////////////
 
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////

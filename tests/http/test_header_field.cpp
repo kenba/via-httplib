@@ -1,31 +1,24 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "../../via/http/header_field.hpp"
+#include "via/http/header_field.hpp"
+#include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string.hpp>
 #include <vector>
 #include <iostream>
 #include <cstring>
 
-#ifdef _MSC_VER
-// cpputest\MemoryLeakWarningPlugin.h: C++11 exception specification deprecated
-#pragma warning (disable:4290)
-#endif
-#include "CppUTest/TestHarness.h"
-
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_GROUP(TestHeaderFields)
-{
-};
+BOOST_AUTO_TEST_SUITE(TestHeaderFields)
 
-TEST(TestHeaderFields, NamesEqual)
+BOOST_AUTO_TEST_CASE(NamesEqual)
 {
   for (int i(header_field::CACHE_CONTROL);
        i <= header_field::EXTENSION_HEADER; ++i)
@@ -33,11 +26,11 @@ TEST(TestHeaderFields, NamesEqual)
     header_field::field_id id(static_cast<header_field::field_id>(i));
     std::string lowerName(boost::algorithm::to_lower_copy(standard_name(id)));
 
-    STRCMP_EQUAL(lowercase_name(id).c_str(), lowerName.c_str());
+    BOOST_CHECK_EQUAL(lowercase_name(id).c_str(), lowerName.c_str());
   }
 }
 
-TEST(TestHeaderFields, ToHeaderString)
+BOOST_AUTO_TEST_CASE(ToHeaderString)
 {
   std::string name("Accept-Charset");
   std::string value("ISO-8859-1");
@@ -45,45 +38,46 @@ TEST(TestHeaderFields, ToHeaderString)
 
   std::string result(header_field::to_header(name, value));
 
-  STRCMP_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
 
-TEST(TestHeaderFields, ToHeaderEnum)
+BOOST_AUTO_TEST_CASE(ToHeaderEnum)
 {
   std::string value("ISO-8859-1");
   std::string line("Accept-Charset: ISO-8859-1\r\n");
 
   std::string result(header_field::to_header(header_field::ACCEPT_CHARSET, value));
 
-  STRCMP_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
 
-TEST(TestHeaderFields, ToHeaderDate)
+BOOST_AUTO_TEST_CASE(ToHeaderDate)
 {
   std::string start("Date: ");
   std::string end(" GMT\r\n");
 
   std::string result(header_field::date_header());
 
-  CHECK(!memcmp(start.c_str(), result.c_str(), start.size()));
-  CHECK(!memcmp(end.c_str(), result.c_str() + 31, end.size()));
+  BOOST_CHECK(!memcmp(start.c_str(), result.c_str(), start.size()));
+  BOOST_CHECK(!memcmp(end.c_str(), result.c_str() + 31, end.size()));
 }
 
-TEST(TestHeaderFields, ContentLengthHeader)
+BOOST_AUTO_TEST_CASE(ContentLengthHeader)
 {
   size_t size(1234);
   std::string line("Content-Length: 1234\r\n");
 
   std::string result(header_field::content_length(size));
-  STRCMP_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
 
-TEST(TestHeaderFields, ChunkedHeader)
+BOOST_AUTO_TEST_CASE(ChunkedHeader)
 {
   std::string line("Transfer-Encoding: Chunked\r\n");
 
   std::string result(header_field::chunked_encoding());
-  STRCMP_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
