@@ -59,11 +59,13 @@ namespace
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
-  // Get a hostname and uri from the user (assume default http port)
-  if (argc <= 3)
+  std::string app_name(argv[0]);
+
+  // Get a hostname, method and uri from the user (assume default http port)
+  if (argc != 4)
   {
-    std::cout << "Usage: example_http_client [host] [method] [uri]\n"
-              << "E.g. example_http_client 127.0.0.1 GET /hello"
+    std::cout << "Usage: " << app_name << " [host] [method] [uri]\n"
+              << "E.g. "   << app_name << " localhost GET /hello"
               << std::endl;
     return 1;
   }
@@ -71,7 +73,7 @@ int main(int argc, char *argv[])
   std::string host_name(argv[1]);
   std::string method(argv[2]);
   std::string uri(argv[3]);
-  std::cout << "HTTP client host: " << host_name
+  std::cout << app_name << " host: " << host_name
             << " method: " << method
             << " uri: " << uri << std::endl;
   try

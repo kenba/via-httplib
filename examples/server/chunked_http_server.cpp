@@ -34,13 +34,14 @@ namespace
   boost::shared_ptr<boost::asio::deadline_timer> chunk_timer;
 
   /// The stop callback function.
-  /// Exits the application.
+  /// Cancels the timer, closes the server and all it's connections leaving
+  /// io_service.run with no more work to do...
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop()
+  void handle_stop(http_server_type* http_server)
   {
-    std::cout << "Exit, shutting down" << std::endl;
+    std::cout << "Shutting down" << std::endl;
     chunk_timer->cancel();
-    exit(0);
+    http_server->close();
   }
 
   /// Something to send in the chunks.
@@ -108,13 +109,14 @@ namespace
         else
         {
           response.set_status(via::http::response_status::METHOD_NOT_ALLOWED);
-          response.add_header(via::http::header_field::ALLOW, "GET, PUT");
+          response.add_header(via::http::header_field::ALLOW,
+                              "GET, PUT");
         }
       }
 
       // If sending an OK response to a GET, send the response in "chunks"
       if ((request.method() == "GET") &&
-          (response.status() == via::http::response_status::OK))
+          (response.status() == static_cast<int>(via::http::response_status::OK)))
       {
         count = 0;
         response.add_header(via::http::header_field::TRANSFER_ENCODING,
@@ -201,18 +203,24 @@ namespace
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
+  std::string app_name(argv[0]);
+  unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
+
   // Get a port number from the user (the default is 80)
-  if (argc <= 1)
+  if (argc > 2)
   {
-    std::cerr << "Usage: chunked_http_server [port number]\n"
-              << "E.g. chunked_http_server 80"
+    std::cerr << "Usage: " << app_name << " [port number]\n"
+              << "E.g. "   << app_name << " " << port_number
               << std::endl;
     return 1;
   }
+  else if (argc == 2)
+  {
+    std::string port(argv[1]);
+    port_number = atoi(port.c_str());
+  }
 
-  std::string port(argv[1]);
-  unsigned short portNumber(atoi(port.c_str()));
-  std::cout << "HTTP server port: " << portNumber << std::endl;
+  std::cout << app_name << ": " << port_number << std::endl;
 
   try
   {
@@ -224,15 +232,6 @@ int main(int argc, char *argv[])
       (new boost::asio::deadline_timer(io_service,
                              boost::posix_time::milliseconds(TIMEOUT_PERIOD)));
 
-    // The signal set is used to register for termination notifications
-    boost::asio::signal_set signals_(io_service);
-    signals_.add(SIGINT);
-    signals_.add(SIGTERM);
-#if defined(SIGQUIT)
-    signals_.add(SIGQUIT);
-#endif // #if defined(SIGQUIT)
-    signals_.async_wait(boost::bind(&handle_stop));
-
     // create an http_server
     http_server_type http_server(io_service);
 
@@ -243,15 +242,26 @@ int main(int argc, char *argv[])
     http_server.socket_disconnected_event(disconnected_handler);
 
     // start accepting http connections on the given port
-    boost::system::error_code error(http_server.accept_connections(portNumber));
+    boost::system::error_code error(http_server.accept_connections(port_number));
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
       return 1;
     }
 
+    // The signal set is used to register for termination notifications
+    boost::asio::signal_set signals_(io_service);
+    signals_.add(SIGINT);
+    signals_.add(SIGTERM);
+#if defined(SIGQUIT)
+    signals_.add(SIGQUIT);
+#endif // #if defined(SIGQUIT)
+    signals_.async_wait(boost::bind(&handle_stop, &http_server));
+
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {

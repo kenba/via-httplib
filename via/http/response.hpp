@@ -154,6 +154,11 @@ namespace via
       int status() const
       { return status_; }
 
+      /// Whether this is a continue response.
+      /// @return true if this is a continue response, false otherwise.
+      bool is_continue() const
+      { return status_ == static_cast<int>(response_status::CONTINUE); }
+
       /// Accessor for the response reason string.
       /// @return the response reason string.
       const std::string& reason_phrase() const

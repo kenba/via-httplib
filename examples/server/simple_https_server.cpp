@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -36,6 +36,10 @@ namespace
 
 int main(int argc, char *argv[])
 {
+  std::string app_name(argv[0]);
+  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
+  std::cout << app_name << ": " << port_number << std::endl;
+
   // The values for the SSL functions
   std::string password         = "test";
   std::string certificate_file = "cacert.pem";
@@ -55,7 +59,7 @@ int main(int argc, char *argv[])
         (https_server_type::set_ssl_files(certificate_file, private_key_file));
     if (error)
     {
-      std::cerr << "Error: "  << error.message() << std::endl;
+      std::cerr << "Error, set_ssl_files: "  << error.message() << std::endl;
       return 1;
     }
 
@@ -66,7 +70,7 @@ int main(int argc, char *argv[])
     error = https_server.accept_connections();
     if (error)
     {
-      std::cerr << "Error: "  << error.message() << std::endl;
+      std::cerr << "Error, accept_connections: "  << error.message() << std::endl;
       return 1;
     }
 
