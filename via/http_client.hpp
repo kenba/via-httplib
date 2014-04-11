@@ -369,7 +369,7 @@ namespace via
 
     /// Disconnect the underlying connection.
     void disconnect()
-    { connection_.lock()->disconnect(); }
+    { connection_->disconnect(); }
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.

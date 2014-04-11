@@ -208,6 +208,10 @@ namespace via
         keep_alive_(false)
       {}
 
+      /// Destructor, close the connections.
+      ~server()
+      { close(); }
+
       /// Function to create a shared pointer to a server.
       /// @post the event_callback and error_callback functions MUST be set
       /// AFTER this function has been called.
@@ -312,6 +316,15 @@ namespace via
       /// @param timeout the timeout in milliseconds.
       void set_timeout(int timeout)
       { timeout_ = timeout; }
+
+      /// @fn close
+      /// Close the server and all of the connections associated with it.
+      void close()
+      {
+        acceptor_.close();
+        next_connection_.reset();
+        connections_.clear();
+      }
     };
   }
 }

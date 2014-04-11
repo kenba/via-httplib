@@ -356,6 +356,13 @@ namespace via
       return error;
     }
 
+    /// @fn close
+    /// Close the http server and all of the connections associated with it.
+    void close()
+    {
+      http_connections_.clear();
+      server_->close();
+    }
   };
 
 }
