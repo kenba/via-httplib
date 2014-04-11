@@ -3,7 +3,7 @@
 #ifndef SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -57,6 +57,10 @@ namespace via
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
         boost::asio::ip::tcp::resolver::iterator host_iterator_;
+
+        /// The value of an SSL short read.
+        /// Received when an SSL socket disconnects.
+        static const int SSL_SHORT_READ = 335544539;
 
         /// @fn resolve_host
         /// Resolves the host name and port.
@@ -218,7 +222,10 @@ namespace via
         /// This function determines whether the error is a socket disconnect.
         /// @return true if a disconnect error, false otherwise.
         bool is_disconnect(boost::system::error_code const& error)
-        { return (boost::asio::error::connection_reset == error); }
+        {
+          return (boost::asio::error::connection_reset == error)
+              || (SSL_SHORT_READ == error.value());
+        }
 
         /// @fn socket
         /// Accessor for the underlying tcp socket.
