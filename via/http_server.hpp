@@ -16,7 +16,6 @@
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
 #include <boost/signals2.hpp>
-#include <boost/bind.hpp>
 #ifdef HTTP_SSL
 #include <boost/asio/ssl/context.hpp>
 #endif
@@ -76,7 +75,7 @@ namespace via
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
-    typedef std::map<void*, boost::shared_ptr<http_connection_type> >
+    typedef std::map<void*, std::shared_ptr<http_connection_type> >
         connection_collection;
 
     /// The template requires a typename to access the iterator.
@@ -92,7 +91,7 @@ namespace via
 
     /// The signal sent when a request is received.
     typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>,
+      <void (std::weak_ptr<http_connection_type>,
              http::rx_request const&, Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
@@ -103,7 +102,7 @@ namespace via
 
     /// The signal sent when a chunk is received.
     typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>,
+      <void (std::weak_ptr<http_connection_type>,
              chunk_type const&, Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
@@ -111,13 +110,13 @@ namespace via
 
     /// The signal sent when a socket is disconnected.
     typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>)> http_disconnected_signal;
+      <void (std::weak_ptr<http_connection_type>)> http_disconnected_signal;
 
     /// The slot type associated with a socket disconnected signal.
     typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
 
   private:
-    boost::shared_ptr<server_type> server_;   ///< the communications server
+    std::shared_ptr<server_type> server_;     ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
     http_request_signal http_request_signal_; ///< the request callback function
     http_request_signal http_continue_signal_; ///< the continue callback function
@@ -164,24 +163,31 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     explicit http_server(boost::asio::io_service& io_service) :
-      server_(server_type::create(io_service)),
-      http_connections_(),
-      http_request_signal_(),
-      http_continue_signal_(),
-      http_chunk_signal_(),
-      http_disconnected_signal_(),
-      concatenate_chunks_(true),
-      continue_enabled_(true)
+      server_{server_type::create(io_service)},
+      http_connections_{},
+      http_request_signal_{},
+      http_continue_signal_{},
+      http_chunk_signal_{},
+      http_disconnected_signal_{},
+      concatenate_chunks_{true},
+      continue_enabled_{true}
     {
       server_->set_event_callback
-          (boost::bind(&http_server::event_handler, this, _1, _2));
+          (std::bind(&http_server::event_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       server_->set_error_callback
-          (boost::bind(&http_server::error_handler, this,
-                        boost::asio::placeholders::error, _2));
+          (std::bind(&http_server::error_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_server will want to send messages immediately
       server_->set_no_delay(true);
     }
+
+    /// Copy constructor deleted.
+    http_server(http_server const&)=delete;
+
+    /// Assignment operator deleted.
+    http_server& operator=(http_server const&)=delete;
 
     /// Start accepting connections on the communications server from the
     /// given port.
@@ -195,14 +201,14 @@ namespace via
 
     /// Receive data packets on an underlying communications connection.
     /// @param connection a weak pointer to the underlying comms connection.
-    void receive_handler(boost::weak_ptr<connection_type> connection)
+    void receive_handler(std::weak_ptr<connection_type> connection)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(connection.lock().get());
       if (pointer)
       {
-        boost::shared_ptr<http_connection_type> http_connection;
-        connection_collection_iterator iter(http_connections_.find(pointer));
+        std::shared_ptr<http_connection_type> http_connection;
+        auto iter(http_connections_.find(pointer));
         if (iter != http_connections_.end())
           http_connection = iter->second;
         else
@@ -214,8 +220,7 @@ namespace via
               (connection_collection_value_type(pointer, http_connection));
         }
 
-        http::receiver_parsing_state rx_state(http_connection->receive());
-
+        auto rx_state(http_connection->receive());
         switch (rx_state)
         {
         case http::RX_VALID:
@@ -247,14 +252,14 @@ namespace via
 
     /// Handle a disconnected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
-    void disconnected_handler(boost::weak_ptr<connection_type> connection)
+    void disconnected_handler(std::weak_ptr<connection_type> connection)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(connection.lock().get());
       if (!pointer)
         return;
 
-      connection_collection_iterator iter(http_connections_.find(pointer));
+      auto iter(http_connections_.find(pointer));
       if (iter != http_connections_.end())
       {
         // Signal the application
@@ -266,7 +271,7 @@ namespace via
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
-    void event_handler(int event, boost::weak_ptr<connection_type> connection)
+    void event_handler(int event, std::weak_ptr<connection_type> connection)
     {
       switch(event)
       {
@@ -285,7 +290,7 @@ namespace via
     /// @param error the boost error_code.
     // @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<connection_type>) // connection)
+                       std::weak_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;

@@ -3,7 +3,7 @@
 #ifndef TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -29,18 +29,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
-      /// A connection hander callback function type.
-      /// @param error the (boost) error code.
-      /// @param host_iterator the resolver_iterator
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      typedef std::function<void (boost::system::error_code const&,
-                                  boost::asio::ip::tcp::resolver::iterator)>
-#else
-      typedef std::tr1::function<void (boost::system::error_code const&,
-                                       boost::asio::ip::tcp::resolver::iterator)>
-#endif
-                                             ConnectHandler;
-
       boost::asio::io_service& io_service_; ///< The asio io_service.
       boost::asio::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.
@@ -53,8 +41,8 @@ namespace via
       boost::asio::ip::tcp::resolver::iterator resolve_host
           (char const* host_name, char const* port_name) const
       {
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+        boost::asio::ip::tcp::resolver resolver{io_service_};
+        boost::asio::ip::tcp::resolver::query query{host_name, port_name};
         return resolver.resolve(query);
       }
 
@@ -84,8 +72,8 @@ namespace via
       /// @param io_service the asio io_service associted with this connection
       explicit tcp_adaptor(boost::asio::io_service& io_service) :
         io_service_(io_service),
-        socket_(io_service_),
-        host_iterator_()
+        socket_{io_service_},
+        host_iterator_{}
       {}
 
     public:

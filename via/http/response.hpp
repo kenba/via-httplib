@@ -72,16 +72,16 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_line() :
-        major_version_(0),
-        minor_version_(0),
-        status_(0),
-        reason_phrase_(""),
-        state_(RESP_HTTP),
-        major_read_(false),
-        minor_read_(false),
-        status_read_(false),
-        valid_(false),
-        fail_(false)
+        major_version_{0},
+        minor_version_{0},
+        status_{0},
+        reason_phrase_{""},
+        state_{RESP_HTTP},
+        major_read_{false},
+        minor_read_{false},
+        status_read_{false},
+        valid_{false},
+        fail_{false}
       {}
 
       /// Clear the response_line.
@@ -126,12 +126,12 @@ namespace via
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while ((iter != end) && (RESP_HTTP_END != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
@@ -157,7 +157,7 @@ namespace via
       /// Whether this is a continue response.
       /// @return true if this is a continue response, false otherwise.
       bool is_continue() const
-      { return status_ == static_cast<int>(response_status::CONTINUE); }
+      { return status_ == static_cast<int>(response_status::code::CONTINUE); }
 
       /// Accessor for the response reason string.
       /// @return the response reason string.
@@ -179,27 +179,27 @@ namespace via
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
+      /// @see http::response_status::code
+      /// @param status_code the response status code
       /// @param minor_version default 1
       /// @param major_version default 1
-      explicit response_line(response_status::status_code status,
+      explicit response_line(response_status::code status_code,
                              int minor_version = 1,
                              int major_version = 1) :
-        major_version_(major_version),
-        minor_version_(minor_version),
-        status_(status),
-        reason_phrase_(response_status::reason_phrase(status)),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        status_read_(true),
-        valid_(true),
-        fail_(false)
+        major_version_{major_version},
+        minor_version_{minor_version},
+        status_{static_cast<int>(status_code)},
+        reason_phrase_{response_status::reason_phrase(status_code)},
+        state_{RESP_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        status_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Constructor for creating a non-standard response.
-      /// @param status the response status
+      /// @param status the response status code
       /// @param reason_phrase the reason phrase for the response status.
       /// @param minor_version default 1
       /// @param major_version default 1
@@ -207,27 +207,27 @@ namespace via
                              std::string reason_phrase,
                              int minor_version = 1,
                              int major_version = 1) :
-        major_version_(major_version),
-        minor_version_(minor_version),
-        status_(status),
-        reason_phrase_(!reason_phrase.empty() ? reason_phrase :
+        major_version_{major_version},
+        minor_version_{minor_version},
+        status_{status},
+        reason_phrase_{!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::status_code>(status))),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
-        status_read_(true),
-        valid_(true),
-        fail_(false)
+                    (static_cast<response_status::code>(status))},
+        state_{RESP_HTTP_END},
+        major_read_{true},
+        minor_read_{true},
+        status_read_{true},
+        valid_{true},
+        fail_{false}
       {}
 
       /// Set the response status for standard responses.
       /// @see http::response_status::status_code
       /// @param status the response status.
-      void set_status(response_status::status_code status)
+      void set_status(response_status::code status_code)
       {
-        status_ = status;
-        reason_phrase_ = response_status::reason_phrase(status);
+        status_ = static_cast<int>(status_code);
+        reason_phrase_ = response_status::reason_phrase(status_code);
       }
 
       /// Set the response status and reason phrase.
@@ -268,9 +268,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_response() :
-        response_line(),
-        headers_(),
-        valid_(false)
+        response_line{},
+        headers_{},
+        valid_{false}
       {}
 
       /// Clear the rx_response.
@@ -300,8 +300,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!response_line::valid() && !response_line::parse(iter, end))
           return false;
@@ -357,13 +357,13 @@ namespace via
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
+      /// @see http::response_status::code
+      /// @param status_code the response status code
       /// @param header_string default blank
-      explicit tx_response(response_status::status_code status,
+      explicit tx_response(response_status::code status_code,
                            std::string header_string = "") :
-        response_line(status),
-        header_string_(header_string)
+        response_line{status_code},
+        header_string_{header_string}
       {}
 
       /// Constructor for creating a non-standard response.
@@ -373,16 +373,16 @@ namespace via
       explicit tx_response(const std::string& reason_phrase,
                            int status,
                            std::string header_string = "") :
-        response_line(status, reason_phrase) ,
-        header_string_(header_string)
+        response_line{status, reason_phrase},
+        header_string_{header_string}
       {}
 
       /// Add a standard header to the response.
       /// @see http::header_field::field_id
       /// @param id the header field id
       /// @param value the header field value
-      void add_header(header_field::field_id id, const std::string& value)
-      { header_string_ += header_field::to_header(id, value);  }
+      void add_header(header_field::id field_id, const std::string& value)
+      { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the response.
       /// @param field the header field name
@@ -402,26 +402,21 @@ namespace via
       void add_content_length_header(size_t size)
       { header_string_ += header_field::content_length(size); }
 
-      /// Whether this is a continue response.
-      /// @return true if this is a continue response, false otherwise.
-      bool is_continue() const
-      { return status() == response_status::CONTINUE; }
-
       /// The http message header string.
       /// @param content_length the size of the message body for the
       /// content_length header.
       /// @return The http message header as a std:string.
       std::string message(size_t content_length = 0) const
       {
-        std::string output(response_line::to_string());
+        std::string output{response_line::to_string()};
         output += header_string_;
 
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
-        bool no_content_length(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::CONTENT_LENGTH)));
-        bool no_transfer_encoding(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+        bool no_content_length{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::id::CONTENT_LENGTH))};
+        bool no_transfer_encoding{std::string::npos == header_string_.find
+              (header_field::standard_name(header_field::id::TRANSFER_ENCODING))};
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -446,9 +441,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_receiver() :
-        response_(),
-        chunk_(),
-        body_()
+        response_{},
+        chunk_{},
+        body_{}
       {}
 
       /// clear the response_receiver.
@@ -478,12 +473,12 @@ namespace via
       /// Receive data for an HTTP response, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      receiver_parsing_state receive(ForwardIterator1& iter,
-                                     ForwardIterator2 end)
+      template<typename ForwardIterator>
+      receiver_parsing_state receive(ForwardIterator& iter,
+                                     ForwardIterator end)
       {
         // building a response
-        bool response_parsed(!response_.valid());
+        bool response_parsed{!response_.valid()};
         if (response_parsed)
         {
           chunk_.clear();
@@ -507,7 +502,7 @@ namespace via
         if (!response_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
-          size_t content_length(response_.content_length());
+          auto content_length(response_.content_length());
           if (content_length == CONTENT_LENGTH_INVALID)
           {
             clear();
@@ -518,7 +513,7 @@ namespace via
           long rx_size(end - iter);
           long required(content_length - body_.size());
           if ((rx_size > 0) && (content_length == 0) &&
-              response_.headers().find(header_field::CONTENT_LENGTH).empty())
+              response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;
@@ -527,7 +522,7 @@ namespace via
           // received buffer contains more than the required data
           if (rx_size > required)
           {
-              ForwardIterator1 next(iter + required);
+              auto next(iter + required);
               body_.insert(body_.end(), iter, next);
           }
           else // received buffer <= required data

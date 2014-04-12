@@ -3,7 +3,7 @@
 #ifndef RESPONSE_STATUS_HPP_VIA_HTTPLIB_
 #define RESPONSE_STATUS_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -22,7 +22,7 @@ namespace via
     namespace response_status
     {
       /// The standard HTTP 1.1 response status codes.
-      enum status_code
+      enum class code
       {
         // Informational 1xx
         CONTINUE                      = 100,
@@ -79,7 +79,7 @@ namespace via
       /// See RFC2616 Section 6.1.1.
       /// @param status the reason status code
       /// @return the standard reason phrase associated with the status code.
-      const std::string& reason_phrase(status_code status);
+      const std::string& reason_phrase(code status_code);
 
     }
   }

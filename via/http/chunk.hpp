@@ -3,7 +3,7 @@
 #ifndef CHUNK_HPP_VIA_HTTPLIB_
 #define CHUNK_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -59,12 +59,12 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit chunk_header() :
-        size_(0),
-        hex_size_(""),
-        extension_(""),
-        state_(CHUNK_SIZE_LS),
-        size_read_(false),
-        valid_(false)
+        size_{0},
+        hex_size_{""},
+        extension_{""},
+        state_{CHUNK_SIZE_LS},
+        size_read_{false},
+        valid_{false}
       {}
 
       /// Clear the chunk_header.
@@ -96,12 +96,12 @@ namespace via
       /// If parsed sucessfully, it will refer to the start of the data.
       /// @param end the end of the buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while ((iter != end) && (CHUNK_END != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if (!parse_char(c))
             return false;
         }
@@ -144,9 +144,9 @@ namespace via
       /// @param extension the chunk extension (default blank).
       explicit chunk_header(size_t size,
                             std::string extension = "")
-        : size_(size)
-        , hex_size_(to_hex_string(size))
-        , extension_(extension)
+        : size_{size}
+        , hex_size_{to_hex_string(size)}
+        , extension_{extension}
       {}
 
       /// Set the size of the chunk.
@@ -183,10 +183,10 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_chunk() :
-        chunk_header(),
-        data_(),
-        trailers_(),
-        valid_(false)
+        chunk_header{},
+        data_{},
+        trailers_{},
+        valid_{false}
       {}
 
       /// clear the rx_chunk.
@@ -217,8 +217,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!chunk_header::valid() && !chunk_header::parse(iter, end))
           return false;
@@ -239,7 +239,7 @@ namespace via
           {
             if (required > 0)
             {
-              ForwardIterator1 next(iter + required);
+              ForwardIterator next{iter + required};
               data_.insert(data_.end(), iter, next);
               iter = next;
             }
@@ -297,8 +297,8 @@ namespace via
       /// @param trailer_string the (optional) chunk trailers.
       explicit last_chunk(std::string const& extension,
                           std::string const& trailer_string) :
-        extension_(extension),
-        trailer_string_(trailer_string)
+        extension_{extension},
+        trailer_string_{trailer_string}
       {}
 
       /// Add a free form trailer to the chunk.
@@ -306,8 +306,8 @@ namespace via
       { trailer_string_ += header_field::to_header(field, value);  }
 
       /// Add a standard trailer to the chunk.
-      void add_trailer(header_field::field_id id, std::string const& value)
-      { trailer_string_ += header_field::to_header(id, value);  }
+      void add_trailer(header_field::id field_id, std::string const& value)
+      { trailer_string_ += header_field::to_header(field_id, value);  }
 
       /// The http message header string.
       std::string message() const;

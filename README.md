@@ -11,11 +11,11 @@ Note: also supports HTTP and HTTPS clients.
 Requirements
 ------------
 
-+ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/)
++ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.55.
 
-+ A reasonably up to date C++ compiler, see [old compilers](http://www.boost.org/users/news/old_compilers.html)
++ A C++11 compiler, it's been tested with `MSVC 2013` and `MinGw 4.8`. If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
 
-+ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/)
++ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/). Please use version 1.0.1g or later (i.e. not 1.0.2-beta1) to avoid the [heartbeat overflow issue](https://www.openssl.org/news/secadv_20140407.txt).
 
 Getting Started
 ---------------
@@ -68,9 +68,9 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	    std::cout << "Rx headers: " << request.headers().to_string();
 	    std::cout << "Rx body: "    << body << std::endl;
 	
-	    via::http::tx_response response(via::http::response_status::OK);
-        response.add_server_header();
-        response.add_date_header();
+	    via::http::tx_response response(via::http::response_status::code::OK);
+	    response.add_server_header();
+	    response.add_date_header();
 	    weak_ptr.lock()->send(response);
 	  }
 	}

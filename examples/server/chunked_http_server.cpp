@@ -99,27 +99,27 @@ namespace
       via::http::rx_request const& request(connection->request());
 
       // The default response is 404 Not Found
-      via::http::tx_response response(via::http::response_status::NOT_FOUND);
+      via::http::tx_response response(via::http::response_status::code::NOT_FOUND);
       response.add_server_header();
       response.add_date_header();
       if (request.uri() == "/hello")
       {
         if ((request.method() == "GET") || (request.method() == "PUT"))
-          response.set_status(via::http::response_status::OK);
+          response.set_status(via::http::response_status::code::OK);
         else
         {
-          response.set_status(via::http::response_status::METHOD_NOT_ALLOWED);
-          response.add_header(via::http::header_field::ALLOW,
+          response.set_status(via::http::response_status::code::METHOD_NOT_ALLOWED);
+          response.add_header(via::http::header_field::id::ALLOW,
                               "GET, PUT");
         }
       }
 
       // If sending an OK response to a GET, send the response in "chunks"
       if ((request.method() == "GET") &&
-          (response.status() == static_cast<int>(via::http::response_status::OK)))
+          (response.status() == static_cast<int>(via::http::response_status::code::OK)))
       {
         count = 0;
-        response.add_header(via::http::header_field::TRANSFER_ENCODING,
+        response.add_header(via::http::header_field::id::TRANSFER_ENCODING,
                             "Chunked");
 
         chunk_timer->expires_from_now
@@ -186,8 +186,8 @@ namespace
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                       via::http::response_status::REQUEST_ENTITY_TOO_LARGE :
-                       via::http::response_status::CONTINUE);
+                       via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
+                       via::http::response_status::code::CONTINUE);
     weak_ptr.lock()->send(response);
   }
 

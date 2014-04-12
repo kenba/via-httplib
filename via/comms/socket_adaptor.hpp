@@ -3,7 +3,7 @@
 #ifndef SOCKET_ADAPTOR_HPP_VIA_HTTPLIB_
 #define SOCKET_ADAPTOR_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,14 +16,7 @@
 /// @see ssl_tcp_adaptor
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
 #include <functional>
-#else
-#include <tr1/functional>
-#endif
 
 namespace via
 {
@@ -41,23 +34,23 @@ namespace via
     /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
     typedef std::function<void (boost::system::error_code const&)>
-#else
-    typedef std::tr1::function<void (boost::system::error_code const&)>
-#endif
                                                ErrorHandler;
 
     /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
     typedef std::function<void (boost::system::error_code const&, size_t)>
-#else
-    typedef std::tr1::function<void (boost::system::error_code const&, size_t)>
-#endif
-                                           CommsHandler;
+                                               CommsHandler;
+
+    /// @typedef ConnectHandler
+    /// A connection hander callback function type.
+    /// @param error the (boost) error code.
+    /// @param host_iterator the resolver_iterator
+    typedef std::function<void (boost::system::error_code const&,
+                                boost::asio::ip::tcp::resolver::iterator)>
+                                           ConnectHandler;
   }
 }
 

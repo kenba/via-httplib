@@ -87,8 +87,8 @@ namespace via
     /// Convert an int into a decimal string.
     /// @param number to be represented
     /// @return the string containing the number in decimal.
-    std::string to_dec_string(int number);
-
+    inline std::string to_dec_string(int number)
+    { return std::to_string(number); }
   }
 }
 

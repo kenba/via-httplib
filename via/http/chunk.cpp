@@ -79,7 +79,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     std::string chunk_header::to_string() const
     {
-      std::string output(hex_size_);
+      std::string output{hex_size_};
       if (!extension_.empty())
         output += "; " + extension_;
 
@@ -91,7 +91,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     std::string last_chunk::message() const
     {
-      std::string output("0");
+      std::string output{"0"};
       if (!extension_.empty())
         output += "; " + extension_;
 

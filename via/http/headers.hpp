@@ -3,7 +3,7 @@
 #ifndef HEADERS_HPP_VIA_HTTPLIB_
 #define HEADERS_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
 #include "character.hpp"
-#include <map>
+#include <unordered_map>
 
 namespace via
 {
@@ -52,7 +52,7 @@ namespace via
         HEADER_VALUE_LS, ///< the header value leading white space
         HEADER_VALUE,    ///< the header value
         HEADER_LF,       ///< the line feed (if any)
-        HEADER_END
+        HEADER_END       ///< the end of the header field line
       };
 
     private:
@@ -71,9 +71,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit field_line() :
-        name_(""),
-        value_(""),
-        state_(HEADER_NAME)
+        name_{""},
+        value_{""},
+        state_{HEADER_NAME}
       {}
 
       /// clear the field_line.
@@ -100,14 +100,12 @@ namespace via
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the buffer.
       /// @return true if a valid HTTP header, false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while ((iter != end) && (HEADER_END != state_))
         {
-          // following line added to compile with vectors of Unsigned chars
-          // using Visual Studio 2012 (Beta)
-          char c(static_cast<char>(*iter++));
+          char c{static_cast<char>(*iter++)};
           if (!parse_char(c))
             return false;
           else if (HEADER_END == state_)
@@ -139,7 +137,7 @@ namespace via
     /// The collection of HTTP headers received with a request, response or a
     /// chunk (trailers).
     /// Note: the parse function converts the received field names into lower
-    /// case before storing them in a map for efficient access.
+    /// case before storing them in a unordered_map for efficient access.
     /// @see rx_request
     /// @see rx_response
     /// @see rx_chunk
@@ -147,9 +145,7 @@ namespace via
     class message_headers
     {
       /// The HTTP message header fields.
-      /// Note: A C++11 unordered_map or a hash_map would be better
-      /// But hash_map is non-standard. TODO template?
-      std::map<std::string, std::string> fields_;
+      std::unordered_map<std::string, std::string> fields_;
       field_line field_; ///< the current field being parsed
       bool       valid_; ///< true if the headers are valid
 
@@ -158,9 +154,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit message_headers() :
-        fields_(),
-        field_(),
-        valid_(false)
+        fields_{},
+        field_{},
+        valid_{false}
       {}
 
       /// Clear the message_headers.
@@ -186,8 +182,8 @@ namespace via
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         while (iter != end && !is_end_of_line(*iter))
         {
@@ -220,7 +216,7 @@ namespace via
       /// @param name the field name (in lower case)
       /// @param value the field value.
       void add(const std::string& name, const std::string& value)
-      { fields_.insert(std::map<std::string, std::string>::value_type
+      { fields_.insert(std::unordered_map<std::string, std::string>::value_type
                      (name, value)); }
 
       /// Find the value for a given header name.
@@ -232,8 +228,8 @@ namespace via
       /// Find the value for a given header id.
       /// @param id the id of the header.
       /// @return the value, blank if not found
-      const std::string& find(header_field::field_id id) const
-      { return find(header_field::lowercase_name(id)); }
+      const std::string& find(header_field::id field_id) const
+      { return find(header_field::lowercase_name(field_id)); }
 
       /// If there is a Content-Length field return its size.
       /// @return the value of the Content-Length field or

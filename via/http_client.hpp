@@ -16,11 +16,10 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
+#include <memory>
 #include <deque>
 #include <iostream>
-#include <boost/bind.hpp>
 
 namespace via
 {
@@ -56,7 +55,7 @@ namespace via
     typedef typename connection_type::RxBuffer rx_buffer_type;
 
     /// A shared pointer to this type.
-    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container,
                                                  buffer_size, use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
@@ -88,7 +87,7 @@ namespace via
 
   private:
 
-    boost::shared_ptr<connection_type> connection_; ///< the comms connection
+    std::shared_ptr<connection_type> connection_; ///< the comms connection
     http::response_receiver<Container> rx_;       ///< the response receiver
     http_response_signal http_response_signal_;   ///< the response callback function
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
@@ -103,7 +102,6 @@ namespace via
       connection_->send_data(packet);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     void send(Container&& packet)
@@ -111,23 +109,23 @@ namespace via
       rx_.clear();
       connection_->send_data(packet);
     }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Constructor.
     /// @param io_service the asio io_service to use.
     explicit http_client(boost::asio::io_service& io_service) :
-      connection_(connection_type::create(io_service)),
-      rx_(),
-      http_response_signal_(),
-      http_chunk_signal_(),
-      http_disconnected_signal_(),
-      host_name_()
+      connection_{connection_type::create(io_service)},
+      rx_{},
+      http_response_signal_{},
+      http_chunk_signal_{},
+      http_disconnected_signal_{},
+      host_name_{}
     {
       connection_->set_event_callback
-          (boost::bind(&http_client::event_handler, this, _1, _2));
+          (std::bind(&http_client::event_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       connection_->set_error_callback
-          (boost::bind(&http_client::error_handler, this,
-                       boost::asio::placeholders::error, _2));
+          (std::bind(&http_client::error_handler, this,
+                     std::placeholders::_1, std::placeholders::_2));
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_client will want to send messages immediately
       connection_->set_no_delay(true);
@@ -140,7 +138,7 @@ namespace via
     /// @param io_service the boost asio io_service used by the underlying
     /// connection.
     static shared_pointer create(boost::asio::io_service& io_service)
-    { return shared_pointer(new http_client(io_service)); }
+    { return shared_pointer{new http_client{io_service}}; }
 
     /// Connect the response received slot.
     /// @param slot the slot for the response received signal.
@@ -193,11 +191,11 @@ namespace via
     {
       // attempt to read the data
       rx_buffer_type const& data(connection_->rx_buffer());
-      typename rx_buffer_type::const_iterator iter(data.begin());
-      typename rx_buffer_type::const_iterator end(iter);
+      auto iter(data.begin());
+      auto end(iter);
       end += connection_->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
 
+      auto rx_state(rx_.receive(iter, end));
       switch (rx_state)
       {
       case http::RX_VALID:
@@ -220,31 +218,29 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP request without a body.
     /// @param request the request to send.
     void send(http::tx_request&& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
     void send(http::tx_request& request, Container const& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message());
+      request.add_header(http::header_field::id::HOST, host_name_);
+      std::string http_header{request.message()};
 
       Container tx_message(body);
       tx_message.insert(tx_message.begin(),
@@ -252,36 +248,32 @@ namespace via
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
     void send(http::tx_request&& request, Container&& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
-      std::string http_header(request.message(body.size()));
+      request.add_header(http::header_field::id::HOST, host_name_);
+      std::string http_header{request.message(body.size())};
 
       body.insert(body.begin(),
                   http_header.begin(), http_header.end());
       send(body);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
+    template<typename ForwardIterator>
     bool send(http::tx_request& request,
-              ForwardIterator1 begin, ForwardIterator2 end)
+              ForwardIterator begin, ForwardIterator end)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       size_t size(end - begin);
-      std::string http_header(request.message(size));
+      std::string http_header{request.message(size)};
 
-      Container tx_message;
-      tx_message.reserve(http_header.size() + size);
-      tx_message.assign(http_header.begin(), http_header.end());
+      Container tx_message(http_header.begin(), http_header.end());
       tx_message.insert(tx_message.end(), begin, end);
       return send(tx_message);
     }
@@ -292,8 +284,8 @@ namespace via
     void send_chunk(Container const& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       Container tx_message(chunk);
       tx_message.insert(tx_message.begin(),
@@ -303,15 +295,14 @@ namespace via
       send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
     void send_chunk(Container&& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
@@ -319,23 +310,20 @@ namespace via
                    http::CRLF.begin(), http::CRLF.end());
       send(chunk);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP body chunk.
     /// @param begin a constant iterator to the beginning of the chunk to send.
     /// @param end a constant iterator to the end of the chunk to send.
     /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    void send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+    template<typename ForwardIterator>
+    void send_chunk(ForwardIterator begin, ForwardIterator end,
                     std::string extension = "")
     {
       size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message;
-      tx_message.reserve(chunk_string.size() + size);
-      tx_message.assign(chunk_string.begin(), chunk_string.end());
+      Container tx_message(chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), begin, end);
       tx_message.insert(tx_message.end(),
                         http::CRLF.begin(), http::CRLF.end());
@@ -348,11 +336,10 @@ namespace via
     void last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
-      http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      http::last_chunk last_chunk{extension, trailer_string};
+      std::string chunk_string{last_chunk.message()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      send(tx_message);
+      send(Container{chunk_string.begin(), chunk_string.end()});
     }
 
     /// Send a message body on the connection.
@@ -360,12 +347,10 @@ namespace via
     void send_body(Container const& body)
     { send(body); }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a message body on the connection.
     /// @param body the body to send.
     void send_body(Container&& body)
     { send(body); }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Disconnect the underlying connection.
     void disconnect()
@@ -402,7 +387,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
-    boost::shared_ptr<connection_type> connection()
+    std::shared_ptr<connection_type> connection()
     { return connection_; }
   };
 }

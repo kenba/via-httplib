@@ -6,15 +6,19 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file example_http_server.cpp
-/// @brief An example HTTP server containing all of the callbacks.
+/// @file thread_pool_http_server.cpp
+/// @brief An example HTTP server containing all of the callbacks using
+/// a single io_service and a thread pool calling io_service::run().
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
+#include <thread>
 #include <iostream>
 
-/// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
+/// Define an HTTP server using std::string to store message bodies and an
+/// asio strand to protect the handlers
+typedef via::http_server<via::comms::tcp_adaptor, std::string,
+                         via::comms::DEFAULT_BUFFER_SIZE, true> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::chunk_type http_chunk_type;
 
@@ -191,8 +195,25 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
     signals_.async_wait(boost::bind(&handle_stop, &http_server));
 
-    // run the io_service to start communications
-    io_service.run();
+    // Determine the number of concurrent threads supported
+    auto no_of_threads(std::thread::hardware_concurrency());
+    std::cout << "No of threads: " << no_of_threads << std::endl;
+
+    if (no_of_threads > 0)
+    {
+      // Create a thread pool for the threads and run the asio io_service
+      // in each of the threads.
+      std::vector<std::shared_ptr<std::thread>> threads;
+      for(auto i = no_of_threads; i > 0; --i)
+        threads.push_back(std::make_shared<std::thread>
+                          ([&io_service]() { io_service.run(); }));
+
+      // Wait for all threads in the pool to exit.
+      for (auto& thread : threads)
+        thread->join();
+    }
+    else
+      io_service.run();
 
     std::cout << "io_service.run, all work has finished" << std::endl;
   }
@@ -204,3 +225,4 @@ int main(int argc, char *argv[])
   return 0;
 }
 //////////////////////////////////////////////////////////////////////////////
+

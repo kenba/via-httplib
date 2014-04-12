@@ -17,8 +17,7 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <memory>
 #include <deque>
 #include <iostream>
 
@@ -59,7 +58,7 @@ namespace via
             bool translate_head,
             bool require_host,
             bool trace_enabled>
-  class http_connection : public boost::enable_shared_from_this
+  class http_connection : public std::enable_shared_from_this
        <http_connection<SocketAdaptor, Container, buffer_size,
          use_strand, translate_head, require_host, trace_enabled> >
   {
@@ -72,12 +71,12 @@ namespace via
     typedef typename connection_type::RxBuffer rx_buffer_type;
 
     /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container,
          buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
-    typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container,
          buffer_size, use_strand, translate_head, require_host, trace_enabled> >
        shared_pointer;
 
@@ -109,16 +108,16 @@ namespace via
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
                     bool continue_enabled) :
-      connection_(connection),
-      rx_(concatenate_chunks),
-      continue_enabled_(continue_enabled)
+      connection_{connection},
+      rx_{concatenate_chunks},
+      continue_enabled_{continue_enabled}
     {}
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     bool send(Container const& packet)
     {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -128,12 +127,11 @@ namespace via
         return false;
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     bool send(Container&& packet)
     {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -142,20 +140,19 @@ namespace via
       else
         return false;
     }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     /// @param is_continue whether this is a 100 Continue response
     bool send(Container const& packet, bool is_continue)
     {
-      bool keep_alive(rx_.request().keep_alive());
+      bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
         rx_.set_continue_sent();
       else
         rx_.clear();
 
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -171,19 +168,18 @@ namespace via
       return false;
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     /// @param is_continue whether this is a 100 Continue response
     bool send(Container&& packet, bool is_continue)
     {
-      bool keep_alive(rx_.request().keep_alive());
+      bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
         rx_.set_continue_sent();
       else
         rx_.clear();
 
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(packet);
@@ -198,7 +194,6 @@ namespace via
                   << std::endl;
       return false;
     }
-#endif
 
   public:
 
@@ -214,9 +209,15 @@ namespace via
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
                                  bool continue_enabled)
-    { return shared_pointer(new http_connection(connection,
+    { return shared_pointer{new http_connection{connection,
                                                 concatenate_chunks,
-                                                continue_enabled)); }
+                                                continue_enabled}}; }
+
+    /// Copy constructor deleted.
+    http_connection(http_connection const&)=delete;
+
+    /// Assignment operator deleted.
+    http_connection& operator=(http_connection const&)=delete;
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
@@ -248,40 +249,26 @@ namespace via
     http::receiver_parsing_state receive()
     {
       // attempt to get the pointer
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      auto tcp_pointer(connection_.lock());
       if (!tcp_pointer)
         return http::RX_INCOMPLETE;
 
       // read the data
-      rx_buffer_type const& data(tcp_pointer->rx_buffer());
-      typename rx_buffer_type::const_iterator iter(data.begin());
-      typename rx_buffer_type::const_iterator end(iter);
+      auto data(tcp_pointer->rx_buffer());
+      auto iter(data.cbegin());
+      auto end(iter);
       end += tcp_pointer->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
+      auto rx_state(rx_.receive(iter, end));
 
       // Handle special cases
       switch (rx_state)
       {
       case http::RX_INVALID:
-#if defined(BOOST_ASIO_HAS_MOVE)
-        send(http::tx_response(http::response_status::BAD_REQUEST));
-#else
-      {
-        http::tx_response bad_request(http::response_status::BAD_REQUEST);
-        send(bad_request);
-      }
-#endif // BOOST_ASIO_HAS_MOVE
+        send(http::tx_response(http::response_status::code::BAD_REQUEST));
         break;
 
       case http::RX_LENGTH_REQUIRED:
-#if defined(BOOST_ASIO_HAS_MOVE)
-        send(http::tx_response(http::response_status::LENGTH_REQUIRED));
-#else
-      {
-        http::tx_response length_required(http::response_status::LENGTH_REQUIRED);
-        send(length_required);
-      }
-#endif // BOOST_ASIO_HAS_MOVE
+        send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
         rx_state = http::RX_INVALID;
         break;
 
@@ -289,12 +276,7 @@ namespace via
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)
         {
-#if defined(BOOST_ASIO_HAS_MOVE)
-          send(http::tx_response(http::response_status::CONTINUE));
-#else
-          http::tx_response continue_response(http::response_status::CONTINUE);
-          send(continue_response);
-#endif // BOOST_ASIO_HAS_MOVE
+          send(http::tx_response(http::response_status::code::CONTINUE));
           rx_state = http::RX_INCOMPLETE;
         }
         break;
@@ -307,7 +289,7 @@ namespace via
           if (trace_enabled)
           {
             // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::OK,
+            http::tx_response ok_response(http::response_status::code::OK,
                                    http::header_field::content_http_header());
 
             // The body of the response contains the TRACE request
@@ -317,14 +299,7 @@ namespace via
             send(ok_response, trace_request.begin(), trace_request.end());
           }
           else // otherwise, it responds with "Not Allowed"
-          {
-#if defined(BOOST_ASIO_HAS_MOVE)
-            send(http::tx_response(http::response_status::METHOD_NOT_ALLOWED));
-#else
-            http::tx_response not_allowed(http::response_status::METHOD_NOT_ALLOWED);
-            send(not_allowed);
-#endif // BOOST_ASIO_HAS_MOVE
-          }
+            send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
 
           // Set the state as invalid, since the server has responded to the request
           rx_state = http::RX_INVALID;
@@ -334,8 +309,8 @@ namespace via
           // A fully compliant HTTP server MUST reject a request without a Host header
           if (rx_.request().missing_host_header() && require_host)
           {
-            std::string missing_host("Request lacks Host Header");
-            http::tx_response bad_request(http::response_status::BAD_REQUEST);
+            std::string missing_host{"Request lacks Host Header"};
+            http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
             send(bad_request, missing_host.begin(), missing_host.end());
 
             rx_state = http::RX_INVALID;
@@ -356,25 +331,23 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header{response.message()};
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(Container{http_header.begin(), http_header.end()},
+                  response.is_continue());
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response without a body.
     /// @param response the response to send.
     bool send(http::tx_response&& response)
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      std::string http_header{response.message()};
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(Container{http_header.begin(), http_header.end()},
+                  response.is_continue());
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
@@ -383,9 +356,9 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
+      std::string http_header{response.message(body.size())};
 
-      Container tx_message(body);
+      Container tx_message{body};
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -396,7 +369,6 @@ namespace via
       return send(tx_message, response.is_continue());
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response with a body.
     /// @param response the response to send.
     /// @param body the body to send
@@ -404,7 +376,7 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
+      std::string http_header{response.message(body.size())};
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -414,20 +386,19 @@ namespace via
                   http_header.begin(), http_header.end());
       return send(body, response.is_continue());
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
     /// @param response the response to send.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
+    template<typename ForwardIterator>
     bool send(http::tx_response& response,
-              ForwardIterator1 begin, ForwardIterator2 end)
+              ForwardIterator begin, ForwardIterator end)
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       size_t size(end - begin);
-      std::string http_header(response.message(size));
+      std::string http_header{response.message(size)};
 
       Container tx_message;
       tx_message.reserve(http_header.size() + size);
@@ -444,47 +415,45 @@ namespace via
     /// @param extension the (optional) chunk extension.
     bool send_chunk(Container const& chunk, std::string extension = "")
     {
-      size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      size_t size{chunk.size()};
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message(chunk);
+      Container tx_message{chunk};
       tx_message.insert(tx_message.begin(),
                         chunk_string.begin(), chunk_string.end());
       tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(tx_message);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
     bool send_chunk(Container&& chunk, std::string extension = "")
     {
-      size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      size_t size{chunk.size()};
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
       chunk.insert(chunk.begin(),
                    chunk_string.begin(), chunk_string.end());
       chunk.insert(chunk.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(chunk);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP body chunk.
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
     /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    bool send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
+    template<typename ForwardIterator>
+    bool send_chunk(ForwardIterator begin, ForwardIterator end,
                     std::string extension = "")
     {
       size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      http::chunk_header chunk_header{size, extension};
+      std::string chunk_string{chunk_header.to_string()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
+      Container tx_message{chunk_string.begin(), chunk_string.end()};
       tx_message.insert(tx_message.end(), begin, end);
       tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
       return send(tx_message);
@@ -496,11 +465,10 @@ namespace via
     bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
-      http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      http::last_chunk last_chunk{extension, trailer_string};
+      std::string chunk_string{last_chunk.message()};
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      return send(tx_message);
+      return send(Container{chunk_string.begin(), chunk_string.end()});
     }
 
     /// Disconnect the underlying connection.

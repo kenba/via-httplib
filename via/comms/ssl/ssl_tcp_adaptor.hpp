@@ -39,18 +39,6 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        /// A connection hander callback function type.
-        /// @param error the (boost) error code.
-        /// @param host_iterator the resolver_iterator
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-        typedef std::function<void (boost::system::error_code const&,
-                                    boost::asio::ip::tcp::resolver::iterator)>
-#else
-        typedef std::tr1::function<void (boost::system::error_code const&,
-                                         boost::asio::ip::tcp::resolver::iterator)>
-#endif
-                                               ConnectHandler;
-
         /// The asio io_service.
         boost::asio::io_service& io_service_;
         /// The asio SSL TCP socket.
@@ -69,8 +57,8 @@ namespace via
         boost::asio::ip::tcp::resolver::iterator resolve_host
           (char const* host_name, char const* port_name) const
         {
-          boost::asio::ip::tcp::resolver resolver(io_service_);
-          boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+          boost::asio::ip::tcp::resolver resolver{io_service_};
+          boost::asio::ip::tcp::resolver::query query{host_name, port_name};
           return resolver.resolve(query);
         }
 
@@ -120,8 +108,8 @@ namespace via
         /// @param io_service the asio io_service associted with this connection
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service) :
           io_service_(io_service),
-          socket_(io_service_, ssl_context()),
-          host_iterator_()
+          socket_{io_service_, ssl_context()},
+          host_iterator_{}
         {}
 
       public:
@@ -143,7 +131,7 @@ namespace via
         static boost::asio::ssl::context& ssl_context()
         {
           static boost::asio::ssl::context context_
-              (boost::asio::ssl::context::sslv23);
+          {boost::asio::ssl::context::sslv23};
           return context_;
         }
 
@@ -159,7 +147,8 @@ namespace via
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
           socket_.set_verify_callback
-              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
+              (std::bind(&ssl_tcp_adaptor::verify_certificate,
+                         std::placeholders::_1, std::placeholders::_2));
 
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())

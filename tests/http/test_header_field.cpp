@@ -20,13 +20,13 @@ BOOST_AUTO_TEST_SUITE(TestHeaderFields)
 
 BOOST_AUTO_TEST_CASE(NamesEqual)
 {
-  for (int i(header_field::CACHE_CONTROL);
-       i <= header_field::EXTENSION_HEADER; ++i)
+  for (int i(static_cast<int>(header_field::id::CACHE_CONTROL));
+       i <= static_cast<int>(header_field::id::EXTENSION_HEADER); ++i)
   {
-    header_field::field_id id(static_cast<header_field::field_id>(i));
-    std::string lowerName(boost::algorithm::to_lower_copy(standard_name(id)));
+    header_field::id field_id(static_cast<header_field::id>(i));
+    std::string lowerName(boost::algorithm::to_lower_copy(standard_name(field_id)));
 
-    BOOST_CHECK_EQUAL(lowercase_name(id).c_str(), lowerName.c_str());
+    BOOST_CHECK_EQUAL(lowercase_name(field_id).c_str(), lowerName.c_str());
   }
 }
 
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(ToHeaderEnum)
   std::string value("ISO-8859-1");
   std::string line("Accept-Charset: ISO-8859-1\r\n");
 
-  std::string result(header_field::to_header(header_field::ACCEPT_CHARSET, value));
+  std::string result(header_field::to_header(header_field::id::ACCEPT_CHARSET, value));
 
   BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
