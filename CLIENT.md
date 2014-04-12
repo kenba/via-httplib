@@ -223,7 +223,7 @@ The `tx_request` class is defined in `<via/http/request.hpp>`.
 
 The class has two Constructors:
 
-    explicit tx_request(request_method::method_id id,
+    explicit tx_request(request_method::id method_id,
                         std::string uri,
                         std::string header_string = "",
                         int minor_version = 1,
@@ -236,9 +236,9 @@ and
                         int minor_version = 1,
                         int major_version = 1);
 
-The first constructor requires a `via::http::request_method::method_id`
+The first constructor requires a `via::http::request_method::id`
 and a uri string.
-`method_id` is an enumeration of the standard HTTP request methods, see:
+`request_method::id` is an enumeration of the standard HTTP request methods, see:
 `<via/http/request_method.hpp>`
 
 The second constructor requires a method string and a uri string.
@@ -257,7 +257,7 @@ The other parameters are the same for both constructors and described below:
 There are also "set" and "add" functions in the `tx_request` class so that the 
 headers and HTTP version can be set after the class has been constructed, i.e.:  
 
- + `void add_header(header_field::field_id id, const std::string& value)`  
+ + `void add_header(header_field::id field_id, const std::string& value)`  
     Add a standard HTTP header field (defined in `<via/http/header_field.hpp>`)
     to the request.
  + `void add_header(std::string const& field, const std::string& value)`  
@@ -285,7 +285,7 @@ to set the `Content-Length` size without a body.
 All requests are sent via the `http_client`, e.g.:
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::GET, uri);
+    via::http::tx_request request(via::http::request_method::id::GET, uri);
     http_client->send(request);
 
 There are also functions for sending chunks, e.g.:

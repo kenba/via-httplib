@@ -137,9 +137,9 @@ The `request_received_event` method is defined as:
 
     /// The signal sent when a request is received.
     typedef boost::signals2::signal
-                <void (boost::weak_ptr<http_connection_type>,
-                                       http::rx_request const&,
-                                       Container const&)> http_request_signal;
+                <void (std::weak_ptr<http_connection_type>,
+                                     http::rx_request const&,
+                                     Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
@@ -190,7 +190,7 @@ The `chunk_received_event` method is defined as:
 
     /// The signal sent when a chunk is received.
     typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>,
+      <void (std::weak_ptr<http_connection_type>,
              chunk_type const&, Container const&)> http_chunk_signal;
 
     /// The slot type associated with a chunk received signal.
@@ -242,9 +242,9 @@ The `request_expect_continue_event` method requires a request handler like
 
     /// The signal sent when a request is received.
     typedef boost::signals2::signal
-                <void (boost::weak_ptr<http_connection_type>,
-                                       http::rx_request const&,
-                                       Container const&)> http_request_signal;
+                <void (std::weak_ptr<http_connection_type>,
+                                     http::rx_request const&,
+                                     Container const&)> http_request_signal;
 
     /// The slot type associated with a request received signal.
     typedef typename http_request_signal::slot_type http_request_signal_slot;
@@ -289,7 +289,7 @@ client has disconnected before the application was able to send a response.
 The `socket_disconnected_event` method is defined as:
 
     /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal<void (boost::weak_ptr<http_connection_type>)>
+    typedef boost::signals2::signal<void (std::weak_ptr<http_connection_type>)>
                                                              http_disconnected_signal;
 
     /// The slot type associated with a socket disconnected signal.
@@ -350,7 +350,7 @@ as in the example above.
 If SSL support is required then in application it must have OpenSSL in the
 include path and link with the OpenSSL libraries.
 It must also define the macro: HTTP_SSL.
-This macro is used in `<via::http_server.hpp>` and defined in
+This macro is used in `<via/http_server.hpp>` and defined in
 `<via/comms/ssl/ssl_tcp_adaptor.hpp>`. So simply including `ssl_tcp_adaptor.hpp` before
 `http_server.hpp` works.
 However, if you don't want to rely on the file inclusion order then the macro should
@@ -380,7 +380,28 @@ for example:
       std::cerr << "Error: "  << error.message() << std::endl;
       return 1;
     }
- 
+
+## Thread Pools and Strands ##
+
+The `asio io_service` may be used concurrently. In particular multiple threads may call io_service::run() to set up a pool of threads from which completion handlers may be invoked, see: [Threads and Boost.Asio](http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/threads.html)
+
+`asio` also provides `strands` to enable the execution of code in a multithreaded program without the need for explicit locking, see: [Strands: Use Threads Without Explicit Locking](http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/strands.html)
+
+`strand wrapping` of the completion handlers can be enabled in `via::http_server` by setting the use_strand flag in the template, e.g.:
+
+	via::http_server<via::comms::tcp_adaptor, std::string,
+                     via::comms::DEFAULT_BUFFER_SIZE, true> http_server;
+
+A thread pool may be used instead of calling `io_service.run()` as follows:
+
+	std::vector<std::shared_ptr<std::thread>> threads;
+	for(auto i = no_of_threads; i > 0; --i)
+	  threads.push_back(std::make_shared<std::thread>([&io_service]() { io_service.run(); }));
+	
+	// Wait for all threads in the pool to exit.
+	for (auto& thread : threads)
+	  thread->join();
+
 ## Examples ##
 
 An HTTP Server that incorporates the example code above:
@@ -388,4 +409,6 @@ An HTTP Server that incorporates the example code above:
 
 An HTTPS Server that incorporates the example code above:
 [`example_https_server.cpp`](examples/server/example_https_server.cpp)
+
+An HTTP Server that uses `asio` strand wrapping and a thread pool: [`thread_pool_http_server.cpp`](examples/server/thread_pool_http_server.cpp)
 
