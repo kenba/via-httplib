@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef CONNECTION_HPP_VIA_HTTPLIB_
 #define CONNECTION_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -250,7 +251,7 @@ namespace via
 
         event_callback_(SENT, weak_from_this());
       }
-      
+
       /// @fn handshake_callback
       /// The function called whenever a socket adaptor receives a connection
       /// handshake.
@@ -334,7 +335,7 @@ namespace via
                           error_callback_type error_callback) :
         SocketAdaptor{io_service},
         strand_{io_service},
-        rx_buffer_{new RxBuffer{}},
+        rx_buffer_{new RxBuffer()},
         tx_queue_{new std::deque<Container>{}},
         event_callback_{event_callback},
         error_callback_{error_callback},
@@ -354,7 +355,7 @@ namespace via
       explicit connection(boost::asio::io_service& io_service) :
         SocketAdaptor{io_service},
         strand_{io_service},
-        rx_buffer_{new RxBuffer{}},
+        rx_buffer_{new RxBuffer()},
         tx_queue_{new std::deque<Container>{}},
         event_callback_{},
         error_callback_{},

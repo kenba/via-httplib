@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef REQUEST_HPP_VIA_HTTPLIB_
 #define REQUEST_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -552,7 +553,10 @@ namespace via
             clear();
             return RX_LENGTH_REQUIRED;
           }
-
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#endif
           // received buffer contains more than the required data
           auto required(content_length - body_.size());
           if (rx_size > required)
@@ -565,7 +569,9 @@ namespace via
             if (end > iter)
               body_.insert(body_.end(), iter, end);
           }
-
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
           // determine whether the body is complete
           if (body_.size() == request_.content_length())
           {

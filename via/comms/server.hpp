@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef SERVER_HPP_VIA_HTTPLIB_
 #define SERVER_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 //

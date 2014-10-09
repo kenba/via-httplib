@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
     // attach the response handler
     // and attempt to connect to the host on the standard https port (443)
     http_client->response_received_event(response_handler);
+    http_client->chunk_received_event(chunk_handler);
     if (!http_client->connect(host_name, "https"))
     {
       std::cout << "Error, could not resolve host: " << host_name << std::endl;

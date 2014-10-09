@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef CHUNK_HPP_VIA_HTTPLIB_
 #define CHUNK_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
