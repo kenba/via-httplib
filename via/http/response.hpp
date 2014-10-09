@@ -76,7 +76,7 @@ namespace via
         major_version_{0},
         minor_version_{0},
         status_{0},
-        reason_phrase_{""},
+        reason_phrase_(""),
         state_{RESP_HTTP},
         major_read_{false},
         minor_read_{false},
@@ -190,7 +190,7 @@ namespace via
         major_version_{major_version},
         minor_version_{minor_version},
         status_{static_cast<int>(status_code)},
-        reason_phrase_{response_status::reason_phrase(status_code)},
+        reason_phrase_(response_status::reason_phrase(status_code)),
         state_{RESP_HTTP_END},
         major_read_{true},
         minor_read_{true},
@@ -211,9 +211,9 @@ namespace via
         major_version_{major_version},
         minor_version_{minor_version},
         status_{status},
-        reason_phrase_{!reason_phrase.empty() ? reason_phrase :
+        reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::code>(status))},
+                    (static_cast<response_status::code>(status))),
         state_{RESP_HTTP_END},
         major_read_{true},
         minor_read_{true},
@@ -364,7 +364,7 @@ namespace via
       explicit tx_response(response_status::code status_code,
                            std::string header_string = "") :
         response_line{status_code},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Constructor for creating a non-standard response.
@@ -375,7 +375,7 @@ namespace via
                            int status,
                            std::string header_string = "") :
         response_line{status, reason_phrase},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Add a standard header to the response.
@@ -512,7 +512,6 @@ namespace via
 
           // if there's a message body then insist on a content length header
           long rx_size(end - iter);
-          long required(content_length - body_.size());
           if ((rx_size > 0) && (content_length == 0) &&
               response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
@@ -521,6 +520,7 @@ namespace via
           }
 
           // received buffer contains more than the required data
+          long required(content_length - body_.size());
           if (rx_size > required)
           {
               auto next(iter + required);

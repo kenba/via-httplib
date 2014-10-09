@@ -61,8 +61,8 @@ namespace via
       /// Sets all member variables to their initial state.
       explicit chunk_header() :
         size_{0},
-        hex_size_{""},
-        extension_{""},
+        hex_size_(""),
+        extension_(""),
         state_{CHUNK_SIZE_LS},
         size_read_{false},
         valid_{false}
@@ -146,8 +146,8 @@ namespace via
       explicit chunk_header(size_t size,
                             std::string extension = "")
         : size_{size}
-        , hex_size_{to_hex_string(size)}
-        , extension_{extension}
+        , hex_size_(to_hex_string(size))
+        , extension_(extension)
       {}
 
       /// Set the size of the chunk.
@@ -298,8 +298,8 @@ namespace via
       /// @param trailer_string the (optional) chunk trailers.
       explicit last_chunk(std::string const& extension,
                           std::string const& trailer_string) :
-        extension_{extension},
-        trailer_string_{trailer_string}
+        extension_(extension),
+        trailer_string_(trailer_string)
       {}
 
       /// Add a free form trailer to the chunk.

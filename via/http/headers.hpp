@@ -72,9 +72,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit field_line() :
-        name_{""},
-        value_{""},
-        state_{HEADER_NAME}
+        name_(""),
+        value_(""),
+        state_{ HEADER_NAME }
       {}
 
       /// clear the field_line.

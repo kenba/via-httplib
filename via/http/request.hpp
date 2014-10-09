@@ -180,8 +180,8 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_{request_method::name(method_id)},
-        uri_{uri},
+        method_(request_method::name(method_id)),
+        uri_(uri),
         major_version_{major_version},
         minor_version_{minor_version},
         state_{REQ_HTTP_END},
@@ -200,8 +200,8 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_{method},
-        uri_{uri},
+        method_(method),
+        uri_(uri),
         major_version_{major_version},
         minor_version_{minor_version},
         state_{REQ_HTTP_END},
@@ -383,7 +383,7 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line{method_id, uri, minor_version, major_version},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Constructor for creating a request with a non-standard method.
@@ -398,7 +398,7 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line{method, uri, minor_version, major_version},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Add a free form header to the request.
@@ -553,12 +553,9 @@ namespace via
             clear();
             return RX_LENGTH_REQUIRED;
           }
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#endif
+
           // received buffer contains more than the required data
-          auto required(content_length - body_.size());
+          long required(content_length - body_.size());
           if (rx_size > required)
           {
               auto next(iter + required);
@@ -569,9 +566,7 @@ namespace via
             if (end > iter)
               body_.insert(body_.end(), iter, end);
           }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+
           // determine whether the body is complete
           if (body_.size() == request_.content_length())
           {
