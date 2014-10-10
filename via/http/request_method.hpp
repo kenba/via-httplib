@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef REQUEST_METHOD_HPP_VIA_HTTPLIB_
 #define REQUEST_METHOD_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.

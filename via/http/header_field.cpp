@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,7 +16,7 @@
 namespace
 {
   /// The server name for the server header.
-  const std::string	SERVER_NAME             ("Via-httplib/1.0.2");
+  const std::string	SERVER_NAME             ("Via-httplib/1.0.4");
 
   /// The message/http content for a TRACE response
   const std::string	MESSAGE_HTTP            ("message/http");

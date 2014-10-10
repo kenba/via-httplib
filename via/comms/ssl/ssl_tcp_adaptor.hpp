@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -100,7 +101,7 @@ namespace via
         void handshake(ErrorHandler handshake_handler, bool is_server)
         {
           socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
-                                            : boost::asio::ssl::stream_base::client, 
+                                            : boost::asio::ssl::stream_base::client,
                                   handshake_handler);
         }
 

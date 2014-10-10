@@ -130,7 +130,7 @@ namespace
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
-  void disconnected_handler(https_connection::weak_pointer weak_ptr)
+  void disconnected_handler(https_connection::weak_pointer /* weak_ptr */)
   {
     std::cout << "socket_disconnected_handler" << std::endl;
   }

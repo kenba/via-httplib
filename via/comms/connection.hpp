@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef CONNECTION_HPP_VIA_HTTPLIB_
 #define CONNECTION_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -269,7 +270,7 @@ namespace via
 
         event_callback_(SENT, weak_from_this());
       }
-      
+
       /// @fn handshake_callback
       /// The function called whenever a socket adaptor receives a connection
       /// handshake.
@@ -321,7 +322,7 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake(boost::bind(&connection::handshake_callback, ptr, 
+            pointer->handshake(boost::bind(&connection::handshake_callback, ptr,
                                boost::asio::placeholders::error), false);
           else
           {
