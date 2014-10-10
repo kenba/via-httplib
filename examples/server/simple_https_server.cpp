@@ -34,7 +34,7 @@ namespace
   }
 }
 
-int main(int argc, char *argv[])
+int main(int /* argc */, char *argv[])
 {
   std::string app_name(argv[0]);
   unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);

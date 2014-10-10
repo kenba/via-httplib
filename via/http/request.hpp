@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef REQUEST_HPP_VIA_HTTPLIB_
 #define REQUEST_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -179,8 +180,8 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_{request_method::name(method_id)},
-        uri_{uri},
+        method_(request_method::name(method_id)),
+        uri_(uri),
         major_version_{major_version},
         minor_version_{minor_version},
         state_{REQ_HTTP_END},
@@ -199,8 +200,8 @@ namespace via
                             std::string uri = "",
                             int minor_version = 1,
                             int major_version = 1) :
-        method_{method},
-        uri_{uri},
+        method_(method),
+        uri_(uri),
         major_version_{major_version},
         minor_version_{minor_version},
         state_{REQ_HTTP_END},
@@ -382,7 +383,7 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line{method_id, uri, minor_version, major_version},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Constructor for creating a request with a non-standard method.
@@ -397,7 +398,7 @@ namespace via
                           int minor_version = 1,
                           int major_version = 1) :
         request_line{method, uri, minor_version, major_version},
-        header_string_{header_string}
+        header_string_(header_string)
       {}
 
       /// Add a free form header to the request.
@@ -554,7 +555,7 @@ namespace via
           }
 
           // received buffer contains more than the required data
-          auto required(content_length - body_.size());
+          long required(content_length - body_.size());
           if (rx_size > required)
           {
               auto next(iter + required);

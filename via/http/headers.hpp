@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef HEADERS_HPP_VIA_HTTPLIB_
 #define HEADERS_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -71,9 +72,9 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit field_line() :
-        name_{""},
-        value_{""},
-        state_{HEADER_NAME}
+        name_(""),
+        value_(""),
+        state_{ HEADER_NAME }
       {}
 
       /// clear the field_line.

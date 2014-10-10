@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef CHARACTER_HPP_VIA_HTTPLIB_
 #define CHARACTER_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
