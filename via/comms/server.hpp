@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -53,7 +53,7 @@ namespace via
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container, buffer_size, use_strand>
+      typedef connection<SocketAdaptor, buffer_size, use_strand>
                                                               connection_type;
 
       /// A set of connections.

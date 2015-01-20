@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -65,7 +65,7 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
+    typedef comms::connection<SocketAdaptor, buffer_size, use_strand>
                                                               connection_type;
 
     /// The connection receive buffer type.
@@ -92,6 +92,12 @@ namespace via
     /// The request receiver for this connection.
     http::request_receiver<Container, translate_head> rx_;
 
+    /// The HTTP header of the message.
+    std::string http_header_;
+
+    /// The transmit buffer for this connection.
+    Container tx_buffer_;
+
     /// A flag to indicate that the server should always respond to an
     /// expect: 100-continue header with a 100 Continue response.
     bool continue_enabled_;
@@ -111,41 +117,29 @@ namespace via
                     bool continue_enabled) :
       connection_{connection},
       rx_{concatenate_chunks},
+      http_header_{},
+      tx_buffer_{},
       continue_enabled_{continue_enabled}
     {}
 
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    bool send(Container const& packet)
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
+    bool send(comms::ConstBuffers const& buffers)
     {
       auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(packet);
+        tcp_pointer->send_data(buffers);
         return true;
       }
       else
         return false;
     }
 
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    bool send(Container&& packet)
-    {
-      auto tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-      {
-        tcp_pointer->send_data(packet);
-        return true;
-      }
-      else
-        return false;
-    }
-
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
     /// @param is_continue whether this is a 100 Continue response
-    bool send(Container const& packet, bool is_continue)
+    bool send(comms::ConstBuffers const& buffers, bool is_continue)
     {
       bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
@@ -156,34 +150,7 @@ namespace via
       auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(packet);
-
-        if (keep_alive)
-          return true;
-        else
-          tcp_pointer->shutdown();
-      }
-      else
-        std::cerr << "http_connection::send connection weak pointer expired"
-                  << std::endl;
-      return false;
-    }
-
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    /// @param is_continue whether this is a 100 Continue response
-    bool send(Container&& packet, bool is_continue)
-    {
-      bool keep_alive{rx_.request().keep_alive()};
-      if (is_continue)
-        rx_.set_continue_sent();
-      else
-        rx_.clear();
-
-      auto tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-      {
-        tcp_pointer->send_data(packet);
+        tcp_pointer->send_data(buffers);
 
         if (keep_alive)
           return true;
@@ -332,10 +299,10 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header{response.message()};
+      http_header_ = response.message();
 
-      return send(Container{http_header.begin(), http_header.end()},
-                  response.is_continue());
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers, response.is_continue());
     }
 
     /// Send an HTTP response without a body.
@@ -344,10 +311,10 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header{response.message()};
+      http_header_ = response.message();
 
-      return send(Container{http_header.begin(), http_header.end()},
-                  response.is_continue());
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers, response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -357,17 +324,18 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header{response.message(body.size())};
+      http_header_ = response.message(body.size());
 
-      Container tx_message{body};
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
 
       // Don't send a body in response to a HEAD request
-      if (rx_.is_head())
-        tx_message.clear();
+      if (!rx_.is_head())
+      {
+        tx_buffer_ = body;
+        buffers.push_back(boost::asio::buffer(tx_buffer_));
+      }
 
-      tx_message.insert(tx_message.begin(),
-                        http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(buffers, response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -377,15 +345,18 @@ namespace via
     {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header{response.message(body.size())};
+      http_header_ = response.message(body.size());
+
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
 
       // Don't send a body in response to a HEAD request
-      if (rx_.is_head())
-        body.clear();
+      if (!rx_.is_head())
+      {
+        tx_buffer_.swap(body);
+        buffers.push_back(boost::asio::buffer(tx_buffer_));
+      }
 
-      body.insert(body.begin(),
-                  http_header.begin(), http_header.end());
-      return send(body, response.is_continue());
+      return send(buffers, response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -399,16 +370,39 @@ namespace via
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       size_t size(end - begin);
-      std::string http_header{response.message(size)};
+      http_header_ = response.message(size);
 
-      Container tx_message;
-      tx_message.reserve(http_header.size() + size);
-      tx_message.assign(http_header.begin(), http_header.end());
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+
+      if (!rx_.is_head())
+      {
+        tx_buffer_.assign(begin, end);
+        buffers.push_back(boost::asio::buffer(tx_buffer_));
+      }
+
+      return send(buffers, response.is_continue());
+    }
+
+    /// Send an HTTP response with a body.
+    /// NOTE: The body is NOT buffered.
+    /// @param response the response to send.
+    /// @param body a pointer to the body to send.
+    /// @param size the size of the body to send.
+    bool send(http::tx_response&& response, char const* body, size_t size)
+    {
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      http_header_ = response.message(size);
+
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
 
       // Don't send a body in response to a HEAD request
       if (!rx_.is_head())
-        tx_message.insert(tx_message.end(), begin, end);
-      return send(tx_message, response.is_continue());
+      {
+        buffers.push_back(boost::asio::buffer(body, size));
+      }
+
+      return send(buffers, response.is_continue());
     }
 
     /// Send an HTTP body chunk.
@@ -418,13 +412,13 @@ namespace via
     {
       size_t size{chunk.size()};
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_   = chunk;
 
-      Container tx_message{chunk};
-      tx_message.insert(tx_message.begin(),
-                        chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
@@ -434,12 +428,13 @@ namespace via
     {
       size_t size{chunk.size()};
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_.swap(chunk);
 
-      chunk.insert(chunk.begin(),
-                   chunk_string.begin(), chunk_string.end());
-      chunk.insert(chunk.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(chunk);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
@@ -452,12 +447,29 @@ namespace via
     {
       size_t size(end - begin);
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_.assign(begin, end);
 
-      Container tx_message{chunk_string.begin(), chunk_string.end()};
-      tx_message.insert(tx_message.end(), begin, end);
-      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
+    }
+
+    /// Send an HTTP body chunk.
+    /// NOTE: The body chunk is NOT buffered.
+    /// @param chunk a pointer to the body chunk to send
+    /// @param size the size of the body chunk to send.
+    /// @param extension the (optional) chunk extension.
+    bool send_chunk(char const* chunk, size_t size, std::string extension = "")
+    {
+      http::chunk_header chunk_header{size, extension};
+      http_header_ = chunk_header.to_string();
+
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(body, size));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send the last HTTP chunk for a response.
@@ -467,9 +479,10 @@ namespace via
                     std::string trailer_string = "")
     {
       http::last_chunk last_chunk{extension, trailer_string};
-      std::string chunk_string{last_chunk.message()};
+      http_header_ = last_chunk.message();
 
-      return send(Container{chunk_string.begin(), chunk_string.end()});
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers);
     }
 
     /// Disconnect the underlying connection.

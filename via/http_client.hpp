@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -49,7 +49,7 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
+    typedef comms::connection<SocketAdaptor, buffer_size, use_strand>
                                                               connection_type;
 
     /// The connection receive buffer type.
@@ -94,21 +94,15 @@ namespace via
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
     http_disconnected_signal http_disconnected_signal_;
     std::string host_name_;                       ///< the name of the host
+    std::string http_header_;                     ///< The HTTP header of the message.
+    Container tx_buffer_;                         ///< The transmit buffer.
 
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    void send(Container const& packet)
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
+    bool send(comms::ConstBuffers const& buffers)
     {
       rx_.clear();
-      connection_->send_data(packet);
-    }
-
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    void send(Container&& packet)
-    {
-      rx_.clear();
-      connection_->send_data(packet);
+      return connection_->send_data(buffers);
     }
 
     /// Constructor.
@@ -119,7 +113,9 @@ namespace via
       http_response_signal_{},
       http_chunk_signal_{},
       http_disconnected_signal_{},
-      host_name_{}
+      host_name_{},
+      http_header_{},
+      tx_buffer_{}
     {
       connection_->set_event_callback
           (std::bind(&http_client::event_handler, this,
@@ -217,49 +213,52 @@ namespace via
 
     /// Send an HTTP request without a body.
     /// @param request the request to send.
-    void send(http::tx_request& request)
+    bool send(http::tx_request& request)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message());
-      Container tx_message(http_header.begin(), http_header.end());
-      send(tx_message);
+      http_header_ = request.message();
+      tx_buffer_.clear();
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers);
     }
 
     /// Send an HTTP request without a body.
     /// @param request the request to send.
-    void send(http::tx_request&& request)
+    bool send(http::tx_request&& request)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message());
-      Container tx_message(http_header.begin(), http_header.end());
-      send(tx_message);
+      http_header_ = request.message();
+      tx_buffer_.clear();
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers);
     }
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
-    void send(http::tx_request& request, Container const& body)
+    bool send(http::tx_request& request, Container const& body)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header{request.message()};
+      http_header_ = request.message();
+      tx_buffer_   = body;
 
-      Container tx_message(body);
-      tx_message.insert(tx_message.begin(),
-                        http_header.begin(), http_header.end());
-      send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      return send(buffers);
     }
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
-    void send(http::tx_request&& request, Container&& body)
+    bool send(http::tx_request&& request, Container&& body)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header{request.message(body.size())};
+      http_header_ = request.message();
+      tx_buffer_.swap(body);
 
-      body.insert(body.begin(),
-                  http_header.begin(), http_header.end());
-      send(body);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      return send(buffers);
     }
 
     /// Send an HTTP request with a body.
@@ -272,44 +271,44 @@ namespace via
     {
       request.add_header(http::header_field::id::HOST, host_name_);
       size_t size(end - begin);
-      std::string http_header{request.message(size)};
+      http_header_ = request.message(size);
+      tx_buffer_.assign(begin, end);
 
-      Container tx_message(http_header.begin(), http_header.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      return send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    void send_chunk(Container const& chunk, std::string extension = "")
+    bool send_chunk(Container const& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_   = chunk;
 
-      Container tx_message(chunk);
-      tx_message.insert(tx_message.begin(),
-                        chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(),
-                        http::CRLF.begin(), http::CRLF.end());
-      send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    void send_chunk(Container&& chunk, std::string extension = "")
+    bool send_chunk(Container&& chunk, std::string extension = "")
     {
       size_t size(chunk.size());
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_.swap(chunk);
 
-      chunk.insert(chunk.begin(),
-                   chunk_string.begin(), chunk_string.end());
-      chunk.insert(chunk.end(),
-                   http::CRLF.begin(), http::CRLF.end());
-      send(chunk);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
@@ -317,41 +316,51 @@ namespace via
     /// @param end a constant iterator to the end of the chunk to send.
     /// @param extension the (optional) chunk extension.
     template<typename ForwardIterator>
-    void send_chunk(ForwardIterator begin, ForwardIterator end,
+    bool send_chunk(ForwardIterator begin, ForwardIterator end,
                     std::string extension = "")
     {
       size_t size(end - begin);
       http::chunk_header chunk_header{size, extension};
-      std::string chunk_string{chunk_header.to_string()};
+      http_header_ = chunk_header.to_string();
+      tx_buffer_.assign(begin, end);
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      tx_message.insert(tx_message.end(),
-                        http::CRLF.begin(), http::CRLF.end());
-      send(tx_message);
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      buffers.push_back(boost::asio::buffer(tx_buffer_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send the last HTTP chunk for a request.
     /// @param extension the (optional) chunk extension.
     /// @param trailer_string the (optional) chunk trailers.
-    void last_chunk(std::string extension = "",
+    bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
       http::last_chunk last_chunk{extension, trailer_string};
-      std::string chunk_string{last_chunk.message()};
 
-      send(Container{chunk_string.begin(), chunk_string.end()});
+      http_header_ = last_chunk.message();
+
+      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+      return send(buffers);
     }
 
     /// Send a message body on the connection.
     /// @param body the body to send.
-    void send_body(Container const& body)
-    { send(body); }
+    bool send_body(Container const& body)
+    {
+      tx_buffer_ = body;
+      comms::ConstBuffers buffers{boost::asio::buffer(tx_buffer_)};
+      return send(buffers);
+    }
 
     /// Send a message body on the connection.
     /// @param body the body to send.
-    void send_body(Container&& body)
-    { send(body); }
+    bool send_body(Container&& body)
+    {
+      tx_buffer_.swap(body);
+      comms::ConstBuffers buffers{boost::asio::buffer(tx_buffer_)};
+      return send(buffers);
+    }
 
     /// Disconnect the underlying connection.
     void disconnect()
@@ -359,16 +368,29 @@ namespace via
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
-    // @param weak_ptr a weak ponter to the underlying comms connection.
+    /// @param weak_ptr a weak ponter to the underlying comms connection.
     void event_handler(int event,
                        typename connection_type::weak_pointer) // weak_ptr)
     {
       switch(event)
       {
+      case via::comms::CONNECTED:
+        if (!http_header_.empty())
+        {
+          comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
+          if (!tx_buffer_.empty())
+            buffers.push_back(boost::asio::buffer(tx_buffer_));
+
+          send(buffers);
+        }
+        break;
+
       case via::comms::RECEIVED:
         receive_handler();
         break;
       case via::comms::DISCONNECTED:
+        http_header_.clear();
+        tx_buffer_.clear();
         http_disconnected_signal_();
         break;
       default:
@@ -378,7 +400,7 @@ namespace via
 
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
-    // @param weak_ptr a weak ponter to the underlying comms connection.
+    /// @param weak_ptr a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
                        typename connection_type::weak_pointer) // weak_ptr)
     {

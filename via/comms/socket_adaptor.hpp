@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -18,6 +18,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
 #include <functional>
+#include <vector>
 
 namespace via
 {
@@ -52,6 +53,10 @@ namespace via
     typedef std::function<void (boost::system::error_code const&,
                                 boost::asio::ip::tcp::resolver::iterator)>
                                            ConnectHandler;
+
+    /// @typedef ConstBuffers
+    /// A vector of asio::const_buffers.
+    typedef std::vector<boost::asio::const_buffer> ConstBuffers;
   }
 }
 
