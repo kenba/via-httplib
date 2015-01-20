@@ -111,10 +111,10 @@ namespace via
 
     /// The signal sent when a socket is disconnected.
     typedef boost::signals2::signal
-      <void (std::weak_ptr<http_connection_type>)> http_disconnected_signal;
+      <void (std::weak_ptr<http_connection_type>)> http_connection_signal;
 
     /// The slot type associated with a socket disconnected signal.
-    typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
+    typedef typename http_connection_signal::slot_type http_connection_signal_slot;
 
   private:
     std::shared_ptr<server_type> server_;     ///< the communications server
@@ -123,7 +123,8 @@ namespace via
     http_request_signal http_continue_signal_; ///< the continue callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
                                               /// the disconncted callback function
-    http_disconnected_signal http_disconnected_signal_;
+    http_connection_signal http_sent_signal_;
+    http_connection_signal http_disconnected_signal_;
     bool concatenate_chunks_; ///< true if the server does not have a chunk handler
     bool continue_enabled_;   ///< whether the server should send 100 Continue
 
@@ -156,9 +157,14 @@ namespace via
       http_continue_signal_.connect(slot);
     }
 
+    /// Connect the sent slot.
+    /// @param slot the slot for the message sent signal.
+    void message_sent_event(http_connection_signal_slot const& slot)
+    { http_sent_signal_.connect(slot); }
+
     /// Connect the disconnected slot.
     /// @param slot the slot for the socket disconnected signal.
-    void socket_disconnected_event(http_disconnected_signal_slot const& slot)
+    void socket_disconnected_event(http_connection_signal_slot const& slot)
     { http_disconnected_signal_.connect(slot); }
 
     /// Constructor.
@@ -169,6 +175,7 @@ namespace via
       http_request_signal_{},
       http_continue_signal_{},
       http_chunk_signal_{},
+      http_sent_signal_{},
       http_disconnected_signal_{},
       concatenate_chunks_{true},
       continue_enabled_{true}
@@ -253,6 +260,20 @@ namespace via
 
     /// Handle a disconnected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
+    void sent_handler(std::weak_ptr<connection_type> connection)
+    {
+      // Use the raw pointer of the connection as the map key.
+      void* pointer(connection.lock().get());
+      if (!pointer)
+        return;
+
+      auto iter(http_connections_.find(pointer));
+      if (iter != http_connections_.end())
+        http_sent_signal_(iter->second);
+    }
+
+    /// Handle a disconnected signal from an underlying comms connection.
+    /// @param connection a weak ponter to the underlying comms connection.
     void disconnected_handler(std::weak_ptr<connection_type> connection)
     {
       // Use the raw pointer of the connection as the map key.
@@ -278,6 +299,9 @@ namespace via
       {
       case via::comms::RECEIVED:
         receive_handler(connection);
+        break;
+      case via::comms::SENT:
+        sent_handler(connection);
         break;
       case via::comms::DISCONNECTED:
         disconnected_handler(connection);

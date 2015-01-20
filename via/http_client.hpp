@@ -79,12 +79,11 @@ namespace via
     /// The slot type associated with a chunk received signal.
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
-    /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal<void (void)> http_disconnected_signal;
+    /// The signal sent when an event happens.
+    typedef boost::signals2::signal<void (void)> http_event_signal;
 
-    /// The slot type associated with a disconnected signal.
-    typedef typename http_disconnected_signal::slot_type
-                                                http_disconnected_signal_slot;
+    /// The slot type associated with an event signal.
+    typedef typename http_event_signal::slot_type http_event_signal_slot;
 
   private:
 
@@ -92,7 +91,8 @@ namespace via
     http::response_receiver<Container> rx_;       ///< the response receiver
     http_response_signal http_response_signal_;   ///< the response callback function
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
-    http_disconnected_signal http_disconnected_signal_;
+    http_event_signal http_sent_signal_;
+    http_event_signal http_disconnected_signal_;
     std::string host_name_;                       ///< the name of the host
     std::string http_header_;                     ///< The HTTP header of the message.
     Container tx_buffer_;                         ///< The transmit buffer.
@@ -112,6 +112,7 @@ namespace via
       rx_{},
       http_response_signal_{},
       http_chunk_signal_{},
+      http_sent_signal_{},
       http_disconnected_signal_{},
       host_name_{},
       http_header_{},
@@ -147,9 +148,14 @@ namespace via
     void chunk_received_event(http_chunk_signal_slot const& slot)
     { http_chunk_signal_.connect(slot); }
 
+    /// Connect the message sent slot.
+    /// @param slot the slot for the message sent signal.
+    void msg_sent_event(http_event_signal_slot const& slot)
+    { http_sent_signal_.connect(slot); }
+
     /// Connect the disconnected slot.
     /// @param slot the slot for the disconnected signal.
-    void disconnected_event(http_disconnected_signal_slot const& slot)
+    void disconnected_event(http_event_signal_slot const& slot)
     { http_disconnected_signal_.connect(slot); }
 
     /// Connect to the given host name and port.
@@ -387,6 +393,9 @@ namespace via
 
       case via::comms::RECEIVED:
         receive_handler();
+        break;
+      case via::comms::SENT:
+        http_sent_signal_();
         break;
       case via::comms::DISCONNECTED:
         http_header_.clear();

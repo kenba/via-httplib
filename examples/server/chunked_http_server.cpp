@@ -22,16 +22,10 @@ typedef http_server_type::chunk_type http_chunk_type;
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
-  /// The period to call the timeout handler in milliseconds.
-  unsigned int TIMEOUT_PERIOD(100);
-
   const int CHUNKS_TO_SEND(5);
 
-  /// The number of chunks sent so far.
+  /// The number of chunks remaining.
   int count(0);
-
-  /// A deadline timer to send the chunks to the client.
-  boost::shared_ptr<boost::asio::deadline_timer> chunk_timer;
 
   /// The stop callback function.
   /// Cancels the timer, closes the server and all it's connections leaving
@@ -40,7 +34,6 @@ namespace
   void handle_stop(http_server_type* http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    chunk_timer->cancel();
     http_server->close();
   }
 
@@ -48,45 +41,33 @@ namespace
   std::string chunk_text("HTTP chunk number: ");
 
   /// Send a chunnk to the client.
-  bool send_a_chunk(http_connection::shared_pointer connection)
+  void send_a_chunk(http_connection::shared_pointer connection)
   {
-    if (++count < CHUNKS_TO_SEND)
+    if (--count > 0)
     {
       std::stringstream chunk_stream;
       chunk_stream << chunk_text;
-      chunk_stream << count << "\n" << std::ends;
+      chunk_stream << CHUNKS_TO_SEND - count << "\n" << std::ends;
 
       std::string chunk_to_send(chunk_stream.str());
 
       std::cout << "chunk_to_send: " << chunk_to_send << std::endl;
 
       connection->send_chunk(chunk_to_send);
-      return true;
     }
     else
       connection->last_chunk();
-
-    return false;
   }
 
-  /// A timeout callback function. Used to send the chunks.
-  void timeout_handler(const boost::system::error_code& ec,
-                       http_connection::weak_pointer weak_ptr)
+  /// A handler for the signal sent when an HTTP message is sent.
+  void msg_sent_handler(http_connection::weak_pointer weak_ptr)
   {
-    http_connection::shared_pointer connection(weak_ptr.lock());
-    if (connection && (ec != boost::asio::error::operation_aborted))
+    if (count > 0)
     {
-      if (send_a_chunk(connection))
-      {
-        // reset the timer to call this function again
-        chunk_timer->expires_from_now
-            (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-        chunk_timer->async_wait(boost::bind(&timeout_handler,
-                                boost::asio::placeholders::error, weak_ptr));
-      }
+      http_connection::shared_pointer connection(weak_ptr.lock());
+      if (connection)
+        send_a_chunk(connection);
     }
-    else
-      std::cerr << "Could not lock http_connection" << std::endl;
   }
 
   /// A function to send a response to a request.
@@ -118,14 +99,9 @@ namespace
       if ((request.method() == "GET") &&
           (response.status() == static_cast<int>(via::http::response_status::code::OK)))
       {
-        count = 0;
+        count = CHUNKS_TO_SEND;
         response.add_header(via::http::header_field::id::TRANSFER_ENCODING,
                             "Chunked");
-
-        chunk_timer->expires_from_now
-            (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-        chunk_timer->async_wait(boost::bind(&timeout_handler,
-                               boost::asio::placeholders::error, weak_ptr));
       }
 
       connection->send(response);
@@ -195,7 +171,6 @@ namespace
   void disconnected_handler(http_connection::weak_pointer /* weak_ptr */)
   {
     std::cout << "socket_disconnected_handler" << std::endl;
-    chunk_timer->cancel();
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -227,11 +202,6 @@ int main(int argc, char *argv[])
     /// The asio io_service.
     boost::asio::io_service io_service;
 
-    /// A deadline timer to send the chunks to the client.
-    chunk_timer.reset
-      (new boost::asio::deadline_timer(io_service,
-                             boost::posix_time::milliseconds(TIMEOUT_PERIOD)));
-
     // create an http_server
     http_server_type http_server(io_service);
 
@@ -239,6 +209,7 @@ int main(int argc, char *argv[])
     http_server.request_received_event(request_handler);
     http_server.chunk_received_event(chunk_handler);
     http_server.request_expect_continue_event(expect_continue_handler);
+    http_server.message_sent_event(msg_sent_handler);
     http_server.socket_disconnected_event(disconnected_handler);
 
     // start accepting http connections on the given port
