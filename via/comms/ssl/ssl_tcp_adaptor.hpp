@@ -212,6 +212,7 @@ namespace via
         bool is_disconnect(boost::system::error_code const& error)
         {
           return (boost::asio::error::connection_reset == error)
+              || (boost::asio::error::shut_down == error)
               || (SSL_SHORT_READ == error.value());
         }
 

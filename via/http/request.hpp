@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -65,6 +65,12 @@ namespace via
       bool parse_char(char c);
 
     public:
+
+      /// the maximum length of a request method, default 16 chars
+      static size_t max_method_length_s;
+
+      /// the maximum length of a uri.
+      static size_t max_uri_length_s;
 
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
@@ -458,20 +464,25 @@ namespace via
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
       bool       concatenate_chunks_; ///< concatenate chunk data into the body
+      size_t     max_body_size_; ///< the maximum length of a message body
 
     public:
+
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
-      explicit request_receiver(bool concatenate_chunks) :
+      /// @param the maximum length of the message body.
+      explicit request_receiver(bool concatenate_chunks,
+                                size_t max_body_size) :
         request_{},
         chunk_{},
         body_{},
         continue_sent_{false},
         is_head_{false},
-        concatenate_chunks_{concatenate_chunks}
+        concatenate_chunks_{concatenate_chunks},
+        max_body_size_(max_body_size)
       {}
 
       /// clear the request_receiver.
@@ -539,7 +550,8 @@ namespace via
         {
           // if there is a content length header, ensure it's valid
           auto content_length(request_.content_length());
-          if (content_length == CONTENT_LENGTH_INVALID)
+          if ((content_length == CONTENT_LENGTH_INVALID) ||
+              (content_length > max_body_size_))
           {
             clear();
             return RX_INVALID;

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <regex>
+#include <limits>
 
 namespace
 {
@@ -68,6 +69,8 @@ namespace via
       return true;
     }
     //////////////////////////////////////////////////////////////////////////
+
+    size_t message_headers::max_length_s(std::numeric_limits<size_t>::max());
 
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const

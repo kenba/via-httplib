@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -131,6 +131,10 @@ namespace via
       /// @return the field value in the same case that it was received in.
       const std::string& value() const
       { return value_; }
+
+      /// Calculate the length of the header.
+      size_t length() const
+      { return name_.size() + value_.size(); }
     }; // class field_line
 
     //////////////////////////////////////////////////////////////////////////
@@ -149,15 +153,20 @@ namespace via
       std::unordered_map<std::string, std::string> fields_;
       field_line field_; ///< the current field being parsed
       bool       valid_; ///< true if the headers are valid
+      size_t     length_; ///< the length of the message headers
 
     public:
+
+      /// the maximum length of the message headers.
+      static size_t max_length_s;
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit message_headers() :
         fields_{},
         field_{},
-        valid_{false}
+        valid_{false},
+        length_{0}
       {}
 
       /// Clear the message_headers.
@@ -167,6 +176,7 @@ namespace via
         fields_.clear();
         field_.clear();
         valid_ = false;
+        length_ = 0;
       }
 
       /// Swap member variables with another message_headers.
@@ -176,6 +186,7 @@ namespace via
         fields_.swap(other.fields_);
         field_.swap(other.field_);
         std::swap(valid_, other.valid_);
+        std::swap(length_, other.length_);
       }
 
       /// Parse message_headers from a received request or response.
@@ -192,8 +203,12 @@ namespace via
           if (!field_.parse(iter, end))
             return false;
 
+          length_ += field_.length();
           add(field_.name(), field_.value());
           field_.clear();
+
+          if (length_ > max_length_s)
+            return false;
         }
 
         // Parse the blank line at the end of message_headers and

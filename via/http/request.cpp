@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -8,15 +8,19 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "request.hpp"
 #include "character.hpp"
+#include <limits>
 
 namespace via
 {
   namespace http
   {
+    size_t request_line::max_method_length_s(16);
+
+    size_t request_line::max_uri_length_s(std::numeric_limits<size_t>::max());
+
     //////////////////////////////////////////////////////////////////////////
     bool request_line::parse_char(char c)
     {
-
 
       switch (state_)
       {
@@ -25,7 +29,8 @@ namespace via
         if (std::isupper(c))
           method_.push_back(c);
         // If this char is whitespace and method has been read
-        else if (is_space_or_tab(c) && !method_.empty())
+        else if (is_space_or_tab(c) && !method_.empty() &&
+                 (method_.size() < max_method_length_s))
           state_ = REQ_URI;
         else
           return false;
@@ -41,7 +46,11 @@ namespace via
             state_ = REQ_HTTP;
         }
         else
+        {
           uri_.push_back(c);
+          if (uri_.size() > max_uri_length_s)
+            return false;
+        }
         break;
 
       case REQ_HTTP:
@@ -124,7 +133,7 @@ namespace via
       case REQ_HTTP_LF:
         if ('\n' == c)
           state_ = REQ_HTTP_END;
-        else 
+        else
           return false;
         break;
 

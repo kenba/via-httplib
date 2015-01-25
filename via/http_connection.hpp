@@ -112,11 +112,13 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
+    /// @param max_body_size the maximum length of a message body.
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
-                    bool continue_enabled) :
+                    bool continue_enabled,
+                    size_t max_body_size) :
       connection_{connection},
-      rx_{concatenate_chunks},
+      rx_{concatenate_chunks, max_body_size},
       http_header_{},
       tx_buffer_{},
       continue_enabled_{continue_enabled}
@@ -174,12 +176,15 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
+    /// @param max_body_size the maximum length of a message body.
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
-                                 bool continue_enabled)
+                                 bool continue_enabled,
+                                 size_t max_body_size)
     { return shared_pointer{new http_connection{connection,
                                                 concatenate_chunks,
-                                                continue_enabled}}; }
+                                                continue_enabled,
+                                                max_body_size}}; }
 
     /// Copy constructor deleted.
     http_connection(http_connection const&)=delete;
