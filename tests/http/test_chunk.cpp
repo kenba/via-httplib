@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk1)
   BOOST_CHECK(chunk_data.end() == next);
   BOOST_CHECK_EQUAL("0",  the_chunk.hex_size().c_str());
   BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
-  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.is_last());
 }
 
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk2)
   BOOST_CHECK(chunk_data.end() == next);
   BOOST_CHECK_EQUAL("0",  the_chunk.hex_size().c_str());
   BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
-  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.is_last());
 }
 
@@ -54,8 +54,11 @@ BOOST_AUTO_TEST_CASE(ValidString1)
   BOOST_CHECK(chunk_data.end() == next);
   BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
   BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK(!the_chunk.is_last());
+
+  auto header_string(the_chunk.to_string());
+  BOOST_CHECK_EQUAL(chunk_data, header_string);
 }
 
 BOOST_AUTO_TEST_CASE(ValidString2)
@@ -68,7 +71,7 @@ BOOST_AUTO_TEST_CASE(ValidString2)
   BOOST_CHECK(chunk_data.end() != next);
   BOOST_CHECK_EQUAL('A', *next);
   BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK(!the_chunk.is_last());
 }
 
@@ -83,7 +86,7 @@ BOOST_AUTO_TEST_CASE(ValidString3)
   BOOST_CHECK_EQUAL('A', *next);
   BOOST_CHECK_EQUAL("f",  the_chunk.hex_size().c_str());
   BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK(!the_chunk.is_last());
 }
 
@@ -99,12 +102,21 @@ BOOST_AUTO_TEST_CASE(MultipleString1)
   BOOST_CHECK(chunk_data.end() == next);
   BOOST_CHECK_EQUAL("2f",  the_chunk.hex_size().c_str());
   BOOST_CHECK_EQUAL("some rubbish", the_chunk.extension().c_str());
-  BOOST_CHECK_EQUAL(47, the_chunk.size());
+  BOOST_CHECK_EQUAL(47U, the_chunk.size());
 }
 
 BOOST_AUTO_TEST_CASE(InValidString1)
 {
   std::string chunk_data("g;\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidString2)
+{
+  std::string chunk_data("f;\r\r");
   auto next(chunk_data.cbegin());
 
   chunk_header the_chunk;
@@ -171,7 +183,7 @@ BOOST_AUTO_TEST_CASE(ValidChunk1)
 
   rx_chunk<std::string> the_chunk;
   BOOST_CHECK(the_chunk.parse(next, chunk_data.cend()));
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK_EQUAL('1', the_chunk.data().front());
   BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
@@ -184,14 +196,14 @@ BOOST_AUTO_TEST_CASE(ValidChunk2)
 
   rx_chunk<std::string> the_chunk;
   BOOST_CHECK(the_chunk.parse(next, chunk_data.cend()));
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK_EQUAL('1', the_chunk.data().front());
   BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
 
 BOOST_AUTO_TEST_CASE(ValidChunk3)
 {
-  std::string chunk_data("f;\r\n");
+  std::string chunk_data(" f;\r\n");
   auto next(chunk_data.cbegin());
 
   rx_chunk<std::string> the_chunk;
@@ -201,7 +213,7 @@ BOOST_AUTO_TEST_CASE(ValidChunk3)
   next = chunk_data1.begin();
   BOOST_CHECK(the_chunk.parse(next, chunk_data1.cend()));
 
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK_EQUAL('1', the_chunk.data().front());
   BOOST_CHECK_EQUAL('f', the_chunk.data().back());
 }
@@ -218,9 +230,56 @@ BOOST_AUTO_TEST_CASE(ValidChunk4)
   next = chunk_data1.begin();
   BOOST_CHECK(the_chunk.parse(next, chunk_data1.cend()));
 
-  BOOST_CHECK_EQUAL(15, the_chunk.size());
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
   BOOST_CHECK_EQUAL('1', the_chunk.data().front());
   BOOST_CHECK_EQUAL('f', the_chunk.data().back());
+}
+
+BOOST_AUTO_TEST_CASE(ValidChunk5)
+{
+  std::string chunk_data("f");
+  auto next(chunk_data.cbegin());
+
+  rx_chunk<std::string> the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+
+  std::string chunk_data1("\n123456789abcdef\n");
+  next = chunk_data1.begin();
+  BOOST_CHECK(the_chunk.parse(next, chunk_data1.cend()));
+
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data().front());
+  BOOST_CHECK_EQUAL('f', the_chunk.data().back());
+}
+
+BOOST_AUTO_TEST_CASE(InValidChunk1)
+{
+  std::string chunk_data("g;\r\n");
+  chunk_data += "123456789abcdef\r\n";
+  auto next(chunk_data.cbegin());
+
+  rx_chunk<std::string> the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidChunk2)
+{
+  std::string chunk_data("f;\r\r");
+  chunk_data += "123456789abcdef\r\n";
+  auto next(chunk_data.cbegin());
+
+  rx_chunk<std::string> the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidChunk3)
+{
+  std::string chunk_data("f;\r\n");
+  chunk_data += "123456789abcdef\r\r";
+  auto next(chunk_data.cbegin());
+
+  rx_chunk<std::string> the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
 }
 
 BOOST_AUTO_TEST_CASE(ValidLastChunk1)
@@ -230,7 +289,7 @@ BOOST_AUTO_TEST_CASE(ValidLastChunk1)
 
   rx_chunk<std::string> the_chunk;
   BOOST_CHECK(the_chunk.parse(next, chunk_data.cend()));
-  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.valid());
   BOOST_CHECK(the_chunk.is_last());
 }
@@ -243,8 +302,18 @@ BOOST_AUTO_TEST_CASE(ValidChunkTrailer1)
 
   rx_chunk<std::string> the_chunk;
   BOOST_CHECK(the_chunk.parse(next, chunk_data.cend()));
-  BOOST_CHECK_EQUAL(0, the_chunk.size());
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.is_last());
+}
+
+BOOST_AUTO_TEST_CASE(InValidChunkTrailer1)
+{
+  std::string chunk_data("0\r\n");
+  chunk_data += "Accept-Encoding: gzip\r\r\r\n";
+  auto next(chunk_data.cbegin());
+
+  rx_chunk<std::string> the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

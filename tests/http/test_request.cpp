@@ -83,13 +83,17 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
 }
 
 // An http request line in a string without an \r but with extra whitespace
+// Also test swap
 BOOST_AUTO_TEST_CASE(ValidGet3)
 {
   std::string request_data("GET\tabcdefghijklmnopqrstuvwxyz \t HTTP/1.0\nA");
   auto next(request_data.cbegin());
 
+  request_line a_request;
+  BOOST_CHECK(a_request.parse(next, request_data.cend()));
   request_line the_request;
-  BOOST_CHECK(the_request.parse(next, request_data.cend()));
+  the_request.swap(a_request);
+
   BOOST_CHECK_EQUAL('A', *next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcdefghijklmnopqrstuvwxyz", the_request.uri().c_str());
@@ -115,6 +119,20 @@ BOOST_AUTO_TEST_CASE(InValidMethod1)
 BOOST_AUTO_TEST_CASE(InValidUri1)
 {
   std::string request_data("GET abcdefghijklm\tnopqrstuvwxyz HTTP/1.0\r\n ");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+  BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
+  BOOST_CHECK_EQUAL("abcdefghijklm", the_request.uri().c_str());
+  BOOST_CHECK_EQUAL(0, the_request.major_version());
+  BOOST_CHECK_EQUAL(0, the_request.minor_version());
+}
+
+// An http request line with an invalid uri (contains end of line)
+BOOST_AUTO_TEST_CASE(InValidUri2)
+{
+  std::string request_data("GET abcdefghijklm\nopqrstuvwxyz HTTP/1.0\r\n ");
   auto next(request_data.cbegin());
 
   request_line the_request;
@@ -160,6 +178,87 @@ BOOST_AUTO_TEST_CASE(InValidGetLength1)
   request_line::max_uri_length_s = max_uri_length;
 }
 
+BOOST_AUTO_TEST_CASE(InValidGetHTTP1)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HXTP/1.0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP2)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTXP/1.0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP3)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTX/1.0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP4)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTPX1.0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP5)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/X.0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP6)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1x0\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP7)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.Z\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP8)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0Z\r\n");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidGetHTTP9)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\r");
+  auto next(request_data.cbegin());
+
+  request_line the_request;
+  BOOST_CHECK(!the_request.parse(next, request_data.cend()));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
@@ -180,6 +279,25 @@ BOOST_AUTO_TEST_CASE(ValidGetId1)
   std::string request_string(the_request.to_string());
   BOOST_CHECK_EQUAL("GET /hello/world HTTP/1.1\r\n", request_string.c_str());
 }
+
+BOOST_AUTO_TEST_CASE(ValidPostId1)
+{
+  request_line the_request(request_method::id::POST, "/hello/world", 0, 2);
+  std::string request_string(the_request.to_string());
+  BOOST_CHECK_EQUAL("POST /hello/world HTTP/2.0\r\n", request_string.c_str());
+}
+
+BOOST_AUTO_TEST_CASE(ValidGetId2)
+{
+  request_line the_request(request_method::id::POST, "/hello", 0, 2);
+  the_request.set_method("GET");
+  the_request.set_uri("/hello/world");
+  the_request.set_major_version(1);
+  the_request.set_minor_version(1);
+  std::string request_string(the_request.to_string());
+  BOOST_CHECK_EQUAL("GET /hello/world HTTP/1.1\r\n", request_string.c_str());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
@@ -223,24 +341,32 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorUnsignedChar1)
   BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
   BOOST_CHECK_EQUAL(0U, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
+  BOOST_CHECK(!the_request.missing_host_header());
+  BOOST_CHECK(!the_request.keep_alive());
 }
 
 BOOST_AUTO_TEST_CASE(ValidGet1)
 {
-  std::string request_data("GET abcde HTTP/1.0\r\nContent: text\r\n\r\n");
+  std::string request_data("GET abcde HTTP/1.1\r\nContent: text\r\n\r\n");
   auto next(request_data.cbegin());
 
-  rx_request the_request;
-  BOOST_CHECK(the_request.parse(next, request_data.cend()));
+  rx_request a_request;
+  BOOST_CHECK(a_request.parse(next, request_data.cend()));
   BOOST_CHECK(request_data.end() == next);
+
+  rx_request the_request;
+  the_request.swap(a_request);
+
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcde", the_request.uri().c_str());
   BOOST_CHECK_EQUAL(1, the_request.major_version());
-  BOOST_CHECK_EQUAL(0, the_request.minor_version());
+  BOOST_CHECK_EQUAL(1, the_request.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
   BOOST_CHECK_EQUAL(0U, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
+  BOOST_CHECK(!the_request.is_trace());
+  BOOST_CHECK(the_request.keep_alive());
 }
 
 BOOST_AUTO_TEST_CASE(ValidPost1)
@@ -407,7 +533,7 @@ BOOST_AUTO_TEST_CASE(RequestEncode2)
   correct_request += "Content-Length: 15\r\n\r\n";
  // correct_request += text;
 
-  tx_request the_request(request_method::id::POST, "/uri");
+  tx_request the_request("POST", "/uri");
   std::string req_text(the_request.message(text.size()));
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
 }
@@ -428,10 +554,12 @@ BOOST_AUTO_TEST_CASE(RequestEncode3)
 BOOST_AUTO_TEST_CASE(RequestEncode4)
 {
   std::string correct_request("POST /uri HTTP/1.1\r\n");
-  correct_request += "Transfer-Encoding: Chunked\r\n\r\n";
+  correct_request += "Transfer-Encoding: Chunked\r\n";
+  correct_request += "Expect: 100-Continue\r\n\r\n";
 
   tx_request the_request(request_method::id::POST, "/uri");
   the_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  the_request.add_header("Expect", "100-Continue");
   std::string req_text(the_request.message());
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
 }
@@ -639,6 +767,46 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   BOOST_CHECK(rx_state == RX_CHUNK);
 }
 
+BOOST_AUTO_TEST_CASE(ValidPostChunk3)
+{
+  std::string request_data1("P");
+  auto next(request_data1.cbegin());
+
+  // Receiver does NOT concatenate_chunks
+  request_receiver<std::string, false> the_request_receiver(false, 1024);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.cend()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Transfer-Encoding: Chunked\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Expect: 100-Continue\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.cend());
+  ok = (rx_state == RX_EXPECT_CONTINUE);
+  BOOST_CHECK(ok);
+  BOOST_CHECK(!the_request_receiver.is_head());
+
+  the_request_receiver.set_continue_sent();
+
+  std::string chunk_tx_data("abcdefghijklmnopqrstuvwxyz");
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.cend());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  auto chunk(the_request_receiver.chunk());
+  BOOST_CHECK_EQUAL(chunk_tx_data, chunk.data());
+}
+
 BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
 {
   std::string request_data1("P");
@@ -747,6 +915,42 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.cend());
   BOOST_CHECK(rx_state == RX_INVALID);
+}
+
+BOOST_AUTO_TEST_CASE(InValidPostChunk1)
+{
+  std::string request_data1("P");
+  auto next(request_data1.cbegin());
+
+  // Receiver does NOT concatenate_chunks
+  request_receiver<std::string, false> the_request_receiver(false, 1024);
+  receiver_parsing_state rx_state
+      (the_request_receiver.receive(next, request_data1.cend()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(ok);
+
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Transfer-Encoding: Chunked\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.cend());
+  BOOST_CHECK_EQUAL(RX_VALID, rx_state);
+
+  rx_request const& the_request(the_request_receiver.request());
+  BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
+  BOOST_CHECK_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
+  BOOST_CHECK(the_request_receiver.body().empty());
+
+  std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\r");
+  next = body_data.begin();
+  rx_state = the_request_receiver.receive(next, body_data.cend());
+  BOOST_CHECK_EQUAL(RX_INVALID, rx_state);
 }
 
 

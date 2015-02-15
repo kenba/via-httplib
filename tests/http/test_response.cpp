@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -24,32 +24,90 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
   // Informational 1xx
   BOOST_CHECK_EQUAL("Continue",
     response_status::reason_phrase(response_status::code::CONTINUE).c_str());
+  BOOST_CHECK_EQUAL("Switching Protocols",
+    response_status::reason_phrase(response_status::code::SWITCHING_PROTOCOLS).c_str());
 
   // Successful 2xx
   BOOST_CHECK_EQUAL("OK",
     response_status::reason_phrase(response_status::code::OK).c_str());
   BOOST_CHECK_EQUAL("Created",
     response_status::reason_phrase(response_status::code::CREATED).c_str());
+  BOOST_CHECK_EQUAL("Accepted",
+    response_status::reason_phrase(response_status::code::ACCEPTED).c_str());
+  BOOST_CHECK_EQUAL("Non-Authoritative Information",
+    response_status::reason_phrase(response_status::code::NON_AUTHORITATIVE).c_str());
+  BOOST_CHECK_EQUAL("No Content",
+    response_status::reason_phrase(response_status::code::NO_CONTENT).c_str());
+  BOOST_CHECK_EQUAL("Reset Content",
+    response_status::reason_phrase(response_status::code::RESET_CONTENT).c_str());
+  BOOST_CHECK_EQUAL("Partial Content",
+    response_status::reason_phrase(response_status::code::PARTIAL_CONTENT).c_str());
 
   // Redirection 3xx
+  BOOST_CHECK_EQUAL("Multiple Choices",
+    response_status::reason_phrase(response_status::code::MULTIPLE_CHOICES).c_str());
   BOOST_CHECK_EQUAL("Moved Permanently",
     response_status::reason_phrase(response_status::code::MOVED_PERMANENTLY).c_str());
+  BOOST_CHECK_EQUAL("Found",
+    response_status::reason_phrase(response_status::code::FOUND).c_str());
+  BOOST_CHECK_EQUAL("See Other",
+    response_status::reason_phrase(response_status::code::SEE_OTHER).c_str());
+  BOOST_CHECK_EQUAL("Not Modified",
+    response_status::reason_phrase(response_status::code::NOT_MODIFIED).c_str());
+  BOOST_CHECK_EQUAL("Use Proxy",
+    response_status::reason_phrase(response_status::code::USE_PROXY).c_str());
+  BOOST_CHECK_EQUAL("Temporary Redirect",
+    response_status::reason_phrase(response_status::code::TEMPORARY_REDIRECT).c_str());
 
   // Client Error 4xx
   BOOST_CHECK_EQUAL("Bad Request",
     response_status::reason_phrase(response_status::code::BAD_REQUEST).c_str());
   BOOST_CHECK_EQUAL("Unauthorized",
     response_status::reason_phrase(response_status::code::UNAUTHORISED).c_str());
+  BOOST_CHECK_EQUAL("Payment Required",
+    response_status::reason_phrase(response_status::code::PAYMENT_REQUIRED).c_str());
+  BOOST_CHECK_EQUAL("Forbidden",
+    response_status::reason_phrase(response_status::code::FORBIDDEN).c_str());
   BOOST_CHECK_EQUAL("Not Found",
     response_status::reason_phrase(response_status::code::NOT_FOUND).c_str());
   BOOST_CHECK_EQUAL("Method Not Allowed",
     response_status::reason_phrase(response_status::code::METHOD_NOT_ALLOWED).c_str());
+  BOOST_CHECK_EQUAL("Not Acceptable",
+    response_status::reason_phrase(response_status::code::NOT_ACCEPTABLE).c_str());
+  BOOST_CHECK_EQUAL("Proxy Authentication Required",
+    response_status::reason_phrase(response_status::code::PROXY_AUTHENTICATION_REQUIRED).c_str());
+  BOOST_CHECK_EQUAL("Request Time-out",
+    response_status::reason_phrase(response_status::code::REQUEST_TIMEOUT).c_str());
+  BOOST_CHECK_EQUAL("Conflict",
+    response_status::reason_phrase(response_status::code::CONFLICT).c_str());
+  BOOST_CHECK_EQUAL("Gone",
+    response_status::reason_phrase(response_status::code::GONE).c_str());
+  BOOST_CHECK_EQUAL("Length Required",
+    response_status::reason_phrase(response_status::code::LENGTH_REQUIRED).c_str());
+  BOOST_CHECK_EQUAL("Precondition Failed",
+    response_status::reason_phrase(response_status::code::PRECONDITION_FAILED).c_str());
+  BOOST_CHECK_EQUAL("Request Entity Too Large",
+    response_status::reason_phrase(response_status::code::REQUEST_ENTITY_TOO_LARGE).c_str());
+  BOOST_CHECK_EQUAL("Request-URI Too Long",
+    response_status::reason_phrase(response_status::code::REQUEST_URI_TOO_LONG).c_str());
+  BOOST_CHECK_EQUAL("Unsupported Media Type",
+    response_status::reason_phrase(response_status::code::UNSUPPORTED_MEDIA_TYPE).c_str());
+  BOOST_CHECK_EQUAL("Requested range not satisfiable",
+    response_status::reason_phrase(response_status::code::REQUEST_RANGE_NOT_SATISFIABLE).c_str());
+  BOOST_CHECK_EQUAL("Expectation Failed",
+    response_status::reason_phrase(response_status::code::EXPECTATION_FAILED).c_str());
 
   // Server Error 5xx
   BOOST_CHECK_EQUAL("Internal Server Error",
     response_status::reason_phrase(response_status::code::INTERNAL_SERVER_ERROR).c_str());
+  BOOST_CHECK_EQUAL("Not Implemented",
+    response_status::reason_phrase(response_status::code::NOT_IMPLEMENTED).c_str());
+  BOOST_CHECK_EQUAL("Bad Gateway",
+    response_status::reason_phrase(response_status::code::BAD_GATEWAY).c_str());
   BOOST_CHECK_EQUAL("Service Unavailable",
     response_status::reason_phrase(response_status::code::SERVICE_UNAVAILABLE).c_str());
+  BOOST_CHECK_EQUAL("Gateway Time-out",
+    response_status::reason_phrase(response_status::code::GATEWAY_TIMEOUT).c_str());
   BOOST_CHECK_EQUAL("HTTP Version not supported",
     response_status::reason_phrase(response_status::code::HTTP_VERSION_NOT_SUPPORTED).c_str());
 }
@@ -120,6 +178,7 @@ BOOST_AUTO_TEST_CASE(ValidOk2)
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(1, the_response.major_version());
   BOOST_CHECK_EQUAL(0, the_response.minor_version());
+  BOOST_CHECK(!the_response.is_continue());
 }
 
 // An http response line in a string without an \r but with extra whitespace
@@ -135,6 +194,121 @@ BOOST_AUTO_TEST_CASE(ValidOk3)
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(1, the_response.major_version());
   BOOST_CHECK_EQUAL(0, the_response.minor_version());
+  BOOST_CHECK(!the_response.is_continue());
+}
+
+BOOST_AUTO_TEST_CASE(ValidContinue1)
+{
+  std::string response_data("HTTP/1.1 100 Continue\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(the_response.parse(next, response_data.cend()));
+  BOOST_CHECK(response_data.end() == next);
+  BOOST_CHECK_EQUAL(100, the_response.status());
+  BOOST_CHECK_EQUAL("Continue", the_response.reason_phrase().c_str());
+  BOOST_CHECK_EQUAL(1, the_response.major_version());
+  BOOST_CHECK_EQUAL(1, the_response.minor_version());
+  BOOST_CHECK(the_response.is_continue());
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk1)
+{
+  std::string response_data("XTTP/1.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk2)
+{
+  std::string response_data("HXTP/1.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk3)
+{
+  std::string response_data("HTXP/1.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk4)
+{
+  std::string response_data("HTTX/1.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk5)
+{
+  std::string response_data("HTTPX1.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk6)
+{
+  std::string response_data("HTTP/X.0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk7)
+{
+  std::string response_data("HTTP/1x0 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk8)
+{
+  std::string response_data("HTTP/1.X 200 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk9)
+{
+  std::string response_data("HTTP/1.0 X00 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk10)
+{
+  std::string response_data("HTTP/1.0 2X0 OK\r\n");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidOk11)
+{
+  std::string response_data("HTTP/1.0 200 OK \r\r");
+  auto next(response_data.cbegin());
+
+  response_line the_response;
+  BOOST_CHECK(!the_response.parse(next, response_data.cend()));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -166,9 +340,20 @@ BOOST_AUTO_TEST_CASE(ValidNonstandardString1)
 
 BOOST_AUTO_TEST_CASE(ValidNonstandardString2)
 {
-  response_line the_response(199, "");
+  response_line the_response(response_status::code::OK);
+  the_response.set_status_and_reason(199, "");
   std::string response_string(the_response.to_string());
   BOOST_CHECK_EQUAL("HTTP/1.1 199 \r\n", response_string.c_str());
+}
+
+BOOST_AUTO_TEST_CASE(ValidNonstandardString3)
+{
+  response_line the_response(199, "", 0, 0);
+  the_response.set_status(response_status::code::OK);
+  the_response.set_major_version(1);
+  the_response.set_minor_version(1);
+  std::string response_string(the_response.to_string());
+  BOOST_CHECK_EQUAL("HTTP/1.1 200 OK\r\n", response_string.c_str());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -192,26 +377,34 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   BOOST_CHECK_EQUAL(0, the_response.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_response.headers().find("content").c_str());
-  BOOST_CHECK_EQUAL(0, the_response.content_length());
+  BOOST_CHECK_EQUAL(0U, the_response.content_length());
+  BOOST_CHECK(!the_response.is_continue());
   BOOST_CHECK(!the_response.is_chunked());
+  BOOST_CHECK(!the_response.keep_alive());
   BOOST_CHECK_EQUAL("text", the_response.headers().find("content").c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ValidOK2)
 {
-  std::string response_data("HTTP/1.0 200 OK\r\nContent-Length: 4\r\n\r\nabcd");
+  std::string response_data("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nabcd");
   auto next(response_data.cbegin());
 
-  rx_response the_response;
-  BOOST_CHECK(the_response.parse(next, response_data.cend()));
+  rx_response a_response;
+  BOOST_CHECK(a_response.parse(next, response_data.cend()));
   BOOST_CHECK(response_data.begin() != next);
+
+  rx_response the_response;
+  the_response.swap(a_response);
+
   BOOST_CHECK_EQUAL(200, the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(1, the_response.major_version());
-  BOOST_CHECK_EQUAL(0, the_response.minor_version());
+  BOOST_CHECK_EQUAL(1, the_response.minor_version());
 
   BOOST_CHECK(!the_response.is_chunked());
-  BOOST_CHECK_EQUAL(4, the_response.content_length());
+  BOOST_CHECK(the_response.keep_alive());
+  BOOST_CHECK(!the_response.is_continue());
+  BOOST_CHECK_EQUAL(4U, the_response.content_length());
   std::string body(next, next + the_response.content_length());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -236,6 +429,21 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
     // TODO parse chunk...
 }
 
+BOOST_AUTO_TEST_CASE(ValidContinue1)
+{
+  std::string response_data("HTTP/1.1 100 Continue\r\n\r\n");
+  auto next(response_data.cbegin());
+
+  rx_response the_response;
+  BOOST_CHECK(the_response.parse(next, response_data.cend()));
+  BOOST_CHECK(response_data.end() == next);
+  BOOST_CHECK_EQUAL(100, the_response.status());
+  BOOST_CHECK_EQUAL("Continue", the_response.reason_phrase().c_str());
+  BOOST_CHECK_EQUAL(1, the_response.major_version());
+  BOOST_CHECK_EQUAL(1, the_response.minor_version());
+  BOOST_CHECK(the_response.is_continue());
+}
+
 BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
 {
   std::string RESPONSE_LINE
@@ -252,7 +460,7 @@ BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
 
   BOOST_CHECK_EQUAL("Challenge",
     the_response.headers().find(header_field::id::WWW_AUTHENTICATE).c_str());
-  BOOST_CHECK_EQUAL(0, the_response.content_length());
+  BOOST_CHECK_EQUAL(0U, the_response.content_length());
   BOOST_CHECK(!the_response.is_chunked());
 }
 
@@ -274,7 +482,7 @@ BOOST_AUTO_TEST_CASE(ValidOKMultiLine1)
   BOOST_CHECK(the_response.parse(next, response_data2.cend()));
 
   BOOST_CHECK(!the_response.is_chunked());
-  BOOST_CHECK_EQUAL(4, the_response.content_length());
+  BOOST_CHECK_EQUAL(4U, the_response.content_length());
   std::string body(next, next + the_response.content_length());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -367,7 +575,7 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   BOOST_CHECK_EQUAL(1, the_response_receiver.response().major_version());
   BOOST_CHECK_EQUAL(0, the_response_receiver.response().minor_version());
   BOOST_CHECK(!the_response_receiver.response().is_chunked());
-  BOOST_CHECK_EQUAL(4, the_response_receiver.response().content_length());
+  BOOST_CHECK_EQUAL(4U, the_response_receiver.response().content_length());
   std::string body(the_response_receiver.body());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -526,6 +734,32 @@ BOOST_AUTO_TEST_CASE(InvalidOK3)
   bool ok (rx_state == RX_LENGTH_REQUIRED);
   BOOST_CHECK(ok);
 }
+
+BOOST_AUTO_TEST_CASE(InValidOKChunked4)
+{
+  std::string response_data1("HTTP/1.1 200 OK\r\n");
+  response_data1 += "Server: Via-httplib/0.14\r\n";
+  response_data1 += "Transfer-Encoding: Chunked\r\n";
+
+  auto next(response_data1.cbegin());
+
+  response_receiver<std::string> the_response_receiver;
+  receiver_parsing_state rx_state
+      (the_response_receiver.receive(next, response_data1.cend()));
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  std::string response_data("\r\n15");
+  next = response_data.begin();
+
+  rx_state = the_response_receiver.receive(next, response_data.cend());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  std::string body_data("\r\nHTTP chunk number: 1\n\r\r");
+  next = body_data.begin();
+  rx_state = the_response_receiver.receive(next, body_data.cend());
+  BOOST_CHECK(rx_state == RX_INVALID);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////

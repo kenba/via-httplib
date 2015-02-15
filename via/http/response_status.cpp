@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -56,7 +56,7 @@ namespace
     {"Length Required"},
     {"Precondition Failed"},
     {"Request Entity Too Large"},
-    {"Request-URI Too Large"},
+    {"Request-URI Too Long"},
     {"Unsupported Media Type"},
     {"Requested range not satisfiable"},
     {"Expectation Failed"},

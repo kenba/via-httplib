@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -45,11 +45,10 @@ BOOST_AUTO_TEST_CASE(ValidSingleVectorUnsignedhar1)
   BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
 }
 
-
 // A single http header line in a string.
 BOOST_AUTO_TEST_CASE(ValidSingleString1)
 {
-  std::string header_data("Content: abcdefgh\r\n");
+  std::string header_data("Content: abcdefgh\n");
   auto next(header_data.cbegin());
 
   field_line field;
@@ -115,6 +114,16 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine1)
 BOOST_AUTO_TEST_CASE(InValidSingleLine2)
 {
   std::string header_data("Content abcdefgh\r\n");
+  auto next(header_data.cbegin());
+
+  field_line field;
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
+}
+
+// A single http header line in a string.
+BOOST_AUTO_TEST_CASE(InValidSingleLine3)
+{
+  std::string header_data("Content: abcdefgh\r\r");
   auto next(header_data.cbegin());
 
   field_line field;
@@ -273,12 +282,24 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
   BOOST_CHECK_EQUAL("Chunked",
                     the_headers.find
                     (header_field::id::TRANSFER_ENCODING).c_str());
+
+  std::string output(the_headers.to_string());
+//  BOOST_CHECK_EQUAL(output, HEADER_LINE);
+}
+
+BOOST_AUTO_TEST_CASE(InValidSingleHeaderString1)
+{
+  std::string header_data("Content: abcdefgh\r\n\r\r");
+  auto header_next(header_data.cbegin());
+
+  message_headers the_headers;
+  BOOST_CHECK(!the_headers.parse(header_next, header_data.cend()));
 }
 
 BOOST_AUTO_TEST_CASE(ValidContentLength1)
 {
   // Simple number
-  std::string HEADER_LINE("Content-Length: 4\r\n\r\n");
+  std::string HEADER_LINE("Content-Length: 4\n\n");
   std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
   auto header_next(header_data.cbegin());
 
@@ -286,7 +307,9 @@ BOOST_AUTO_TEST_CASE(ValidContentLength1)
   BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == header_next);
 
-  BOOST_CHECK_EQUAL(4, the_headers.content_length());
+  BOOST_CHECK_EQUAL(4U, the_headers.content_length());
+  BOOST_CHECK(!the_headers.close_connection());
+  BOOST_CHECK(!the_headers.expect_continue());
 }
 
 // A invalid content length http header line.
@@ -330,6 +353,34 @@ BOOST_AUTO_TEST_CASE(InValidContentLength3)
   BOOST_CHECK(header_data.cend() == header_next);
 
   BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+}
+
+BOOST_AUTO_TEST_CASE(ValidCloseConnection1)
+{
+  // Simple number
+  std::string HEADER_LINE("Connection: close\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
+  auto header_next(header_data.cbegin());
+
+  message_headers the_headers;
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
+
+  BOOST_CHECK(the_headers.close_connection());
+}
+
+BOOST_AUTO_TEST_CASE(ValidExpectContinue1)
+{
+  // Simple number
+  std::string HEADER_LINE("Expect: 100-continue\r\n\r\n");
+  std::vector<char> header_data(HEADER_LINE.cbegin(), HEADER_LINE.cend());
+  auto header_next(header_data.cbegin());
+
+  message_headers the_headers;
+  BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
+  BOOST_CHECK(header_data.cend() == header_next);
+
+  BOOST_CHECK(the_headers.expect_continue());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

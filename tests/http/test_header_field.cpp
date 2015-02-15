@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -60,6 +60,22 @@ BOOST_AUTO_TEST_CASE(ToHeaderDate)
 
   BOOST_CHECK(!memcmp(start.c_str(), result.c_str(), start.size()));
   BOOST_CHECK(!memcmp(end.c_str(), result.c_str() + 31, end.size()));
+}
+
+BOOST_AUTO_TEST_CASE(ServerHeader)
+{
+  std::string line("Server: Via-httplib/1.1.1\r\n");
+
+  std::string result(header_field::server_header());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
+}
+
+BOOST_AUTO_TEST_CASE(ContentHttpHeader)
+{
+  std::string line("Content-Type: message/http\r\n");
+
+  std::string result(header_field::content_http_header());
+  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ContentLengthHeader)
