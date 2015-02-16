@@ -130,6 +130,37 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine3)
   BOOST_CHECK(!field.parse(next, header_data.cend()));
 }
 
+BOOST_AUTO_TEST_CASE(InValidSingleLine4)
+{
+  std::string header_data("Content: abcdefgh\r\n");
+  auto next(header_data.cbegin());
+
+  field_line::max_length_s = 16;
+  field_line field;
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
+  field_line::max_length_s = 1024;
+}
+
+BOOST_AUTO_TEST_CASE(InValidSingleLine5)
+{
+  std::string header_data("Content:             abcdefgh\r\r");
+  auto next(header_data.cbegin());
+
+  field_line field;
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidSingleLine6)
+{
+  std::string header_data("Content: abcdefgh\n");
+  auto next(header_data.cbegin());
+
+  field_line::strict_crlf_s = true;
+  field_line field;
+  BOOST_CHECK(!field.parse(next, header_data.cend()));
+  field_line::strict_crlf_s = false;
+}
+
 // A multiple http header line in a string
 BOOST_AUTO_TEST_CASE(ValidMultiString1)
 {
@@ -324,7 +355,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength1)
   BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == header_next);
 
-  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(std::numeric_limits<size_t>::max(), the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(InValidContentLength2)
@@ -338,7 +369,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength2)
   BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == header_next);
 
-  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(std::numeric_limits<size_t>::max(), the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(InValidContentLength3)
@@ -352,7 +383,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength3)
   BOOST_CHECK(the_headers.parse(header_next, header_data.cend()));
   BOOST_CHECK(header_data.cend() == header_next);
 
-  BOOST_CHECK_EQUAL(CONTENT_LENGTH_INVALID, the_headers.content_length());
+  BOOST_CHECK_EQUAL(std::numeric_limits<size_t>::max(), the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(ValidCloseConnection1)
@@ -381,6 +412,51 @@ BOOST_AUTO_TEST_CASE(ValidExpectContinue1)
   BOOST_CHECK(header_data.cend() == header_next);
 
   BOOST_CHECK(the_headers.expect_continue());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_SUITE(TestSplitHeaders)
+
+BOOST_AUTO_TEST_CASE(ValidSingleHeader1)
+{
+  std::string HEADER_LINE("Content: abcdefgh\r\n");
+  BOOST_CHECK(!are_headers_split(HEADER_LINE));
+}
+
+BOOST_AUTO_TEST_CASE(ValidMultipleHeader1)
+{
+  std::string HEADER_LINE("Content-Length: \t4\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n";
+  BOOST_CHECK(!are_headers_split(HEADER_LINE));
+}
+
+BOOST_AUTO_TEST_CASE(InValidSingleHeader1)
+{
+  std::string HEADER_LINE("Content: abcdefgh\n\r\n");
+  BOOST_CHECK(are_headers_split(HEADER_LINE));
+}
+
+BOOST_AUTO_TEST_CASE(InValidSingleHeader2)
+{
+  std::string HEADER_LINE("Content: abcdefgh\n\n");
+  BOOST_CHECK(are_headers_split(HEADER_LINE));
+}
+
+BOOST_AUTO_TEST_CASE(InValidMultipleHeader1)
+{
+  std::string HEADER_LINE("Content-Length: \t4\r\n\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n";
+  BOOST_CHECK(are_headers_split(HEADER_LINE));
+}
+
+BOOST_AUTO_TEST_CASE(InValidMultipleHeader2)
+{
+  std::string HEADER_LINE("Content-Length: \t4\n\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n";
+  BOOST_CHECK(are_headers_split(HEADER_LINE));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

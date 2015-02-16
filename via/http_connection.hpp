@@ -115,10 +115,9 @@ namespace via
     /// @param max_body_size the maximum length of a message body.
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
-                    bool continue_enabled,
-                    size_t max_body_size) :
+                    bool continue_enabled) :
       connection_{connection},
-      rx_{concatenate_chunks, max_body_size},
+      rx_{concatenate_chunks},
       http_header_{},
       tx_buffer_{},
       continue_enabled_{continue_enabled}
@@ -176,15 +175,12 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
-    /// @param max_body_size the maximum length of a message body.
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
-                                 bool continue_enabled,
-                                 size_t max_body_size)
-    { return shared_pointer{new http_connection{connection,
+                                 bool continue_enabled)
+    { return shared_pointer(new http_connection(connection,
                                                 concatenate_chunks,
-                                                continue_enabled,
-                                                max_body_size}}; }
+                                                continue_enabled)); }
 
     /// Copy constructor deleted.
     http_connection(http_connection const&)=delete;
@@ -218,13 +214,13 @@ namespace via
     { return rx_.body().end(); }
 
     /// Receive data on the underlying connection.
-    /// @return the receiver_parsing_state
-    http::receiver_parsing_state receive()
+    /// @return the receiver parsing state, Rx
+    http::Rx receive()
     {
       // attempt to get the pointer
       auto tcp_pointer(connection_.lock());
       if (!tcp_pointer)
-        return http::RX_INCOMPLETE;
+        return http::Rx::INCOMPLETE;
 
       // read the data
       auto data(tcp_pointer->rx_buffer());
@@ -236,25 +232,25 @@ namespace via
       // Handle special cases
       switch (rx_state)
       {
-      case http::RX_INVALID:
+      case http::Rx::INVALID:
         send(http::tx_response(http::response_status::code::BAD_REQUEST));
         break;
 
-      case http::RX_LENGTH_REQUIRED:
+      case http::Rx::LENGTH_REQUIRED:
         send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
-        rx_state = http::RX_INVALID;
+        rx_state = http::Rx::INVALID;
         break;
 
-      case http::RX_EXPECT_CONTINUE:
+      case http::Rx::EXPECT_CONTINUE:
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)
         {
           send(http::tx_response(http::response_status::code::CONTINUE));
-          rx_state = http::RX_INCOMPLETE;
+          rx_state = http::Rx::INCOMPLETE;
         }
         break;
 
-      case http::RX_VALID:
+      case http::Rx::VALID:
         // Determine whether this is a TRACE request
         if (rx_.request().is_trace())
         {
@@ -262,8 +258,8 @@ namespace via
           if (trace_enabled)
           {
             // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::code::OK,
-                                   http::header_field::content_http_header());
+            http::tx_response ok_response(http::response_status::code::OK);
+            ok_response.add_content_http_header();
 
             // The body of the response contains the TRACE request
             std::string trace_request(rx_.request().to_string());
@@ -275,7 +271,7 @@ namespace via
             send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
 
           // Set the state as invalid, since the server has responded to the request
-          rx_state = http::RX_INVALID;
+          rx_state = http::Rx::INVALID;
         }
         else // Not a TRACE request
         {
@@ -286,7 +282,7 @@ namespace via
             http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
             send(bad_request, missing_host.begin(), missing_host.end());
 
-            rx_state = http::RX_INVALID;
+            rx_state = http::Rx::INVALID;
           }
         }
         break;

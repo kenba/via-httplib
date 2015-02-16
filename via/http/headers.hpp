@@ -22,21 +22,16 @@ namespace via
 {
   namespace http
   {
-    /// @enum content_length_error gives an error states for an invalid
-    /// content length header.
-    enum content_length_error
-    { CONTENT_LENGTH_INVALID = ULONG_MAX };
-
-    /// @enum receiver_parsing_state is valid for both the request and
-    /// response receivers.
-    enum receiver_parsing_state
+    /// @enum Rx is the receiver parsing state and is valid for both the
+    /// request and response receivers.
+    enum class Rx : char
     {
-      RX_INVALID,         ///< the message is invalid
-      RX_LENGTH_REQUIRED, ///< the message requires a content-length header
-      RX_EXPECT_CONTINUE, ///< the client expects a 100 Continue response
-      RX_INCOMPLETE,      ///< the message requires more data
-      RX_VALID,           ///< a valid request or response
-      RX_CHUNK            ///< a valid chunk received
+      INVALID,         ///< the message is invalid
+      LENGTH_REQUIRED, ///< the message requires a content-length header
+      EXPECT_CONTINUE, ///< the client expects a 100 Continue response
+      INCOMPLETE,      ///< the message requires more data
+      VALID,           ///< a valid request or response
+      CHUNK            ///< a valid chunk received
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -46,21 +41,26 @@ namespace via
     class field_line
     {
     public:
-      /// @enum parsing_state the state of the field line parser
-      enum parsing_state
+      /// @enum Header the state of the header field line parser
+      enum Header : char
       {
-        HEADER_NAME,     ///< the header name field
-        HEADER_VALUE_LS, ///< the header value leading white space
-        HEADER_VALUE,    ///< the header value
-        HEADER_LF,       ///< the line feed (if any)
-        HEADER_END       ///< the end of the header field line
+        NAME,         ///< the header name field
+        VALUE_LS,     ///< the header value leading white space
+        VALUE,        ///< the header value
+        LF,           ///< the line feed (if any)
+        VALID,        ///< the header line is valid
+        ERROR_LENGTH, ///< the header is longer than max_length_s
+        ERROR_CRLF,   ///< strict_crlf_s is true and LF was received without CR
+        ERROR_WS      ///< the whitespace is longer than max_ws_s
       };
 
     private:
 
-      std::string   name_;  ///< the field name (lower case)
-      std::string   value_; ///< the field value
-      parsing_state state_; ///< the current parsing state
+      std::string   name_;     ///< the field name (lower case)
+      std::string   value_;    ///< the field value
+      size_t        length_;   ///< the length of the header line in bytes
+      size_t        ws_count_; ///< the current whitespace count
+      Header        state_;    ///< the current parsing state
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -69,12 +69,23 @@ namespace via
 
     public:
 
+      /// whether to enforce strict parsing of CRLF
+      static bool strict_crlf_s;
+
+      /// the maximum number of consectutive whitespace characters.
+      static size_t max_ws_s;
+
+      /// the maximum length of the header line.
+      static size_t max_length_s;
+
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit field_line() :
         name_(""),
         value_(""),
-        state_{ HEADER_NAME }
+        length_(0),
+        ws_count_(0),
+        state_(Header::NAME)
       {}
 
       /// clear the field_line.
@@ -83,7 +94,9 @@ namespace via
       {
         name_.clear();
         value_.clear();
-        state_ = HEADER_NAME;
+        length_ = 0;
+        ws_count_ = 0;
+        state_ = Header::NAME;
       }
 
       /// swap member variables with another field_line.
@@ -92,6 +105,8 @@ namespace via
       {
         name_.swap(other.name_);
         value_.swap(other.value_);
+        std::swap(length_, other.length_);
+        std::swap(ws_count_, other.ws_count_);
         std::swap(state_, other.state_);
       }
 
@@ -104,22 +119,22 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (HEADER_END != state_))
+        while ((iter != end) && (Header::VALID != state_))
         {
-          char c{static_cast<char>(*iter++)};
+          auto c(static_cast<char>(*iter++));
           if (!parse_char(c))
             return false;
-          else if (HEADER_END == state_)
+          else if (Header::VALID == state_)
           { // determine whether the next line is a continuation header
             if ((iter != end) && is_space_or_tab(*iter))
             {
               value_.push_back(' ');
-              state_ = HEADER_VALUE_LS;
+              state_ = Header::VALUE_LS;
             }
           }
         }
 
-        return (HEADER_END == state_);
+        return (Header::VALID == state_);
       }
 
       /// Accessor for the field name.
@@ -159,6 +174,9 @@ namespace via
 
       /// the maximum length of the message headers.
       static size_t max_length_s;
+
+      ///< the maximum length of a content length header
+      static size_t max_content_length_s;
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
@@ -273,10 +291,15 @@ namespace via
       { return valid_; }
 
       /// Output the message_headers as a string.
+      /// Note: it is NOT terminated with an extra CRLF tso that it parses
+      /// the are_headers_split function.
       /// @return a string containing all of the message_headers.
       std::string to_string() const;
     };
 
+    /// A function to determine whether the header string contains an extra
+    /// CRLF pair, which could cause HTTP message spliting.
+    bool are_headers_split(std::string const& headers);
   }
 }
 

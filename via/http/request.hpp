@@ -31,33 +31,38 @@ namespace via
     class request_line
     {
     public:
-      /// @enum parsing_state the state of the request line parser.
-      enum parsing_state
+      /// @enum Request the state of the request line parser.
+      enum Request : char
       {
-        REQ_METHOD,     ///< request method
-        REQ_URI,        ///< request uri
-        REQ_HTTP,       ///< HTTP/ -H
-        REQ_HTTP_T1,    ///< HTTP/ first T
-        REQ_HTTP_T2,    ///< HTTP/ second T
-        REQ_HTTP_P,     ///< HTTP/ P
-        REQ_HTTP_SLASH, ///< HTTP/ slash
-        REQ_HTTP_MAJOR, ///< HTTP major version number
-        REQ_HTTP_MINOR, ///< HTTP minor version number
-        REQ_HTTP_LF,    ///< the line feed (if any)
-        REQ_HTTP_END
+        METHOD,              ///< request method
+        URI,                 ///< request uri
+        HTTP_H,              ///< HTTP/ H
+        HTTP_T1,             ///< HTTP/ first T
+        HTTP_T2,             ///< HTTP/ second T
+        HTTP_P,              ///< HTTP/ P
+        HTTP_SLASH,          ///< HTTP/ slash
+        HTTP_MAJOR,          ///< HTTP major version number
+        HTTP_DOT,            ///< HTTP . between major and minor versions
+        HTTP_MINOR,          ///< HTTP minor version number
+        CR,                  ///< the carriage return (if any)
+        LF,                  ///< the line feed
+        VALID,               ///< the request line is valid
+        ERROR_CRLF,          ///< strict_crlf_s is true and LF was received without CR
+        ERROR_WS,            ///< the whitespace is longer than max_ws_s
+        ERROR_METHOD_LENGTH, ///< the method name is longer than max_method_length_s
+        ERROR_URI_LENGTH     ///< then uri is longer than max_uri_length_s
       };
 
     private:
 
-      std::string method_;  ///< the request method
-      std::string uri_;     ///< the request uri
-      int major_version_;   ///< the HTTP major version number
-      int minor_version_;   ///< the HTTP minor version number
-      parsing_state state_; ///< the current parsing state
-      bool major_read_;     ///< true if major version was read
-      bool minor_read_;     ///< true if minor version was read
-      bool valid_;          ///< true if the request line is valid
-      bool fail_;           ///< true if the request line failed validation
+      std::string method_;   ///< the request method
+      std::string uri_;      ///< the request uri
+      size_t      ws_count_; ///< the current whitespace count
+      char major_version_;   ///< the HTTP major version character
+      char minor_version_;   ///< the HTTP minor version character
+      Request state_;        ///< the current parsing state
+      bool valid_;           ///< true if the request line is valid
+      bool fail_;            ///< true if the request line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -65,6 +70,16 @@ namespace via
       bool parse_char(char c);
 
     public:
+
+      /// Delete copy construction and assignment
+      request_line(request_line const&) = delete;
+      request_line& operator=(request_line const&) = delete;
+
+      /// whether to enforce strict parsing of CRLF
+      static bool strict_crlf_s;
+
+      /// the maximum number of consectutive whitespace characters.
+      static size_t max_ws_s;
 
       /// the maximum length of a request method, default 16 chars
       static size_t max_method_length_s;
@@ -78,15 +93,14 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit request_line() :
-        method_{},
-        uri_{},
-        major_version_{0},
-        minor_version_{0},
-        state_{REQ_METHOD},
-        major_read_{false},
-        minor_read_{false},
-        valid_{false},
-        fail_{false}
+        method_(),
+        uri_(),
+        ws_count_(0),
+        major_version_(0),
+        minor_version_(0),
+        state_(Request::METHOD),
+        valid_(false),
+        fail_(false)
       {}
 
       /// Clear the request_line.
@@ -95,11 +109,10 @@ namespace via
       {
         method_.clear();
         uri_.clear();
+        ws_count_ = 0;
         major_version_ = 0;
         minor_version_ = 0;
-        state_ = REQ_METHOD;
-        major_read_ =  false;
-        minor_read_ =  false;
+        state_ = Request::METHOD;
         valid_ =  false;
         fail_ = false;
       }
@@ -110,19 +123,17 @@ namespace via
       {
         method_.swap(other.method_);
         uri_.swap(other.uri_);
+        std::swap(ws_count_, other.ws_count_);
         std::swap(major_version_, other.major_version_);
         std::swap(minor_version_, other.minor_version_);
         std::swap(state_, other.state_);
-        std::swap(major_read_, other.major_read_);
-        std::swap(minor_read_, other.minor_read_);
         std::swap(valid_, other.valid_);
         std::swap(fail_, other.fail_);
       }
 
       /// Virtual destructor.
       /// Since the class is inherited...
-      virtual ~request_line()
-      {}
+      virtual ~request_line() = default;
 
       /// Parse the line as an HTTP request.
       /// @retval iter reference to an iterator to the start of the data.
@@ -132,13 +143,13 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (REQ_HTTP_END != state_))
+        while ((iter != end) && (Request::VALID != state_))
         {
-          char c{static_cast<char>(*iter++)};
+          auto c(static_cast<char>(*iter++));
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
-        valid_ = (REQ_HTTP_END == state_);
+        valid_ = (Request::VALID == state_);
         return valid_;
       }
 
@@ -154,12 +165,12 @@ namespace via
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.
-      int major_version() const
+      char major_version() const
       { return major_version_; }
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      int minor_version() const
+      char minor_version() const
       { return minor_version_; }
 
       /// Accessor for the valid flag.
@@ -172,6 +183,14 @@ namespace via
       bool fail() const
       { return fail_; }
 
+      /// Test for early HTTP versions
+      /// @return true if HTTP/1.0 or earlier.
+      bool is_http_1_0_or_earlier() const
+      {
+        return (major_version_ <= '0') ||
+              ((major_version_ == '1') && (minor_version_ == '0'));
+      }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
@@ -180,41 +199,37 @@ namespace via
       /// @see http::request_method::id
       /// @param method_id the HTTP request method id
       /// @param uri the HTTP uri, default blank
-      /// @param minor_version default 1
-      /// @param major_version default 1
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
       explicit request_line(request_method::id method_id,
-                            std::string uri = "",
-                            int minor_version = 1,
-                            int major_version = 1) :
+                            std::string uri,
+                            char major_version = '1',
+                            char minor_version = '1') :
         method_(request_method::name(method_id)),
         uri_(uri),
-        major_version_{major_version},
-        minor_version_{minor_version},
-        state_{REQ_HTTP_END},
-        major_read_{true},
-        minor_read_{true},
-        valid_{true},
-        fail_{false}
+        major_version_(major_version),
+        minor_version_(minor_version),
+        state_(Request::VALID),
+        valid_(true),
+        fail_(false)
       {}
 
       /// Constructor for creating a request with a non-standard method.
       /// @param method the HTTP request method name
       /// @param uri the HTTP uri, default blank
-      /// @param minor_version default 1
-      /// @param major_version default 1
-      explicit request_line(const std::string& method,
-                            std::string uri = "",
-                            int minor_version = 1,
-                            int major_version = 1) :
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
+      explicit request_line(std::string const& method,
+                            std::string const& uri,
+                            char major_version = '1',
+                            char minor_version = '1') :
         method_(method),
         uri_(uri),
-        major_version_{major_version},
-        minor_version_{minor_version},
-        state_{REQ_HTTP_END},
-        major_read_{true},
-        minor_read_{true},
-        valid_{true},
-        fail_{false}
+        major_version_(major_version),
+        minor_version_(minor_version),
+        state_(Request::VALID),
+        valid_(true),
+        fail_(false)
       {}
 
       /// Set the request method.
@@ -229,12 +244,12 @@ namespace via
 
       /// Set the HTTP major version.
       /// @param major_version the HTTP major version.
-      void set_major_version(int major_version)
+      void set_major_version(char major_version)
       { major_version_ = major_version; }
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
-      void set_minor_version(int minor_version)
+      void set_minor_version(char minor_version)
       { minor_version_ = minor_version; }
 
       /// Output as a string.
@@ -253,13 +268,19 @@ namespace via
 
     public:
 
+      /// Delete copy construction and assignment
+      rx_request(rx_request const&) = delete;
+      rx_request& operator=(rx_request const&) = delete;
+
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit rx_request() :
-        request_line{},
-        headers_{},
-        valid_{false}
+        request_line(),
+        headers_(),
+        valid_(false)
       {}
+
+      virtual ~rx_request() = default;
 
       /// Clear the rx_request.
       /// Sets all member variables to their initial state.
@@ -331,8 +352,7 @@ namespace via
       /// otherwise
       bool expect_continue() const
       {
-        return major_version() >= 1 &&
-               minor_version() >= 1 &&
+        return !is_http_1_0_or_earlier() &&
                headers_.expect_continue();
       }
 
@@ -343,8 +363,8 @@ namespace via
       /// otherwise
       bool missing_host_header() const
       {
-        return major_version() == 1 &&
-               minor_version() == 1 &&
+        return major_version() == '1' &&
+               minor_version() == '1' &&
                headers_.find(header_field::id::HOST).empty();
       }
 
@@ -359,8 +379,7 @@ namespace via
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
-        return major_version() >= 1 &&
-               minor_version() >= 1 &&
+        return !is_http_1_0_or_earlier() &&
                !headers_.close_connection();
       }
     }; // class rx_request
@@ -375,6 +394,10 @@ namespace via
 
     public:
 
+      /// Delete copy construction and assignment
+      tx_request(tx_request const&) = delete;
+      tx_request& operator=(tx_request const&) = delete;
+
       /// Constructor for creating a request for one of the standard methods
       /// defined in RFC2616.
       /// @see http::request_method::id
@@ -386,9 +409,9 @@ namespace via
       explicit tx_request(request_method::id method_id,
                           std::string uri,
                           std::string header_string = "",
-                          int minor_version = 1,
-                          int major_version = 1) :
-        request_line{method_id, uri, minor_version, major_version},
+                          char minor_version = '1',
+                          char major_version = '1') :
+        request_line(method_id, uri, minor_version, major_version),
         header_string_(header_string)
       {}
 
@@ -401,11 +424,13 @@ namespace via
       explicit tx_request(const std::string& method,
                           std::string uri,
                           std::string header_string = "",
-                          int minor_version = 1,
-                          int major_version = 1) :
-        request_line{method, uri, minor_version, major_version},
+                          char minor_version = '1',
+                          char major_version = '1') :
+        request_line(method, uri, minor_version, major_version),
         header_string_(header_string)
       {}
+
+      virtual ~tx_request() = default;
 
       /// Add a free form header to the request.
       /// @param field the header field name
@@ -464,25 +489,24 @@ namespace via
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
       bool       concatenate_chunks_; ///< concatenate chunk data into the body
-      size_t     max_body_size_; ///< the maximum length of a message body
 
     public:
 
+      /// Delete copy construction and assignment
+      request_receiver(request_receiver const&) = delete;
+      request_receiver& operator=(request_receiver const&) = delete;
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
-      /// @param the maximum length of the message body.
-      explicit request_receiver(bool concatenate_chunks,
-                                size_t max_body_size) :
-        request_{},
-        chunk_{},
-        body_{},
-        continue_sent_{false},
-        is_head_{false},
-        concatenate_chunks_{concatenate_chunks},
-        max_body_size_(max_body_size)
+      explicit request_receiver(bool concatenate_chunks) :
+        request_(),
+        chunk_(),
+        body_(),
+        continue_sent_(false),
+        is_head_(false),
+        concatenate_chunks_(concatenate_chunks)
       {}
 
       /// clear the request_receiver.
@@ -523,11 +547,10 @@ namespace via
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
       template<typename ForwardIterator>
-      receiver_parsing_state receive(ForwardIterator& iter,
-                                     ForwardIterator end)
+      Rx receive(ForwardIterator& iter, ForwardIterator end)
       {
         // building a request
-        bool request_parsed{!request_.valid()};
+        auto request_parsed(!request_.valid());
         if (request_parsed)
         {
           // failed to parse request
@@ -537,10 +560,10 @@ namespace via
             if ((iter != end) || request_.fail())
             {
               clear();
-              return RX_INVALID;
+              return Rx::INVALID;
             }
             else
-              return RX_INCOMPLETE;
+              return Rx::INCOMPLETE;
           }
         }
 
@@ -550,24 +573,24 @@ namespace via
         {
           // if there is a content length header, ensure it's valid
           auto content_length(request_.content_length());
-          if ((content_length == CONTENT_LENGTH_INVALID) ||
-              (content_length > max_body_size_))
+          if ((content_length == std::numeric_limits<size_t>::max()) ||
+              (content_length > message_headers::max_content_length_s))
           {
             clear();
-            return RX_INVALID;
+            return Rx::INVALID;
           }
 
           // if there's a message body then insist on a content length header
-          long rx_size(end - iter);
+          auto rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
               request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
-            return RX_LENGTH_REQUIRED;
+            return Rx::LENGTH_REQUIRED;
           }
 
           // received buffer contains more than the required data
-          long required(content_length - body_.size());
+          auto required(static_cast<long>(content_length - body_.size()));
           if (rx_size > required)
           {
               auto next(iter + required);
@@ -587,7 +610,7 @@ namespace via
             if (is_head_ && translate_head)
               request_.set_method(request_method::name(request_method::id::GET));
 
-            return RX_VALID;
+            return Rx::VALID;
           }
         }
         else // request_.is_chunked()
@@ -604,7 +627,7 @@ namespace via
             if (iter != end)
             {
               clear();
-              return RX_INVALID;
+              return Rx::INVALID;
             }
           }
 
@@ -612,11 +635,11 @@ namespace via
           if (request_parsed)
           {
             if (request_.expect_continue() && !continue_sent_)
-              return RX_EXPECT_CONTINUE;
+              return Rx::EXPECT_CONTINUE;
             else
             {
               if (!concatenate_chunks_)
-                return RX_VALID;
+                return Rx::VALID;
             }
           }
 
@@ -626,17 +649,17 @@ namespace via
             if (concatenate_chunks_)
             {
               if (chunk_.is_last())
-                return RX_VALID;
+                return Rx::VALID;
               else
                 body_.insert(body_.end(),
                              chunk_.data().begin(), chunk_.data().end());
             }
             else
-              return RX_CHUNK;
+              return Rx::CHUNK;
           }
         }
 
-        return RX_INCOMPLETE;
+        return Rx::INCOMPLETE;
       }
 
     };

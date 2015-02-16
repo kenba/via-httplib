@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -13,113 +13,185 @@ namespace via
 {
   namespace http
   {
+
+    bool response_line::strict_crlf_s(false);
+
+    size_t response_line::max_ws_s(std::numeric_limits<size_t>::max());
+
+    int response_line::max_status_s(std::numeric_limits<int>::max());
+
+    size_t response_line::max_reason_length_s(std::numeric_limits<size_t>::max());
+
     //////////////////////////////////////////////////////////////////////////
     bool response_line::parse_char(char c)
     {
       switch (state_)
       {
-      case RESP_HTTP:
+      case Response::HTTP_H:
         // Ignore leading whitespace
-        if (!is_space_or_tab(c))
+        if (is_space_or_tab(c))
+        {
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = Response::ERROR_WS;
+            return false;
+          }
+        }
+        else
         {
           if ('H' == c)
-            state_ = RESP_HTTP_T1;
+            state_ = Response::HTTP_T1;
           else
             return false;
         }
         break;
 
-      case RESP_HTTP_T1:
+      case Response::HTTP_T1:
         if ('T' == c)
-          state_ = RESP_HTTP_T2;
+          state_ =Response::HTTP_T2;
         else
           return false;
         break;
 
-      case RESP_HTTP_T2:
+      case Response::HTTP_T2:
         if ('T' == c)
-          state_ = RESP_HTTP_P;
+          state_ = Response::HTTP_P;
         else
           return false;
         break;
 
-      case RESP_HTTP_P:
+      case Response::HTTP_P:
         if ('P' == c)
-          state_ = RESP_HTTP_SLASH;
+          state_ = Response::HTTP_SLASH;
         else
           return false;
         break;
 
-      case RESP_HTTP_SLASH:
+      case Response::HTTP_SLASH:
         if ('/' == c)
-          state_ = RESP_HTTP_MAJOR;
+          state_ = Response::HTTP_MAJOR;
         else
           return false;
         break;
 
-      case RESP_HTTP_MAJOR:
+      case Response::HTTP_MAJOR:
         if (std::isdigit(c))
         {
-          major_read_ = true;
-          major_version_ *= 10;
-          major_version_ += read_digit(c);
+          major_version_ = c;
+          state_ = Response::HTTP_DOT;
         }
-        else
-        {
-          if (major_read_ && ('.' == c))
-            state_ = RESP_HTTP_MINOR;
-          else
-            return false;
-        }
-        break;
-
-      case RESP_HTTP_MINOR:
-        if (std::isdigit(c))
-        {
-          minor_read_ = true;
-          minor_version_ *= 10;
-          minor_version_ += read_digit(c);
-        }
-        else if (minor_read_ && (is_space_or_tab(c)))
-          state_ = RESP_HTTP_STATUS;
         else
           return false;
         break;
 
-      case RESP_HTTP_STATUS:
+      case Response::HTTP_DOT:
+        if ('.' == c)
+          state_ = Response::HTTP_MINOR;
+        else
+          return false;
+        break;
+
+      case Response::HTTP_MINOR:
+        if (std::isdigit(c))
+        {
+          minor_version_ = c;
+          // must be at least one whitespace before status
+          state_ = Response::HTTP_WS;
+        }
+        else
+          return false;
+        break;
+
+      case Response::HTTP_WS:
+        if (is_space_or_tab(c))
+        {
+          ws_count_ = 1;
+          state_ = Response::STATUS;
+        }
+        else
+          return false;
+        break;
+
+      case Response::STATUS:
         if (std::isdigit(c))
         {
           status_read_ = true;
           status_ *= 10;
           status_ += read_digit(c);
+          if (status_ > max_status_s)
+          {
+            state_ = Response::ERROR_STATUS_VALUE;
+            return false;
+          }
         }
         else if (is_space_or_tab(c))
         {
           if (status_read_)
-            state_ = RESP_HTTP_REASON;
-          // Ignore leading whitespace
+          {
+            ws_count_ = 1;
+            state_ = Response::REASON;
+          }
+          else // Ignore extra leading whitespace
+          {
+            // but only upto to a limit!
+            if (++ws_count_ > max_ws_s)
+            {
+              state_ = Response::ERROR_WS;
+              return false;
+            }
+          }
         }
         else
           return false;
         break;
 
-      case RESP_HTTP_REASON:
-        if (is_end_of_line(c))
+      case Response::REASON:
+        if (!is_end_of_line(c))
         {
-          if ('\r' == c)
-            state_ = RESP_HTTP_LF;
-          else // ('\n' == *iter) \\ but permit just \n
-            state_ = RESP_HTTP_END;
+          // Ignore leading whitespace
+          if (reason_phrase_.empty() && is_space_or_tab(c))
+          {
+            // but only upto to a limit!
+            if (++ws_count_ > max_ws_s)
+            {
+              state_ = Response::ERROR_WS;
+              return false;
+            }
+          }
+          else
+          {
+            reason_phrase_.push_back(c);
+            if (reason_phrase_.size() > max_reason_length_s)
+            {
+              state_ = Response::ERROR_REASON_LENGTH;
+              return false;
+            }
+          }
+          break;
         }
-        // Ignore leading whitespace
-        else if (!reason_phrase_.empty() || !is_space_or_tab(c))
-          reason_phrase_.push_back(c);
+        // intentional fall-through
+      case Response::CR:
+        // The HTTP line should end with a \r\n...
+        if ('\r' == c)
+          state_ = Response::LF;
+        else
+        {
+          // but (if not being strict) permit just \n
+          if (!strict_crlf_s && ('\n' == c))
+            state_ = Response::VALID;
+          else
+          {
+            state_ = Response::ERROR_CRLF;
+            return false;
+          }
+        }
         break;
 
-      case RESP_HTTP_LF:
+      case Response::LF:
         if ('\n' == c)
-          state_ = RESP_HTTP_END;
-        else 
+          state_ = Response::VALID;
+        else
           return false;
         break;
 
@@ -130,7 +202,7 @@ namespace via
       return true;
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     std::string response_line::to_string() const
     {

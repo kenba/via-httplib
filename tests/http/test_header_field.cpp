@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(ToHeaderDate)
 
 BOOST_AUTO_TEST_CASE(ServerHeader)
 {
-  std::string line("Server: Via-httplib/1.1.1\r\n");
+  std::string line("Server: Via-httplib/1.1.2\r\n");
 
   std::string result(header_field::server_header());
   BOOST_CHECK_EQUAL(line.c_str(), result.c_str());

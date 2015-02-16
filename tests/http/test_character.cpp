@@ -14,7 +14,7 @@
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
-BOOST_AUTO_TEST_SUITE(TestSeparator)
+BOOST_AUTO_TEST_SUITE(TestSeparators)
 
 BOOST_AUTO_TEST_CASE(ValidSeparators1)
 {
@@ -43,6 +43,102 @@ BOOST_AUTO_TEST_CASE(ValidSeparators1)
 
   BOOST_CHECK(!is_separator('1'));
   BOOST_CHECK(!is_separator('a'));
+}
+
+BOOST_AUTO_TEST_CASE(ValidPctEncoded1)
+{
+  BOOST_CHECK(is_pct_encoded("%AF"));
+  BOOST_CHECK(is_pct_encoded("%af"));
+  BOOST_CHECK(!is_pct_encoded("zxf"));
+  BOOST_CHECK(!is_pct_encoded("123"));
+}
+
+BOOST_AUTO_TEST_CASE(ValidGenDelimitor1)
+{
+  BOOST_CHECK(is_gen_delim(':'));
+  BOOST_CHECK(is_gen_delim('/'));
+  BOOST_CHECK(is_gen_delim('?'));
+  BOOST_CHECK(is_gen_delim('#'));
+  BOOST_CHECK(is_gen_delim('['));
+  BOOST_CHECK(is_gen_delim(']'));
+  BOOST_CHECK(is_gen_delim('@'));
+
+  BOOST_CHECK(!is_gen_delim('{'));
+  BOOST_CHECK(!is_gen_delim('}'));
+  BOOST_CHECK(!is_gen_delim(' '));
+  BOOST_CHECK(!is_gen_delim('\t'));
+
+  BOOST_CHECK(!is_gen_delim('1'));
+  BOOST_CHECK(!is_gen_delim('a'));
+}
+
+BOOST_AUTO_TEST_CASE(ValidSubDelimitor1)
+{
+  BOOST_CHECK(is_sub_delim('!'));
+  BOOST_CHECK(is_sub_delim('$'));
+  BOOST_CHECK(is_sub_delim('&'));
+  BOOST_CHECK(is_sub_delim('\''));
+  BOOST_CHECK(is_sub_delim('('));
+  BOOST_CHECK(is_sub_delim(')'));
+  BOOST_CHECK(is_sub_delim('*'));
+  BOOST_CHECK(is_sub_delim('+'));
+  BOOST_CHECK(is_sub_delim(','));
+  BOOST_CHECK(is_sub_delim(';'));
+  BOOST_CHECK(is_sub_delim('='));
+
+  BOOST_CHECK(!is_sub_delim('['));
+  BOOST_CHECK(!is_sub_delim(']'));
+  BOOST_CHECK(!is_sub_delim(' '));
+  BOOST_CHECK(!is_sub_delim('\t'));
+
+  BOOST_CHECK(!is_sub_delim('1'));
+  BOOST_CHECK(!is_sub_delim('a'));
+}
+
+BOOST_AUTO_TEST_CASE(ValidReserved1)
+{
+  BOOST_CHECK(is_reserved(':'));
+  BOOST_CHECK(is_reserved('/'));
+  BOOST_CHECK(is_reserved('?'));
+  BOOST_CHECK(is_reserved('#'));
+  BOOST_CHECK(is_reserved('['));
+  BOOST_CHECK(is_reserved(']'));
+  BOOST_CHECK(is_reserved('@'));
+
+  BOOST_CHECK(is_reserved('!'));
+  BOOST_CHECK(is_reserved('$'));
+  BOOST_CHECK(is_reserved('&'));
+  BOOST_CHECK(is_reserved('\''));
+  BOOST_CHECK(is_reserved('('));
+  BOOST_CHECK(is_reserved(')'));
+  BOOST_CHECK(is_reserved('*'));
+  BOOST_CHECK(is_reserved('+'));
+  BOOST_CHECK(is_reserved(','));
+  BOOST_CHECK(is_reserved(';'));
+  BOOST_CHECK(is_reserved('='));
+
+  BOOST_CHECK(!is_reserved(' '));
+  BOOST_CHECK(!is_reserved('\t'));
+
+  BOOST_CHECK(!is_reserved('1'));
+  BOOST_CHECK(!is_reserved('a'));
+}
+
+BOOST_AUTO_TEST_CASE(ValidUnreserved1)
+{
+  BOOST_CHECK(is_unreserved('-'));
+  BOOST_CHECK(is_unreserved('.'));
+  BOOST_CHECK(is_unreserved('_'));
+  BOOST_CHECK(is_unreserved('~'));
+  BOOST_CHECK(is_unreserved('a'));
+  BOOST_CHECK(is_unreserved('Z'));
+  BOOST_CHECK(is_unreserved('0'));
+
+  BOOST_CHECK(!is_unreserved(' '));
+  BOOST_CHECK(!is_unreserved('\t'));
+
+  BOOST_CHECK(!is_unreserved('!'));
+  BOOST_CHECK(!is_unreserved('$'));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

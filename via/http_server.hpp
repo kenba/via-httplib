@@ -126,7 +126,6 @@ namespace via
     http_connection_signal http_sent_signal_;
     /// the disconncted callback function
     http_connection_signal http_disconnected_signal_;
-    size_t max_body_size_;    ///< the maximum length of a message body
     /// whether the server should disconnect a connection on an invalid request
     bool disconnect_invalid_request_;
     bool concatenate_chunks_; ///< true if the server does not have a chunk handler
@@ -181,7 +180,6 @@ namespace via
       http_chunk_signal_{},
       http_sent_signal_{},
       http_disconnected_signal_{},
-      max_body_size_{std::numeric_limits<size_t>::max()},
       disconnect_invalid_request_{false},
       concatenate_chunks_{true},
       continue_enabled_{true}
@@ -229,8 +227,7 @@ namespace via
         {
           http_connection = http_connection_type::create(connection,
                                                          concatenate_chunks_,
-                                                         continue_enabled_,
-                                                         max_body_size_);
+                                                         continue_enabled_);
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
         }
@@ -238,25 +235,25 @@ namespace via
         auto rx_state(http_connection->receive());
         switch (rx_state)
         {
-        case http::RX_VALID:
+        case http::Rx::VALID:
           http_request_signal_(http_connection,
                                http_connection->request(),
                                http_connection->body());
           break;
 
-        case http::RX_EXPECT_CONTINUE:
+        case http::Rx::EXPECT_CONTINUE:
           http_continue_signal_(http_connection,
                                 http_connection->request(),
                                 http_connection->body());
           break;
 
-        case http::RX_CHUNK:
+        case http::Rx::CHUNK:
           http_chunk_signal_(http_connection,
                              http_connection->chunk(),
                              http_connection->chunk().data());
           break;
 
-        case http::RX_INVALID:
+        case http::Rx::INVALID:
           if (disconnect_invalid_request_)
             http_connection->disconnect();
           break;
@@ -347,6 +344,29 @@ namespace via
     void set_timeout(int timeout)
     { server_->set_timeout(timeout); }
 
+    /// Whether to disconnect a connection if an invalid request is received.
+    /// @param enable if true disconnect when an invalid request is received.
+    void set_invalid_request_disconnect(bool enable)
+    { disconnect_invalid_request_ = enable; }
+
+    /// Set the maximum length of a request method.
+    /// @param max_length maximum length of a request uri.
+    static void set_strict_cr_lf_parsing(bool enable)
+    {
+      http::request_line::strict_crlf_s = enable;
+      http::field_line::strict_crlf_s   = enable;
+      http::chunk_header::strict_crlf_s = enable;
+    }
+
+    /// Set the maximum length of a string of whitespaces.
+    /// @param max_length maximum length of whitespacesi.
+    static void set_max_whitespace_length(size_t max_length)
+    {
+      http::request_line::max_ws_s = max_length;
+      http::field_line::max_ws_s   = max_length;
+      http::chunk_header::max_ws_s = max_length;
+    }
+
     /// Set the maximum length of a request method.
     /// @param max_length maximum length of a request uri.
     static void set_max_method_length(size_t max_length)
@@ -365,12 +385,12 @@ namespace via
     /// Set the maximum length of a message body.
     /// @param max_length maximum length of a message body.
     void set_max_body_size(size_t max_length)
-    { max_body_size_ = max_length; }
+    { http::message_headers::max_content_length_s = max_length; }
 
-    /// Whether to disconnect a connection if an invalid request is received.
-    /// @param enable if true disconnect when an invalid request is received.
-    void set_invalid_request_disconnect(bool enable)
-    { disconnect_invalid_request_ = enable; }
+    /// Set the maximum length of a message body.
+    /// @param max_length maximum length of a message chunk.
+    void set_max_chunk_size(size_t max_length)
+    { http::chunk_header::max_data_size_s = max_length; }
 
     /// Set the password for an SSL connection.
     /// Note: only valid for SSL connections, do NOT call for TCP servers.

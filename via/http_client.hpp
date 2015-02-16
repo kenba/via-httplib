@@ -201,15 +201,15 @@ namespace via
       auto rx_state(rx_.receive(iter, end));
       switch (rx_state)
       {
-      case http::RX_VALID:
+      case http::Rx::VALID:
         http_response_signal_(rx_.response(), rx_.body());
         return;
 
-      case http::RX_CHUNK:
+      case http::Rx::CHUNK:
         http_chunk_signal_(rx_.chunk(), rx_.chunk().data());
         return;
 
-      case http::RX_INVALID:
+      case http::Rx::INVALID:
         break;
 
       default:

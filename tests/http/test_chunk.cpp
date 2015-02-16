@@ -123,6 +123,77 @@ BOOST_AUTO_TEST_CASE(InValidString2)
   BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
 }
 
+BOOST_AUTO_TEST_CASE(InValidString3)
+{
+  std::string chunk_data("f\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header::strict_crlf_s = true;
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+  chunk_header::strict_crlf_s = false;
+}
+
+BOOST_AUTO_TEST_CASE(InValidString4)
+{
+  std::string chunk_data("f;\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header::strict_crlf_s = true;
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+  chunk_header::strict_crlf_s = false;
+}
+
+BOOST_AUTO_TEST_CASE(InValidString5)
+{
+  std::string chunk_data("2f;                  some rubbish\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidString6)
+{
+  std::string chunk_data("                        2f\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidString7)
+{
+  std::string chunk_data("2f; some rubbish\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header::max_length_s = 10;
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+  chunk_header::max_length_s = 1024;
+}
+
+BOOST_AUTO_TEST_CASE(InValidString8)
+{
+  std::string chunk_data("1234567890abcdef0123456789abcdef012\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidString9)
+{
+  std::string chunk_data("ffff\r\n");
+  auto next(chunk_data.cbegin());
+
+  chunk_header::max_data_size_s = 1024;
+  chunk_header the_chunk;
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.cend()));
+  chunk_header::max_data_size_s = std::numeric_limits<size_t>::max();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 

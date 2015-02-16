@@ -25,39 +25,66 @@ namespace via
 {
   namespace http
   {
+
+    bool field_line::strict_crlf_s(false);
+
+    size_t field_line::max_ws_s(8);
+
+    size_t field_line::max_length_s(1024);
+
     //////////////////////////////////////////////////////////////////////////
     bool field_line::parse_char(char c)
     {
+      // Ensure that the overall header length is within limitts
+      if (++length_ > max_length_s)
+        state_ = Header::ERROR_LENGTH;
+
       switch (state_)
       {
-      case HEADER_NAME:
+      case Header::NAME:
         if (std::isalpha(c) || ('-' == c))
           name_.push_back(static_cast<char>(std::tolower(c)));
         else if (':' == c)
-          state_ = HEADER_VALUE_LS;
+          state_ = Header::VALUE_LS;
         else
           return false;
         break;
 
-      case HEADER_VALUE_LS:
+      case Header::VALUE_LS:
+        // Ignore leading whitespace
         if (is_space_or_tab(c))
-          break;
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = Header::ERROR_WS;
+            return false;
+          }
+          else
+            break;
         else
-          state_ = HEADER_VALUE;
+          state_ = Header::VALUE;
         // intentional fall-through
-      case HEADER_VALUE:
+      case Header::VALUE:
         // The header line should end with an \r\n...
         if (!is_end_of_line(c))
           value_.push_back(c);
         else if ('\r' == c)
-          state_ = HEADER_LF;
-        else // ('\n' == c) \\ but permit just \n
-          state_ = HEADER_END;
+          state_ = Header::LF;
+        else // ('\n' == c)
+        {
+          if (strict_crlf_s)
+          {
+            state_ = Header::ERROR_CRLF;
+            return false;
+          }
+          else
+            state_ = Header::VALID;
+        }
         break;
 
-      case HEADER_LF:
+      case Header::LF:
         if ('\n' == c)
-          state_ = HEADER_END;
+          state_ = Header::VALID;
         else
           return false;
         break;
@@ -71,6 +98,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     size_t message_headers::max_length_s(std::numeric_limits<size_t>::max());
+    size_t message_headers::max_content_length_s(std::numeric_limits<size_t>::max());
 
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const
@@ -93,7 +121,11 @@ namespace via
         return 0;
 
       // Get the length from the content length field.
-      return from_dec_string(content_length);
+      auto length(from_dec_string(content_length));
+      if (length < max_content_length_s)
+        return length;
+      else
+        return std::numeric_limits<size_t>::max();
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -140,8 +172,31 @@ namespace via
       for (const auto& elem : fields_)
         output += header_field::to_header(elem.first, elem.second);
 
-      output += "\r\n";
       return output;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool are_headers_split(std::string const& headers)
+    {
+      auto prev('0');
+      auto pprev('0');
+
+      for(auto const& elem : headers)
+      {
+        if (elem == '\n')
+        {
+          if (prev == '\n')
+            return true;
+          else if ((prev == '\r') && (pprev == '\n'))
+            return true;
+        }
+
+        pprev = prev;
+        prev = elem;
+      }
+
+      return false;
     }
     //////////////////////////////////////////////////////////////////////////
   }
