@@ -53,20 +53,19 @@ namespace via
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, buffer_size, use_strand>
-                                                              connection_type;
+      using connection_type = connection<SocketAdaptor, buffer_size, use_strand>;
 
       /// A set of connections.
-      typedef std::set<std::shared_ptr<connection_type> > connections;
+      using connections = std::set<std::shared_ptr<connection_type>>;
 
       /// An iterator to the connections;
-      typedef typename connections::iterator connections_iterator;
+      using connections_iterator = typename connections::iterator;
 
       /// Event callback function type.
-      typedef typename connection_type::event_callback_type event_callback_type;
+      using event_callback_type = typename connection_type::event_callback_type;
 
       /// Error callback function type.
-      typedef typename connection_type::error_callback_type error_callback_type;
+      using error_callback_type = typename connection_type::error_callback_type;
 
     private:
       /// The asio::io_service to use.

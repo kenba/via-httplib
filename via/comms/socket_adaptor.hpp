@@ -36,27 +36,24 @@ namespace via
     /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
-    typedef std::function<void (boost::system::error_code const&)>
-                                               ErrorHandler;
+    using ErrorHandler = std::function<void (boost::system::error_code const&)>;
 
     /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-    typedef std::function<void (boost::system::error_code const&, size_t)>
-                                               CommsHandler;
+    using CommsHandler = std::function<void (boost::system::error_code const&, size_t)>;
 
     /// @typedef ConnectHandler
     /// A connection hander callback function type.
     /// @param error the (boost) error code.
     /// @param host_iterator the resolver_iterator
-    typedef std::function<void (boost::system::error_code const&,
-                                boost::asio::ip::tcp::resolver::iterator)>
-                                           ConnectHandler;
+    using ConnectHandler = std::function<void (boost::system::error_code const&,
+                                     boost::asio::ip::tcp::resolver::iterator)>;
 
     /// @typedef ConstBuffers
     /// A vector of asio::const_buffers.
-    typedef std::vector<boost::asio::const_buffer> ConstBuffers;
+    using ConstBuffers = std::vector<boost::asio::const_buffer> ;
   }
 }
 

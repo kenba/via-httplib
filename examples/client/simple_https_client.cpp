@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,9 +14,9 @@
 #include <iostream>
 
 /// Define an HTTPS client using std::string to store message bodies
-typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
-                                                            https_client_type;
-typedef https_client_type::chunk_type http_chunk_type;
+using https_client_type =
+  via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>;
+using http_chunk_type = https_client_type::chunk_type;
 
 namespace
 {

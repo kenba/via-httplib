@@ -49,41 +49,41 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, buffer_size, use_strand>
-                                                              connection_type;
+    using connection_type =
+      comms::connection<SocketAdaptor, buffer_size, use_strand>;
 
     /// The connection receive buffer type.
-    typedef typename connection_type::RxBuffer rx_buffer_type;
+    using rx_buffer_type = typename connection_type::RxBuffer;
 
     /// A shared pointer to this type.
-    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container,
-                                                 buffer_size, use_strand> > shared_pointer;
+    using shared_pointer = std::shared_ptr<http_client<SocketAdaptor, Container,
+                                                       buffer_size, use_strand>>;
 
     /// The template requires a typename to access the iterator.
-    typedef typename Container::const_iterator Container_const_iterator;
+    using Container_const_iterator = typename Container::const_iterator;
 
     /// The signal sent when a response is received.
-    typedef boost::signals2::signal<void (http::rx_response const&,
-                                      Container const&)> http_response_signal;
+    using http_response_signal =
+      boost::signals2::signal<void (http::rx_response const&, Container const&)>;
 
     /// The slot type associated with a response received signal.
-    typedef typename http_response_signal::slot_type http_response_signal_slot;
+    using http_response_signal_slot = typename http_response_signal::slot_type;
 
     /// The chunk type
-    typedef typename http::rx_chunk<Container> chunk_type;
+    using chunk_type = http::rx_chunk<Container> ;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal<void (chunk_type const&,
-                                          Container const&)> http_chunk_signal;
+    using http_chunk_signal =
+      boost::signals2::signal<void (chunk_type const&, Container const&)>;
 
     /// The slot type associated with a chunk received signal.
-    typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
+    using http_chunk_signal_slot = typename http_chunk_signal::slot_type;
 
     /// The signal sent when an event happens.
-    typedef boost::signals2::signal<void (void)> http_event_signal;
+    using http_event_signal = boost::signals2::signal<void (void)>;
 
     /// The slot type associated with an event signal.
-    typedef typename http_event_signal::slot_type http_event_signal_slot;
+    using http_event_signal_slot = typename http_event_signal::slot_type;
 
   private:
 

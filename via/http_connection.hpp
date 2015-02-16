@@ -65,24 +65,24 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, buffer_size, use_strand>
-                                                              connection_type;
+    using connection_type =
+      comms::connection<SocketAdaptor, buffer_size, use_strand>;
 
     /// The connection receive buffer type.
-    typedef typename connection_type::RxBuffer rx_buffer_type;
+    using rx_buffer_type = typename connection_type::RxBuffer;
 
     /// A weak pointer to this type.
-    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
-       weak_pointer;
+    using weak_pointer =
+     typename std::weak_ptr<http_connection<SocketAdaptor, Container,
+         buffer_size, use_strand, translate_head, require_host, trace_enabled>>;
 
     /// A strong pointer to this type.
-    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
-       shared_pointer;
+    using shared_pointer =
+      typename std::shared_ptr<http_connection<SocketAdaptor, Container,
+         buffer_size, use_strand, translate_head, require_host, trace_enabled>>;
 
     /// The template requires a typename to access the iterator.
-    typedef typename Container::const_iterator Container_const_iterator;
+    using Container_const_iterator = typename Container::const_iterator;
 
   private:
 

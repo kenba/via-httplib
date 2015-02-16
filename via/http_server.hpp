@@ -66,55 +66,57 @@ namespace via
   public:
 
     /// The server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container, buffer_size, use_strand> server_type;
+    using server_type =
+      comms::server<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, buffer_size, use_strand,
-          translate_head, require_host, trace_enabled> http_connection_type;
+    using http_connection_type = http_connection<SocketAdaptor, Container,
+      buffer_size, use_strand, translate_head, require_host, trace_enabled>;
 
     /// The underlying connection, TCP or SSL.
-    typedef typename http_connection_type::connection_type connection_type;
+    using connection_type = typename http_connection_type::connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
-    typedef std::map<void*, std::shared_ptr<http_connection_type> >
-        connection_collection;
+    using connection_collection =
+      std::map<void*, std::shared_ptr<http_connection_type>>;
 
     /// The template requires a typename to access the iterator.
-    typedef typename connection_collection::iterator
-      connection_collection_iterator;
+    using connection_collection_iterator =
+      typename connection_collection::iterator;
 
     /// The template requires a typename to collection value_type.
-    typedef typename connection_collection::value_type
-      connection_collection_value_type;
+    using connection_collection_value_type =
+      typename connection_collection::value_type;
 
     /// The template requires a typename to access the iterator.
-    typedef typename Container::const_iterator Container_const_iterator;
+    using Container_const_iterator = typename Container::const_iterator;
 
     /// The signal sent when a request is received.
-    typedef boost::signals2::signal
-      <void (std::weak_ptr<http_connection_type>,
-             http::rx_request const&, Container const&)> http_request_signal;
+    using http_request_signal =
+      boost::signals2::signal<void (std::weak_ptr<http_connection_type>,
+                              http::rx_request const&, Container const&)>;
 
     /// The slot type associated with a request received signal.
-    typedef typename http_request_signal::slot_type http_request_signal_slot;
+    using http_request_signal_slot = typename http_request_signal::slot_type;
 
     /// The chunk type
-    typedef typename http::rx_chunk<Container> chunk_type;
+    using chunk_type = typename http::rx_chunk<Container>;
 
     /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal
-      <void (std::weak_ptr<http_connection_type>,
-             chunk_type const&, Container const&)> http_chunk_signal;
+    using http_chunk_signal =
+      boost::signals2::signal<void (std::weak_ptr<http_connection_type>,
+                                    chunk_type const&, Container const&)>;
 
     /// The slot type associated with a chunk received signal.
-    typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
+    using http_chunk_signal_slot = typename http_chunk_signal::slot_type;
 
     /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal
-      <void (std::weak_ptr<http_connection_type>)> http_connection_signal;
+    using http_connection_signal =
+      boost::signals2::signal<void (std::weak_ptr<http_connection_type>)>;
 
     /// The slot type associated with a socket disconnected signal.
-    typedef typename http_connection_signal::slot_type http_connection_signal_slot;
+    using http_connection_signal_slot =
+      typename http_connection_signal::slot_type ;
 
   private:
     std::shared_ptr<server_type> server_;     ///< the communications server

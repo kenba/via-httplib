@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014 Ken Barker
+// Copyright (c) 2014-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,8 +14,8 @@
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
-typedef http_client_type::chunk_type http_chunk_type;
+using http_client_type = via::http_client<via::comms::tcp_adaptor, std::string>;
+using http_chunk_type  = http_client_type::chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace

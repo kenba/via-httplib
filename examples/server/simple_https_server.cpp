@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -11,9 +11,9 @@
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
-typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
-                                                            https_server_type;
-typedef https_server_type::http_connection_type http_connection;
+using https_server_type =
+  via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>;
+using http_connection = https_server_type::http_connection_type;
 
 namespace
 {

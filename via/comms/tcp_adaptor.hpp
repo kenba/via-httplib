@@ -80,7 +80,7 @@ namespace via
     public:
 
       /// The type of resolver iterator used by this socket.
-      typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
+      using resolver_iterator = boost::asio::ip::tcp::resolver::iterator;
 
       /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()

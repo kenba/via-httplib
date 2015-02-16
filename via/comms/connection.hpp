@@ -55,32 +55,30 @@ namespace via
     public:
 
       /// A weak pointer to a connection.
-      typedef typename std::weak_ptr<connection<SocketAdaptor,
-                                                  buffer_size, use_strand> >
-         weak_pointer;
+      using weak_pointer =
+        std::weak_ptr<connection<SocketAdaptor, buffer_size, use_strand>>;
 
       /// A shared pointer to a connection.
-      typedef typename std::shared_ptr<connection<SocketAdaptor,
-                                                    buffer_size, use_strand> >
-         shared_pointer;
+      using shared_pointer =
+        std::shared_ptr<connection<SocketAdaptor, buffer_size, use_strand>>;
 
       /// The enable_shared_from_this type of this class.
-      typedef typename std::enable_shared_from_this
-                  <connection<SocketAdaptor,
-                              buffer_size, use_strand> > enable;
+      using enable =
+        std::enable_shared_from_this<connection<SocketAdaptor, buffer_size,
+                                                use_strand>>;
 
       /// The type of the receive buffer
-      typedef typename std::array<char, buffer_size> RxBuffer;
+      using RxBuffer = std::array<char, buffer_size>;
 
       /// The resolver_iterator type of the SocketAdaptor
-      typedef typename SocketAdaptor::resolver_iterator resolver_iterator;
+      using resolver_iterator = typename SocketAdaptor::resolver_iterator;
 
       /// Event callback function type.
-      typedef std::function<void (int, weak_pointer)> event_callback_type;
+      using event_callback_type = std::function<void (int, weak_pointer)>;
 
       /// Error callback function type.
-      typedef std::function<void (boost::system::error_code const&,
-                                  weak_pointer)> error_callback_type;
+      using error_callback_type =
+        std::function<void (boost::system::error_code const&, weak_pointer)>;
 
     private:
 
