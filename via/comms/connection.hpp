@@ -110,21 +110,18 @@ namespace via
       {
         if (connected_)
         {
+          // local copies for the lambda captures
+          weak_pointer w_ptr(weak_from_this());
+          std::shared_ptr<RxBuffer> rx_buffer(rx_buffer_);
+
           if (use_strand)
-            SocketAdaptor::write(buffers,
-               strand_.wrap(
-               std::bind(&connection::write_callback,
-                         weak_from_this(),
-                         std::placeholders::_1,
-                         std::placeholders::_2,
-                         rx_buffer_)));
+            SocketAdaptor::write(buffers, strand_.wrap(
+             [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
+              { write_callback(w_ptr, ec, bytes, rx_buffer); }));
           else
             SocketAdaptor::write(buffers,
-               std::bind(&connection::write_callback,
-                         weak_from_this(),
-                         std::placeholders::_1,
-                         std::placeholders::_2,
-                         rx_buffer_));
+             [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
+              { write_callback(w_ptr, ec, bytes, rx_buffer); });
         }
 
         return connected_;
@@ -134,21 +131,18 @@ namespace via
       /// Read data via the socket adaptor.
       void read_data()
       {
+        // local copies for the lambda captures
+        weak_pointer w_ptr(weak_from_this());
+        std::shared_ptr<RxBuffer> rx_buffer(rx_buffer_);
+
         if (use_strand)
-          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size,
-              strand_.wrap(
-              std::bind(&connection::read_callback,
-                        weak_from_this(),
-                        std::placeholders::_1,
-                        std::placeholders::_2,
-                        rx_buffer_)));
+          SocketAdaptor::read(rx_buffer_->data(), buffer_size, strand_.wrap(
+           [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
+            { read_callback(w_ptr, ec, bytes, rx_buffer); }));
         else
-          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size,
-              std::bind(&connection::read_callback,
-                        weak_from_this(),
-                        std::placeholders::_1,
-                        std::placeholders::_2,
-                        rx_buffer_));
+          SocketAdaptor::read(rx_buffer_->data(), buffer_size,
+           [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
+            { read_callback(w_ptr, ec, bytes, rx_buffer); });
       }
 
       /// @fn signal_error
@@ -290,16 +284,19 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake(std::bind(&connection::handshake_callback, ptr,
-                                         std::placeholders::_1), false);
+          {
+            pointer->handshake([ptr](boost::system::error_code const& ec)
+                               { handshake_callback(ptr, ec); }, false);
+          }
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
+            {
               pointer->connect_socket
-                  (std::bind(&connection::connect_callback, ptr,
-                             std::placeholders::_1, std::placeholders::_2),
-                   ++host_iterator);
+                ([ptr](boost::system::error_code const& ec, resolver_iterator host_itr)
+                 { connect_callback(ptr, ec, host_itr ); }, ++host_iterator);
+            }
             else
             {
               pointer->shutdown();
@@ -476,9 +473,12 @@ namespace via
       /// @param port_name the port to connect to.
       bool connect(const char *host_name, const char *port_name)
       {
+        // local copy for the lambda capture
+        weak_pointer w_ptr(weak_from_this());
         return SocketAdaptor::connect(host_name, port_name,
-          std::bind(&connection::connect_callback, weak_from_this(),
-                      std::placeholders::_1, std::placeholders::_2));
+          [w_ptr](boost::system::error_code const& error,
+                  resolver_iterator host_iterator)
+          { connect_callback(w_ptr, error, host_iterator);} );
       }
 
       /// @fn start
@@ -494,9 +494,10 @@ namespace via
         no_delay_   = no_delay;
         keep_alive_ = keep_alive;
         timeout_    = timeout;
-        SocketAdaptor::start(std::bind(&connection::handshake_callback,
-                                       weak_from_this(),
-                                       std::placeholders::_1));
+        // local copy for the lambda capture
+        weak_pointer w_ptr(weak_from_this());
+        SocketAdaptor::start([w_ptr](boost::system::error_code const& ec)
+                                  { handshake_callback(w_ptr, ec); });
       }
 
       /// @fn disconnect

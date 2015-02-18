@@ -187,11 +187,13 @@ namespace via
       continue_enabled_{true}
     {
       server_->set_event_callback
-          (std::bind(&http_server::event_handler, this,
-                     std::placeholders::_1, std::placeholders::_2));
+          ([this](int event, std::weak_ptr<connection_type> connection)
+             { http_server::event_handler(event, connection); });
       server_->set_error_callback
-          (std::bind(&http_server::error_handler, this,
-                     std::placeholders::_1, std::placeholders::_2));
+          ([this](boost::system::error_code const& error,
+                  std::weak_ptr<connection_type> connection)
+             { http_server::error_handler(error, connection); });
+
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_server will want to send messages immediately
       server_->set_no_delay(true);
@@ -325,7 +327,7 @@ namespace via
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
     // @param connection a weak ponter to the underlying comms connection.
-    void error_handler(const boost::system::error_code &error,
+    void error_handler(boost::system::error_code const& error,
                        std::weak_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;

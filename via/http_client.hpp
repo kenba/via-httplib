@@ -119,11 +119,13 @@ namespace via
       tx_buffer_{}
     {
       connection_->set_event_callback
-          (std::bind(&http_client::event_handler, this,
-                     std::placeholders::_1, std::placeholders::_2));
+          ([this](int event, typename connection_type::weak_pointer ptr)
+               { http_client::event_handler(event, ptr); });
       connection_->set_error_callback
-          (std::bind(&http_client::error_handler, this,
-                     std::placeholders::_1, std::placeholders::_2));
+          ([this](boost::system::error_code const& error,
+                  typename connection_type::weak_pointer ptr)
+               { http_client::error_handler(error, ptr); });
+
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_client will want to send messages immediately
       connection_->set_no_delay(true);
@@ -410,7 +412,7 @@ namespace via
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
     /// @param weak_ptr a weak ponter to the underlying comms connection.
-    void error_handler(const boost::system::error_code &error,
+    void error_handler(boost::system::error_code const& error,
                        typename connection_type::weak_pointer) // weak_ptr)
     {
       std::cerr << "error_handler" << std::endl;

@@ -100,7 +100,7 @@ namespace via
       /// - add the new connection to the set
       /// - restart the acceptor to look for new connections.
       /// @param error the error, if any.
-      void accept_handler(const boost::system::error_code& error)
+      void accept_handler(boost::system::error_code const& error)
       {
         if (acceptor_.is_open() &&
             (boost::asio::error::operation_aborted != error))
@@ -144,24 +144,24 @@ namespace via
       /// @param error the boost asio error.
       /// @param connection a weak_pointer to the connection that sent the
       /// error.
-      void error_handler(const boost::system::error_code& error,
-                         std::weak_ptr<connection_type> connection)
-      { error_callback_(error, connection); }
+      void error_handler(boost::system::error_code const& error,
+                         std::weak_ptr<connection_type> ptr)
+      { error_callback_(error, ptr); }
 
       /// @fn start_accept
       /// Wait for connections.
       void start_accept()
       {
         next_connection_ = connection_type::create(io_service_,
-                                std::bind(&server::event_handler, this,
-                                          std::placeholders::_1,
-                                          std::placeholders::_2),
-                                std::bind(&server::error_handler, this,
-                                          std::placeholders::_1,
-                                          std::placeholders::_2));
+          [this](int event, std::weak_ptr<connection_type> ptr)
+               { event_handler(event, ptr); },
+          [this](boost::system::error_code const& error,
+                 std::weak_ptr<connection_type> ptr)
+               { error_handler(error, ptr); });
+
         acceptor_.async_accept(next_connection_->socket(),
-                               std::bind(&server::accept_handler, this,
-                                         std::placeholders::_1));
+                               [this](boost::system::error_code const& error)
+                                     { accept_handler(error); });
       }
 
     public:
@@ -265,11 +265,13 @@ namespace via
         return ec;
       }
 
+#ifdef HTTP_SSL
       /// @fn password
       /// Get the password.
       /// @pre It must be an SSL server.
       /// @return The password.
-      const std::string password() const
+      std::string password(size_t, // max_length,
+                           boost::asio::ssl::context_base::password_purpose) const
       { return password_; }
 
       /// @fn set_password
@@ -280,8 +282,11 @@ namespace via
       {
         password_ = password;
         connection_type::ssl_context().set_password_callback
-            (std::bind(&server::password, this));
+         ([this](size_t max_length,
+                 boost::asio::ssl::context_base::password_purpose purpose)
+          { return server::password(max_length, purpose); });
       }
+#endif // HTTP_SSL
 
       /// @fn set_event_callback
       /// Set the event_callback function.

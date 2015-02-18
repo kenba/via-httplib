@@ -29,7 +29,8 @@ namespace
   /// Ccloses the server and all it's connections leaving io_service.run
   /// with no more work to do...
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop(http_server_type* http_server)
+  void handle_stop(boost::system::error_code const& /*ec*/, int, //signal_number,
+                   http_server_type* http_server)
   {
     std::cout << "Shutting down" << std::endl;
     http_server->close();
@@ -134,7 +135,7 @@ namespace
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
-  void disconnected_handler(http_connection::weak_pointer weak_ptr)
+  void disconnected_handler(http_connection::weak_pointer /* weak_ptr */)
   {
     std::cout << "socket_disconnected_handler" << std::endl;
   }
@@ -193,7 +194,12 @@ int main(int argc, char *argv[])
 #if defined(SIGQUIT)
     signals_.add(SIGQUIT);
 #endif // #if defined(SIGQUIT)
-    signals_.async_wait(boost::bind(&handle_stop, &http_server));
+
+    // register the handle_stop callback
+    auto http_server_ptr(&http_server);
+    signals_.async_wait([http_server_ptr]
+      (boost::system::error_code const& ec, int signal_number)
+    { handle_stop(ec, signal_number, http_server_ptr); });
 
     // Determine the number of concurrent threads supported
     auto no_of_threads(std::thread::hardware_concurrency());

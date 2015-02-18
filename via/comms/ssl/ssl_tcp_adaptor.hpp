@@ -148,8 +148,8 @@ namespace via
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
           socket_.set_verify_callback
-              (std::bind(&ssl_tcp_adaptor::verify_certificate,
-                         std::placeholders::_1, std::placeholders::_2));
+            ([](bool preverified, boost::asio::ssl::verify_context& ctx)
+             { return ssl_tcp_adaptor::verify_certificate(preverified, ctx); });
 
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
