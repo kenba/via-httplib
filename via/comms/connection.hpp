@@ -583,6 +583,12 @@ namespace via
         if (connected_)
           tcp_timeouts();
       }
+
+      /// @fn remote_endpoint
+      /// Get the remote endpoint of the socket.
+      /// @return the remote endpoint of the socket.
+      boost::asio::ip::tcp::endpoint remote_endpoint()
+      { return SocketAdaptor::socket().remote_endpoint(); }
     };
 
   }

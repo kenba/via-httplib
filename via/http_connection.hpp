@@ -486,6 +486,18 @@ namespace via
       return send(buffers);
     }
 
+    /// @fn remote_address
+    /// Get the remote address of the connection.
+    /// @return the remote address of the connection.
+    std::string remote_address() const
+    {
+      auto tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+        return tcp_pointer->remote_endpoint().address().to_string();
+      else
+        return std::string("");
+    }
+
     /// Disconnect the underlying connection.
     void disconnect()
     { connection_.lock()->disconnect(); }
