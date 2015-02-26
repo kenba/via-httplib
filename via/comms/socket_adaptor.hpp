@@ -18,7 +18,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
 #include <functional>
-#include <vector>
+#include <deque>
 
 namespace via
 {
@@ -52,8 +52,8 @@ namespace via
                                      boost::asio::ip::tcp::resolver::iterator)>;
 
     /// @typedef ConstBuffers
-    /// A vector of asio::const_buffers.
-    using ConstBuffers = std::vector<boost::asio::const_buffer> ;
+    /// A deque of asio::const_buffers.
+    using ConstBuffers = std::deque<boost::asio::const_buffer> ;
   }
 }
 

@@ -85,10 +85,6 @@ namespace via
       /// the maximum length of a response reason,
       static size_t max_reason_length_s;
 
-      /// Delete copy construction and assignment
-      response_line(response_line const&) = delete;
-      response_line& operator=(response_line const&) = delete;
-
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
@@ -383,19 +379,15 @@ namespace via
 
     public:
 
-      /// Delete copy construction and assignment
-      tx_response(tx_response const&) = delete;
-      tx_response& operator=(tx_response const&) = delete;
-
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
       /// @see http::response_status::code
       /// @param status_code the response status code
       /// @param header_string default blank
-      explicit tx_response(response_status::code status_code) :
-                        //   std::string header_string = "") :
+      explicit tx_response(response_status::code status_code,
+                           std::string header_string = "") :
         response_line(status_code),
-        header_string_()
+        header_string_(header_string)
       {}
 
       /// Constructor for creating a non-standard response.
@@ -403,28 +395,24 @@ namespace via
       /// @param status the response status
       /// @param header_string default blank
       explicit tx_response(const std::string& reason_phrase,
-                           int status) :
-                      //     std::string header_string = "") :
+                           int status,
+                           std::string header_string = "") :
         response_line(status, reason_phrase),
-        header_string_()
+        header_string_(header_string)
       {}
 
       virtual ~tx_response() = default;
 
       /// Set the header_string_ to the value given.
       /// Note: will overwrite any other headers, so must be called before
-      /// the follwoing add_header fucntions.
+      /// the following add_header fucntions.
       /// @param header_string the new header string
       /// @return true if the header string has been set, false if the header
       /// string is invalid.
       bool set_header_string(std::string const& header_string)
       {
-        if (are_headers_split(header_string))
-          return false;
-        else
-          header_string_ = header_string;
-
-        return true;
+        header_string_ = header_string;
+        return !are_headers_split(header_string_);
       }
 
       /// Add a standard header to the response.
@@ -455,6 +443,11 @@ namespace via
       /// Add an http content length header line for the given size.
       void add_content_length_header(size_t size)
       { header_string_ += header_field::content_length(size); }
+
+      /// Determine whether the response is valid.
+      /// @return true if the response does not contain "split headers".
+      bool is_valid() const
+      { return !are_headers_split(header_string_); }
 
       /// The http message header string.
       /// @param content_length the size of the message body for the

@@ -296,20 +296,11 @@ namespace via
 
     /// Send an HTTP response without a body.
     /// @param response the response to send.
-    bool send(http::tx_response& response)
+    bool send(http::tx_response response)
     {
-      response.set_major_version(rx_.request().major_version());
-      response.set_minor_version(rx_.request().minor_version());
-      http_header_ = response.message();
+      if (!response.is_valid())
+        return false;
 
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-      return send(buffers, response.is_continue());
-    }
-
-    /// Send an HTTP response without a body.
-    /// @param response the response to send.
-    bool send(http::tx_response&& response)
-    {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       http_header_ = response.message();
@@ -321,29 +312,11 @@ namespace via
     /// Send an HTTP response with a body.
     /// @param response the response to send.
     /// @param body the body to send
-    bool send(http::tx_response& response, Container const& body)
+    bool send(http::tx_response response, Container body)
     {
-      response.set_major_version(rx_.request().major_version());
-      response.set_minor_version(rx_.request().minor_version());
-      http_header_ = response.message(body.size());
+      if (!response.is_valid())
+        return false;
 
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-
-      // Don't send a body in response to a HEAD request
-      if (!rx_.is_head())
-      {
-        tx_buffer_ = body;
-        buffers.push_back(boost::asio::buffer(tx_buffer_));
-      }
-
-      return send(buffers, response.is_continue());
-    }
-
-    /// Send an HTTP response with a body.
-    /// @param response the response to send.
-    /// @param body the body to send
-    bool send(http::tx_response&& response, Container&& body)
-    {
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       http_header_ = response.message(body.size());
@@ -365,9 +338,12 @@ namespace via
     /// @param begin a constant iterator to the beginning of the body to send.
     /// @param end a constant iterator to the end of the body to send.
     template<typename ForwardIterator>
-    bool send(http::tx_response& response,
+    bool send(http::tx_response response,
               ForwardIterator begin, ForwardIterator end)
     {
+      if (!response.is_valid())
+        return false;
+
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       size_t size(end - begin);
@@ -389,8 +365,11 @@ namespace via
     /// @param response the response to send.
     /// @param body a pointer to the body to send.
     /// @param size the size of the body to send.
-    bool send(http::tx_response&& response, char const* body, size_t size)
+    bool send(http::tx_response response, char const* body, size_t size)
     {
+      if (!response.is_valid())
+        return false;
+
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       http_header_ = response.message(size);
@@ -399,9 +378,33 @@ namespace via
 
       // Don't send a body in response to a HEAD request
       if (!rx_.is_head())
-      {
         buffers.push_back(boost::asio::buffer(body, size));
-      }
+
+      return send(buffers, response.is_continue());
+    }
+
+    /// Send an HTTP response with a body.
+    /// NOTE: The body is NOT buffered.
+    /// @param response the response to send.
+    /// @param buffers a deque of asio::buffers containing the body to send.
+    bool send(http::tx_response response, comms::ConstBuffers buffers)
+    {
+      if (!response.is_valid())
+        return false;
+
+      // Calculate the overall size of the data in the buffers
+      size_t size(0U);
+      for (auto const& buffer : buffers)
+        size += boost::asio::detail::buffer_size_helper(buffer);
+
+      // Don't send a body in response to a HEAD request
+      if (rx_.is_head())
+        buffers.clear();
+
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      http_header_ = response.message(size);
+      buffers.push_front(boost::asio::buffer(http_header_));
 
       return send(buffers, response.is_continue());
     }
@@ -409,23 +412,7 @@ namespace via
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container const& chunk, std::string extension = "")
-    {
-      size_t size{chunk.size()};
-      http::chunk_header chunk_header{size, extension};
-      http_header_ = chunk_header.to_string();
-      tx_buffer_   = chunk;
-
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-      buffers.push_back(boost::asio::buffer(tx_buffer_));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
-    }
-
-    /// Send an HTTP body chunk.
-    /// @param chunk the body chunk to send
-    /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container&& chunk, std::string extension = "")
+    bool send_chunk(Container chunk, std::string extension = "")
     {
       size_t size{chunk.size()};
       http::chunk_header chunk_header{size, extension};
@@ -470,6 +457,26 @@ namespace via
       comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
       buffers.push_back(boost::asio::buffer(body, size));
       buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
+    }
+
+    /// Send an HTTP body chunk.
+    /// NOTE: The body chunk is NOT buffered.
+    /// @param chunk a pointer to the body chunk to send
+    /// @param buffers a deque of asio::buffers containing the body to send.
+    bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
+    {
+      // Calculate the overall size of the data in the buffers
+      size_t size(0U);
+      for (auto const& buffer : buffers)
+        size += boost::asio::detail::buffer_size_helper(buffer);
+
+      buffers.push_front(boost::asio::buffer(http::CRLF));
+
+      http::chunk_header chunk_header{size, extension};
+      http_header_ = chunk_header.to_string();
+      buffers.push_front(boost::asio::buffer(http_header_));
+
       return send(buffers);
     }
 
