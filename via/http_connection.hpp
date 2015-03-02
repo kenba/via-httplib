@@ -126,12 +126,12 @@ namespace via
 
     /// Send buffers on the connection.
     /// @param buffers the data to write.
-    bool send(comms::ConstBuffers const& buffers)
+    bool send(comms::ConstBuffers buffers)
     {
       auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(buffers);
+        tcp_pointer->send_data(std::move(buffers));
         return true;
       }
       else
@@ -141,7 +141,7 @@ namespace via
     /// Send buffers on the connection.
     /// @param buffers the data to write.
     /// @param is_continue whether this is a 100 Continue response
-    bool send(comms::ConstBuffers const& buffers, bool is_continue)
+    bool send(comms::ConstBuffers buffers, bool is_continue)
     {
       bool keep_alive{rx_.request().keep_alive()};
       if (is_continue)
@@ -152,7 +152,7 @@ namespace via
       auto tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(buffers);
+        tcp_pointer->send_data(std::move(buffers));
 
         if (keep_alive)
           return true;
@@ -265,7 +265,7 @@ namespace via
             std::string trace_request(rx_.request().to_string());
             trace_request += rx_.request().headers().to_string();
 
-            send(ok_response, trace_request.begin(), trace_request.end());
+            send(std::move(ok_response), trace_request.begin(), trace_request.end());
           }
           else // otherwise, it responds with "Not Allowed"
             send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
@@ -280,7 +280,7 @@ namespace via
           {
             std::string missing_host{"Request lacks Host Header"};
             http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
-            send(bad_request, missing_host.begin(), missing_host.end());
+            send(std::move(bad_request), missing_host.begin(), missing_host.end());
 
             rx_state = http::Rx::INVALID;
           }
@@ -305,8 +305,8 @@ namespace via
       response.set_minor_version(rx_.request().minor_version());
       http_header_ = response.message();
 
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-      return send(buffers, response.is_continue());
+      return send(comms::ConstBuffers{boost::asio::buffer(http_header_)},
+                  response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -330,7 +330,7 @@ namespace via
         buffers.push_back(boost::asio::buffer(tx_buffer_));
       }
 
-      return send(buffers, response.is_continue());
+      return send(std::move(buffers), response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -357,30 +357,7 @@ namespace via
         buffers.push_back(boost::asio::buffer(tx_buffer_));
       }
 
-      return send(buffers, response.is_continue());
-    }
-
-    /// Send an HTTP response with a body.
-    /// NOTE: The body is NOT buffered.
-    /// @param response the response to send.
-    /// @param body a pointer to the body to send.
-    /// @param size the size of the body to send.
-    bool send(http::tx_response response, char const* body, size_t size)
-    {
-      if (!response.is_valid())
-        return false;
-
-      response.set_major_version(rx_.request().major_version());
-      response.set_minor_version(rx_.request().minor_version());
-      http_header_ = response.message(size);
-
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-
-      // Don't send a body in response to a HEAD request
-      if (!rx_.is_head())
-        buffers.push_back(boost::asio::buffer(body, size));
-
-      return send(buffers, response.is_continue());
+      return send(std::move(buffers), response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -393,9 +370,7 @@ namespace via
         return false;
 
       // Calculate the overall size of the data in the buffers
-      size_t size(0U);
-      for (auto const& buffer : buffers)
-        size += boost::asio::detail::buffer_size_helper(buffer);
+      size_t size(boost::asio::buffer_size(buffers));
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -406,7 +381,7 @@ namespace via
       http_header_ = response.message(size);
       buffers.push_front(boost::asio::buffer(http_header_));
 
-      return send(buffers, response.is_continue());
+      return send(std::move(buffers), response.is_continue());
     }
 
     /// Send an HTTP body chunk.
@@ -422,7 +397,7 @@ namespace via
       comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
       buffers.push_back(boost::asio::buffer(tx_buffer_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send an HTTP body chunk.
@@ -441,23 +416,7 @@ namespace via
       comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
       buffers.push_back(boost::asio::buffer(tx_buffer_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
-    }
-
-    /// Send an HTTP body chunk.
-    /// NOTE: The body chunk is NOT buffered.
-    /// @param chunk a pointer to the body chunk to send
-    /// @param size the size of the body chunk to send.
-    /// @param extension the (optional) chunk extension.
-    bool send_chunk(char const* chunk, size_t size, std::string extension = "")
-    {
-      http::chunk_header chunk_header{size, extension};
-      http_header_ = chunk_header.to_string();
-
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-      buffers.push_back(boost::asio::buffer(body, size));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send an HTTP body chunk.
@@ -466,18 +425,15 @@ namespace via
     /// @param buffers a deque of asio::buffers containing the body to send.
     bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
     {
-      // Calculate the overall size of the data in the buffers
-      size_t size(0U);
-      for (auto const& buffer : buffers)
-        size += boost::asio::detail::buffer_size_helper(buffer);
+      // Get the overall size of the data in the buffers
+      size_t size(boost::asio::buffer_size(buffers));
 
       buffers.push_front(boost::asio::buffer(http::CRLF));
-
       http::chunk_header chunk_header{size, extension};
       http_header_ = chunk_header.to_string();
       buffers.push_front(boost::asio::buffer(http_header_));
 
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send the last HTTP chunk for a response.
@@ -489,8 +445,7 @@ namespace via
       http::last_chunk last_chunk{extension, trailer_string};
       http_header_ = last_chunk.message();
 
-      comms::ConstBuffers buffers{boost::asio::buffer(http_header_)};
-      return send(buffers);
+      return send(comms::ConstBuffers{boost::asio::buffer(http_header_)});
     }
 
     /// @fn remote_address

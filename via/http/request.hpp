@@ -71,8 +71,7 @@ namespace via
 
     public:
 
-      /// Delete copy construction and assignment
-      request_line(request_line const&) = delete;
+      /// Delete assignment operator
       request_line& operator=(request_line const&) = delete;
 
       /// whether to enforce strict parsing of CRLF
@@ -394,8 +393,7 @@ namespace via
 
     public:
 
-      /// Delete copy construction and assignment
-      tx_request(tx_request const&) = delete;
+      /// Delete assignment operator
       tx_request& operator=(tx_request const&) = delete;
 
       /// Constructor for creating a request for one of the standard methods
