@@ -66,10 +66,7 @@ namespace via
   public:
     /// The underlying connection, TCP or SSL.
     using connection_type =
-      comms::connection<SocketAdaptor, buffer_size, use_strand>;
-
-    /// The connection receive buffer type.
-    using rx_buffer_type = typename connection_type::RxBuffer;
+      comms::connection<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// A weak pointer to this type.
     using weak_pointer =
@@ -95,6 +92,9 @@ namespace via
     /// The HTTP header of the message.
     std::string http_header_;
 
+    /// The receive buffer for this connection.
+    Container rx_buffer_;
+
     /// The transmit buffer for this connection.
     Container tx_buffer_;
 
@@ -119,6 +119,7 @@ namespace via
       connection_{connection},
       rx_{concatenate_chunks},
       http_header_{},
+      rx_buffer_{},
       tx_buffer_{},
       continue_enabled_{continue_enabled}
     {}
@@ -223,10 +224,9 @@ namespace via
         return http::Rx::INCOMPLETE;
 
       // read the data
-      auto data(tcp_pointer->rx_buffer());
-      auto iter(data.cbegin());
-      auto end(iter);
-      end += tcp_pointer->size();
+      tcp_pointer->rx_buffer(rx_buffer_);
+      auto iter(rx_buffer_.cbegin());
+      auto end(rx_buffer_.cend());
       auto rx_state(rx_.receive(iter, end));
 
       // Handle special cases

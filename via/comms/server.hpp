@@ -53,7 +53,7 @@ namespace via
     public:
 
       /// The connection type used by this server.
-      using connection_type = connection<SocketAdaptor, buffer_size, use_strand>;
+      using connection_type = connection<SocketAdaptor, Container, buffer_size, use_strand>;
 
       /// A set of connections.
       using connections = std::set<std::shared_ptr<connection_type>>;

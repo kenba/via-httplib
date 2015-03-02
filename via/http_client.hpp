@@ -50,10 +50,7 @@ namespace via
   public:
     /// The underlying connection, TCP or SSL.
     using connection_type =
-      comms::connection<SocketAdaptor, buffer_size, use_strand>;
-
-    /// The connection receive buffer type.
-    using rx_buffer_type = typename connection_type::RxBuffer;
+      comms::connection<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// A shared pointer to this type.
     using shared_pointer = std::shared_ptr<http_client<SocketAdaptor, Container,
@@ -95,6 +92,7 @@ namespace via
     http_event_signal http_disconnected_signal_;
     std::string host_name_;                       ///< the name of the host
     std::string http_header_;                     ///< The HTTP header of the message.
+    Container rx_buffer_;                         ///< The receive buffer.
     Container tx_buffer_;                         ///< The transmit buffer.
 
     /// Send buffers on the connection.
@@ -116,6 +114,7 @@ namespace via
       http_disconnected_signal_{},
       host_name_{},
       http_header_{},
+      rx_buffer_{},
       tx_buffer_{}
     {
       connection_->set_event_callback
@@ -194,11 +193,10 @@ namespace via
     /// Receive data on the underlying connection.
     void receive_handler()
     {
-      // attempt to read the data
-      rx_buffer_type const& data(connection_->rx_buffer());
-      auto iter(data.begin());
-      auto end(iter);
-      end += connection_->size();
+      // read the data
+      connection_->rx_buffer(rx_buffer_);
+      auto iter(rx_buffer_.cbegin());
+      auto end(rx_buffer_.cend());
 
       auto rx_state(rx_.receive(iter, end));
       switch (rx_state)

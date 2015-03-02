@@ -34,41 +34,42 @@ namespace via
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor respectively.
-    /// The other template parameters configure the size of the receive buffer
-    /// and whether to use asio::strand for an io_service running in multiple
+    /// The other template parameters configure the type of container to use
+    /// for the transmit buffers, the size of the receive buffer and
+    /// whether to use asio::strand for an io_service running in multiple
     /// treads.
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
+    /// @param Container the container to use for the rx & tx buffer, default
+    /// std::vector<char>.
+    /// It must contain a contiguous array of bytes. E.g. std::string or
+    /// std::vector<char>
     /// @param buffer_size the size of the receive buffer, default 8192 bytes.
     /// @param use_strand if true use an asio::strand to wrap the handlers,
     /// default false.
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor,
+    template <typename SocketAdaptor, typename Container = std::vector<char>,
               size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
               bool use_strand = false>
     class connection : public SocketAdaptor,
         public std::enable_shared_from_this
-            <connection<SocketAdaptor, buffer_size, use_strand> >
+            <connection<SocketAdaptor, Container, buffer_size, use_strand> >
     {
     public:
 
       /// A weak pointer to a connection.
-      using weak_pointer =
-        std::weak_ptr<connection<SocketAdaptor, buffer_size, use_strand>>;
+      using weak_pointer = std::weak_ptr<connection<SocketAdaptor, Container,
+                                                    buffer_size, use_strand>>;
 
       /// A shared pointer to a connection.
-      using shared_pointer =
-        std::shared_ptr<connection<SocketAdaptor, buffer_size, use_strand>>;
+      using shared_pointer = std::shared_ptr<connection<SocketAdaptor, Container,
+                                                        buffer_size, use_strand>>;
 
       /// The enable_shared_from_this type of this class.
-      using enable =
-        std::enable_shared_from_this<connection<SocketAdaptor, buffer_size,
-                                                use_strand>>;
-
-      /// The type of the receive buffer
-      using RxBuffer = std::array<char, buffer_size>;
+      using enable = std::enable_shared_from_this<connection<SocketAdaptor, Container,
+                                                  buffer_size, use_strand>>;
 
       /// The resolver_iterator type of the SocketAdaptor
       using resolver_iterator = typename SocketAdaptor::resolver_iterator;
@@ -84,10 +85,10 @@ namespace via
 
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
-      std::shared_ptr<RxBuffer > rx_buffer_; ///< The receive buffer.
+      std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
+      std::deque<Container> tx_queue_;     ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
-      size_t rx_size_;                     ///< The size of the received msg.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
       int timeout_;
       bool transmitting_;                  ///< Whether a write's in progress
@@ -101,25 +102,24 @@ namespace via
       weak_pointer weak_from_this()
       { return weak_pointer(enable::shared_from_this()); }
 
-
       /// @fn write_data
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers const& buffers)
+      bool write_data(ConstBuffers buffers)
       {
         if (connected_)
         {
           // local copies for the lambda captures
           weak_pointer w_ptr(weak_from_this());
-          std::shared_ptr<RxBuffer> rx_buffer(rx_buffer_);
+          std::shared_ptr<Container> rx_buffer(rx_buffer_);
 
           if (use_strand)
-            SocketAdaptor::write(buffers, strand_.wrap(
+            SocketAdaptor::write(std::move(buffers), strand_.wrap(
              [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
               { write_callback(w_ptr, ec, bytes, rx_buffer); }));
           else
-            SocketAdaptor::write(buffers,
+            SocketAdaptor::write(std::move(buffers),
              [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
               { write_callback(w_ptr, ec, bytes, rx_buffer); });
         }
@@ -133,14 +133,13 @@ namespace via
       {
         // local copies for the lambda captures
         weak_pointer w_ptr(weak_from_this());
-        std::shared_ptr<RxBuffer> rx_buffer(rx_buffer_);
-
+        std::shared_ptr<Container> rx_buffer(rx_buffer_);
         if (use_strand)
-          SocketAdaptor::read(rx_buffer_->data(), buffer_size, strand_.wrap(
+          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size, strand_.wrap(
            [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
             { read_callback(w_ptr, ec, bytes, rx_buffer); }));
         else
-          SocketAdaptor::read(rx_buffer_->data(), buffer_size,
+          SocketAdaptor::read(&(*rx_buffer_)[0], buffer_size,
            [w_ptr, rx_buffer](boost::system::error_code const& ec, std::size_t bytes)
             { read_callback(w_ptr, ec, bytes, rx_buffer); });
       }
@@ -173,7 +172,7 @@ namespace via
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
                                 size_t bytes_transferred,
-                                std::shared_ptr<RxBuffer >) // rx_buffer)
+                                std::shared_ptr<Container >) // rx_buffer)
       {
         auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -193,7 +192,7 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
-        rx_size_ = bytes_transferred;
+        rx_buffer_->resize(bytes_transferred);
         event_callback_(RECEIVED, weak_from_this());
         enable_reception();
       }
@@ -206,19 +205,21 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the size of the sent data packet.
-      /// @param rx_buffer a shared pointer to the receive buffer to control
+      /// @param tx_queue a shared pointer to the transmit buffers to control
       /// object lifetime.
       static void write_callback(weak_pointer ptr,
                                  boost::system::error_code const& error,
                                  size_t bytes_transferred,
-                                 std::shared_ptr<RxBuffer >) // rx_buffer_)
+                                 std::shared_ptr<Container>) // rx_buffer_)
       {
         auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
-          pointer->transmitting_ = false;
           if (error)
+          {
+            pointer->tx_queue_.clear();
             pointer->signal_error(error);
+          }
           else
             pointer->write_handler(bytes_transferred);
         }
@@ -232,6 +233,14 @@ namespace via
       /// @param bytes_transferred the size of the sent data packet.
       void write_handler(size_t) // bytes_transferred
       {
+        if (!transmitting_ && !tx_queue_.empty())
+          tx_queue_.pop_front();
+
+        transmitting_ = false;
+
+        if (!tx_queue_.empty())
+          write_data(ConstBuffers{boost::asio::buffer(tx_queue_.front())});
+
         event_callback_(SENT, weak_from_this());
       }
 
@@ -254,6 +263,9 @@ namespace via
           {
             pointer->connected_ = true;
             pointer->set_socket_options();
+            if (!pointer->tx_queue_.empty())
+              pointer->write_data
+                (ConstBuffers{boost::asio::buffer(pointer->tx_queue_.front())});
             pointer->enable_reception();
             pointer->event_callback_(CONNECTED, ptr);
           }
@@ -284,19 +296,15 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-          {
             pointer->handshake([ptr](boost::system::error_code const& ec)
                                { handshake_callback(ptr, ec); }, false);
-          }
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
-            {
               pointer->connect_socket
                 ([ptr](boost::system::error_code const& ec, resolver_iterator host_itr)
                  { connect_callback(ptr, ec, host_itr ); }, ++host_iterator);
-            }
             else
             {
               pointer->shutdown();
@@ -319,10 +327,10 @@ namespace via
                           error_callback_type error_callback) :
         SocketAdaptor{io_service},
         strand_{io_service},
-        rx_buffer_{new RxBuffer()},
+        rx_buffer_{std::make_shared<Container>()},
+        tx_queue_{},
         event_callback_{event_callback},
         error_callback_{error_callback},
-        rx_size_{0},
         timeout_{0},
         transmitting_{false},
         no_delay_{false},
@@ -339,10 +347,10 @@ namespace via
       explicit connection(boost::asio::io_service& io_service) :
         SocketAdaptor{io_service},
         strand_{io_service},
-        rx_buffer_{new RxBuffer()},
+        rx_buffer_{std::make_shared<Container>()},
+        tx_queue_{},
         event_callback_{},
         error_callback_{},
-        rx_size_{0},
         timeout_{0},
         transmitting_{false},
         no_delay_{false},
@@ -516,38 +524,45 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_size_ = 0,
+        rx_buffer_->resize(buffer_size);
         read_data();
       }
 
       /// @fn rx_buffer
       /// Accessor for the receive buffer.
       /// @pre Only valid within the receive event callback function.
-      /// @return the receive buffer.
-      RxBuffer const& rx_buffer() const
-      { return *rx_buffer_; }
-
-      /// @fn size
-      /// Accessor for receive buffer packet size.
-      /// @pre Only valid within the receive event callback function.
-      /// @return the size of the received packet.
-      size_t size() const
-      { return rx_size_; }
+      /// @retval the receive buffer.
+      void rx_buffer(Container& packet)
+      { rx_buffer_->swap(packet); }
 
       /// @fn connected
       /// Accessor for the connected_ flag.
       bool connected() const
       { return connected_; }
 
+      /// @fn send_data(Container const& packet)
+      /// Send a packet of data.
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
+      /// @param packet the data packet to write.
+      void send_data(Container packet)
+      {
+        bool was_empty(tx_queue_.empty());
+        tx_queue_.push_back(std::move(packet));
+
+        if (!transmitting_ && was_empty)
+          write_data(ConstBuffers{ boost::asio::buffer(tx_queue_.front()) } );
+      }
+
       /// @fn send_data
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.
-      bool send_data(ConstBuffers const& buffers)
+      bool send_data(ConstBuffers buffers)
       {
-        if (!transmitting_)
+        if (!transmitting_ && tx_queue_.empty())
         {
-          transmitting_ = write_data(buffers);
+          transmitting_ = write_data(std::move(buffers));
           return transmitting_;
         }
         else
@@ -590,7 +605,6 @@ namespace via
       boost::asio::ip::tcp::endpoint remote_endpoint()
       { return SocketAdaptor::socket().remote_endpoint(); }
     };
-
   }
 }
 
