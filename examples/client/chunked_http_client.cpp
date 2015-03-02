@@ -48,7 +48,7 @@ namespace
 
       std::cout << "chunk_to_send: " << chunk_to_send << std::endl;
 
-      http_client->send_chunk(chunk_to_send);
+      http_client->send_chunk(std::move(chunk_to_send));
       return true;
     }
     else
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     via::http::tx_request request(via::http::request_method::id::PUT, uri);
     request.add_header(via::http::header_field::id::TRANSFER_ENCODING, "Chunked");
     request.add_header(via::http::header_field::id::EXPECT, "100-continue");
-    http_client->send(request);
+    http_client->send(std::move(request));
 
     // run the io_service to start communications
     io_service.run();

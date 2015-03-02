@@ -111,6 +111,13 @@ namespace
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
   }
 
+  /// The handler for a new conection.
+  /// Prints the client's address..
+  void connected_handler(http_connection::weak_pointer weak_ptr)
+  {
+    std::cout << "Connected: " << weak_ptr.lock()->remote_address() << std::endl;
+  }
+
   /// The handler for incoming HTTP requests.
   /// Prints the request and determines whether the request is chunked.
   /// If not, it responds with a 200 OK response with some HTML in the body.
@@ -169,9 +176,10 @@ namespace
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
-  void disconnected_handler(http_connection::weak_pointer /* weak_ptr */)
+  void disconnected_handler(http_connection::weak_pointer weak_ptr)
   {
-    std::cout << "socket_disconnected_handler" << std::endl;
+    std::cout << "Disconnected: " << weak_ptr.lock()->remote_address() << std::endl;
+ //   std::cout << "socket_disconnected_handler" << std::endl;
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -207,6 +215,7 @@ int main(int argc, char *argv[])
     http_server_type http_server(io_service);
 
     // connect the handler callback functions
+    http_server.socket_connected_event(connected_handler);
     http_server.request_received_event(request_handler);
     http_server.chunk_received_event(chunk_handler);
     http_server.request_expect_continue_event(expect_continue_handler);

@@ -126,6 +126,8 @@ namespace via
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
     /// the signal sent callback function
     http_connection_signal http_sent_signal_;
+    /// the conncted callback function
+    http_connection_signal http_connected_signal_;
     /// the disconncted callback function
     http_connection_signal http_disconnected_signal_;
     /// whether the server should disconnect a connection on an invalid request
@@ -167,6 +169,11 @@ namespace via
     void message_sent_event(http_connection_signal_slot const& slot)
     { http_sent_signal_.connect(slot); }
 
+    /// Connect the connected slot.
+    /// @param slot the slot for the socket connected signal.
+    void socket_connected_event(http_connection_signal_slot const& slot)
+    { http_connected_signal_.connect(slot); }
+
     /// Connect the disconnected slot.
     /// @param slot the slot for the socket disconnected signal.
     void socket_disconnected_event(http_connection_signal_slot const& slot)
@@ -181,6 +188,7 @@ namespace via
       http_continue_signal_{},
       http_chunk_signal_{},
       http_sent_signal_{},
+      http_connected_signal_{},
       http_disconnected_signal_{},
       disconnect_invalid_request_{false},
       concatenate_chunks_{true},
@@ -234,6 +242,8 @@ namespace via
                                                          continue_enabled_);
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
+          // signal that the socket is connected
+          http_connected_signal_(http_connection);
         }
 
         auto rx_state(http_connection->receive());
