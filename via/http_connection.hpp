@@ -428,10 +428,10 @@ namespace via
       // Get the overall size of the data in the buffers
       size_t size(boost::asio::buffer_size(buffers));
 
-      buffers.push_front(boost::asio::buffer(http::CRLF));
       http::chunk_header chunk_header{size, extension};
       http_header_ = chunk_header.to_string();
       buffers.push_front(boost::asio::buffer(http_header_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
 
       return send(std::move(buffers));
     }
