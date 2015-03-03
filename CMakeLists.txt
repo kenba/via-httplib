@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Louis Henry Nayegon.
+# Copyright (c) 2013-2015 Louis Henry Nayegon.
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -21,12 +21,12 @@ set( VIA_HTTPLIB_LIBRARY_NAME via-httplib )
 
 set(Boost_USE_MULTITHREADED ON)
 if(VIA_HTTPLIB_BUILD_TESTS)
-  set(Boost_COMPONENTS system thread regex )
+  set(Boost_COMPONENTS system thread )
 else()
-  set(Boost_COMPONENTS system thread regex )
+  set(Boost_COMPONENTS system thread )
 endif()
 
-find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )
+find_package( Boost 1.57.0 REQUIRED ${Boost_COMPONENTS} )
 find_package( OpenSSL )
 find_package( Threads )
 
@@ -39,7 +39,7 @@ if(Boost_FOUND)
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
   endif(MSVC)
   if (WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-D_WIN32_WINNT=0x0600)
   endif(WIN32)
   include_directories(${Boost_INCLUDE_DIRS})
 
@@ -56,4 +56,10 @@ if(Boost_FOUND)
 
   install(PROGRAMS ${VIA_HTTPLIB_LIBRARY_NAME}
     DESTINATION bin)
+    
+  install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME}
+    DESTINATION lib)
+
+  install(DIRECTORY via
+    DESTINATION include)
 endif()
