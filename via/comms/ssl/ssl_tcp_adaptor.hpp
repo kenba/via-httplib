@@ -115,9 +115,6 @@ namespace via
 
       public:
 
-        /// The type of resolver iterator used by this socket.
-        using resolver_iterator = boost::asio::ip::tcp::resolver::iterator;
-
         /// A virtual destructor because connection inherits from this class.
         virtual ~ssl_tcp_adaptor()
         {}

@@ -71,9 +71,6 @@ namespace via
       using enable = std::enable_shared_from_this<connection<SocketAdaptor, Container,
                                                   buffer_size, use_strand>>;
 
-      /// The tcp resolver_iterator
-      using resolver_iterator = boost::asio::ip::tcp::resolver::iterator;
-
       /// Event callback function type.
       using event_callback_type = std::function<void (int, weak_pointer)>;
 
@@ -290,7 +287,7 @@ namespace via
       /// @param host_iterator an iterator to the host to connect to.
       static void connect_callback(weak_pointer ptr,
                                    boost::system::error_code const& error,
-                                   resolver_iterator host_iterator)
+                        boost::asio::ip::tcp::resolver::iterator host_iterator)
       {
         auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -301,9 +298,10 @@ namespace via
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
-                (resolver_iterator() != host_iterator))
+                (boost::asio::ip::tcp::resolver::iterator() != host_iterator))
               pointer->connect_socket
-                ([ptr](boost::system::error_code const& ec, resolver_iterator host_itr)
+                ([ptr](boost::system::error_code const& ec,
+                       boost::asio::ip::tcp::resolver::iterator host_itr)
                  { connect_callback(ptr, ec, host_itr ); }, ++host_iterator);
             else
             {
@@ -485,7 +483,7 @@ namespace via
         weak_pointer w_ptr(weak_from_this());
         return SocketAdaptor::connect(host_name, port_name,
           [w_ptr](boost::system::error_code const& error,
-                  resolver_iterator host_iterator)
+                  boost::asio::ip::tcp::resolver::iterator host_iterator)
           { connect_callback(w_ptr, error, host_iterator);} );
       }
 
