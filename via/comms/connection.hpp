@@ -71,8 +71,8 @@ namespace via
       using enable = std::enable_shared_from_this<connection<SocketAdaptor, Container,
                                                   buffer_size, use_strand>>;
 
-      /// The resolver_iterator type of the SocketAdaptor
-      using resolver_iterator = typename SocketAdaptor::resolver_iterator;
+      /// The tcp resolver_iterator
+      using resolver_iterator = boost::asio::ip::tcp::resolver::iterator;
 
       /// Event callback function type.
       using event_callback_type = std::function<void (int, weak_pointer)>;
@@ -539,6 +539,10 @@ namespace via
       /// Accessor for the connected_ flag.
       bool connected() const
       { return connected_; }
+
+      /// Accessor to set the connected_ flag.
+      void set_connected(bool enable)
+      { connected_ = enable; }
 
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
