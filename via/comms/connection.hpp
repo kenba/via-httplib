@@ -529,6 +529,14 @@ namespace via
       /// @fn rx_buffer
       /// Accessor for the receive buffer.
       /// @pre Only valid within the receive event callback function.
+      /// @return a constant pointer to the receive buffer.
+      Container const& rx_buffer() const
+      { return rx_buffer_; }
+
+      /// @fn rx_buffer
+      /// Accessor for the receive buffer.
+      /// Swaps the contents of the receive buffer with the given packet.
+      /// @pre Only valid within the receive event callback function.
       /// @retval the receive buffer.
       void rx_buffer(Container& packet)
       { rx_buffer_->swap(packet); }

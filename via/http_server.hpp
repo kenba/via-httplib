@@ -70,8 +70,8 @@ namespace via
       comms::server<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// The http_connections managed by this server.
-    using http_connection_type = http_connection<SocketAdaptor, Container,
-      buffer_size, use_strand, translate_head, require_host, trace_enabled>;
+    using http_connection_type =
+      http_connection<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// The underlying connection, TCP or SSL.
     using connection_type = typename http_connection_type::connection_type;
@@ -122,6 +122,7 @@ namespace via
     std::shared_ptr<server_type> server_;     ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
     http_request_signal http_request_signal_; ///< the request callback function
+    http_request_signal http_invalid_signal_; ///< the invalid callback function
     http_request_signal http_continue_signal_; ///< the continue callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
     /// the signal sent callback function
@@ -130,8 +131,8 @@ namespace via
     http_connection_signal http_connected_signal_;
     /// the disconncted callback function
     http_connection_signal http_disconnected_signal_;
-    /// whether the server should disconnect a connection on an invalid request
-    bool disconnect_invalid_request_;
+    /// true if the server does not have an invalid request handler
+    bool respond_to_invalid_request_;
     bool concatenate_chunks_; ///< true if the server does not have a chunk handler
     bool continue_enabled_;   ///< whether the server should send 100 Continue
 
@@ -148,6 +149,18 @@ namespace via
     {
       concatenate_chunks_ = false;
       http_chunk_signal_.connect(slot);
+    }
+
+    /// Connect the request invalid slot.
+    /// If the application registers a slot for this event, then the
+    /// application must determine how to respond to an invalid request.
+    /// Otherwise, the server will send the appropriate error response.
+    /// @post disables automatic sending of an error response
+    /// @param slot the slot for the invalid request received signal.
+    void request_invalid_event(http_request_signal_slot const& slot)
+    {
+      respond_to_invalid_request_ = false;
+      http_invalid_signal_.connect(slot);
     }
 
     /// Connect the expect continue received slot.
@@ -185,12 +198,13 @@ namespace via
       server_{server_type::create(io_service)},
       http_connections_{},
       http_request_signal_{},
+      http_invalid_signal_{},
       http_continue_signal_{},
       http_chunk_signal_{},
       http_sent_signal_{},
       http_connected_signal_{},
       http_disconnected_signal_{},
-      disconnect_invalid_request_{false},
+      respond_to_invalid_request_{true},
       concatenate_chunks_{true},
       continue_enabled_{true}
     {
@@ -239,7 +253,8 @@ namespace via
         {
           http_connection = http_connection_type::create(connection,
                                                          concatenate_chunks_,
-                                                         continue_enabled_);
+                                                         translate_head,
+                                                         require_host);
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
           // signal that the socket is connected
@@ -250,15 +265,39 @@ namespace via
         switch (rx_state)
         {
         case http::Rx::VALID:
-          http_request_signal_(http_connection,
-                               http_connection->request(),
-                               http_connection->body());
+          // Determine whether this is a TRACE request
+          if (http_connection->request().is_trace())
+          {
+            // if enabled, the server reflects the message back.
+            if (trace_enabled)
+            {
+              // Response is OK with a Content-Type: message/http header
+              http::tx_response ok_response(http::response_status::code::OK);
+              ok_response.add_content_http_header();
+
+              // The body of the response contains the TRACE request
+              std::string trace_request(http_connection->request().to_string());
+              trace_request += http_connection->request().headers().to_string();
+              http_connection->send(std::move(ok_response),
+                                    trace_request.begin(), trace_request.end());
+            }
+            else // otherwise, it responds with "Not Allowed"
+              http_connection->send(http::tx_response
+                            (http::response_status::code::METHOD_NOT_ALLOWED));
+          }
+          else
+            http_request_signal_(http_connection,
+                                 http_connection->request(),
+                                 http_connection->body());
           break;
 
         case http::Rx::EXPECT_CONTINUE:
-          http_continue_signal_(http_connection,
-                                http_connection->request(),
-                                http_connection->body());
+          if (continue_enabled_)
+            http_connection->send_response();
+          else
+            http_continue_signal_(http_connection,
+                                  http_connection->request(),
+                                  http_connection->body());
           break;
 
         case http::Rx::CHUNK:
@@ -268,8 +307,12 @@ namespace via
           break;
 
         case http::Rx::INVALID:
-          if (disconnect_invalid_request_)
-            http_connection->disconnect();
+          if (respond_to_invalid_request_)
+            http_connection->send_response();
+          else
+            http_invalid_signal_(http_connection,
+                                 http_connection->request(),
+                                 http_connection->body());
           break;
 
         default:
@@ -340,7 +383,7 @@ namespace via
     void error_handler(boost::system::error_code const& error,
                        std::weak_ptr<connection_type>) // connection)
     {
-      std::cerr << "error_handler" << std::endl;
+      std::cerr << "http_server, comms error: " << std::endl;
       std::cerr << error <<  std::endl;
     }
 
@@ -357,11 +400,6 @@ namespace via
     /// @param timeout the timeout in milliseconds.
     void set_timeout(int timeout)
     { server_->set_timeout(timeout); }
-
-    /// Whether to disconnect a connection if an invalid request is received.
-    /// @param enable if true disconnect when an invalid request is received.
-    void set_invalid_request_disconnect(bool enable)
-    { disconnect_invalid_request_ = enable; }
 
     /// Set the maximum length of a request method.
     /// @param max_length maximum length of a request uri.

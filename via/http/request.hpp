@@ -15,6 +15,7 @@
 /// @brief Classes to parse and encode HTTP requests.
 //////////////////////////////////////////////////////////////////////////////
 #include "request_method.hpp"
+#include "response_status.hpp"
 #include "headers.hpp"
 #include "chunk.hpp"
 #include <algorithm>
@@ -171,6 +172,11 @@ namespace via
       /// @return the minor version number.
       char minor_version() const
       { return minor_version_; }
+
+      /// Accessor for the parsing state.
+      /// @return the parsing state.
+      Request state() const
+      { return state_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
@@ -475,18 +481,21 @@ namespace via
     /// @class request_receiver
     /// A template class to receive HTTP requests and any associated data.
     /// @param Container the type of container in which the request is held.
-    /// @param translate_head whether the receiver passes a HEAD request to
-    /// the application as a GET request.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container, bool translate_head>
+    template <typename Container>
     class request_receiver
     {
-      rx_request request_; ///< the received request
-      rx_chunk<Container> chunk_;   ///< the received chunk
+      rx_request request_;         ///< the received request
+      rx_chunk<Container> chunk_;  ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
+      /// the appropriate response to the request:
+      /// either an error code or 100 Continue.
+      response_status::code response_code_;
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
       bool       concatenate_chunks_; ///< concatenate chunk data into the body
+      bool       translate_head_;  ///< pass a HEAD request as a GET request.
+      bool       require_host_;    ///< a host header is required.
 
     public:
 
@@ -498,13 +507,22 @@ namespace via
       /// Sets all member variables to their initial state.
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
-      explicit request_receiver(bool concatenate_chunks) :
+      /// @param translate_head if true the server shall always pass a HEAD request
+      /// to the application as a GET request.
+      /// @param require_host if true the server shall require all requests to
+      /// include a "Host:" header field. Required by RFC2616.
+      explicit request_receiver(bool concatenate_chunks,
+                                bool translate_head,
+                                bool require_host) :
         request_(),
         chunk_(),
         body_(),
+        response_code_(response_status::code::NO_CONTENT),
         continue_sent_(false),
         is_head_(false),
-        concatenate_chunks_(concatenate_chunks)
+        concatenate_chunks_(concatenate_chunks),
+        translate_head_(translate_head),
+        require_host_(require_host)
       {}
 
       /// clear the request_receiver.
@@ -541,6 +559,10 @@ namespace via
       Container const& body() const
       { return body_; }
 
+      /// Accessor for the response code.
+      response_status::code response_code() const
+      { return response_code_; }
+
       /// Receive data for an HTTP request, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
@@ -557,6 +579,10 @@ namespace via
             // if a parsing error (not run out of data)
             if ((iter != end) || request_.fail())
             {
+              if (request_line::ERROR_URI_LENGTH == request_.state())
+                response_code_ = response_status::code::REQUEST_URI_TOO_LONG;
+              else
+                response_code_ = response_status::code::BAD_REQUEST;
               clear();
               return Rx::INVALID;
             }
@@ -567,6 +593,12 @@ namespace via
 
         // build a request body or receive a chunk
         assert(request_.valid());
+        if (require_host_ && request_.missing_host_header())
+        {
+          response_code_ = response_status::code::BAD_REQUEST;
+          return Rx::INVALID;
+        }
+
         if (!request_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
@@ -574,6 +606,10 @@ namespace via
           if ((content_length == std::numeric_limits<size_t>::max()) ||
               (content_length > message_headers::max_content_length_s))
           {
+            if (content_length == std::numeric_limits<size_t>::max())
+              response_code_ = response_status::code::BAD_REQUEST;
+            else
+              response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
             clear();
             return Rx::INVALID;
           }
@@ -583,8 +619,9 @@ namespace via
           if ((rx_size > 0) && (content_length == 0) &&
               request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
+            response_code_ = response_status::code::LENGTH_REQUIRED;
             clear();
-            return Rx::LENGTH_REQUIRED;
+            return Rx::INVALID;
           }
 
           // received buffer contains more than the required data
@@ -605,9 +642,8 @@ namespace via
           {
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
-            if (is_head_ && translate_head)
+            if (is_head_ && translate_head_)
               request_.set_method(request_method::name(request_method::id::GET));
-
             return Rx::VALID;
           }
         }
@@ -624,6 +660,7 @@ namespace via
             // if a parsing error (not run out of data)
             if (iter != end)
             {
+              response_code_ = response_status::code::BAD_REQUEST;
               clear();
               return Rx::INVALID;
             }
@@ -633,7 +670,10 @@ namespace via
           if (request_parsed)
           {
             if (request_.expect_continue() && !continue_sent_)
+            {
+              response_code_ = response_status::code::CONTINUE;
               return Rx::EXPECT_CONTINUE;
+            }
             else
             {
               if (!concatenate_chunks_)

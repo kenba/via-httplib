@@ -42,26 +42,10 @@ namespace via
   /// @param buffer_size the size of the receive buffer, default 8192 bytes.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
-  /// @param translate_head if true the server shall always pass a HEAD request
-  /// to the application as a GET request.
-  /// @param require_host if true the server shall require all requests to
-  /// include a "Host:" header field. Required by RFC2616.
-  /// @param trace_enabled if true the server will echo back the TRACE message
-  /// and all of it's headers in the body of the response.
-  /// Although required by RFC2616 it's considered a security vulnerability
-  /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
-  /// response.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
-            typename Container,
-            size_t buffer_size,
-            bool use_strand,
-            bool translate_head,
-            bool require_host,
-            bool trace_enabled>
+  template <typename SocketAdaptor, typename Container, size_t buffer_size, bool use_strand>
   class http_connection : public std::enable_shared_from_this
-       <http_connection<SocketAdaptor, Container, buffer_size,
-         use_strand, translate_head, require_host, trace_enabled> >
+       <http_connection<SocketAdaptor, Container, buffer_size, use_strand>>
   {
   public:
     /// The underlying connection, TCP or SSL.
@@ -69,14 +53,12 @@ namespace via
       comms::connection<SocketAdaptor, Container, buffer_size, use_strand>;
 
     /// A weak pointer to this type.
-    using weak_pointer =
-     typename std::weak_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled>>;
+    using weak_pointer = typename
+      std::weak_ptr<http_connection<SocketAdaptor, Container, buffer_size, use_strand>>;
 
     /// A strong pointer to this type.
-    using shared_pointer =
-      typename std::shared_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled>>;
+    using shared_pointer = typename
+      std::shared_ptr<http_connection<SocketAdaptor, Container, buffer_size, use_strand>>;
 
     /// The template requires a typename to access the iterator.
     using Container_const_iterator = typename Container::const_iterator;
@@ -87,7 +69,7 @@ namespace via
     typename connection_type::weak_pointer connection_;
 
     /// The request receiver for this connection.
-    http::request_receiver<Container, translate_head> rx_;
+    http::request_receiver<Container> rx_;
 
     /// The HTTP header of the message.
     std::string http_header_;
@@ -98,10 +80,6 @@ namespace via
     /// The transmit buffer for this connection.
     Container tx_buffer_;
 
-    /// A flag to indicate that the server should always respond to an
-    /// expect: 100-continue header with a 100 Continue response.
-    bool continue_enabled_;
-
     /// Constructor.
     /// Note: the constructor is private to ensure that an http_connection
     /// can only be created as a shared pointer by the create method.
@@ -109,19 +87,19 @@ namespace via
     /// @param concatenate_chunks if true the server shall always concatenate
     /// chunk data into the request body, otherwise the body shall contain
     /// the data for each chunk.
-    /// @param continue_enabled if true the server shall always immediately
-    /// respond to an HTTP1.1 request containing an Expect: 100-continue
-    /// header with a 100 Continue response.
-    /// @param max_body_size the maximum length of a message body.
+    /// @param translate_head if true the server shall always pass a HEAD request
+    /// to the application as a GET request.
+    /// @param require_host if true the server shall require all requests to
+    /// include a "Host:" header field. Required by RFC2616.
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
-                    bool continue_enabled) :
+                    bool translate_head,
+                    bool require_host) :
       connection_{connection},
-      rx_{concatenate_chunks},
+      rx_{concatenate_chunks, translate_head, require_host},
       http_header_{},
       rx_buffer_{},
-      tx_buffer_{},
-      continue_enabled_{continue_enabled}
+      tx_buffer_{}
     {}
 
     /// Send buffers on the connection.
@@ -173,15 +151,18 @@ namespace via
     /// @param concatenate_chunks if true the server shall always concatenate
     /// chunk data into the request body, otherwise the body shall contain
     /// the data for each chunk.
-    /// @param continue_enabled if true the server shall always immediately
-    /// respond to an HTTP1.1 request containing an Expect: 100-continue
-    /// header with a 100 Continue response.
+    /// @param translate_head if true the server shall always pass a HEAD request
+    /// to the application as a GET request.
+    /// @param require_host if true the server shall require all requests to
+    /// include a "Host:" header field. Required by RFC2616.
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
-                                 bool continue_enabled)
+                                 bool translate_head,
+                                 bool require_host)
     { return shared_pointer(new http_connection(connection,
                                                 concatenate_chunks,
-                                                continue_enabled)); }
+                                                translate_head,
+                                                require_host)); }
 
     /// Copy constructor deleted.
     http_connection(http_connection const&)=delete;
@@ -227,71 +208,19 @@ namespace via
       tcp_pointer->rx_buffer(rx_buffer_);
       auto iter(rx_buffer_.cbegin());
       auto end(rx_buffer_.cend());
-      auto rx_state(rx_.receive(iter, end));
+      return rx_.receive(iter, end);
+    }
 
-      // Handle special cases
-      switch (rx_state)
-      {
-      case http::Rx::INVALID:
-        send(http::tx_response(http::response_status::code::BAD_REQUEST));
-        break;
+    /// Send the appropriate HTTP response to the request.
+    bool send_response()
+    {
+      http::tx_response response(rx_.response_code());
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      http_header_ = response.message();
 
-      case http::Rx::LENGTH_REQUIRED:
-        send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
-        rx_state = http::Rx::INVALID;
-        break;
-
-      case http::Rx::EXPECT_CONTINUE:
-        // Determine whether the server should send a 100 Continue response
-        if (continue_enabled_)
-        {
-          send(http::tx_response(http::response_status::code::CONTINUE));
-          rx_state = http::Rx::INCOMPLETE;
-        }
-        break;
-
-      case http::Rx::VALID:
-        // Determine whether this is a TRACE request
-        if (rx_.request().is_trace())
-        {
-          // if enabled, the server reflects the message back.
-          if (trace_enabled)
-          {
-            // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::code::OK);
-            ok_response.add_content_http_header();
-
-            // The body of the response contains the TRACE request
-            std::string trace_request(rx_.request().to_string());
-            trace_request += rx_.request().headers().to_string();
-
-            send(std::move(ok_response), trace_request.begin(), trace_request.end());
-          }
-          else // otherwise, it responds with "Not Allowed"
-            send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
-
-          // Set the state as invalid, since the server has responded to the request
-          rx_state = http::Rx::INVALID;
-        }
-        else // Not a TRACE request
-        {
-          // A fully compliant HTTP server MUST reject a request without a Host header
-          if (rx_.request().missing_host_header() && require_host)
-          {
-            std::string missing_host{"Request lacks Host Header"};
-            http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
-            send(std::move(bad_request), missing_host.begin(), missing_host.end());
-
-            rx_state = http::Rx::INVALID;
-          }
-        }
-        break;
-
-      default:
-        ;
-      }
-
-      return rx_state;
+      return send(comms::ConstBuffers{boost::asio::buffer(http_header_)},
+                  response.is_continue());
     }
 
     /// Send an HTTP response without a body.

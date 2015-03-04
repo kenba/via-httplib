@@ -609,7 +609,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   auto next(request_data.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data.cend()));
   bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
@@ -626,7 +626,7 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
   std::string request_data1("G");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -649,7 +649,7 @@ BOOST_AUTO_TEST_CASE(InValidGet1)
   std::string request_data1("g");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 }
@@ -659,7 +659,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   std::string request_data1("P");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -697,7 +697,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   auto next(request_data1.cbegin());
 
   // Receiver concatenates chunks
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -749,7 +749,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   auto next(request_data1.cbegin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string, false> the_request_receiver(false);
+  request_receiver<std::string> the_request_receiver(false, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -801,7 +801,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   auto next(request_data1.cbegin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string, false> the_request_receiver(false);
+  request_receiver<std::string> the_request_receiver(false, false, true);
   Rx rx_state
       (the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
@@ -840,7 +840,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
   std::string request_data1("P");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -859,7 +859,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   std::string request_data1("P");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -875,7 +875,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.cend());
-  ok = (rx_state == Rx::LENGTH_REQUIRED);
+  ok = (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
 }
 
@@ -884,7 +884,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   std::string request_data1("P");
   auto next(request_data1.cbegin());
 
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -924,7 +924,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
 
   auto previous_max_length(message_headers::max_content_length_s);
   message_headers::max_content_length_s = 25;
-  request_receiver<std::string, false> the_request_receiver(true);
+  request_receiver<std::string> the_request_receiver(true, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -951,7 +951,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   auto next(request_data1.cbegin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string, false> the_request_receiver(false);
+  request_receiver<std::string> the_request_receiver(false, false, true);
   Rx rx_state(the_request_receiver.receive(next, request_data1.cend()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
