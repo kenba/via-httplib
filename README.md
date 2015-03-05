@@ -3,8 +3,8 @@ via-httplib: A C++ HTTP Library
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
-The library is to provide an asynchronous HTTP server that complies with
-[rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types.
+The library provides an asynchronous C++ HTTP server that attempts to comply with
+[rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) wherever possible.
 
 `via::http_server` is a class template requiring a SocketAdaptor to instantiate it.
 For example the following code declares an plain HTTP server that passes data in a
@@ -22,16 +22,17 @@ Whilst the example below declares an HTTPS server that passes data in a std::str
     
     typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
   
-It also supports HTTP and HTTPS clients.
+The library also contains C++ HTTP and HTTPS clients.
 
 Requirements
 ------------
 
 + The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
 
-+ A C++11 compiler, it's been tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9`.
-If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
-Note: versions of GCC/MinGW prior to 4.9 didn't fully implement std::regex, see: 
++ A C++11 compiler, it's been tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.
+If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)  
+Note: versions of GCC/MinGW prior to 4.9 didn't fully implement std::regex, see:
+[GCC Bug 53631](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53631)
 
 + For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
