@@ -8,14 +8,14 @@ The library provides an asynchronous C++ HTTP server that attempts to comply wit
 
 `via::http_server` is a class template requiring a `socket_adaptor` to instantiate it.
 For example the following code declares an plain HTTP server that passes data in a
-std::vector<char> (the default).
+`std::vector<char>` (the default).
 
     #include "via/comms/tcp_adaptor.hpp"
     #include "via/http_server.hpp"
     
     typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
     
-Whilst the example below declares an HTTPS server that passes data in a std::string.
+Whilst the example below declares an HTTPS server that passes data in a `std::string`.
 
     #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
     #include "via/http_server.hpp"
@@ -63,8 +63,8 @@ Directory structure and contents:
 | `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md) and [Design Notes](docs/DESIGN.md) |
 | `uml`                | UML diagrams in [plantuml](http://plantuml.sourceforge.net/index.html) format. |
 
-Getting Started
----------------
+Installing
+----------
 
 Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
@@ -74,7 +74,7 @@ Or simply build the .cpp files into your application (there are only 8 of them).
 `via-http` lib depends on the `boost` libraries.
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
-[boost getting started](http://www.boost.org/doc/libs/1_55_0/more/getting_started/index.html).
+[boost getting started](http://www.boost.org/doc/libs/1_57_0/more/getting_started/index.html).
 
 The `boost asio` library (and hence `via-httplib`) depends upon the
 `OpenSSL` library to implement SSL/TLS sockets.
@@ -87,7 +87,7 @@ package from [openssl source](http://www.openssl.org/source/) and build it.
 Note: a binary distribution may be available for your machine,
 see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
 which could save you a lot of trouble, since building the `OpenSSL` binaries can
-be a long and difficult process...  
+be a long-winded process...  
 
 Example
 -------
