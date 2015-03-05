@@ -15,13 +15,13 @@ Directory structure and contents:
 
 | Directory          | Contents                                                                          |
 |--------------------|-----------------------------------------------------------------------------------|
-| `via`              | The HTTP classes: `http_server.hpp`, `http_client.hpp` and `http_connection.hpp.` |
+| `via`              | The `via-httplib` API classes: `http_server.hpp`, and `http_connection.hpp.`      |
 | `via/comms`        | The TCP/IP communications software.                                               |
-| `via/comms/ssl     | The SSL specific TCP/IP communications software.                                  |
+| `via/comms/ssl`    | The SSL specific TCP/IP communications software.                                  |
 | `via/http`         | HTTP parsers and encoders.                                                        |
 | `examples`         | SSL certificates for the SSL examples.                                            |
-| `examples/server`  | Some `via-httplib` HTTP server examples.                                          |
-| `examples/client`  | Some `via-httplib` HTTP client examples.                                          |
+| `examples/server`  | Some example HTTP servers.                                                        |
+| `examples/client`  | Some example HTTP clients.                                                        |
 | `tests`            | A main function for the `boost Test` library.                                     |
 | `tests/http`       | HTTP parser and encoder tests.                                                    |
 
