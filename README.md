@@ -60,8 +60,8 @@ Directory structure and contents:
 | [examples/client](examples/client) | Example HTTP clients.                                      |
 | `tests`              | A main function for the `boost Test` library.                            |
 | `tests/http`         | HTTP parser and encoder tests.                                           |
-| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md) and [Design Notes](docs/DESIGN.md) |
-| `uml`                | UML diagrams in [plantuml](http://plantuml.sourceforge.net/index.html) format. |
+| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md), [Server Security](docs/SECURITY.md) and [Design Notes](docs/DESIGN.md) |
+| `uml`                | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
 
 Installing
 ----------
@@ -186,5 +186,7 @@ Further Information
 [Make](docs/MAKE.md)
 
 [User Guide](docs/USE.md)
+
+[Server Security](docs/SECURITY.md)
 
 [Design Notes](docs/DESIGN.md)
