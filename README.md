@@ -1,21 +1,38 @@
-via-httplib
-===========
+via-httplib: A C++ HTTP Library
+===============================
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
 The library's aim is to provide an asynchronous HTTP server that complies with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
 wherever possible.
 
-Note: also supports HTTP and HTTPS clients.
+It also supports HTTP and HTTPS clients.
+
+Introduction
+------------
+
+Directory structure and contents:
+
+| Directory          | Contents                                                                          |
+|--------------------|-----------------------------------------------------------------------------------|
+| `via`              | The HTTP classes: `http_server.hpp`, `http_client.hpp` and `http_connection.hpp.` |
+| `via/comms`        | The TCP/IP communications software.                                               |
+| `via/comms/ssl     | The SSL specific TCP/IP communications software.                                  |
+| `via/http`         | HTTP parsers and encoders.                                                        |
+| `examples`         | SSL certificates for the SSL examples.                                            |
+| `examples/server`  | Some `via-httplib` HTTP server examples.                                          |
+| `examples/client`  | Some `via-httplib` HTTP client examples.                                          |
+| `tests`            | A main function for the `boost Test` library.                                     |
+| `tests/http`       | HTTP parser and encoder tests.                                                    |
 
 Requirements
 ------------
 
 + The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.55.
 
-+ A C++11 compiler, it's been tested with `MSVC 2013` and `MinGw 4.8`. If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
++ A C++11 compiler, it's been tested with `MSVC 2013` and `MinGw 4.9`. If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
 
-+ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/). Please use version 1.0.1g or later (i.e. not 1.0.2-beta1) to avoid the [heartbeat overflow issue](https://www.openssl.org/news/secadv_20140407.txt).
++ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
 Getting Started
 ---------------
