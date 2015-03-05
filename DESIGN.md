@@ -118,6 +118,8 @@ messages on TCP, SSL, UDP and other communications protocols. However, the
 library does not buffer received or transmitted messages. This is good for
 efficiency but makes it hard to use...
 
+![Comms Classes](uml/via_comms_classes.png)
+
 The `via::comms` library simply uses a bridge design pattern to wrap the
 boost::asio socket classes with buffers for the received and transmitted
 messages.

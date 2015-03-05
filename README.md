@@ -6,7 +6,7 @@ A library for embedding an HTTP or HTTPS server in C++ applications.
 The library provides an asynchronous C++ HTTP server that attempts to comply with
 [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) wherever possible.
 
-`via::http_server` is a class template requiring a SocketAdaptor to instantiate it.
+`via::http_server` is a class template requiring a `socket_adaptor` to instantiate it.
 For example the following code declares an plain HTTP server that passes data in a
 std::vector<char> (the default).
 
@@ -22,7 +22,13 @@ Whilst the example below declares an HTTPS server that passes data in a std::str
     
     typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
   
+An outline HTTP Server class diagram is shown below.
+  
+![HTTP Server Classes](uml/http_server_classes.png)
+
 The library also contains C++ HTTP and HTTPS clients.
+
+![HTTP Client Classes](uml/http_client_classes.png)
 
 Requirements
 ------------
