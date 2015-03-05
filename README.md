@@ -13,17 +13,17 @@ Introduction
 
 Directory structure and contents:
 
-| Directory          | Contents                                                                          |
-|--------------------|-----------------------------------------------------------------------------------|
-| `via`              | The `via-httplib` API classes: `http_server.hpp`, and `http_connection.hpp.`      |
-| `via/comms`        | The TCP/IP communications software.                                               |
-| `via/comms/ssl`    | The SSL specific TCP/IP communications software.                                  |
-| `via/http`         | HTTP parsers and encoders.                                                        |
-| `examples`         | SSL certificates for the SSL examples.                                            |
-| `examples/server`  | Some example HTTP servers.                                                        |
-| `examples/client`  | Some example HTTP clients.                                                        |
-| `tests`            | A main function for the `boost Test` library.                                     |
-| `tests/http`       | HTTP parser and encoder tests.                                                    |
+| Directory            | Contents                                                                 |
+|----------------------|--------------------------------------------------------------------------|
+| [via](via)           | The `via-httplib` API classes: `http_server.hpp`, and `http_client.hpp.` |
+| `via/comms`          | The TCP/IP communications software.                                      |
+| `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
+| `via/http`           | HTTP parsers and encoders.                                               |
+| [examples](examples) | SSL certificates for the SSL examples.                                   |
+| `examples/server`    | Some example HTTP servers.                                               |
+| `examples/client`    | Some example HTTP clients.                                               |
+| `tests`              | A main function for the `boost Test` library.                            |
+| `tests/http`         | HTTP parser and encoder tests.                                           |
 
 Requirements
 ------------
