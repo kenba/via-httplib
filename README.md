@@ -19,9 +19,9 @@ Directory structure and contents:
 | `via/comms`          | The TCP/IP communications software.                                      |
 | `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
 | `via/http`           | HTTP parsers and encoders.                                               |
-| [examples](examples) | SSL certificates for the SSL examples.                                   |
-| `examples/server`    | Some example HTTP servers.                                               |
-| `examples/client`    | Some example HTTP clients.                                               |
+| `examples`           | Sample SSL certificates for the SSL examples.                            |
+| [examples/server](examples/server) | Example HTTP servers.                                      |
+| [examples/client](examples/client) | Example HTTP clients.                                      |
 | `tests`              | A main function for the `boost Test` library.                            |
 | `tests/http`         | HTTP parser and encoder tests.                                           |
 
