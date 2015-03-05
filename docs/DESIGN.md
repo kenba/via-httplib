@@ -39,13 +39,13 @@ A **request** message must always start with a request start line followed by an
 number of message header lines and blank line. Some request messages may
 contain data.
 
-![Request Parsing States](uml/request_parsing_state_diagram.png)
+![Request Parsing States](../uml/request_parsing_state_diagram.png)
 
 Likewise, a **response** message must always start with a response start line
 followed by any number of message header lines and blank line. Also some
 response messages may contain data.
 
-![Response Parsing States](uml/response_parsing_state_diagram.png)
+![Response Parsing States](../uml/response_parsing_state_diagram.png)
 
 Where a request or response message contains data in the body of the message,
 it must have a **Content-Length** message header containing the size in octets
@@ -65,7 +65,7 @@ location with the HTTP message using a state machine so that they can handle
 requests and responses where an HTTP message is divided across multiple
 message packets.
 
-![Request Line Parsing States](uml/request_line_parsing_state_diagram.png)
+![Request Line Parsing States](../uml/request_line_parsing_state_diagram.png)
 
 The parsed message headers (for both requests and responses) are stored in a
 map of strings. The message header field names are converted to lower case
@@ -75,7 +75,7 @@ storing them in a map, makes searching for a specific header field relatively
 simple and efficient. Note: the message header values are stored as they are
 received and are NOT converted to lower-case.
 
-![Response Line Parsing States](uml/response_line_parsing_state_diagram.png)
+![Response Line Parsing States](../uml/response_line_parsing_state_diagram.png)
 
 The encoding message headers (for both requests and responses) are simply
 stored in a std::string. This allows the user to control the order in
@@ -83,7 +83,7 @@ which message headers are sent. Note: rfc2616 is a bit ambiguous over this;
 it states that the headers should be sent in a certain order, but then it also
 states that the receiver shouldn't care about the order...
 
-![Header Parsing States](uml/http_headers_parsing_state_diagram.png)
+![Header Parsing States](../uml/http_headers_parsing_state_diagram.png)
 
 The upshot of this is that the library has different classes for receiving and
 transmitting requests and responses. The `request.hpp` header file contains: 
@@ -91,14 +91,14 @@ transmitting requests and responses. The `request.hpp` header file contains:
 + class `tx_request` for constructing an HTTP request for an HTTP client to send.  
 + class `rx_request` for parsing an HTTP request for an HTTP server.
 
-![Request Parsing Classes](uml/http_request_parser.png)
+![Request Parsing Classes](../uml/http_request_parser.png)
 
 The `response.hpp` header file contains:
 
 + class `tx_response` for constructing an HTTP response for an HTTP server to send. 
 + class `rx_response` for parsing an HTTP response for an HTTP client.  
 
-![Response Parsing Classes](uml/http_response_parser.png)
+![Response Parsing Classes](../uml/http_response_parser.png)
 
 ## The comms library `via::comms` ##
 
@@ -118,7 +118,7 @@ messages on TCP, SSL, UDP and other communications protocols. However, the
 library does not buffer received or transmitted messages. This is good for
 efficiency but makes it hard to use...
 
-![Comms Classes](uml/via_comms_classes.png)
+![Comms Classes](../uml/via_comms_classes.png)
 
 The `via::comms` library simply uses a bridge design pattern to wrap the
 boost::asio socket classes with buffers for the received and transmitted

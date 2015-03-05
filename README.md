@@ -21,15 +21,9 @@ Whilst the example below declares an HTTPS server that passes data in a std::str
     #include "via/http_server.hpp"
     
     typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
-  
-An outline HTTP Server class diagram is shown below.
-  
-![HTTP Server Classes](uml/http_server_classes.png)
 
-The library also contains C++ HTTP and HTTPS clients.
-
-![HTTP Client Classes](uml/http_client_classes.png)
-
+The library also contains C++ HTTP and HTTPS client code see: [Clients](docs/CLIENT.md).
+    
 Requirements
 ------------
 
@@ -44,6 +38,14 @@ Note: versions of GCC/MinGW prior to 4.9 didn't fully implement std::regex, see:
 
 Structure
 ---------
+  
+An outline HTTP Server class diagram:
+  
+![HTTP Server Classes](uml/http_server_classes.png)
+
+An outline HTTP Client class diagram:
+
+![HTTP Client Classes](uml/http_client_classes.png)
 
 Directory structure and contents:
 
@@ -58,6 +60,7 @@ Directory structure and contents:
 | [examples/client](examples/client) | Example HTTP clients.                                      |
 | `tests`              | A main function for the `boost Test` library.                            |
 | `tests/http`         | HTTP parser and encoder tests.                                           |
+| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md) and [Design Notes](docs/DESIGN.md) |
 | `uml`                | UML diagrams in [plantuml](http://plantuml.sourceforge.net/index.html) format. |
 
 Getting Started
@@ -65,7 +68,7 @@ Getting Started
 
 Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
-and follow the instructions here: [Make](MAKE.md).  
+and follow the instructions here: [Make](docs/MAKE.md).  
 Or simply build the .cpp files into your application (there are only 8 of them).
 
 `via-http` lib depends on the `boost` libraries.
@@ -180,6 +183,8 @@ An equivalent simple HTTPS server can be found here:[`simple_https_server.cpp`](
 Further Information
 -------------------
 
-[User Guide](USE.md)
+[Make](docs/MAKE.md)
 
-[Design Notes](DESIGN.md)
+[User Guide](docs/USE.md)
+
+[Design Notes](docs/DESIGN.md)
