@@ -3,19 +3,46 @@ via-httplib: A C++ HTTP Library
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
-The library's aim is to provide an asynchronous HTTP server that complies with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
-wherever possible.
+The library is to provide an asynchronous HTTP server that complies with
+[rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types.
 
+`via::http_server` is a class template requiring a SocketAdaptor to instantiate it.
+For example the following code declares an plain HTTP server that passes data in a
+std::vector<char> (the default).
+
+    #include "via/comms/tcp_adaptor.hpp"
+    #include "via/http_server.hpp"
+    
+    typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
+    
+Whilst the example below declares an HTTPS server that passes data in a std::string.
+
+    #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
+    #include "via/http_server.hpp"
+    
+    typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
+  
 It also supports HTTP and HTTPS clients.
 
-Introduction
+Requirements
 ------------
+
++ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
+
++ A C++11 compiler, it's been tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9`.
+If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
+Note: versions of GCC/MinGW prior to 4.9 didn't fully implement std::regex, see: 
+
++ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
+
+Structure
+---------
 
 Directory structure and contents:
 
 | Directory            | Contents                                                                 |
 |----------------------|--------------------------------------------------------------------------|
-| [via](via)           | The `via-httplib` API classes: `http_server.hpp`, and `http_client.hpp.` |
+| [via](via)           | The `via-httplib` API classes: [http_server](via/http_server.hpp), and [http_client](http_client.hpp). |
 | `via/comms`          | The TCP/IP communications software.                                      |
 | `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
 | `via/http`           | HTTP parsers and encoders.                                               |
@@ -24,15 +51,7 @@ Directory structure and contents:
 | [examples/client](examples/client) | Example HTTP clients.                                      |
 | `tests`              | A main function for the `boost Test` library.                            |
 | `tests/http`         | HTTP parser and encoder tests.                                           |
-
-Requirements
-------------
-
-+ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.55.
-
-+ A C++11 compiler, it's been tested with `MSVC 2013` and `MinGw 4.9`. If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)
-
-+ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
+| `uml`                | UML diagrams in [plantuml](http://plantuml.sourceforge.net/index.html) format. |
 
 Getting Started
 ---------------
@@ -91,8 +110,8 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	    weak_ptr.lock()->send(response);
 	  }
 	}
-	
-	int main(int argc, char *argv[])
+    
+    int main(int argc, char *argv[])
 	{
 	  try
 	  {
@@ -121,8 +140,7 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	
 	  return 0;
 	}
-
-
+    
 This server will output all of the requests that it receives to std::cout and respond with a `200 OK` response to each of them.
 e.g. a request from Google Chrome on a Windows 7 PC:
 

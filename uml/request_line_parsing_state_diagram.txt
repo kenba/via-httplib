@@ -1,0 +1,32 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title HTTP Request Line Parsing States
+
+[*] --> METHOD
+
+METHOD : Check alpha case
+METHOD : & method length
+METHOD --> URI : Ok
+METHOD --> Error : Failure
+
+URI : Check whitespace length
+URI : & uri length
+URI --> HTTP : Ok
+URI --> Error : Failure
+
+HTTP : Check whitespace length
+HTTP : & HTTP text and version
+HTTP --> CRLF : Ok
+HTTP --> Error : Failure
+
+CRLF : Check CR & LF chars
+CRLF --> [*] : Ok
+CRLF --> Error : Failure
+
+Error : Reason for error
+Error : can be determined
+Error : from parsing state
+
+@enduml

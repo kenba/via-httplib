@@ -1,0 +1,20 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title HTTP Request Parser Classes
+
+request_receiver *-- rx_request
+request_receiver *-- rx_chunk
+
+rx_request --|> request_line
+rx_request *-- message_headers
+
+request_line "1" *-- "1" request_method
+
+rx_chunk *-- chunk_header
+rx_chunk *-- message_headers
+message_headers "1" *-- "*" fields
+message_headers "1" *-- "1" field_line
+
+@enduml
