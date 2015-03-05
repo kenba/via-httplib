@@ -16,8 +16,12 @@ event occurs. Events that may be signalled by an instance of `http_server` are:
    signalled when an HTTP request chunk is received from a client.
 + `request_expect_continue_event`  
    signalled when an HTTP request contains an "Expect: 100-continue" header.
++ `socket_connected_event`  
+   signalled when an HTTP client's socket connects.
 + `socket_disconnected_event`  
    signalled when an HTTP client's socket disconnects.
++ `request_invalid_event`  
+   signalled when an invalid HTTP request is received from a client.
 
 An application need only handle the `request_received_event`, all of the other
 events are optional.
@@ -310,6 +314,22 @@ register a disconnected handler:
 
     /// register disconnected_handler with the http_server
     http_server.socket_disconnected_event(disconnected_handler);
+    
+### socket\_connected\_event ###
+
+The `socket_connected_event` is signalled whenever an HTTP client's socket connects.  
+
+It is similar to the `socket_disconnected_event` and may be used to identify the
+address of the client that wishes to connect.
+
+### request\_invalid\_event ###
+
+The `request_invalid_event` is signalled whenever an HTTP client sends a request
+that is considered invalid by the HTTP request parser.
+
+Normally, the HTTP server would respond with the appropriate response from
+RFC2616. However, by registering for this event, the application must either 
+respond to the client or close the connection.
 
 ## Connecting the Server to a Port ##
 
