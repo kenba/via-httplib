@@ -251,7 +251,8 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       static void handshake_callback(weak_pointer ptr,
-                                     boost::system::error_code const& error)
+                                     boost::system::error_code const& error,
+                                     std::shared_ptr<Container>) // rx_buffer_)
       {
         auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -268,7 +269,7 @@ namespace via
           }
           else
           {
-            pointer->shutdown();
+            pointer->close();
             pointer->signal_error(error);
           }
         }
@@ -287,25 +288,29 @@ namespace via
       /// @param host_iterator an iterator to the host to connect to.
       static void connect_callback(weak_pointer ptr,
                                    boost::system::error_code const& error,
-                        boost::asio::ip::tcp::resolver::iterator host_iterator)
+                        boost::asio::ip::tcp::resolver::iterator host_iterator,
+                                   std::shared_ptr<Container>) // rx_buffer_)
       {
         auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
+          // local copy for lambdas
+          std::shared_ptr<Container> rx_buffer(pointer->rx_buffer_);
           if (!error)
-            pointer->handshake([ptr](boost::system::error_code const& ec)
-                               { handshake_callback(ptr, ec); }, false);
+            pointer->handshake([ptr, rx_buffer](boost::system::error_code const& ec)
+                          { handshake_callback(ptr, ec, rx_buffer); }, false);
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (boost::asio::ip::tcp::resolver::iterator() != host_iterator))
               pointer->connect_socket
-                ([ptr](boost::system::error_code const& ec,
+                ([ptr, rx_buffer](boost::system::error_code const& ec,
                        boost::asio::ip::tcp::resolver::iterator host_itr)
-                 { connect_callback(ptr, ec, host_itr ); }, ++host_iterator);
+                 { connect_callback(ptr, ec, host_itr, rx_buffer ); },
+                ++host_iterator);
             else
             {
-              pointer->shutdown();
+              pointer->close();
               pointer->signal_error(error);
             }
           }
@@ -481,10 +486,11 @@ namespace via
       {
         // local copy for the lambda capture
         weak_pointer w_ptr(weak_from_this());
+        std::shared_ptr<Container> rx_buffer(rx_buffer_);
         return SocketAdaptor::connect(host_name, port_name,
-          [w_ptr](boost::system::error_code const& error,
+          [w_ptr, rx_buffer](boost::system::error_code const& error,
                   boost::asio::ip::tcp::resolver::iterator host_iterator)
-          { connect_callback(w_ptr, error, host_iterator);} );
+          { connect_callback(w_ptr, error, host_iterator, rx_buffer);} );
       }
 
       /// @fn start
@@ -503,7 +509,7 @@ namespace via
         // local copy for the lambda capture
         weak_pointer w_ptr(weak_from_this());
         SocketAdaptor::start([w_ptr](boost::system::error_code const& ec)
-                                  { handshake_callback(w_ptr, ec); });
+                              { handshake_callback(w_ptr, ec, rx_buffer); });
       }
 
       /// @fn disconnect
