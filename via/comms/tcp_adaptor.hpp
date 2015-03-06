@@ -155,7 +155,8 @@ namespace via
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
       {
-        return (boost::asio::error::connection_reset == error)
+        return (boost::asio::error::connection_refused == error)
+            || (boost::asio::error::connection_reset == error)
             || (boost::asio::error::shut_down == error);
      }
 
