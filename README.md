@@ -41,11 +41,11 @@ Structure
   
 An outline HTTP Server class diagram:
   
-![HTTP Server Classes](uml/http_server_classes.png)
+![HTTP Server Classes](docs/images/http_server_classes.png)
 
 An outline HTTP Client class diagram:
 
-![HTTP Client Classes](uml/http_client_classes.png)
+![HTTP Client Classes](docs/images/http_client_classes.png)
 
 Directory structure and contents:
 
@@ -55,13 +55,14 @@ Directory structure and contents:
 | `via/comms`          | The TCP/IP communications software.                                      |
 | `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
 | `via/http`           | HTTP parsers and encoders.                                               |
-| `examples`           | Sample SSL certificates for the SSL examples.                            |
-| [examples/server](examples/server) | Example HTTP servers.                                      |
-| [examples/client](examples/client) | Example HTTP clients.                                      |
+| `examples`           | Sample SSL certificates for the HTTPS examples.                          |
+| [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
+| [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
 | `tests`              | A main function for the `boost Test` library.                            |
 | `tests/http`         | HTTP parser and encoder tests.                                           |
 | `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md), [Server Security](docs/SECURITY.md) and [Design Notes](docs/DESIGN.md) |
-| `uml`                | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
+| `docs/uml`           | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
+| `docs/images`        | Images (mainly UML diagrams) in png format.                              |
 
 Installing
 ----------
