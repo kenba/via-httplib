@@ -3,8 +3,12 @@ via-httplib: A C++ HTTP Library
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
-The library provides an asynchronous C++ HTTP server that attempts to comply with
-[rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) wherever possible.
+`via-httplib` is an asynchronous C++ HTTP server built upon `boost asio` that
+aims to provide a simple, secure lightweight server that complies with the
+requirements of [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html)
+wherever possible.
+
+![HTTP Server Classes](docs/images/http_server_classes.png)
 
 `via::http_server` is a class template requiring a `socket_adaptor` to instantiate it.
 For example the following code declares an plain HTTP server that passes data in a
@@ -21,7 +25,11 @@ Whilst the example below declares an HTTPS server that passes data in a `std::st
     #include "via/http_server.hpp"
     
     typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
+  
+Information on how to use the library can be found here: [User Guide](docs/USE.md).
 
+Information on how to secure a via-httplib server can be found here: [HTTP Server Security](docs/SECURITY.md).
+  
 The library also contains C++ HTTP and HTTPS client code see: [Clients](docs/CLIENT.md).
     
 Requirements
@@ -29,40 +37,16 @@ Requirements
 
 + The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
 
-+ A C++11 compiler, it's been tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.
-If you need a C++03 version then download tag 1.0.3 or from the C++03 branch, but please be aware of this warning: [old compilers](http://www.boost.org/users/news/old_compilers.html)  
++ A C++11 compiler.  It's been tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
 Note: versions of GCC/MinGW prior to 4.9 didn't fully implement std::regex, see:
-[GCC Bug 53631](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53631)
+[GCC Bug 53631](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53631)  
+If you require a C++03 version then download tag 1.0.3 or from the C++03 branch,
+but please be aware of this warning from `boost`:
+[old compilers](http://www.boost.org/users/news/old_compilers.html)  
 
 + For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
-Structure
----------
-  
-An outline HTTP Server class diagram:
-  
-![HTTP Server Classes](docs/images/http_server_classes.png)
-
-An outline HTTP Client class diagram:
-
-![HTTP Client Classes](docs/images/http_client_classes.png)
-
-Directory structure and contents:
-
-| Directory            | Contents                                                                 |
-|----------------------|--------------------------------------------------------------------------|
-| [via](via)           | The `via-httplib` API classes: [http_server](via/http_server.hpp), and [http_client](http_client.hpp). |
-| `via/comms`          | The TCP/IP communications software.                                      |
-| `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
-| `via/http`           | HTTP parsers and encoders.                                               |
-| `examples`           | Sample SSL certificates for the HTTPS examples.                          |
-| [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
-| [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
-| `tests`              | A main function for the `boost Test` library.                            |
-| `tests/http`         | HTTP parser and encoder tests.                                           |
-| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md), [Server Security](docs/SECURITY.md) and [Design Notes](docs/DESIGN.md) |
-| `docs/uml`           | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
-| `docs/images`        | Images (mainly UML diagrams) in png format.                              |
++ For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
 Installing
 ----------
@@ -88,7 +72,29 @@ package from [openssl source](http://www.openssl.org/source/) and build it.
 Note: a binary distribution may be available for your machine,
 see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
 which could save you a lot of trouble, since building the `OpenSSL` binaries can
-be a long-winded process...  
+be a long-winded process...
+
+Structure
+---------
+
+Directory structure and contents:
+
+| Directory            | Contents                                                                 |
+|----------------------|--------------------------------------------------------------------------|
+| [via](via)           | The `via-httplib` API classes: [http_server](via/http_server.hpp), [http_connection](via/http_connection.hpp) and [http_client](http_client.hpp). |
+| `via/comms`          | The TCP/IP communications software.                                      |
+| `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
+| `via/http`           | HTTP parsers and encoders.                                               |
+| `examples`           | Sample SSL certificates for the HTTPS examples.                          |
+| [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
+| [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
+| `tests`              | A main function for the `boost Test` library.                            |
+| `tests/http`         | HTTP parser and encoder tests.                                           |
+| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md), [Server Security](docs/SECURITY.md) and [Design Notes](docs/DESIGN.md) |
+| `docs/uml`           | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
+| `docs/images`        | Images (mainly UML diagrams) in png format.                              |
+
+![Via Namespaces](docs/images/via_namespaces.png)
 
 Example
 -------
@@ -190,4 +196,8 @@ Further Information
 
 [Server Security](docs/SECURITY.md)
 
-[Design Notes](docs/DESIGN.md)
+[Design](docs/DESIGN.md)
+
+In addition to the markdown files above, the code is annotated with Doxygen comments.  
+You can generate the Doxygen documentation by running `doxygen Doxyfile` from the
+[docs](docs) directory.

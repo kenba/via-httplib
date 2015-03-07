@@ -1,116 +1,108 @@
 # HTTP Clients #
 
-An application can create HTTP clients using the `http_client` template class.
+## Class Template `http_client` ##
 
-The application configures and initialises an instance of `http_client`.
-The `http_client` will then signal the application whenever a significant HTTP
-event occurs. Events that may be signalled by an instance of `http_client` are:
+An application can create HTTP clients using the `http_client` class template .
 
-+ `response_received_event`  
-   signalled when an HTTP response is received from the 
-server.
-+ `chunk_received_event`  
-   signalled when an HTTP response chunk is received from the server.
-+ `disconnected_event`  
-   signalled when HTTP socket disconnects.
+![HTTP Client Classes](images/http_client_classes.png)
 
-Note: the `http_client` class instance must be constructed with a `boost::asio::io_service`
-and the `io_service` must be run or polled after `http_client` has been initialised
-to enable TCP communications.
-For more information see: [boost libs](http://www.boost.org/doc/libs/): Asio.
-
-## Class `http_client` ##
-
-The `http_client` template class is defined in `<via/http_client.hpp>`.
+The `http_client` class template is defined in `<via/http_client.hpp>`:
 
     namespace via
     {
-      template <typename SocketAdaptor,
-                typename Container = std::vector<char>,
-                size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
-                bool use_strand = false>
+      template <typename S, typename T = std::vector<char>, bool use_strand = false>
       class http_client
       {
         ...
       }
     }
 
-The template parameters are described in the table below:  
+The template parameters are described below: 
 
-<table>
-<tr> <td><b>Parameter</b></td> <td><b>Description</b></td> </tr>
-<tr> <td>SocketAdaptor</td> <td>The adaptor for the type of socket to be used by the client.<br> Either: via::comms::tcp_adaptor for an HTTP client or<br>
-via::comms::ssl::ssl_tcp_adaptor for an HTTPS client.</td> </tr>
-<tr> <td>Container</td> <td>The container for request and response message bodies. One of:<br>
-<ul>
-<li>std::string,</li>
-<li>std::vector< char > </li>
-<li>std::vector< unsigned char > </li>
-</ul>
-std::string provides the simplest interface for HTML, XML, JSON, etc.<br>
-The vectors may be easier when sending or receiving binary data.
-Default: std::vector< char >
-</td> </tr>
-<tr> <td>buffer_size</td> <td>The size of the receive buffer, default 8192 bytes.</td> </tr>
-<tr> <td>use_strand</td> <td>Use an asio::strand to allow the execution of code in a
-multi-threaded program without the need for explicit locking, see: <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/strands.html">boost asio strands</a>.<br>
-Default: false.</td> </tr>
-</table>
+| Parameter   | Default             | Description                            |
+|-------------|---------------------|----------------------------------------|
+| S           | None.               | The socket_adaptor: either via::comms::tcp_adaptor for HTTP, or via::comms::ssl::ssl_tcp_adaptor for HTTPS. |
+| T           | `std::vector<char>` | The container to use for message bodies: `std::vector<char>` or `std::string` |
+| use_strand  | false               | Enable an `asio::strand` to use multiple threads without explicit locking, see: [boost asio strands](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/overview/core/strands.html) |
 
-E.g.
+### HTTP Client ###
 
-An HTTP client using `std::string` to store message bodies:
+For example the following code declares an plain HTTP client that passes data in a
+`std::vector<char>` (the default).
 
-    #include <via/comms/tcp_adaptor.hpp>
-    #include <via/http_client.hpp>
-    via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
-
-An HTTP client using `std::vector<char>` to store message bodies:
-
-    #include <via/comms/tcp_adaptor.hpp>
-    #include <via/http_client.hpp>
-    via::http_client<via::comms::tcp_adaptor, std::vector<char> > http_client_type;
-
-An HTTPS client using `std::string` to store message bodies:
+    #include "via/comms/tcp_adaptor.hpp"
+    #include "via/http_client.hpp"
+    
+    typedef via::http_client<via::comms::tcp_adaptor> http_client_type;
+    
+### HTTPS Client ###
+    
+The example below declares an HTTPS client that passes data in a `std::string`.
 
     #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
     #include "via/http_client.hpp"
-    typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string> http_client_type;
+    
+    typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string> https_client_type;
 
-## Construction / Creation ##
+An HTTPS client also requires the following:
 
-No matter how the `http_client` class is parameterised, it can only be created
+ + the OpenSSL include files must be in the include path
+ + the OpenSSL libraries must be built and linked in
+ + The macro: HTTP_SSL must be defined.  
+    
+## Constructing the Client ##
+    
+No matter how the `http_client` class is parametrised, it can only be created
 one way, using the `create` function:
 
-    static shared_pointer create(boost::asio::io_service& io_service);
+    static shared_pointer create(boost::asio::io_service& io_service,
+                                 ResponseHandler response_handler,
+                                 ChunkHandler chunk_handler);
 
 i.e. it must be created with a reference to a `boost::asio::io_service` and stored
 in a `shared_pointer` for example:
 
     boost::asio::io_service io_service;
-    http_client_type::shared_pointer http_client(http_client_type::create(io_service));
+    http_client_type::shared_pointer
+      http_client(http_client_type::create(io_service, response_handler, chunk_handler));
+                         
+Note: the `http_client` class instance must be constructed with a `boost::asio::io_service`
+and the `io_service` must be run or polled after `http_client` has been initialised
+to enable TCP communications.
+For more information see: [boost libs](http://www.boost.org/doc/libs/): Asio.
 
-## Callback Events ##
+The format of the ResponseHandler and ChunkHandler (and other types of event handlers)
+are described in HTTP Clients Events below.
+      
+## HTTP Client Events ##
 
-The events that may be signalled by an instance of `http_client` in more detail.
+The `http_client` will signal the application whenever a significant event
+occurs. Events that may be signalled are:
 
-The `response_received_event` signalled whenever an HTTP request is received from a server.  
+| Event                 | Callback Type     | Description                       |
+|-----------------------|-------------------|-----------------------------------|
+| Response Received     | ResponseHandler   | A valid HTTP response has been received. |
+| Chunk Received        | ChunkHandler      | A valid HTTP chunk has been received. |
+| Socket Disconnected   | ConnectionHandler | The socket has just disconnected. |
 
-The `response_received_event` method is defined as:
+![HTTP Client Events](images/http_client_event_sequence_diagram.png)
 
-    /// The signal sent when a response is received.
-    typedef boost::signals2::signal<void (http::rx_response const&,
-                                          Container const&)> http_response_signal;
+### Response Received Event ###
 
-    /// The slot type associated with a response received signal.
-    typedef typename http_response_signal::slot_type http_response_signal_slot;
+Response Received is signalled whenever an HTTP request is received from a server.
 
-    /// Connect the response received slot.
-    void response_received_event(http_response_signal_slot const& slot);
+The application MUST handle this message (otherwise there was no point in
+sending a request!), so a ResponseHandler for this event is required in the
+http_client class template constructor.
 
-The application's response handler must match the function signature defined by
-`http_response_signal` above. The example code below shows how to declare and
-register a response handler:
+The declaration of a `ResponseHandler` is:
+
+    typedef std::function<void (http::rx_response const&, T const&)> ResponseHandler;
+
+where:
+    `T` is the second class template parameter, i.e. the container.
+    
+The example code below shows how to declare a response handler:
 
     /// The application's response handler.
     void response_handler(via::http::rx_response const& response,
@@ -119,45 +111,34 @@ register a response handler:
     ...
     }
 
-    /// register response_handler with the http_client
-    http_client->response_received_event(response_handler);
-
 The response handler is primarily how the application receives responses from
 HTTP servers.
 
-### chunk\_received\_event ###
+### Chunk Received Event ###
 
-The `chunk_received_event` is signalled whenever an HTTP response chunk is received
-from the server.
+Chunk Received is signalled whenever an HTTP response chunk is received from a server.
 
 Normally an application will receive the body with the response. However, from HTTP 1.1
 onwards, both HTTP requests and responses may contain "chunked" bodies. In which case,
 the body may be sent in a number of "chunks". The application may process the chunks as
-they are received. However, a "chunked" HTTP response is not complete until the last chunk has been received.
+they are received. However, a "chunked" HTTP response is not complete until the last
+chunk has been received.
 
 An application does not *need* to register a `chunk_handler` with `http_client`.
 However, if the application doesn't register a handler for this event then
 it cannot be considered an HTTP 1.1 client and will not be able to receive
 HTTP `chunks` from a server.
 
-The `chunk_received_event` method is defined as:
 
-    /// The chunk type
-    typedef typename http::rx_chunk<Container> chunk_type;
+The declaration of a `ChunkHandler` is:
 
-    /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal<void (chunk_type const&,
-                                          Container const&)> http_chunk_signal;
+    typedef std::function<void (http::rx_chunk<T> const&, T const&)> ChunkHandler;
 
-    /// The slot type associated with a chunk received signal.
-    typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
+where:
+    `T` is the second class template parameter, i.e. the container.
 
-    /// Connect the chunk received slot.
-    void chunk_received_event(http_chunk_signal_slot const& slot);
 
-The application's chunk handler must match the function signature defined by
-`http_chunk_signal` above. The example code below shows how to declare and register
-a chunk handler:
+The example code below shows how to declare a chunk handler:
 
     typedef http_client_type::chunk_type http_chunk_type;
 
@@ -167,29 +148,17 @@ a chunk handler:
     ...
     }
 
-    /// register chunk_handler with the http_client
-    http_client->chunk_received_event(chunk_handler);
-
 For information on chunks see: [Chunked Transfer Encoding](CHUNKS.md)
 
-### disconnected\_event ###
+### Socket Disconnected Event ###
 
-The `disconnected_event` is signalled whenever the HTTP socket disconnects.
+Socket Disconnected is signalled whenever the HTTP socket disconnects.
 
-The `disconnected_event` method is defined as:
+The declaration of a `ConnectionHandler` is:
 
-    /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal<void (void)> http_disconnected_signal;
+    typedef std::function<void (void)> ConnectionHandler;
 
-    /// The slot type associated with a disconnected signal.
-    typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
-
-    /// Connect the disconnected slot.
-    void disconnected_event(http_disconnected_signal_slot const& slot);
-
-The application's disconnected handler must match the function signature defined by
-`http_disconnected_signal` above. The example code below shows how to declare and 
-register a disconnected handler:
+The example code below shows how to declare and register a disconnected handler:
 
     /// The application's disconnected handler.
     void disconnected_handler()
@@ -197,7 +166,7 @@ register a disconnected handler:
     ...
     }
 
-    /// register disconnected_handler with the http_server
+    /// register disconnected_handler with the http_client
     http_client->disconnected_event(disconnected_handler);
 
 ## Connecting to a Server ##

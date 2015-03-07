@@ -4,13 +4,16 @@
 
 title Via Comms Classes
 
-class server<extends socket_adaptor, container>
+class server<extends socket_adaptor, container, use_strand>
 server *-- "*" connection
 
-class connection<extends socket_adaptor, container>
-connection *-- socket_adaptor
+'class http_connection<extends socket_adaptor, container, use_strand>
+'http_connection o--connection
+
+class connection<extends socket_adaptor, container, use_strand>
+connection *--socket_adaptor
 connection *-- container
-connection --|> std.enable_shared_from_this
+connection <|-- std.make_shared_from_this
 
 abstract class socket_adaptor
 'socket_adaptor <|-- udp_adaptor
@@ -20,5 +23,6 @@ socket_adaptor <|-- ssl.ssl_tcp_adaptor
 abstract class container
 container <|-- std.vector
 container <|-- std.string
+
 
 @enduml
