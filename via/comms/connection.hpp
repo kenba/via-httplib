@@ -508,7 +508,8 @@ namespace via
         timeout_    = timeout;
         // local copy for the lambda capture
         weak_pointer w_ptr(weak_from_this());
-        SocketAdaptor::start([w_ptr](boost::system::error_code const& ec)
+        std::shared_ptr<Container> rx_buffer(rx_buffer_);
+        SocketAdaptor::start([w_ptr, rx_buffer](boost::system::error_code const& ec)
                               { handshake_callback(w_ptr, ec, rx_buffer); });
       }
 
