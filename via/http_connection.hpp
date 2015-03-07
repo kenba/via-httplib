@@ -77,6 +77,8 @@ namespace via
     /// The receive buffer for this connection.
     Container rx_buffer_;
 
+    Container_const_iterator rx_iter_;
+
     /// The transmit buffer for this connection.
     Container tx_buffer_;
 
@@ -99,6 +101,7 @@ namespace via
       rx_{concatenate_chunks, translate_head, require_host},
       http_header_{},
       rx_buffer_{},
+      rx_iter_{rx_buffer_.cend()},
       tx_buffer_{}
     {}
 
@@ -195,21 +198,32 @@ namespace via
     Container_const_iterator body_end() const
     { return rx_.body().end(); }
 
+    /// Accessor for the received data buffer.
+    Container const& rx_buffer()
+    { return rx_buffer_; }
+
     /// Receive data on the underlying connection.
-    /// @return the receiver parsing state, Rx
-    http::Rx receive()
+    /// @return an iterator to the start of the received data buffer.
+    Container_const_iterator receive()
     {
       // attempt to get the pointer
       auto tcp_pointer(connection_.lock());
-      if (!tcp_pointer)
-        return http::Rx::INCOMPLETE;
+      if (tcp_pointer)
+      {
+        // read the data
+        tcp_pointer->rx_buffer(rx_buffer_);
+        rx_iter_ = rx_buffer_.cbegin();
+      }
+      else
+        rx_iter_ = rx_buffer_.cend();
 
-      // read the data
-      tcp_pointer->rx_buffer(rx_buffer_);
-      auto iter(rx_buffer_.cbegin());
-      auto end(rx_buffer_.cend());
-      return rx_.receive(iter, end);
+      return rx_iter_;
     }
+
+    /// Parse the data in the received buffer
+    /// @retval an iterator to the current position in the received data buffer.
+    http::Rx parse_rx_buffer(Container_const_iterator& iter)
+    { return rx_.receive(iter, rx_buffer_.cend()); }
 
     /// Send the appropriate HTTP response to the request.
     bool send_response()

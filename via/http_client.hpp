@@ -180,7 +180,12 @@ namespace via
     http::rx_response const& response() const
     { return rx_.response(); }
 
-    /// Accessor for the beginning of the body.
+    /// Accessor for the body.
+    /// @return a constant reference to the body.
+    Container const& body() const
+    { return rx_.body(); }
+
+    /// Accessor for the body.
     /// @return a constant iterator to the beginning of the body.
     Container_const_iterator body_begin() const
     { return rx_.body().begin(); }

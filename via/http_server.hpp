@@ -237,6 +237,73 @@ namespace via
                        bool ipv6 = false)
     { return server_->accept_connections(port, ipv6); }
 
+    /// Receive the data from the connection and parse it.
+    /// @param http_connection a shared pointer to the http connection.
+    void parse_received_data
+                       (std::shared_ptr<http_connection_type> http_connection)
+    {
+      /// read the latest received packet.
+      auto rx_iter(http_connection->receive());
+
+      /// Parse the received packet
+      switch (http_connection->parse_rx_buffer(rx_iter))
+      {
+      case http::Rx::VALID:
+        // Determine whether this is a TRACE request
+        if (http_connection->request().is_trace())
+        {
+          // if enabled, the server reflects the message back.
+          if (trace_enabled)
+          {
+            // Response is OK with a Content-Type: message/http header
+            http::tx_response ok_response(http::response_status::code::OK);
+            ok_response.add_content_http_header();
+
+            // The body of the response contains the TRACE request
+            std::string trace_request(http_connection->request().to_string());
+            trace_request += http_connection->request().headers().to_string();
+            http_connection->send(std::move(ok_response),
+                                  trace_request.begin(), trace_request.end());
+          }
+          else // otherwise, it responds with "Not Allowed"
+            http_connection->send(http::tx_response
+                          (http::response_status::code::METHOD_NOT_ALLOWED));
+        }
+        else
+          http_request_signal_(http_connection,
+                               http_connection->request(),
+                               http_connection->body());
+        break;
+
+      case http::Rx::EXPECT_CONTINUE:
+        if (continue_enabled_)
+          http_connection->send_response();
+        else
+          http_continue_signal_(http_connection,
+                                http_connection->request(),
+                                http_connection->body());
+        break;
+
+      case http::Rx::CHUNK:
+        http_chunk_signal_(http_connection,
+                           http_connection->chunk(),
+                           http_connection->chunk().data());
+        break;
+
+      case http::Rx::INVALID:
+        if (respond_to_invalid_request_)
+          http_connection->send_response();
+        else
+          http_invalid_signal_(http_connection,
+                               http_connection->request(),
+                               http_connection->body());
+        break;
+
+      default:
+        break;
+      } //end case
+    }
+
     /// Receive data packets on an underlying communications connection.
     /// @param connection a weak pointer to the underlying comms connection.
     void receive_handler(std::weak_ptr<connection_type> connection)
@@ -261,63 +328,7 @@ namespace via
           http_connected_signal_(http_connection);
         }
 
-        auto rx_state(http_connection->receive());
-        switch (rx_state)
-        {
-        case http::Rx::VALID:
-          // Determine whether this is a TRACE request
-          if (http_connection->request().is_trace())
-          {
-            // if enabled, the server reflects the message back.
-            if (trace_enabled)
-            {
-              // Response is OK with a Content-Type: message/http header
-              http::tx_response ok_response(http::response_status::code::OK);
-              ok_response.add_content_http_header();
-
-              // The body of the response contains the TRACE request
-              std::string trace_request(http_connection->request().to_string());
-              trace_request += http_connection->request().headers().to_string();
-              http_connection->send(std::move(ok_response),
-                                    trace_request.begin(), trace_request.end());
-            }
-            else // otherwise, it responds with "Not Allowed"
-              http_connection->send(http::tx_response
-                            (http::response_status::code::METHOD_NOT_ALLOWED));
-          }
-          else
-            http_request_signal_(http_connection,
-                                 http_connection->request(),
-                                 http_connection->body());
-          break;
-
-        case http::Rx::EXPECT_CONTINUE:
-          if (continue_enabled_)
-            http_connection->send_response();
-          else
-            http_continue_signal_(http_connection,
-                                  http_connection->request(),
-                                  http_connection->body());
-          break;
-
-        case http::Rx::CHUNK:
-          http_chunk_signal_(http_connection,
-                             http_connection->chunk(),
-                             http_connection->chunk().data());
-          break;
-
-        case http::Rx::INVALID:
-          if (respond_to_invalid_request_)
-            http_connection->send_response();
-          else
-            http_invalid_signal_(http_connection,
-                                 http_connection->request(),
-                                 http_connection->body());
-          break;
-
-        default:
-          break;
-        }
+        parse_received_data(http_connection);
       }
       else
         std::cerr << "Error: http_server::receive_handler connection expired"
