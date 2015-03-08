@@ -18,6 +18,25 @@
 using namespace via::http;
 
 //////////////////////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_SUITE(TestRequestMethod)
+
+BOOST_AUTO_TEST_CASE(RequestMethod1)
+{
+  BOOST_CHECK_EQUAL("OPTIONS", request_method::name(request_method::id::OPTIONS));
+  BOOST_CHECK_EQUAL("GET",     request_method::name(request_method::id::GET));
+  BOOST_CHECK_EQUAL("HEAD",    request_method::name(request_method::id::HEAD));
+  BOOST_CHECK_EQUAL("POST",    request_method::name(request_method::id::POST));
+  BOOST_CHECK_EQUAL("PUT",     request_method::name(request_method::id::PUT));
+  BOOST_CHECK_EQUAL("DELETE",  request_method::name(request_method::id::DELETE));
+  BOOST_CHECK_EQUAL("TRACE",   request_method::name(request_method::id::TRACE));
+  BOOST_CHECK_EQUAL("CONNECT", request_method::name(request_method::id::CONNECT));
+  BOOST_CHECK_EQUAL("OPTIONS", request_method::name(request_method::id::OPTIONS));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
 BOOST_AUTO_TEST_SUITE(TestRequestLineParser)
 
 // An http request line in a vector of chars.
