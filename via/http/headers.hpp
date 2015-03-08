@@ -49,13 +49,19 @@ namespace via
         HEADER_VALUE,        ///< the header value
         HEADER_LF,           ///< the line feed (if any)
         HEADER_VALID,        ///< the header line is valid
-        HEADER_ERROR_LENGTH, ///< the header is longer than max_length_s
-        HEADER_ERROR_CRLF,   ///< strict_crlf_s is true and LF was received without CR
-        HEADER_ERROR_WS      ///< the whitespace is longer than max_ws_s
+        HEADER_ERROR_LENGTH, ///< the header line is longer than max_line_length_
+        HEADER_ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
+        HEADER_ERROR_WS      ///< the whitespace is longer than max_whitespace_
       };
 
     private:
 
+      /// Parser parameters
+      bool           strict_crlf_;     ///< enforce strict parsing of CRLF
+      unsigned char  max_whitespace_;  ///< the max no of consectutive whitespace characters.
+      unsigned short max_line_length_; ///< the max length of a field line
+
+      /// Field information
       std::string   name_;     ///< the field name (lower case)
       std::string   value_;    ///< the field value
       size_t        length_;   ///< the length of the header line in bytes
@@ -69,18 +75,20 @@ namespace via
 
     public:
 
-      /// whether to enforce strict parsing of CRLF
-      static bool strict_crlf_s;
-
-      /// the maximum number of consectutive whitespace characters.
-      static size_t max_ws_s;
-
-      /// the maximum length of the header line.
-      static size_t max_length_s;
-
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit field_line() :
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: min 1, max 254.
+      /// @param max_line_length the maximum length of an HTTP header field line:
+      /// max 65534.
+      explicit field_line(bool           strict_crlf,
+                          unsigned char  max_whitespace,
+                          unsigned short max_line_length) :
+        strict_crlf_(strict_crlf),
+        max_whitespace_(max_whitespace),
+        max_line_length_(max_line_length),
         name_(""),
         value_(""),
         length_(0),
@@ -164,6 +172,10 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class message_headers
     {
+      /// Parser parameters
+      unsigned short max_header_number_; ///< the max no of header fields
+      size_t         max_header_length_; ///< the max cumulative length
+
       /// The HTTP message header fields.
       std::map<std::string, std::string> fields_;
       field_line field_; ///< the current field being parsed
@@ -172,17 +184,27 @@ namespace via
 
     public:
 
-      /// the maximum length of the message headers.
-      static size_t max_length_s;
-
-      ///< the maximum length of a content length header
-      static size_t max_content_length_s;
-
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit message_headers() :
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: min 1, max 254.
+      /// @param max_field_length the maximum length of an HTTP header field line:
+      /// max 65534.
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: max 4 billion.
+      explicit message_headers(bool           strict_crlf,
+                               unsigned char  max_whitespace,
+                               unsigned short max_line_length,
+                               unsigned short max_header_number,
+                               size_t         max_header_length) :
+        max_header_number_(max_header_number),
+        max_header_length_(max_header_length),
         fields_(),
-        field_(),
+        field_(strict_crlf, max_whitespace, max_line_length),
         valid_(false),
         length_(0)
       {}
@@ -225,7 +247,8 @@ namespace via
           add(field_.name(), field_.value());
           field_.clear();
 
-          if (length_ > max_length_s)
+          if ((length_ > max_header_length_)
+           || (fields_.size() > max_header_number_))
             return false;
         }
 

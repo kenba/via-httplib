@@ -37,14 +37,21 @@ namespace via
         CHUNK_EXTENSION,    ///< the chunk extension
         CHUNK_LF,           ///< the line feed
         CHUNK_VALID,        ///< the chunk header is valid
-        CHUNK_ERROR_LENGTH, ///< the header is longer than max_length_s
-        CHUNK_ERROR_CRLF,   ///< strict_crlf_s is true and LF was received without CR
-        CHUNK_ERROR_WS,     ///< the whitespace is longer than max_ws_s
-        CHUNK_ERROR_SIZE    ///< the chunk size is greater than max_data_size_s
+        CHUNK_ERROR_LENGTH, ///< the header is longer than max_line_length_
+        CHUNK_ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
+        CHUNK_ERROR_WS,     ///< the whitespace is longer than max_whitespace_
+        CHUNK_ERROR_SIZE    ///< the chunk size is greater than max_chunk_size_
       };
 
     private:
 
+      /// Parser parameters
+      bool           strict_crlf_;     ///< enforce strict parsing of CRLF
+      unsigned char  max_whitespace_;  ///< the max no of consectutive whitespace characters.
+      unsigned short max_line_length_; ///< the max length of a field line
+      size_t         max_chunk_size_;  ///< the maximum size of a chunk body
+
+      /// Chunk information
       size_t size_;           ///< the size of the chunk in bytes
       size_t length_;         ///< the length of the chunk header in bytes
       size_t ws_count_;       ///< the current whitespace count
@@ -62,27 +69,27 @@ namespace via
 
     public:
 
-      /// whether to enforce strict parsing of CRLF
-      static bool strict_crlf_s;
-
-      /// the maximum number of consectutive whitespace characters.
-      static size_t max_ws_s;
-
-      /// the maximum number of size digits.
-      static size_t max_size_digits_s;
-
-      /// the maximum length of the chunk header.
-      static size_t max_length_s;
-
-      /// the maximum size of a chunk's data
-      static size_t max_data_size_s;
-
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit chunk_header() :
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: default 8, min 1, max 254.
+      /// @param max_line_length the maximum length of an HTTP chunk header
+      /// field line: max 65534.
+      /// @param max_chunk_size the maximum size of the chunk data:
+      /// max 4 billion
+      explicit chunk_header(bool           strict_crlf,
+                            unsigned char  max_whitespace,
+                            unsigned short max_line_length,
+                            size_t         max_chunk_size) :
+        strict_crlf_(strict_crlf),
+        max_whitespace_(max_whitespace),
+        max_line_length_(max_line_length),
+        max_chunk_size_(max_chunk_size),
         size_(0),
         length_(0),
         ws_count_(0),
@@ -210,12 +217,31 @@ namespace via
 
     public:
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit rx_chunk() :
-        chunk_header(),
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: default 8, min 1, max 254.
+      /// @param max_line_length the maximum length of an HTTP chunk header
+      /// field line: max 65534.
+      /// @param max_chunk_size the maximum size of the chunk data:
+      /// max 4 billion
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: max 4 billion.
+      explicit rx_chunk(bool           strict_crlf, // = false,
+                        unsigned char  max_whitespace, // = 8,
+                        unsigned short max_line_length, // = 1024,
+                        size_t         max_chunk_size, // = 1048576,
+                        unsigned short max_header_number, // = 100,
+                        size_t         max_header_length) : // = 8190) :
+        chunk_header(strict_crlf, max_whitespace,
+                     max_line_length, max_chunk_size),
         data_(),
-        trailers_(),
+        trailers_(strict_crlf, max_whitespace, max_line_length,
+                  max_header_number, max_header_length),
         valid_(false)
       {}
 

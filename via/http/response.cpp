@@ -14,14 +14,6 @@ namespace via
   namespace http
   {
 
-    bool response_line::strict_crlf_s(false);
-
-    size_t response_line::max_ws_s(ULONG_MAX);
-
-    int response_line::max_status_s(INT_MAX);
-
-    size_t response_line::max_reason_length_s(ULONG_MAX);
-
     //////////////////////////////////////////////////////////////////////////
     bool response_line::parse_char(char c)
     {
@@ -32,7 +24,7 @@ namespace via
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
           {
             state_ = RESP_ERROR_WS;
             return false;
@@ -119,7 +111,7 @@ namespace via
           status_read_ = true;
           status_ *= 10;
           status_ += read_digit(c);
-          if (status_ > max_status_s)
+          if (status_ > max_status_no_)
           {
             state_ = RESP_ERROR_STATUS_VALUE;
             return false;
@@ -135,7 +127,7 @@ namespace via
           else // Ignore extra leading whitespace
           {
             // but only upto to a limit!
-            if (++ws_count_ > max_ws_s)
+            if (++ws_count_ > max_whitespace_)
             {
               state_ = RESP_ERROR_WS;
               return false;
@@ -153,7 +145,7 @@ namespace via
           if (reason_phrase_.empty() && is_space_or_tab(c))
           {
             // but only upto to a limit!
-            if (++ws_count_ > max_ws_s)
+            if (++ws_count_ > max_whitespace_)
             {
               state_ = RESP_ERROR_WS;
               return false;
@@ -162,7 +154,7 @@ namespace via
           else
           {
             reason_phrase_.push_back(c);
-            if (reason_phrase_.size() > max_reason_length_s)
+            if (reason_phrase_.size() > max_reason_length_)
             {
               state_ = RESP_ERROR_REASON_LENGTH;
               return false;
@@ -178,7 +170,7 @@ namespace via
         else
         {
           // but (if not being strict) permit just \n
-          if (!strict_crlf_s && ('\n' == c))
+          if (!strict_crlf_ && ('\n' == c))
             state_ = RESP_VALID;
           else
           {

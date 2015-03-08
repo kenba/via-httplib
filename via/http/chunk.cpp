@@ -12,22 +12,13 @@ namespace via
 {
   namespace http
   {
-
-    bool chunk_header::strict_crlf_s(false);
-
-    size_t chunk_header::max_ws_s(8);
-
-    size_t chunk_header::max_size_digits_s(16); // enough for a 64 bit number
-
-    size_t chunk_header::max_length_s(1024);
-
-    size_t chunk_header::max_data_size_s(ULONG_MAX);
-
     //////////////////////////////////////////////////////////////////////////
     bool chunk_header::parse_char(char c)
     {
+      static const size_t MAX_SIZE_DIGITS(16); // enough for a 64 bit number
+
       // Ensure that the overall header length is within limits
-      if (++length_ > max_length_s)
+      if (++length_ > max_line_length_)
         state_ = CHUNK_ERROR_LENGTH;
 
       switch (state_)
@@ -37,7 +28,7 @@ namespace via
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
           {
             state_ = CHUNK_ERROR_WS;
             return false;
@@ -53,7 +44,7 @@ namespace via
         {
           hex_size_.push_back(c);
           // limit the length of the hex string
-          if (hex_size_.size() > max_size_digits_s)
+          if (hex_size_.size() > MAX_SIZE_DIGITS)
           {
             state_ = CHUNK_ERROR_SIZE;
             return false;
@@ -65,7 +56,7 @@ namespace via
           {
             size_ = from_hex_string(hex_size_);
             size_read_ = true;
-            if (size_ > max_data_size_s)
+            if (size_ > max_chunk_size_)
             {
               state_ = CHUNK_ERROR_SIZE;
               return false;
@@ -82,7 +73,7 @@ namespace via
                 state_ = CHUNK_LF;
               else // ('\n' == c)
               {
-                if (strict_crlf_s)
+                if (strict_crlf_)
                   return false;
                 else
                   state_ = CHUNK_VALID;
@@ -99,7 +90,7 @@ namespace via
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
             return false;
           else
             break;
@@ -114,7 +105,7 @@ namespace via
           state_ = CHUNK_LF;
         else // ('\n' == c)
         {
-          if (strict_crlf_s)
+          if (strict_crlf_)
           {
             state_ = CHUNK_ERROR_CRLF;
             return false;

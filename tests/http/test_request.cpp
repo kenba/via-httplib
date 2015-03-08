@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorChar1)
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<char>::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorUnsignedChar1)
   std::vector<unsigned char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<unsigned char>::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -89,9 +89,9 @@ BOOST_AUTO_TEST_CASE(ValidGet3)
   std::string request_data("GET\tabcdefghijklmnopqrstuvwxyz \t HTTP/1.0\nA");
   std::string::iterator next(request_data.begin());
 
-  request_line a_request;
+  request_line a_request(false, 8, 8, 1024);
   BOOST_CHECK(a_request.parse(next, request_data.end()));
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   the_request.swap(a_request);
 
   BOOST_CHECK_EQUAL('A', *next);
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(InValidMethod1)
   std::string request_data("GeT abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("G", the_request.method().c_str());
   BOOST_CHECK_EQUAL("", the_request.uri().c_str());
@@ -121,11 +121,8 @@ BOOST_AUTO_TEST_CASE(InValidMethod2)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  size_t length(request_line::max_method_length_s);
-  request_line::max_method_length_s = 2;
-  request_line the_request;
+  request_line the_request(true, 1, 2, 1024); // set max_method_length to 2
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
-  request_line::max_method_length_s = length;
 }
 
 // An http request line with an invalid uri (contains whitespace)
@@ -134,7 +131,7 @@ BOOST_AUTO_TEST_CASE(InValidUri1)
   std::string request_data("GET abcdefghijklm\tnopqrstuvwxyz HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcdefghijklm", the_request.uri().c_str());
@@ -148,7 +145,7 @@ BOOST_AUTO_TEST_CASE(InValidUri2)
   std::string request_data("GET abcdefghijklm\nopqrstuvwxyz HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcdefghijklm", the_request.uri().c_str());
@@ -162,7 +159,7 @@ BOOST_AUTO_TEST_CASE(InValidUri3)
   std::string request_data("GET          abcdefghi HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
 }
@@ -173,7 +170,7 @@ BOOST_AUTO_TEST_CASE(InValidUri4)
   std::string request_data("GET abcdefghi              HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
 }
@@ -184,7 +181,7 @@ BOOST_AUTO_TEST_CASE(ValidGet4)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HT");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -204,13 +201,8 @@ BOOST_AUTO_TEST_CASE(InValidGetLength1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  // Save the previous max_uri_length, before setting it to a value to fail
-  size_t max_uri_length(request_line::max_uri_length_s);
-  request_line::max_uri_length_s = 25;
-  request_line the_request;
+  request_line the_request(true, 1, 8, 25);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
-
-  request_line::max_uri_length_s = max_uri_length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidGetHTTP1)
@@ -218,7 +210,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HXTP/1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -227,7 +219,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP2)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTXP/1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -236,7 +228,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP3)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTX/1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -245,7 +237,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP4)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTPX1.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -254,7 +246,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP5)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/X.0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -263,7 +255,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP6)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1x0\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -272,7 +264,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP7)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.Z\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -281,7 +273,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP8)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0Z\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -290,7 +282,7 @@ BOOST_AUTO_TEST_CASE(InValidGetHTTP9)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\r");
   std::string::iterator next(request_data.begin());
 
-  request_line the_request;
+  request_line the_request(false, 8, 8, 1024);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 }
 
@@ -344,7 +336,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorChar1)
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<char>::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -363,7 +355,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorUnsignedChar1)
   std::vector<unsigned char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<unsigned char>::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -383,11 +375,11 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   std::string request_data("GET abcde HTTP/1.1\r\nContent: text\r\n\r\n");
   std::string::iterator next(request_data.begin());
 
-  rx_request a_request;
+  rx_request a_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(a_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   the_request.swap(a_request);
 
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -407,7 +399,7 @@ BOOST_AUTO_TEST_CASE(ValidPost1)
   std::string request_data("POST abcde HTTP/1.0\r\nContent-Length: 4\r\n\r\nabcd");
   std::string::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcde", the_request.uri().c_str());
@@ -425,7 +417,7 @@ BOOST_AUTO_TEST_CASE(ValidChunked1)
     ("POST abc HTTP/1.1\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
   std::string::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abc", the_request.uri().c_str());
@@ -446,7 +438,7 @@ BOOST_AUTO_TEST_CASE(ValidChunked2)
   REQUEST_LINE += "Transfer-Encoding: Chunked\r\n\r\n";
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<char>::iterator next(request_data.begin());
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
 
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
@@ -471,7 +463,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
@@ -484,7 +476,7 @@ BOOST_AUTO_TEST_CASE(ValidPostMultiLine1)
   std::string request_data("POST abc");
   std::string::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
 
@@ -506,7 +498,7 @@ BOOST_AUTO_TEST_CASE(ValidPostMultiLine2)
   std::string request_data("POST abcde HTTP/1.0\r\nContent-Le");
   std::string::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request the_request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
   BOOST_CHECK_EQUAL("abcde", the_request.uri().c_str());
@@ -535,12 +527,9 @@ BOOST_AUTO_TEST_CASE(InValidPostLength1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  // Save the previous max_uri_length, before setting it to a value to fail
-  size_t max_headers_length(message_headers::max_length_s);
-  message_headers::max_length_s = 25;
-  rx_request the_request;
+  // set max message header line length to 25
+  rx_request the_request(false, 8, 8, 1024, 25, 100, 8190);
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
-  message_headers::max_length_s = max_headers_length;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -922,9 +911,8 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  size_t previous_max_length(message_headers::max_content_length_s);
-  message_headers::max_content_length_s = 25;
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  // set request_receiver max_content_length to 25 to fail
+  request_receiver<std::string> the_request_receiver(true, false, true, 25);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -941,8 +929,6 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
   BOOST_CHECK(rx_state == RX_INVALID);
-
-  message_headers::max_content_length_s = previous_max_length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidPostChunk1)

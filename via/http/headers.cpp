@@ -38,18 +38,11 @@ namespace via
 {
   namespace http
   {
-
-    bool field_line::strict_crlf_s(false);
-
-    size_t field_line::max_ws_s(8);
-
-    size_t field_line::max_length_s(1024);
-
     //////////////////////////////////////////////////////////////////////////
     bool field_line::parse_char(char c)
     {
       // Ensure that the overall header length is within limitts
-      if (++length_ > max_length_s)
+      if (++length_ > max_line_length_)
         state_ = HEADER_ERROR_LENGTH;
 
       switch (state_)
@@ -67,7 +60,7 @@ namespace via
         // Ignore leading whitespace
         if (is_space_or_tab(c))
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
           {
             state_ = HEADER_ERROR_WS;
             return false;
@@ -85,7 +78,7 @@ namespace via
           state_ = HEADER_LF;
         else // ('\n' == c)
         {
-          if (strict_crlf_s)
+          if (strict_crlf_)
           {
             state_ = HEADER_ERROR_CRLF;
             return false;
@@ -110,9 +103,6 @@ namespace via
     }
     //////////////////////////////////////////////////////////////////////////
 
-    size_t message_headers::max_length_s(ULONG_MAX);
-    size_t message_headers::max_content_length_s(ULONG_MAX);
-
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const
     {
@@ -135,11 +125,7 @@ namespace via
         return 0;
 
       // Get the length from the content length field.
-      size_t length(from_dec_string(content_length));
-      if (length < max_content_length_s)
-        return length;
-      else
-        return ULONG_MAX;
+      return from_dec_string(content_length);
     }
     //////////////////////////////////////////////////////////////////////////
 

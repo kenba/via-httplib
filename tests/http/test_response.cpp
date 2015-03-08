@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(ValidOkVectorChar1)
   std::vector<char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
   std::vector<char>::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(ValidOkVectorUnsignedChar1)
   std::vector<unsigned char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
   std::vector<unsigned char>::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(ValidOk1)
   std::string response_data("HTTP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -171,7 +171,7 @@ BOOST_AUTO_TEST_CASE(ValidOk2)
   std::string response_data("HTTP/1.0 200 OK\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(ValidOk3)
   std::string response_data("HTTP/1.0\t200\t OK\n ");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK_EQUAL(' ', *next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(ValidContinue1)
   std::string response_data("HTTP/1.1 100 Continue\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(100, the_response.status());
@@ -218,11 +218,8 @@ BOOST_AUTO_TEST_CASE(InValidOk0)
   std::string response_data("          HTTP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  size_t length(response_line::max_ws_s);
-  response_line::max_ws_s = 8;
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::max_ws_s = length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidOk1)
@@ -230,7 +227,7 @@ BOOST_AUTO_TEST_CASE(InValidOk1)
   std::string response_data("XTTP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -239,7 +236,7 @@ BOOST_AUTO_TEST_CASE(InValidOk2)
   std::string response_data("HXTP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -248,7 +245,7 @@ BOOST_AUTO_TEST_CASE(InValidOk3)
   std::string response_data("HTXP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -257,7 +254,7 @@ BOOST_AUTO_TEST_CASE(InValidOk4)
   std::string response_data("HTTX/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -266,7 +263,7 @@ BOOST_AUTO_TEST_CASE(InValidOk5)
   std::string response_data("HTTPX1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -275,7 +272,7 @@ BOOST_AUTO_TEST_CASE(InValidOk6)
   std::string response_data("HTTP/X.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -284,7 +281,7 @@ BOOST_AUTO_TEST_CASE(InValidOk7)
   std::string response_data("HTTP/1x0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -293,7 +290,7 @@ BOOST_AUTO_TEST_CASE(InValidOk8)
   std::string response_data("HTTP/1.X 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -303,7 +300,7 @@ BOOST_AUTO_TEST_CASE(InValidOk9)
   std::string response_data("HTTP/1.01 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -313,11 +310,8 @@ BOOST_AUTO_TEST_CASE(InValidOk10)
   std::string response_data("HTTP/1.0           200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  size_t length(response_line::max_ws_s);
-  response_line::max_ws_s = 8;
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::max_ws_s = length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidOk11)
@@ -325,7 +319,7 @@ BOOST_AUTO_TEST_CASE(InValidOk11)
   std::string response_data("HTTP/1.0 X00 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -334,7 +328,7 @@ BOOST_AUTO_TEST_CASE(InValidOk12)
   std::string response_data("HTTP/1.0 2X0 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -343,7 +337,7 @@ BOOST_AUTO_TEST_CASE(InValidOk13)
   std::string response_data("HTTP/1.0 200 OK \r\r");
   std::string::iterator next(response_data.begin());
 
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
 }
 
@@ -353,11 +347,8 @@ BOOST_AUTO_TEST_CASE(InValidOk14)
   std::string response_data("HTTP/1.0 200 OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  int max_status(response_line::max_status_s);
-  response_line::max_status_s = 199;
-  response_line the_response;
+  response_line the_response(false, 8, 199, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::max_status_s = max_status;
 }
 
 BOOST_AUTO_TEST_CASE(InValidOk15)
@@ -366,11 +357,8 @@ BOOST_AUTO_TEST_CASE(InValidOk15)
   std::string response_data("HTTP/1.0 200              OK\r\n");
   std::string::iterator next(response_data.begin());
 
-  size_t length(response_line::max_ws_s);
-  response_line::max_ws_s = 8;
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::max_ws_s = length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidOk16)
@@ -379,11 +367,8 @@ BOOST_AUTO_TEST_CASE(InValidOk16)
   std::string response_data("HTTP/1.0 200 BAD\r\n");
   std::string::iterator next(response_data.begin());
 
-  size_t length(response_line::max_reason_length_s);
-  response_line::max_reason_length_s = 2;
-  response_line the_response;
+  response_line the_response(false, 8, 1024, 2);;
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::max_reason_length_s = length;
 }
 
 BOOST_AUTO_TEST_CASE(InValidOk17)
@@ -392,10 +377,8 @@ BOOST_AUTO_TEST_CASE(InValidOk17)
   std::string response_data("HTTP/1.0 200 OK\n");
   std::string::iterator next(response_data.begin());
 
-  response_line::strict_crlf_s = true;
-  response_line the_response;
+  response_line the_response(true, 8, 1024, 254);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
-  response_line::strict_crlf_s = false;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -455,7 +438,7 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   std::string response_data("HTTP/1.0 200 OK\r\nContent: text\r\n\r\n");
   std::string::iterator next(response_data.begin());
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -476,11 +459,11 @@ BOOST_AUTO_TEST_CASE(ValidOK2)
   std::string response_data("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nabcd");
   std::string::iterator next(response_data.begin());
 
-  rx_response a_response;
+  rx_response a_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(a_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.begin() != next);
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   the_response.swap(a_response);
 
   BOOST_CHECK_EQUAL(200, the_response.status());
@@ -503,7 +486,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
     ("HTTP/1.0 200 OK\r\nTransfer-Encoding: Chunked\r\n\r\n4\r\n\r\n\r\n\r\n");
   std::string::iterator next(response_data.begin());
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK_EQUAL(200, the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
@@ -521,7 +504,7 @@ BOOST_AUTO_TEST_CASE(ValidContinue1)
   std::string response_data("HTTP/1.1 100 Continue\r\n\r\n");
   std::string::iterator next(response_data.begin());
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(100, the_response.status());
@@ -538,7 +521,7 @@ BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
   std::vector<char> response_data(RESPONSE_LINE.begin(), RESPONSE_LINE.end());
   std::vector<char>::iterator next(response_data.begin());
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(the_response.parse(next, response_data.end()));
   BOOST_CHECK_EQUAL(401, the_response.status());
   BOOST_CHECK_EQUAL("Unauthorized", the_response.reason_phrase().c_str());
@@ -556,7 +539,7 @@ BOOST_AUTO_TEST_CASE(ValidOKMultiLine1)
   std::string response_data("HTTP/1.0 200 OK\r\nC");
   std::string::iterator next(response_data.begin());
 
-  rx_response the_response;
+  rx_response the_response(false, 8, 1024, 254, 1024, 100, 8190);
   BOOST_CHECK(!the_response.parse(next, response_data.end()));
   BOOST_CHECK(response_data.end() == next);
   BOOST_CHECK_EQUAL(200, the_response.status());

@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleVectorChar1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleVectorUnsignedhar1)
   std::vector<unsigned char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<unsigned char>::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleString1)
   std::string header_data("Content: abcdefgh\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleString2)
   std::string header_data("Content: abcdefgh\r\nA");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() != next);
   BOOST_CHECK_EQUAL('A', *next);
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine3)
   std::string header_data("Content:abcdefgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine4)
   std::string header_data("Accept-Charset: abcdefgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine1)
   std::string header_data(" Content:abcdefgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data.end()));
 }
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine2)
   std::string header_data("Content abcdefgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data.end()));
 }
 
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine3)
   std::string header_data("Content: abcdefgh\r\r");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data.end()));
 }
 
@@ -135,10 +135,8 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine4)
   std::string header_data("Content: abcdefgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line::max_length_s = 16;
-  field_line field;
+  field_line field(false, 8, 16);
   BOOST_CHECK(!field.parse(next, header_data.end()));
-  field_line::max_length_s = 1024;
 }
 
 BOOST_AUTO_TEST_CASE(InValidSingleLine5)
@@ -146,7 +144,7 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine5)
   std::string header_data("Content:             abcdefgh\r\r");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data.end()));
 }
 
@@ -155,10 +153,8 @@ BOOST_AUTO_TEST_CASE(InValidSingleLine6)
   std::string header_data("Content: abcdefgh\n");
   std::string::iterator next(header_data.begin());
 
-  field_line::strict_crlf_s = true;
-  field_line field;
+  field_line field(true, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data.end()));
-  field_line::strict_crlf_s = false;
 }
 
 // A multiple http header line in a string
@@ -167,7 +163,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiString1)
   std::string header_data("Content: ab\r\n cd\r\n  ef\r\n\tgh\r\n");
   std::string::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -181,7 +177,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiLine1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator next(header_data.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL("content",  field.name().c_str());
@@ -194,7 +190,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg1)
   std::string header_data1("Accept-Char");
   std::string::iterator next(header_data1.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data1.end()));
   BOOST_CHECK(header_data1.end() == next);
 
@@ -213,7 +209,7 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
   std::string header_data1("Accept-Charset: abcd");
   std::string::iterator next(header_data1.begin());
 
-  field_line field;
+  field_line field(false, 8, 1024);
   BOOST_CHECK(!field.parse(next, header_data1.end()));
   BOOST_CHECK(header_data1.end() == next);
 
@@ -238,7 +234,7 @@ BOOST_AUTO_TEST_CASE(ValidEmptyHeaderString)
   std::string header_data("\r\n");
   std::string::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
   BOOST_CHECK(the_headers.valid());
@@ -250,7 +246,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleHeaderString1)
   std::string header_data("Content: abcdefgh\r\n\r\n");
   std::string::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
@@ -262,7 +258,7 @@ BOOST_AUTO_TEST_CASE(ValidSingleHeader1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 //  std::cout << the_headers.to_string() << std::endl;
@@ -275,7 +271,7 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeader1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 }
@@ -287,7 +283,7 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeader2)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() != header_next);
   BOOST_CHECK_EQUAL('A', *header_next);
@@ -300,7 +296,7 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -323,7 +319,7 @@ BOOST_AUTO_TEST_CASE(InValidSingleHeaderString1)
   std::string header_data("Content: abcdefgh\r\n\r\r");
   std::string::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
 }
 
@@ -334,7 +330,7 @@ BOOST_AUTO_TEST_CASE(ValidContentLength1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -351,7 +347,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -365,7 +361,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength2)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -379,7 +375,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength3)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -393,7 +389,7 @@ BOOST_AUTO_TEST_CASE(ValidCloseConnection1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
@@ -407,7 +403,7 @@ BOOST_AUTO_TEST_CASE(ValidExpectContinue1)
   std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
   std::vector<char>::iterator header_next(header_data.begin());
 
-  message_headers the_headers;
+  message_headers the_headers(false, 8, 1024, 100, 8190);
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 

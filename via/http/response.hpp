@@ -48,14 +48,21 @@ namespace via
         RESP_CR,                 ///< the carriage return (if any)
         RESP_LF,                 ///< the line feed
         RESP_VALID,              ///< the response line is valid
-        RESP_ERROR_CRLF,         ///< strict_crlf_s is true and LF was received without CR
-        RESP_ERROR_WS,           ///< the whitespace is longer than max_ws_s
+        RESP_ERROR_CRLF,         ///< strict_crlf_ is true and LF was received without CR
+        RESP_ERROR_WS,           ///< the whitespace is longer than max_whitespace_
         RESP_ERROR_STATUS_VALUE, ///< the method name is longer than max_method_length_s
         RESP_ERROR_REASON_LENGTH ///< then uri is longer than max_uri_length_s
       };
 
     private:
 
+      /// Parser parameters
+      bool           strict_crlf_;       ///< enforce strict parsing of CRLF
+      unsigned char  max_whitespace_;    ///< the max no of consectutive whitespace characters.
+      unsigned short max_status_no_;     ///< the maximum number of a response status
+      size_t         max_reason_length_; ///< the maximum length of a response reason
+
+      /// Response information
       int status_;                ///< the response status code
       std::string reason_phrase_; ///< the response reason phrase
       size_t ws_count_;           ///< the current whitespace count
@@ -73,24 +80,27 @@ namespace via
 
     public:
 
-      /// whether to enforce strict parsing of CRLF
-      static bool strict_crlf_s;
-
-      /// the maximum number of consectutive whitespace characters.
-      static size_t max_ws_s;
-
-      /// the maximum number of a response status
-      static int max_status_s;
-
-      /// the maximum length of a response reason,
-      static size_t max_reason_length_s;
-
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit response_line() :
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: min 1, max 254.
+      /// @param max_status_no the maximum number of an HTTP response status
+      /// max 65534.
+      /// @param max_reason_length the maximum length of a response reason
+      /// max 65534.
+      explicit response_line(bool           strict_crlf, //       = false,
+                             unsigned char  max_whitespace, //    = 8,
+                             unsigned short max_status_no, //     = 1024,
+                             unsigned short max_reason_length) : // = 254) :
+        strict_crlf_(strict_crlf),
+        max_whitespace_(max_whitespace),
+        max_status_no_(max_status_no),
+        max_reason_length_(max_reason_length),
         status_(0),
         reason_phrase_(""),
         ws_count_(0),
@@ -284,11 +294,33 @@ namespace via
 
     public:
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit rx_response() :
-        response_line(),
-        headers_(),
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: min 1, max 254.
+      /// @param max_status_no the maximum number of an HTTP response status
+      /// max 65534.
+      /// @param max_reason_length the maximum length of a response reason
+      /// max 65534.
+      /// @param max_line_length the maximum length of an HTTP header field line:
+      /// default 1024, min 1, max 65534.
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: max 4 billion.
+      explicit rx_response(bool           strict_crlf,
+                           unsigned char  max_whitespace,
+                           unsigned short max_status_no,
+                           unsigned short max_reason_length,
+                           unsigned short max_line_length,
+                           unsigned short max_header_number,
+                           size_t         max_header_length) :
+        response_line(strict_crlf, max_whitespace,
+                      max_status_no, max_reason_length),
+        headers_(strict_crlf, max_whitespace, max_line_length,
+                 max_header_number, max_header_length),
         valid_(false)
       {}
 
@@ -485,8 +517,8 @@ namespace via
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_receiver() :
-        response_(),
-        chunk_(),
+        response_(false, 8, 1024, 254, 1024, 100, 8190),
+        chunk_(false, 254, 65534, ULONG_MAX, 65534, ULONG_MAX),
         body_()
       {}
 

@@ -14,15 +14,6 @@ namespace via
 {
   namespace http
   {
-
-    bool request_line::strict_crlf_s(false);
-
-    size_t request_line::max_ws_s(8);
-
-    size_t request_line::max_method_length_s(16);
-
-    size_t request_line::max_uri_length_s(1024);
-
     //////////////////////////////////////////////////////////////////////////
     bool request_line::parse_char(char c)
     {
@@ -34,7 +25,7 @@ namespace via
         if (std::isupper(c))
         {
           method_.push_back(c);
-          if (method_.size() > max_method_length_s)
+          if (method_.size() > max_method_length_)
           {
             state_ = REQ_ERROR_METHOD_LENGTH;
             return false;
@@ -57,7 +48,7 @@ namespace via
         {
           // Ignore leading whitespace
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
           {
             state_ = REQ_ERROR_WS;
             return false;
@@ -72,7 +63,7 @@ namespace via
         else
         {
           uri_.push_back(c);
-          if (uri_.size() > max_uri_length_s)
+          if (uri_.size() > max_uri_length_)
           {
             state_ = REQ_ERROR_URI_LENGTH;
             return false;
@@ -85,7 +76,7 @@ namespace via
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
-          if (++ws_count_ > max_ws_s)
+          if (++ws_count_ > max_whitespace_)
           {
             state_ = REQ_ERROR_WS;
             return false;
@@ -162,7 +153,7 @@ namespace via
         else
         {
           // but (if not being strict) permit just \n
-          if (!strict_crlf_s && ('\n' == c))
+          if (!strict_crlf_ && ('\n' == c))
             state_ = REQ_VALID;
           else
           {

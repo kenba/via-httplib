@@ -19,7 +19,6 @@
 #include "headers.hpp"
 #include "chunk.hpp"
 #include <algorithm>
-#include <cassert>
 
 namespace via
 {
@@ -48,14 +47,21 @@ namespace via
         REQ_CR,                  ///< the carriage return (if any)
         REQ_LF,                  ///< the line feed
         REQ_VALID,               ///< the request line is valid
-        REQ_ERROR_CRLF,          ///< strict_crlf_s is true and LF was received without CR
-        REQ_ERROR_WS,            ///< the whitespace is longer than max_ws_s
-        REQ_ERROR_METHOD_LENGTH, ///< the method name is longer than max_method_length_s
-        REQ_ERROR_URI_LENGTH     ///< then uri is longer than max_uri_length_s
+        REQ_ERROR_CRLF,          ///< strict_crlf_ is true and LF was received without CR
+        REQ_ERROR_WS,            ///< the whitespace is longer than max_whitespace_
+        REQ_ERROR_METHOD_LENGTH, ///< the method name is longer than max_method_length_
+        REQ_ERROR_URI_LENGTH     ///< then uri is longer than max_uri_length_
       };
 
     private:
 
+      /// Parser parameters
+      bool          strict_crlf_;       ///< enforce strict parsing of CRLF
+      unsigned char max_whitespace_;    ///< the max no of consectutive whitespace characters.
+      unsigned char max_method_length_; ///< the max length of a request method
+      size_t        max_uri_length_;    ///< the maximum length of a uri.
+
+      /// Request information
       std::string method_;   ///< the request method
       std::string uri_;      ///< the request uri
       size_t      ws_count_; ///< the current whitespace count
@@ -72,24 +78,27 @@ namespace via
 
     public:
 
-      /// whether to enforce strict parsing of CRLF
-      static bool strict_crlf_s;
-
-      /// the maximum number of consectutive whitespace characters.
-      static size_t max_ws_s;
-
-      /// the maximum length of a request method, default 16 chars
-      static size_t max_method_length_s;
-
-      /// the maximum length of a uri.
-      static size_t max_uri_length_s;
-
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit request_line() :
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: min 1, max 254.
+      /// @param max_method_length the maximum length of an HTTP request method:
+      /// max 254.
+      /// @param max_uri_length the maximum length of an HTTP request uri:
+      /// max 4 billion.
+      explicit request_line(bool           strict_crlf,
+                            unsigned char  max_whitespace,
+                            unsigned char  max_method_length,
+                            size_t         max_uri_length) :
+        strict_crlf_(strict_crlf),
+        max_whitespace_(max_whitespace),
+        max_method_length_(max_method_length),
+        max_uri_length_(max_uri_length),
         method_(),
         uri_(),
         ws_count_(0),
@@ -207,6 +216,10 @@ namespace via
                             std::string uri,
                             char major_version = '1',
                             char minor_version = '1') :
+        strict_crlf_(false),
+        max_whitespace_(8),
+        max_method_length_(8),
+        max_uri_length_(1024),
         method_(request_method::name(method_id)),
         uri_(uri),
         major_version_(major_version),
@@ -225,6 +238,10 @@ namespace via
                             std::string const& uri,
                             char major_version = '1',
                             char minor_version = '1') :
+        strict_crlf_(false),
+        max_whitespace_(8),
+        max_method_length_(8),
+        max_uri_length_(1024),
         method_(method),
         uri_(uri),
         major_version_(major_version),
@@ -270,11 +287,33 @@ namespace via
 
     public:
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit rx_request() :
-        request_line(),
-        headers_(),
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: default 8, min 1, max 254.
+      /// @param max_method_length the maximum length of an HTTP request method:
+      /// default 8, min 1, max 254.
+      /// @param max_uri_length the maximum length of an HTTP request uri:
+      /// default 1024, min 1, max 4 billion.
+      /// @param max_line_length the maximum length of an HTTP header field line:
+      /// default 1024, min 1, max 65534.
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: max 4 billion.
+      explicit rx_request(bool           strict_crlf, //       = false,
+                          unsigned char  max_whitespace, //    = 8,
+                          unsigned char  max_method_length, // = 8,
+                          size_t         max_uri_length, //    = 1024,
+                          unsigned short max_line_length, //   = 1024,
+                          unsigned short max_header_number, // = 100,
+                          size_t         max_header_length) : // = 8190) :
+        request_line(strict_crlf, max_whitespace,
+                     max_method_length, max_uri_length),
+        headers_(strict_crlf, max_whitespace, max_line_length,
+                 max_header_number, max_header_length),
         valid_(false)
       {}
 
@@ -475,6 +514,8 @@ namespace via
     template <typename Container>
     class request_receiver
     {
+      size_t max_content_length_;
+
       rx_request request_;         ///< the received request
       rx_chunk<Container> chunk_;  ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
@@ -489,7 +530,7 @@ namespace via
 
     public:
 
-      /// Default constructor.
+      /// Constructor.
       /// Sets all member variables to their initial state.
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
@@ -499,9 +540,11 @@ namespace via
       /// include a "Host:" header field. Required by RFC2616.
       explicit request_receiver(bool concatenate_chunks,
                                 bool translate_head,
-                                bool require_host) :
-        request_(),
-        chunk_(),
+                                bool require_host,
+                                size_t max_content_length = 1048576) :
+        max_content_length_(max_content_length),
+        request_(false, 8, 8, 1024, 1024, 100, 8190), // TODO
+        chunk_(false, 8, 1024, max_content_length, 100, 8190), // TODO
         body_(),
         response_code_(response_status::code::NO_CONTENT),
         continue_sent_(false),
@@ -578,7 +621,6 @@ namespace via
         }
 
         // build a request body or receive a chunk
-        assert(request_.valid());
         if (require_host_ && request_.missing_host_header())
         {
           response_code_ = response_status::code::BAD_REQUEST;
@@ -590,7 +632,7 @@ namespace via
           // if there is a content length header, ensure it's valid
           size_t content_length(request_.content_length());
           if ((content_length == ULONG_MAX) ||
-              (content_length > message_headers::max_content_length_s))
+              (content_length > max_content_length_))
           {
             if (content_length == ULONG_MAX)
               response_code_ = response_status::code::BAD_REQUEST;
