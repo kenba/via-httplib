@@ -91,9 +91,6 @@ namespace via
 
     public:
 
-      /// The type of resolver iterator used by this socket.
-      typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
-
       /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()
       {}
@@ -132,13 +129,11 @@ namespace via
 
       /// @fn write
       /// The tcp socket write function.
-      /// @param ptr pointer to the send buffer.
-      /// @param size the size of the send buffer.
+      /// @param buffers the buffer(s) containing the message.
       /// @param write_handler the handler called after a message is sent.
-      void write(void const* ptr, size_t size, CommsHandler write_handler)
+      void write(ConstBuffers const& buffers, CommsHandler write_handler)
       {
-        boost::asio::async_write
-            (socket_, boost::asio::buffer(ptr, size), write_handler);
+        boost::asio::async_write(socket_, buffers, write_handler);
       }
 
       /// @fn shutdown

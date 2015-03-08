@@ -18,6 +18,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <deque>
 
 // if C++11 or Visual Studio 2010 or newer
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
@@ -59,6 +60,10 @@ namespace via
     typedef std::tr1::function<void (boost::system::error_code const&, size_t)>
 #endif
                                            CommsHandler;
+
+    /// @typedef ConstBuffers
+    /// A deque of asio::const_buffers.
+    typedef std::deque<boost::asio::const_buffer> ConstBuffers;
   }
 }
 
