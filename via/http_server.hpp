@@ -3,7 +3,7 @@
 #ifndef HTTP_SERVER_HPP_VIA_HTTPLIB_
 #define HTTP_SERVER_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -214,7 +214,7 @@ namespace via
               (connection_collection_value_type(pointer, http_connection));
         }
 
-        http::receiver_parsing_state rx_state(http_connection->receive());
+        http::Rx rx_state(http_connection->receive());
 
         switch (rx_state)
         {

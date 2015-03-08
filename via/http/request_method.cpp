@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -11,7 +11,7 @@
 
 namespace
 {
-  // The following strings are for the standard request methods defined in 
+  // The following strings are for the standard request methods defined in
   // RFC2616 section 9.
   const std::string	METHOD_OPTIONS ("OPTIONS");
   const std::string	METHOD_GET     ("GET");
@@ -33,21 +33,21 @@ namespace via
     {
 
       //////////////////////////////////////////////////////////////////////////
-      const std::string& name(method_id id)
+      const std::string& name(id::method method_id)
       {
-        switch(id)
+        switch(method_id)
         {
-        case OPTIONS:                       return METHOD_OPTIONS;
-        case GET:                           return METHOD_GET;
-        case HEAD:                          return METHOD_HEAD;
-        case POST:                          return METHOD_POST;
-        case PUT:                           return METHOD_PUT;
-        case DELETE:                        return METHOD_DELETE;
-        case TRACE:                         return METHOD_TRACE;
-        case CONNECT:                       return METHOD_CONNECT;
+        case id::OPTIONS:                       return METHOD_OPTIONS;
+        case id::GET:                           return METHOD_GET;
+        case id::HEAD:                          return METHOD_HEAD;
+        case id::POST:                          return METHOD_POST;
+        case id::PUT:                           return METHOD_PUT;
+        case id::DELETE:                        return METHOD_DELETE;
+        case id::TRACE:                         return METHOD_TRACE;
+        case id::CONNECT:                       return METHOD_CONNECT;
 
         // Unknown method id
-        default:                            return EMPTY_STRING;
+        default:                                return EMPTY_STRING;
         }
       }
       //////////////////////////////////////////////////////////////////////////

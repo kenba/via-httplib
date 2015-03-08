@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef HEADER_FIELD_HPP_VIA_HTTPLIB_
 #define HEADER_FIELD_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -22,8 +23,11 @@ namespace via
   {
     namespace header_field
     {
+      /// A namespace to mimic C++11 enum class naming.
+      namespace id
+      {
       /// Ids for the standard headers defined in RFC2616.
-      enum field_id
+      enum field
       {
         // General Header Fields
         CACHE_CONTROL,
@@ -81,16 +85,17 @@ namespace via
         LAST_MODIFIED,
         EXTENSION_HEADER
       };
+      }
 
       /// Lookup the RFC2616 standard name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616.
-      const std::string& standard_name(field_id id);
+      const std::string& standard_name(id::field field_id);
 
       /// Lookup the lowercase name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616 converted to lowercase.
-      const std::string& lowercase_name(field_id id);
+      const std::string& lowercase_name(id::field field_id);
 
       /// Format the field name and value into an http header line.
       /// @param name header field name.
@@ -101,7 +106,7 @@ namespace via
       /// Format the field id and value into an http header line.
       /// @param id header field id.
       /// @param value header field value.
-      std::string to_header(field_id id, std::string const& value);
+      std::string to_header(id::field field_id, std::string const& value);
 
       /// Create an http header line for the current date and time.
       std::string date_header();

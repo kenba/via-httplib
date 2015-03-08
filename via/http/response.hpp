@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef RESPONSE_HPP_VIA_HTTPLIB_
 #define RESPONSE_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -30,31 +31,37 @@ namespace via
     class response_line
     {
     public:
-      /// @enum parsing_state the state of the response line parser.
-      enum parsing_state
+      /// @enum Response the state of the response line parser.
+      enum Response
       {
-        RESP_HTTP,        ///< HTTP/ -H
-        RESP_HTTP_T1,     ///< HTTP/ first T
-        RESP_HTTP_T2,     ///< HTTP/ second T
-        RESP_HTTP_P,      ///< HTTP/ P
-        RESP_HTTP_SLASH,  ///< HTTP/ slash
-        RESP_HTTP_MAJOR,  ///< HTTP major version number
-        RESP_HTTP_MINOR,  ///< HTTP minor version number
-        RESP_HTTP_STATUS, ///< response status code
-        RESP_HTTP_REASON, ///< response status reason
-        RESP_HTTP_LF,     ///< the line feed (if any)
-        RESP_HTTP_END
+        RESP_HTTP_H,             ///< HTTP/ H
+        RESP_HTTP_T1,            ///< HTTP/ first T
+        RESP_HTTP_T2,            ///< HTTP/ second T
+        RESP_HTTP_P,             ///< HTTP/ P
+        RESP_HTTP_SLASH,         ///< HTTP/ slash
+        RESP_HTTP_MAJOR,         ///< HTTP major version number
+        RESP_HTTP_DOT,           ///< HTTP . between major and minor versions
+        RESP_HTTP_MINOR,         ///< HTTP minor version number
+        RESP_HTTP_WS,            ///< HTTP space of tab before status
+        RESP_STATUS,             ///< response status code
+        RESP_REASON,             ///< response reason
+        RESP_CR,                 ///< the carriage return (if any)
+        RESP_LF,                 ///< the line feed
+        RESP_VALID,              ///< the response line is valid
+        RESP_ERROR_CRLF,         ///< strict_crlf_s is true and LF was received without CR
+        RESP_ERROR_WS,           ///< the whitespace is longer than max_ws_s
+        RESP_ERROR_STATUS_VALUE, ///< the method name is longer than max_method_length_s
+        RESP_ERROR_REASON_LENGTH ///< then uri is longer than max_uri_length_s
       };
 
     private:
 
-      int major_version_;         ///< the HTTP major version number
-      int minor_version_;         ///< the HTTP minor version number
       int status_;                ///< the response status code
-      std::string reason_phrase_; ///< response status reason phrase
-      parsing_state state_;       ///< the current parsing state
-      bool major_read_;           ///< true if major version was read
-      bool minor_read_;           ///< true if minor version was read
+      std::string reason_phrase_; ///< the response reason phrase
+      size_t ws_count_;           ///< the current whitespace count
+      char major_version_;        ///< the HTTP major version number
+      char minor_version_;        ///< the HTTP minor version number
+      Response state_;            ///< the current parsing state
       bool status_read_;          ///< true if status code was read
       bool valid_;                ///< true if the response line is valid
       bool fail_;                 ///< true if the response line failed validation
@@ -66,19 +73,30 @@ namespace via
 
     public:
 
+      /// whether to enforce strict parsing of CRLF
+      static bool strict_crlf_s;
+
+      /// the maximum number of consectutive whitespace characters.
+      static size_t max_ws_s;
+
+      /// the maximum number of a response status
+      static int max_status_s;
+
+      /// the maximum length of a response reason,
+      static size_t max_reason_length_s;
+
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
       /// Default constructor.
       /// Sets all member variables to their initial state.
       explicit response_line() :
-        major_version_(0),
-        minor_version_(0),
         status_(0),
         reason_phrase_(""),
-        state_(RESP_HTTP),
-        major_read_(false),
-        minor_read_(false),
+        ws_count_(0),
+        major_version_(0),
+        minor_version_(0),
+        state_(RESP_HTTP_H),
         status_read_(false),
         valid_(false),
         fail_(false)
@@ -88,13 +106,12 @@ namespace via
       /// Sets all member variables to their initial state.
       void clear()
       {
-        major_version_ = 0;
-        minor_version_ = 0;
         status_ = 0;
         reason_phrase_.clear();
-        state_ = RESP_HTTP;
-        major_read_ =  false;
-        minor_read_ =  false;
+        ws_count_ = 0;
+        major_version_ = 0;
+        minor_version_ = 0;
+        state_ = RESP_HTTP_H;
         status_read_ = false;
         valid_ =  false;
         fail_ = false;
@@ -104,13 +121,12 @@ namespace via
       /// @param other the other response_line
       void swap(response_line& other)
       {
-        std::swap(major_version_, other.major_version_);
-        std::swap(minor_version_, other.minor_version_);
         std::swap(status_, other.status_);
         reason_phrase_.swap(other.reason_phrase_);
+        std::swap(ws_count_, other.ws_count_);
+        std::swap(major_version_, other.major_version_);
+        std::swap(minor_version_, other.minor_version_);
         std::swap(state_, other.state_);
-        std::swap(major_read_, other.major_read_);
-        std::swap(minor_read_, other.minor_read_);
         std::swap(status_read_, other.status_read_);
         std::swap(valid_, other.valid_);
         std::swap(fail_, other.fail_);
@@ -118,35 +134,34 @@ namespace via
 
       /// Virtual destructor.
       /// Since the class is inherited...
-      virtual ~response_line()
-      {}
+      virtual ~response_line() {}
 
       /// Parse the line as an HTTP response.
       /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (RESP_HTTP_END != state_))
+        while ((iter != end) && (RESP_VALID != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c(*iter++);
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
-        valid_ = (RESP_HTTP_END == state_);
+        valid_ = (RESP_VALID == state_);
         return valid_;
       }
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.
-      int major_version() const
+      char major_version() const
       { return major_version_; }
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      int minor_version() const
+      char minor_version() const
       { return minor_version_; }
 
       /// Accessor for the response status.
@@ -157,7 +172,7 @@ namespace via
       /// Whether this is a continue response.
       /// @return true if this is a continue response, false otherwise.
       bool is_continue() const
-      { return status_ == static_cast<int>(response_status::CONTINUE); }
+      { return status_ == static_cast<int>(response_status::code::CONTINUE); }
 
       /// Accessor for the response reason string.
       /// @return the response reason string.
@@ -174,48 +189,52 @@ namespace via
       bool fail() const
       { return fail_; }
 
+      /// Test for early HTTP versions
+      /// @return true if HTTP/1.0 or earlier.
+      bool is_http_1_0_or_earlier() const
+      {
+        return (major_version_ <= '0') ||
+              ((major_version_ == '1') && (minor_version_ == '0'));
+      }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
-      /// @param minor_version default 1
-      /// @param major_version default 1
-      explicit response_line(response_status::status_code status,
-                             int minor_version = 1,
-                             int major_version = 1) :
+      /// @see http::response_status::code
+      /// @param status_code the response status code
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
+      explicit response_line(response_status::code::status status_code,
+                             char major_version = '1',
+                             char minor_version = '1') :
+        status_(static_cast<int>(status_code)),
+        reason_phrase_(response_status::reason_phrase(status_code)),
         major_version_(major_version),
         minor_version_(minor_version),
-        status_(status),
-        reason_phrase_(response_status::reason_phrase(status)),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
+        state_(RESP_VALID),
         status_read_(true),
         valid_(true),
         fail_(false)
       {}
 
       /// Constructor for creating a non-standard response.
-      /// @param status the response status
+      /// @param status the response status code
       /// @param reason_phrase the reason phrase for the response status.
-      /// @param minor_version default 1
-      /// @param major_version default 1
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
       explicit response_line(int status,
-                             std::string reason_phrase,
-                             int minor_version = 1,
-                             int major_version = 1) :
-        major_version_(major_version),
-        minor_version_(minor_version),
+                             std::string const& reason_phrase,
+                             char major_version = '1',
+                             char minor_version = '1') :
         status_(status),
         reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::status_code>(status))),
-        state_(RESP_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
+                    (static_cast<response_status::code::status>(status))),
+        major_version_(major_version),
+        minor_version_(minor_version),
+        state_(RESP_VALID),
         status_read_(true),
         valid_(true),
         fail_(false)
@@ -224,16 +243,16 @@ namespace via
       /// Set the response status for standard responses.
       /// @see http::response_status::status_code
       /// @param status the response status.
-      void set_status(response_status::status_code status)
+      void set_status(response_status::code::status status_code)
       {
-        status_ = status;
-        reason_phrase_ = response_status::reason_phrase(status);
+        status_ = static_cast<int>(status_code);
+        reason_phrase_ = response_status::reason_phrase(status_code);
       }
 
       /// Set the response status and reason phrase.
       /// @param status the response status.
       /// @param reason_phrase the the response reason phrase.
-      void set_status_and_reason(int status, const std::string& reason_phrase)
+      void set_status_and_reason(int status, std::string const& reason_phrase)
       {
         status_ = status;
         reason_phrase_ = reason_phrase;
@@ -241,12 +260,12 @@ namespace via
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
-      void set_minor_version(int minor_version)
+      void set_minor_version(char minor_version)
       { minor_version_ = minor_version; }
 
       /// Set the HTTP major version.
       /// @param major_version the HTTP major version.
-      void set_major_version(int major_version)
+      void set_major_version(char major_version)
       { major_version_ = major_version; }
 
       /// Output as a string.
@@ -261,7 +280,7 @@ namespace via
     class rx_response : public response_line
     {
       message_headers headers_; ///< the HTTP headers for the response
-      bool valid_;               ///< true if the response is valid
+      bool valid_;              ///< true if the response is valid
 
     public:
 
@@ -272,6 +291,8 @@ namespace via
         headers_(),
         valid_(false)
       {}
+
+      virtual ~rx_response() {}
 
       /// Clear the rx_response.
       /// Sets all member variables to their initial state.
@@ -300,8 +321,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!response_line::valid() && !response_line::parse(iter, end))
           return false;
@@ -334,13 +355,12 @@ namespace via
       { return valid_; }
 
       /// Whether the connection should be kept alive.
-      /// I.e. if the request is HTTP 1.1 and there is not a connection: close
+      /// I.e. if the response is HTTP 1.1 and there is not a connection: close
       /// header field.
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
-        return major_version() >= 1 &&
-               minor_version() >= 1 &&
+        return !is_http_1_0_or_earlier() &&
                !headers_.close_connection();
       }
     }; // class rx_response
@@ -357,12 +377,12 @@ namespace via
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
-      /// @see http::response_status::status_code
-      /// @param status the response status code
+      /// @see http::response_status::code
+      /// @param status_code the response status code
       /// @param header_string default blank
-      explicit tx_response(response_status::status_code status,
+      explicit tx_response(response_status::code::status status_code,
                            std::string header_string = "") :
-        response_line(status),
+        response_line(status_code),
         header_string_(header_string)
       {}
 
@@ -373,16 +393,31 @@ namespace via
       explicit tx_response(const std::string& reason_phrase,
                            int status,
                            std::string header_string = "") :
-        response_line(status, reason_phrase) ,
+        response_line(status, reason_phrase),
         header_string_(header_string)
       {}
+
+      virtual ~tx_response()
+      {}
+
+      /// Set the header_string_ to the value given.
+      /// Note: will overwrite any other headers, so must be called before
+      /// the following add_header fucntions.
+      /// @param header_string the new header string
+      /// @return true if the header string has been set, false if the header
+      /// string is invalid.
+      bool set_header_string(std::string const& header_string)
+      {
+        header_string_ = header_string;
+        return !are_headers_split(header_string_);
+      }
 
       /// Add a standard header to the response.
       /// @see http::header_field::field_id
       /// @param id the header field id
       /// @param value the header field value
-      void add_header(header_field::field_id id, const std::string& value)
-      { header_string_ += header_field::to_header(id, value);  }
+      void add_header(header_field::id::field field_id, const std::string& value)
+      { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the response.
       /// @param field the header field name
@@ -398,14 +433,18 @@ namespace via
       void add_server_header()
       { header_string_ += header_field::server_header(); }
 
+      /// Add a http content header to the response.
+      void add_content_http_header()
+      { header_string_ += header_field::content_http_header(); }
+
       /// Add an http content length header line for the given size.
       void add_content_length_header(size_t size)
       { header_string_ += header_field::content_length(size); }
 
-      /// Whether this is a continue response.
-      /// @return true if this is a continue response, false otherwise.
-      bool is_continue() const
-      { return status() == response_status::CONTINUE; }
+      /// Determine whether the response is valid.
+      /// @return true if the response does not contain "split headers".
+      bool is_valid() const
+      { return !are_headers_split(header_string_); }
 
       /// The http message header string.
       /// @param content_length the size of the message body for the
@@ -419,9 +458,9 @@ namespace via
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
         bool no_content_length(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::CONTENT_LENGTH)));
+              (header_field::standard_name(header_field::id::CONTENT_LENGTH)));
         bool no_transfer_encoding(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+              (header_field::standard_name(header_field::id::TRANSFER_ENCODING)));
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -478,9 +517,8 @@ namespace via
       /// Receive data for an HTTP response, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      receiver_parsing_state receive(ForwardIterator1& iter,
-                                     ForwardIterator2 end)
+      template<typename ForwardIterator>
+      Rx receive(ForwardIterator& iter, ForwardIterator end)
       {
         // building a response
         bool response_parsed(!response_.valid());
@@ -508,26 +546,27 @@ namespace via
         {
           // if there is a content length header, ensure it's valid
           size_t content_length(response_.content_length());
-          if (content_length == CONTENT_LENGTH_INVALID)
+          if (content_length == ULONG_MAX)
           {
             clear();
             return RX_INVALID;
           }
 
           // if there's a message body then insist on a content length header
-          long rx_size(end - iter);
-          long required(content_length - body_.size());
+          ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
-              response_.headers().find(header_field::CONTENT_LENGTH).empty())
+              response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
             return RX_LENGTH_REQUIRED;
           }
 
           // received buffer contains more than the required data
+          ptrdiff_t required(static_cast<ptrdiff_t>(content_length) -
+                             static_cast<ptrdiff_t>(body_.size()));
           if (rx_size > required)
           {
-              ForwardIterator1 next(iter + required);
+              ForwardIterator next(iter + required);
               body_.insert(body_.end(), iter, next);
           }
           else // received buffer <= required data

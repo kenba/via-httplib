@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef REQUEST_METHOD_HPP_VIA_HTTPLIB_
 #define REQUEST_METHOD_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -26,10 +27,13 @@ namespace via
   {
     namespace request_method
     {
+      /// A namespace to mimic C++11 enum class naming.
+      namespace id
+      {
       /// Ids for the standard methods defined in RFC2616.
       /// They are intended to be used in conjunction with the function
       /// method_name to encode and decode the method from a request.
-      enum method_id
+      enum method
       {
         OPTIONS,
         GET,
@@ -40,11 +44,11 @@ namespace via
         TRACE,
         CONNECT
       };
+      }
 
       /// The standard method name associated with ids above.
       /// @return the standard method name.
-      const std::string& name(method_id id);
-
+      const std::string& name(id::method method_id);
     }
   }
 }

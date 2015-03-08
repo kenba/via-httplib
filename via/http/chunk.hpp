@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef CHUNK_HPP_VIA_HTTPLIB_
 #define CHUNK_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -26,32 +27,55 @@ namespace via
     class chunk_header
     {
     public:
-      /// @enum parsing_state the state of the chunk header parser.
-      enum parsing_state
+
+      /// @enum Chunk the parsing state of the chunk header parser.
+      enum Chunk
       {
         CHUNK_SIZE_LS,      ///< leading white space
         CHUNK_SIZE,         ///< the chunk size hex text
         CHUNK_EXTENSION_LS, ///< chunk extension leading white space
         CHUNK_EXTENSION,    ///< the chunk extension
-        CHUNK_LF,           ///< the line feed (if any)
-        CHUNK_END
+        CHUNK_LF,           ///< the line feed
+        CHUNK_VALID,        ///< the chunk header is valid
+        CHUNK_ERROR_LENGTH, ///< the header is longer than max_length_s
+        CHUNK_ERROR_CRLF,   ///< strict_crlf_s is true and LF was received without CR
+        CHUNK_ERROR_WS,     ///< the whitespace is longer than max_ws_s
+        CHUNK_ERROR_SIZE    ///< the chunk size is greater than max_data_size_s
       };
 
     private:
 
       size_t size_;           ///< the size of the chunk in bytes
+      size_t length_;         ///< the length of the chunk header in bytes
+      size_t ws_count_;       ///< the current whitespace count
+      size_t size_count_;     ///< the size character count
       std::string hex_size_;  ///< the chunk size hex string
       std::string extension_; ///< the chunk extesion (if any)
-      parsing_state state_;   ///< the current parsing state
+      Chunk state_;           ///< the current parsing state
       bool size_read_;        ///< true if the chunk size was read
       bool valid_;            ///< true if a chunk header is valid
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
-      /// @retval state the current state of the parser.
+      /// @return true if the character is valid, false otherwise.
       bool parse_char(char c);
 
     public:
+
+      /// whether to enforce strict parsing of CRLF
+      static bool strict_crlf_s;
+
+      /// the maximum number of consectutive whitespace characters.
+      static size_t max_ws_s;
+
+      /// the maximum number of size digits.
+      static size_t max_size_digits_s;
+
+      /// the maximum length of the chunk header.
+      static size_t max_length_s;
+
+      /// the maximum size of a chunk's data
+      static size_t max_data_size_s;
 
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
@@ -60,6 +84,8 @@ namespace via
       /// Sets all member variables to their initial state.
       explicit chunk_header() :
         size_(0),
+        length_(0),
+        ws_count_(0),
         hex_size_(""),
         extension_(""),
         state_(CHUNK_SIZE_LS),
@@ -72,6 +98,8 @@ namespace via
       void clear()
       {
         size_ = 0;
+        length_ = 0;
+        ws_count_ = 0;
         hex_size_.clear();
         extension_.clear();
         state_ = CHUNK_SIZE_LS;
@@ -84,6 +112,8 @@ namespace via
       void swap(chunk_header& other)
       {
         std::swap(size_, other.size_);
+        std::swap(length_, other.length_);
+        std::swap(ws_count_, other.ws_count_);
         hex_size_.swap(other.hex_size_);
         extension_.swap(other.extension_);
         std::swap(state_, other.state_);
@@ -96,17 +126,17 @@ namespace via
       /// If parsed sucessfully, it will refer to the start of the data.
       /// @param end the end of the buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (CHUNK_END != state_))
+        while ((iter != end) && (CHUNK_VALID != state_))
         {
           char c(static_cast<char>(*iter++));
           if (!parse_char(c))
             return false;
         }
 
-        valid_ = (CHUNK_END == state_);
+        valid_ = (CHUNK_VALID == state_);
         return valid_;
       }
 
@@ -117,12 +147,12 @@ namespace via
 
       /// Accessor for the size hex string.
       /// @return the chunk size as a hex string.
-      const std::string& hex_size() const
+      std::string const& hex_size() const
       { return hex_size_; }
 
       /// Accessor for the chunk extension.
       /// @return the chunk extension, blank if none.
-      const std::string& extension() const
+      std::string const& extension() const
       { return extension_; }
 
       /// Accessor for the valid flag.
@@ -159,7 +189,7 @@ namespace via
 
       /// Set the chunk extension.
       /// @param extension the chunk extension
-      void set_extension(const std::string& extension)
+      void set_extension(std::string const& extension)
       { extension_ = extension; }
 
       /// Output as a string.
@@ -217,8 +247,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!chunk_header::valid() && !chunk_header::parse(iter, end))
           return false;
@@ -239,7 +269,7 @@ namespace via
           {
             if (required > 0)
             {
-              ForwardIterator1 next(iter + required);
+              ForwardIterator next(iter + required);
               data_.insert(data_.end(), iter, next);
               iter = next;
             }
@@ -306,8 +336,8 @@ namespace via
       { trailer_string_ += header_field::to_header(field, value);  }
 
       /// Add a standard trailer to the chunk.
-      void add_trailer(header_field::field_id id, std::string const& value)
-      { trailer_string_ += header_field::to_header(id, value);  }
+      void add_trailer(header_field::id::field field_id, std::string const& value)
+      { trailer_string_ += header_field::to_header(field_id, value);  }
 
       /// The http message header string.
       std::string message() const;

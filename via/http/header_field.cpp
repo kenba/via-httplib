@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,7 +16,7 @@
 namespace
 {
   /// The server name for the server header.
-  const std::string	SERVER_NAME             ("Via-httplib/1.0.4");
+  const std::string	SERVER_NAME             ("Via-httplib/1.0.5");
 
   /// The message/http content for a TRACE response
   const std::string	MESSAGE_HTTP            ("message/http");
@@ -158,133 +158,133 @@ namespace via
     namespace header_field
     {
       ////////////////////////////////////////////////////////////////////////
-      const std::string& standard_name(field_id id)
+      const std::string& standard_name(id::field field_id)
       {
-        switch(id)
+        switch(field_id)
         {
         // General Header Fields
-        case CACHE_CONTROL:                 return HEADER_CACHE_CONTROL;
-        case CONNECTION:                    return HEADER_CONNECTION;
-        case DATE:                          return HEADER_DATE;
-        case PRAGMA:                        return HEADER_PRAGMA;
-        case TRAILER:                       return HEADER_TRAILER;
-        case TRANSFER_ENCODING:             return HEADER_TRANSFER_ENCODING;
-        case UPGRADE:                       return HEADER_UPGRADE;
-        case VIA:                           return HEADER_VIA;
-        case WARNING:                       return HEADER_WARNING;
+        case id::CACHE_CONTROL:                 return HEADER_CACHE_CONTROL;
+        case id::CONNECTION:                    return HEADER_CONNECTION;
+        case id::DATE:                          return HEADER_DATE;
+        case id::PRAGMA:                        return HEADER_PRAGMA;
+        case id::TRAILER:                       return HEADER_TRAILER;
+        case id::TRANSFER_ENCODING:             return HEADER_TRANSFER_ENCODING;
+        case id::UPGRADE:                       return HEADER_UPGRADE;
+        case id::VIA:                           return HEADER_VIA;
+        case id::WARNING:                       return HEADER_WARNING;
 
         // Request Header Fields
-        case ACCEPT:                        return HEADER_ACCEPT;
-        case ACCEPT_CHARSET:                return HEADER_ACCEPT_CHARSET;
-        case ACCEPT_ENCODING:               return HEADER_ACCEPT_ENCODING;
-        case ACCEPT_LANGUAGE:               return HEADER_ACCEPT_LANGUAGE;
-        case AUTHORIZATION:                 return HEADER_AUTHORIZATION;
-        case EXPECT:                        return HEADER_EXPECT;
-        case FROM:                          return HEADER_FROM;
-        case HOST:                          return HEADER_HOST;
-        case IF_MATCH:                      return HEADER_IF_MATCH;
-        case IF_MODIFIED_SINCE:             return HEADER_IF_MODIFIED_SINCE;
-        case IF_NONE_MATCH:                 return HEADER_IF_NONE_MATCH;
-        case IF_RANGE:                      return HEADER_IF_RANGE;
-        case IF_UNMODIFIED_SINCE:           return HEADER_IF_UNMODIFIED_SINCE;
-        case MAX_FORWARDS:                  return HEADER_MAX_FORWARDS;
-        case PROXY_AUTHORIZATION:           return HEADER_PROXY_AUTHORIZATION;
-        case RANGE:                         return HEADER_RANGE;
-        case REFERER:                       return HEADER_REFERER;
-        case TE:                            return HEADER_TE;
-        case USER_AGENT:                    return HEADER_USER_AGENT;
+        case id::ACCEPT:                        return HEADER_ACCEPT;
+        case id::ACCEPT_CHARSET:                return HEADER_ACCEPT_CHARSET;
+        case id::ACCEPT_ENCODING:               return HEADER_ACCEPT_ENCODING;
+        case id::ACCEPT_LANGUAGE:               return HEADER_ACCEPT_LANGUAGE;
+        case id::AUTHORIZATION:                 return HEADER_AUTHORIZATION;
+        case id::EXPECT:                        return HEADER_EXPECT;
+        case id::FROM:                          return HEADER_FROM;
+        case id::HOST:                          return HEADER_HOST;
+        case id::IF_MATCH:                      return HEADER_IF_MATCH;
+        case id::IF_MODIFIED_SINCE:             return HEADER_IF_MODIFIED_SINCE;
+        case id::IF_NONE_MATCH:                 return HEADER_IF_NONE_MATCH;
+        case id::IF_RANGE:                      return HEADER_IF_RANGE;
+        case id::IF_UNMODIFIED_SINCE:           return HEADER_IF_UNMODIFIED_SINCE;
+        case id::MAX_FORWARDS:                  return HEADER_MAX_FORWARDS;
+        case id::PROXY_AUTHORIZATION:           return HEADER_PROXY_AUTHORIZATION;
+        case id::RANGE:                         return HEADER_RANGE;
+        case id::REFERER:                       return HEADER_REFERER;
+        case id::TE:                            return HEADER_TE;
+        case id::USER_AGENT:                    return HEADER_USER_AGENT;
 
         // Response Header Fields
-        case ACCEPT_RANGES:                 return HEADER_ACCEPT_RANGES;
-        case AGE:                           return HEADER_AGE;
-        case ETAG:                          return HEADER_ETAG;
-        case LOCATION:                      return HEADER_LOCATION;
-        case PROXY_AUTHENTICATE:            return HEADER_PROXY_AUTHENTICATE;
-        case RETRY_AFTER:                   return HEADER_RETRY_AFTER;
-        case SERVER:                        return HEADER_SERVER;
-        case VARY:                          return HEADER_VARY;
-        case WWW_AUTHENTICATE:              return HEADER_WWW_AUTHENTICATE;
+        case id::ACCEPT_RANGES:                 return HEADER_ACCEPT_RANGES;
+        case id::AGE:                           return HEADER_AGE;
+        case id::ETAG:                          return HEADER_ETAG;
+        case id::LOCATION:                      return HEADER_LOCATION;
+        case id::PROXY_AUTHENTICATE:            return HEADER_PROXY_AUTHENTICATE;
+        case id::RETRY_AFTER:                   return HEADER_RETRY_AFTER;
+        case id::SERVER:                        return HEADER_SERVER;
+        case id::VARY:                          return HEADER_VARY;
+        case id::WWW_AUTHENTICATE:              return HEADER_WWW_AUTHENTICATE;
 
         // Entity Header Fields
-        case ALLOW:                         return HEADER_ALLOW;
-        case CONTENT_ENCODING:              return HEADER_CONTENT_ENCODING;
-        case CONTENT_LANGUAGE:              return HEADER_CONTENT_LANGUAGE;
-        case CONTENT_LENGTH:                return HEADER_CONTENT_LENGTH;
-        case CONTENT_LOCATION:              return HEADER_CONTENT_LOCATION;
-        case CONTENT_MD5:                   return HEADER_CONTENT_MD5;
-        case CONTENT_RANGE:                 return HEADER_CONTENT_RANGE;
-        case CONTENT_TYPE:                  return HEADER_CONTENT_TYPE;
-        case EXPIRES:                       return HEADER_EXPIRES;
-        case LAST_MODIFIED:                 return HEADER_LAST_MODIFIED;
-        case EXTENSION_HEADER:              return HEADER_EXTENSION_HEADER;
+        case id::ALLOW:                         return HEADER_ALLOW;
+        case id::CONTENT_ENCODING:              return HEADER_CONTENT_ENCODING;
+        case id::CONTENT_LANGUAGE:              return HEADER_CONTENT_LANGUAGE;
+        case id::CONTENT_LENGTH:                return HEADER_CONTENT_LENGTH;
+        case id::CONTENT_LOCATION:              return HEADER_CONTENT_LOCATION;
+        case id::CONTENT_MD5:                   return HEADER_CONTENT_MD5;
+        case id::CONTENT_RANGE:                 return HEADER_CONTENT_RANGE;
+        case id::CONTENT_TYPE:                  return HEADER_CONTENT_TYPE;
+        case id::EXPIRES:                       return HEADER_EXPIRES;
+        case id::LAST_MODIFIED:                 return HEADER_LAST_MODIFIED;
+        case id::EXTENSION_HEADER:              return HEADER_EXTENSION_HEADER;
 
-        default:                            return EMPTY_STRING;
+        default:                                return EMPTY_STRING;
         }
       }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      const std::string& lowercase_name(field_id id)
+      const std::string& lowercase_name(id::field field_id)
       {
-        switch(id)
+        switch(field_id)
         {
         // General Header Fields
-        case CACHE_CONTROL:                 return LC_CACHE_CONTROL;
-        case CONNECTION:                    return LC_CONNECTION;
-        case DATE:                          return LC_DATE;
-        case PRAGMA:                        return LC_PRAGMA;
-        case TRAILER:                       return LC_TRAILER;
-        case TRANSFER_ENCODING:             return LC_TRANSFER_ENCODING;
-        case UPGRADE:                       return LC_UPGRADE;
-        case VIA:                           return LC_VIA;
-        case WARNING:                       return LC_WARNING;
+        case id::CACHE_CONTROL:                 return LC_CACHE_CONTROL;
+        case id::CONNECTION:                    return LC_CONNECTION;
+        case id::DATE:                          return LC_DATE;
+        case id::PRAGMA:                        return LC_PRAGMA;
+        case id::TRAILER:                       return LC_TRAILER;
+        case id::TRANSFER_ENCODING:             return LC_TRANSFER_ENCODING;
+        case id::UPGRADE:                       return LC_UPGRADE;
+        case id::VIA:                           return LC_VIA;
+        case id::WARNING:                       return LC_WARNING;
 
         // Request Header Fields
-        case ACCEPT:                        return LC_ACCEPT;
-        case ACCEPT_CHARSET:                return LC_ACCEPT_CHARSET;
-        case ACCEPT_ENCODING:               return LC_ACCEPT_ENCODING;
-        case ACCEPT_LANGUAGE:               return LC_ACCEPT_LANGUAGE;
-        case AUTHORIZATION:                 return LC_AUTHORIZATION;
-        case EXPECT:                        return LC_EXPECT;
-        case FROM:                          return LC_FROM;
-        case HOST:                          return LC_HOST;
-        case IF_MATCH:                      return LC_IF_MATCH;
-        case IF_MODIFIED_SINCE:             return LC_IF_MODIFIED_SINCE;
-        case IF_NONE_MATCH:                 return LC_IF_NONE_MATCH;
-        case IF_RANGE:                      return LC_IF_RANGE;
-        case IF_UNMODIFIED_SINCE:           return LC_IF_UNMODIFIED_SINCE;
-        case MAX_FORWARDS:                  return LC_MAX_FORWARDS;
-        case PROXY_AUTHORIZATION:           return LC_PROXY_AUTHORIZATION;
-        case RANGE:                         return LC_RANGE;
-        case REFERER:                       return LC_REFERER;
-        case TE:                            return LC_TE;
-        case USER_AGENT:                    return LC_USER_AGENT;
+        case id::ACCEPT:                        return LC_ACCEPT;
+        case id::ACCEPT_CHARSET:                return LC_ACCEPT_CHARSET;
+        case id::ACCEPT_ENCODING:               return LC_ACCEPT_ENCODING;
+        case id::ACCEPT_LANGUAGE:               return LC_ACCEPT_LANGUAGE;
+        case id::AUTHORIZATION:                 return LC_AUTHORIZATION;
+        case id::EXPECT:                        return LC_EXPECT;
+        case id::FROM:                          return LC_FROM;
+        case id::HOST:                          return LC_HOST;
+        case id::IF_MATCH:                      return LC_IF_MATCH;
+        case id::IF_MODIFIED_SINCE:             return LC_IF_MODIFIED_SINCE;
+        case id::IF_NONE_MATCH:                 return LC_IF_NONE_MATCH;
+        case id::IF_RANGE:                      return LC_IF_RANGE;
+        case id::IF_UNMODIFIED_SINCE:           return LC_IF_UNMODIFIED_SINCE;
+        case id::MAX_FORWARDS:                  return LC_MAX_FORWARDS;
+        case id::PROXY_AUTHORIZATION:           return LC_PROXY_AUTHORIZATION;
+        case id::RANGE:                         return LC_RANGE;
+        case id::REFERER:                       return LC_REFERER;
+        case id::TE:                            return LC_TE;
+        case id::USER_AGENT:                    return LC_USER_AGENT;
 
         // Response Header Fields
-        case ACCEPT_RANGES:                 return LC_ACCEPT_RANGES;
-        case AGE:                           return LC_AGE;
-        case ETAG:                          return LC_ETAG;
-        case LOCATION:                      return LC_LOCATION;
-        case PROXY_AUTHENTICATE:            return LC_PROXY_AUTHENTICATE;
-        case RETRY_AFTER:                   return LC_RETRY_AFTER;
-        case SERVER:                        return LC_SERVER;
-        case VARY:                          return LC_VARY;
-        case WWW_AUTHENTICATE:              return LC_WWW_AUTHENTICATE;
+        case id::ACCEPT_RANGES:                 return LC_ACCEPT_RANGES;
+        case id::AGE:                           return LC_AGE;
+        case id::ETAG:                          return LC_ETAG;
+        case id::LOCATION:                      return LC_LOCATION;
+        case id::PROXY_AUTHENTICATE:            return LC_PROXY_AUTHENTICATE;
+        case id::RETRY_AFTER:                   return LC_RETRY_AFTER;
+        case id::SERVER:                        return LC_SERVER;
+        case id::VARY:                          return LC_VARY;
+        case id::WWW_AUTHENTICATE:              return LC_WWW_AUTHENTICATE;
 
         // Entity Header Fields
-        case ALLOW:                         return LC_ALLOW;
-        case CONTENT_ENCODING:              return LC_CONTENT_ENCODING;
-        case CONTENT_LANGUAGE:              return LC_CONTENT_LANGUAGE;
-        case CONTENT_LENGTH:                return LC_CONTENT_LENGTH;
-        case CONTENT_LOCATION:              return LC_CONTENT_LOCATION;
-        case CONTENT_MD5:                   return LC_CONTENT_MD5;
-        case CONTENT_RANGE:                 return LC_CONTENT_RANGE;
-        case CONTENT_TYPE:                  return LC_CONTENT_TYPE;
-        case EXPIRES:                       return LC_EXPIRES;
-        case LAST_MODIFIED:                 return LC_LAST_MODIFIED;
-        case EXTENSION_HEADER:              return LC_EXTENSION_HEADER;
+        case id::ALLOW:                         return LC_ALLOW;
+        case id::CONTENT_ENCODING:              return LC_CONTENT_ENCODING;
+        case id::CONTENT_LANGUAGE:              return LC_CONTENT_LANGUAGE;
+        case id::CONTENT_LENGTH:                return LC_CONTENT_LENGTH;
+        case id::CONTENT_LOCATION:              return LC_CONTENT_LOCATION;
+        case id::CONTENT_MD5:                   return LC_CONTENT_MD5;
+        case id::CONTENT_RANGE:                 return LC_CONTENT_RANGE;
+        case id::CONTENT_TYPE:                  return LC_CONTENT_TYPE;
+        case id::EXPIRES:                       return LC_EXPIRES;
+        case id::LAST_MODIFIED:                 return LC_LAST_MODIFIED;
+        case id::EXTENSION_HEADER:              return LC_EXTENSION_HEADER;
 
-        default:                            return EMPTY_STRING;
+        default:                                return EMPTY_STRING;
         }
       }
       ////////////////////////////////////////////////////////////////////////
@@ -296,8 +296,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      std::string to_header(field_id id, std::string const& value)
-      { return to_header(standard_name(id), value); }
+      std::string to_header(id::field field_id, std::string const& value)
+      { return to_header(standard_name(field_id), value); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
@@ -309,25 +309,25 @@ namespace via
         time_t uTime;
         time(&uTime);
         strftime(dateBuffer, 30, DATE_FORMAT.c_str(), std::gmtime(&uTime));
-        return to_header(header_field::DATE, dateBuffer);
+        return to_header(header_field::id::DATE, dateBuffer);
       }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string server_header()
-      { return to_header(header_field::SERVER, SERVER_NAME); }
+      { return to_header(header_field::id::SERVER, SERVER_NAME); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string content_http_header()
-      { return to_header(header_field::CONTENT_TYPE, MESSAGE_HTTP); }
+      { return to_header(header_field::id::CONTENT_TYPE, MESSAGE_HTTP); }
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       std::string content_length(size_t size)
       {
         std::string output(header_field::standard_name
-                                             (header_field::CONTENT_LENGTH));
+                                             (header_field::id::CONTENT_LENGTH));
         output += SEPARATOR + to_dec_string(size) + CRLF;
         return output;
       }

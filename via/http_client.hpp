@@ -3,7 +3,7 @@
 #ifndef HTTP_CLIENT_HPP_VIA_HTTPLIB_
 #define HTTP_CLIENT_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -196,7 +196,7 @@ namespace via
       typename rx_buffer_type::const_iterator iter(data.begin());
       typename rx_buffer_type::const_iterator end(iter);
       end += connection_->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
+      http::Rx rx_state(rx_.receive(iter, end));
 
       switch (rx_state)
       {
@@ -220,7 +220,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -243,7 +243,7 @@ namespace via
     /// @param body the body to send
     void send(http::tx_request& request, Container const& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
 
       Container tx_message(body);
@@ -275,7 +275,7 @@ namespace via
     bool send(http::tx_request& request,
               ForwardIterator1 begin, ForwardIterator2 end)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       size_t size(end - begin);
       std::string http_header(request.message(size));
 

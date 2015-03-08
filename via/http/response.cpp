@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -13,14 +13,32 @@ namespace via
 {
   namespace http
   {
+
+    bool response_line::strict_crlf_s(false);
+
+    size_t response_line::max_ws_s(ULONG_MAX);
+
+    int response_line::max_status_s(INT_MAX);
+
+    size_t response_line::max_reason_length_s(ULONG_MAX);
+
     //////////////////////////////////////////////////////////////////////////
     bool response_line::parse_char(char c)
     {
       switch (state_)
       {
-      case RESP_HTTP:
+      case RESP_HTTP_H:
         // Ignore leading whitespace
-        if (!is_space_or_tab(c))
+        if (is_space_or_tab(c))
+        {
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = RESP_ERROR_WS;
+            return false;
+          }
+        }
+        else
         {
           if ('H' == c)
             state_ = RESP_HTTP_T1;
@@ -60,66 +78,120 @@ namespace via
       case RESP_HTTP_MAJOR:
         if (std::isdigit(c))
         {
-          major_read_ = true;
-          major_version_ *= 10;
-          major_version_ += read_digit(c);
+          major_version_ = c;
+          state_ = RESP_HTTP_DOT;
         }
         else
-        {
-          if (major_read_ && ('.' == c))
-            state_ = RESP_HTTP_MINOR;
-          else
-            return false;
-        }
+          return false;
+        break;
+
+      case RESP_HTTP_DOT:
+        if ('.' == c)
+          state_ = RESP_HTTP_MINOR;
+        else
+          return false;
         break;
 
       case RESP_HTTP_MINOR:
         if (std::isdigit(c))
         {
-          minor_read_ = true;
-          minor_version_ *= 10;
-          minor_version_ += read_digit(c);
+          minor_version_ = c;
+          // must be at least one whitespace before status
+          state_ = RESP_HTTP_WS;
         }
-        else if (minor_read_ && (is_space_or_tab(c)))
-          state_ = RESP_HTTP_STATUS;
         else
           return false;
         break;
 
-      case RESP_HTTP_STATUS:
+      case RESP_HTTP_WS:
+        if (is_space_or_tab(c))
+        {
+          ws_count_ = 1;
+          state_ = RESP_STATUS;
+        }
+        else
+          return false;
+        break;
+
+      case RESP_STATUS:
         if (std::isdigit(c))
         {
           status_read_ = true;
           status_ *= 10;
           status_ += read_digit(c);
+          if (status_ > max_status_s)
+          {
+            state_ = RESP_ERROR_STATUS_VALUE;
+            return false;
+          }
         }
         else if (is_space_or_tab(c))
         {
           if (status_read_)
-            state_ = RESP_HTTP_REASON;
-          // Ignore leading whitespace
+          {
+            ws_count_ = 1;
+            state_ = RESP_REASON;
+          }
+          else // Ignore extra leading whitespace
+          {
+            // but only upto to a limit!
+            if (++ws_count_ > max_ws_s)
+            {
+              state_ = RESP_ERROR_WS;
+              return false;
+            }
+          }
         }
         else
           return false;
         break;
 
-      case RESP_HTTP_REASON:
-        if (is_end_of_line(c))
+      case RESP_REASON:
+        if (!is_end_of_line(c))
         {
-          if ('\r' == c)
-            state_ = RESP_HTTP_LF;
-          else // ('\n' == *iter) \\ but permit just \n
-            state_ = RESP_HTTP_END;
+          // Ignore leading whitespace
+          if (reason_phrase_.empty() && is_space_or_tab(c))
+          {
+            // but only upto to a limit!
+            if (++ws_count_ > max_ws_s)
+            {
+              state_ = RESP_ERROR_WS;
+              return false;
+            }
+          }
+          else
+          {
+            reason_phrase_.push_back(c);
+            if (reason_phrase_.size() > max_reason_length_s)
+            {
+              state_ = RESP_ERROR_REASON_LENGTH;
+              return false;
+            }
+          }
+          break;
         }
-        // Ignore leading whitespace
-        else if (!reason_phrase_.empty() || !is_space_or_tab(c))
-          reason_phrase_.push_back(c);
+        // intentional fall-through
+      case RESP_CR:
+        // The HTTP line should end with a \r\n...
+        if ('\r' == c)
+          state_ = RESP_LF;
+        else
+        {
+          // but (if not being strict) permit just \n
+          if (!strict_crlf_s && ('\n' == c))
+            state_ = RESP_VALID;
+          else
+          {
+            state_ = RESP_ERROR_CRLF;
+            return false;
+          }
+        }
         break;
 
-      case RESP_HTTP_LF:
+      case RESP_LF:
         if ('\n' == c)
-          state_ = RESP_HTTP_END;
-        else 
+          state_ = RESP_VALID;
+        else
           return false;
         break;
 
@@ -130,7 +202,7 @@ namespace via
       return true;
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     std::string response_line::to_string() const
     {

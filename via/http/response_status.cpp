@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -44,7 +44,7 @@ namespace
   const std::string	REASON_NOT_FOUND        ("Not Found");
   const std::string	REASON_METHOD_NOT_ALLOWED
                                             ("Method Not Allowed");
-  const std::string	REASON_NOT_ACCEPTABLE   
+  const std::string	REASON_NOT_ACCEPTABLE
                                             ("Not Acceptable");
   const std::string	REASON_PROXY_AUTHENTICATION_REQUIRED
                                             ("Proxy Authentication Required");
@@ -57,7 +57,7 @@ namespace
   const std::string	REASON_REQUEST_ENTITY_TOO_LARGE
                                             ("Request Entity Too Large");
   const std::string	REASON_REQUEST_URI_TOO_LONG
-                                            ("Request-URI Too Large");
+                                            ("Request-URI Too Long");
   const std::string	REASON_UNSUPPORTED_MEDIA_TYPE
                                             ("Unsupported Media Type");
   const std::string	REASON_REQUEST_RANGE_NOT_SATISFIABLE
@@ -85,61 +85,61 @@ namespace via
     namespace response_status
     {
     //////////////////////////////////////////////////////////////////////////
-    const std::string& reason_phrase(status_code status)
+    const std::string& reason_phrase(code::status status_code)
     {
-      switch(status)
+      switch(status_code)
       {
       // Informational 1xx
-      case CONTINUE:                      return REASON_CONTINUE;
-      case SWITCHING_PROTOCOLS:           return REASON_SWITCHING_PROTOCOLS;
+      case code::CONTINUE:                      return REASON_CONTINUE;
+      case code::SWITCHING_PROTOCOLS:           return REASON_SWITCHING_PROTOCOLS;
 
       // Successful 2xx
-      case OK:                            return REASON_OK;
-      case CREATED:                       return REASON_CREATED;
-      case ACCEPTED:                      return REASON_ACCEPTED;
-      case NON_AUTHORITATIVE:             return REASON_NON_AUTHORITATIVE;
-      case NO_CONTENT:                    return REASON_NO_CONTENT;
-      case RESET_CONTENT:                 return REASON_RESET_CONTENT;
-      case PARTIAL_CONTENT:               return REASON_PARTIAL_CONTENT;
+      case code::OK:                            return REASON_OK;
+      case code::CREATED:                       return REASON_CREATED;
+      case code::ACCEPTED:                      return REASON_ACCEPTED;
+      case code::NON_AUTHORITATIVE:             return REASON_NON_AUTHORITATIVE;
+      case code::NO_CONTENT:                    return REASON_NO_CONTENT;
+      case code::RESET_CONTENT:                 return REASON_RESET_CONTENT;
+      case code::PARTIAL_CONTENT:               return REASON_PARTIAL_CONTENT;
 
       // Redirection 3xx
-      case MULTIPLE_CHOICES:              return REASON_MULTIPLE_CHOICES;
-      case MOVED_PERMANENTLY:             return REASON_MOVED_PERMANENTLY;
-      case FOUND:                         return REASON_FOUND;
-      case SEE_OTHER:                     return REASON_SEE_OTHER;
-      case NOT_MODIFIED:                  return REASON_NOT_MODIFIED;
-      case USE_PROXY:                     return REASON_USE_PROXY;
-      case TEMPORARY_REDIRECT:            return REASON_TEMPORARY_REDIRECT;
+      case code::MULTIPLE_CHOICES:              return REASON_MULTIPLE_CHOICES;
+      case code::MOVED_PERMANENTLY:             return REASON_MOVED_PERMANENTLY;
+      case code::FOUND:                         return REASON_FOUND;
+      case code::SEE_OTHER:                     return REASON_SEE_OTHER;
+      case code::NOT_MODIFIED:                  return REASON_NOT_MODIFIED;
+      case code::USE_PROXY:                     return REASON_USE_PROXY;
+      case code::TEMPORARY_REDIRECT:            return REASON_TEMPORARY_REDIRECT;
 
       // Client Error 4xx
-      case BAD_REQUEST:                   return REASON_BAD_REQUEST;
-      case UNAUTHORISED:                  return REASON_UNAUTHORISED;
-      case PAYMENT_REQUIRED:              return REASON_PAYMENT_REQUIRED;
-      case FORBIDDEN:                     return REASON_FORBIDDEN;
-      case NOT_FOUND:                     return REASON_NOT_FOUND;
-      case METHOD_NOT_ALLOWED:            return REASON_METHOD_NOT_ALLOWED;
-      case NOT_ACCEPTABLE:                return REASON_NOT_ACCEPTABLE;
-      case PROXY_AUTHENTICATION_REQUIRED: 
+      case code::BAD_REQUEST:                   return REASON_BAD_REQUEST;
+      case code::UNAUTHORISED:                  return REASON_UNAUTHORISED;
+      case code::PAYMENT_REQUIRED:              return REASON_PAYMENT_REQUIRED;
+      case code::FORBIDDEN:                     return REASON_FORBIDDEN;
+      case code::NOT_FOUND:                     return REASON_NOT_FOUND;
+      case code::METHOD_NOT_ALLOWED:            return REASON_METHOD_NOT_ALLOWED;
+      case code::NOT_ACCEPTABLE:                return REASON_NOT_ACCEPTABLE;
+      case code::PROXY_AUTHENTICATION_REQUIRED:
                                   return REASON_PROXY_AUTHENTICATION_REQUIRED;
-      case REQUEST_TIMEOUT:               return REASON_REQUEST_TIMEOUT;
-      case CONFLICT:                      return REASON_CONFLICT;
-      case GONE:                          return REASON_GONE;
-      case LENGTH_REQUIRED:               return REASON_LENGTH_REQUIRED;
-      case PRECONDITION_FAILED:           return REASON_PRECONDITION_FAILED;
-      case REQUEST_ENTITY_TOO_LARGE:   return REASON_REQUEST_ENTITY_TOO_LARGE;
-      case REQUEST_URI_TOO_LONG:          return REASON_REQUEST_URI_TOO_LONG;
-      case UNSUPPORTED_MEDIA_TYPE:       return REASON_UNSUPPORTED_MEDIA_TYPE;
-      case REQUEST_RANGE_NOT_SATISFIABLE:
+      case code::REQUEST_TIMEOUT:               return REASON_REQUEST_TIMEOUT;
+      case code::CONFLICT:                      return REASON_CONFLICT;
+      case code::GONE:                          return REASON_GONE;
+      case code::LENGTH_REQUIRED:               return REASON_LENGTH_REQUIRED;
+      case code::PRECONDITION_FAILED:           return REASON_PRECONDITION_FAILED;
+      case code::REQUEST_ENTITY_TOO_LARGE:   return REASON_REQUEST_ENTITY_TOO_LARGE;
+      case code::REQUEST_URI_TOO_LONG:          return REASON_REQUEST_URI_TOO_LONG;
+      case code::UNSUPPORTED_MEDIA_TYPE:       return REASON_UNSUPPORTED_MEDIA_TYPE;
+      case code::REQUEST_RANGE_NOT_SATISFIABLE:
                                   return REASON_REQUEST_RANGE_NOT_SATISFIABLE;
-      case EXPECTATION_FAILED:            return REASON_EXPECTATION_FAILED;
+      case code::EXPECTATION_FAILED:            return REASON_EXPECTATION_FAILED;
 
       // Server Error 5xx
-      case INTERNAL_SERVER_ERROR:         return REASON_INTERNAL_SERVER_ERROR;
-      case NOT_IMPLEMENTED:               return REASON_NOT_IMPLEMENTED;
-      case BAD_GATEWAY:                   return REASON_BAD_GATEWAY;
-      case SERVICE_UNAVAILABLE:           return REASON_SERVICE_UNAVAILABLE;
-      case GATEWAY_TIMEOUT:               return REASON_GATEWAY_TIMEOUT;
-      case HTTP_VERSION_NOT_SUPPORTED:    
+      case code::INTERNAL_SERVER_ERROR:         return REASON_INTERNAL_SERVER_ERROR;
+      case code::NOT_IMPLEMENTED:               return REASON_NOT_IMPLEMENTED;
+      case code::BAD_GATEWAY:                   return REASON_BAD_GATEWAY;
+      case code::SERVICE_UNAVAILABLE:           return REASON_SERVICE_UNAVAILABLE;
+      case code::GATEWAY_TIMEOUT:               return REASON_GATEWAY_TIMEOUT;
+      case code::HTTP_VERSION_NOT_SUPPORTED:
                                      return REASON_HTTP_VERSION_NOT_SUPPORTED;
       // Unknown Error Status Code
       default:                            return EMPTY_STRING;

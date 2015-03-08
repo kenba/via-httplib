@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef RESPONSE_STATUS_HPP_VIA_HTTPLIB_
 #define RESPONSE_STATUS_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -21,8 +22,11 @@ namespace via
   {
     namespace response_status
     {
+      /// A namespace to mimic C++11 enum class naming.
+      namespace code
+      {
       /// The standard HTTP 1.1 response status codes.
-      enum status_code
+      enum status
       {
         // Informational 1xx
         CONTINUE                      = 100,
@@ -74,12 +78,13 @@ namespace via
         GATEWAY_TIMEOUT               = 504,
         HTTP_VERSION_NOT_SUPPORTED    = 505
       };
+      }
 
       /// The standard reason phrase associated with the response status code.
       /// See RFC2616 Section 6.1.1.
       /// @param status the reason status code
       /// @return the standard reason phrase associated with the status code.
-      const std::string& reason_phrase(status_code status);
+      const std::string& reason_phrase(code::status status_code);
 
     }
   }

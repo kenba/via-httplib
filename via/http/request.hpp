@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef REQUEST_HPP_VIA_HTTPLIB_
 #define REQUEST_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,6 +15,7 @@
 /// @brief Classes to parse and encode HTTP requests.
 //////////////////////////////////////////////////////////////////////////////
 #include "request_method.hpp"
+#include "response_status.hpp"
 #include "headers.hpp"
 #include "chunk.hpp"
 #include <algorithm>
@@ -30,33 +32,38 @@ namespace via
     class request_line
     {
     public:
-      /// @enum parsing_state the state of the request line parser.
-      enum parsing_state
+      /// @enum Request the state of the request line parser.
+      enum Request
       {
-        REQ_METHOD,     ///< request method
-        REQ_URI,        ///< request uri
-        REQ_HTTP,       ///< HTTP/ -H
-        REQ_HTTP_T1,    ///< HTTP/ first T
-        REQ_HTTP_T2,    ///< HTTP/ second T
-        REQ_HTTP_P,     ///< HTTP/ P
-        REQ_HTTP_SLASH, ///< HTTP/ slash
-        REQ_HTTP_MAJOR, ///< HTTP major version number
-        REQ_HTTP_MINOR, ///< HTTP minor version number
-        REQ_HTTP_LF,    ///< the line feed (if any)
-        REQ_HTTP_END
+        REQ_METHOD,              ///< request method
+        REQ_URI,                 ///< request uri
+        REQ_HTTP_H,              ///< HTTP/ H
+        REQ_HTTP_T1,             ///< HTTP/ first T
+        REQ_HTTP_T2,             ///< HTTP/ second T
+        REQ_HTTP_P,              ///< HTTP/ P
+        REQ_HTTP_SLASH,          ///< HTTP/ slash
+        REQ_HTTP_MAJOR,          ///< HTTP major version number
+        REQ_HTTP_DOT,            ///< HTTP . between major and minor versions
+        REQ_HTTP_MINOR,          ///< HTTP minor version number
+        REQ_CR,                  ///< the carriage return (if any)
+        REQ_LF,                  ///< the line feed
+        REQ_VALID,               ///< the request line is valid
+        REQ_ERROR_CRLF,          ///< strict_crlf_s is true and LF was received without CR
+        REQ_ERROR_WS,            ///< the whitespace is longer than max_ws_s
+        REQ_ERROR_METHOD_LENGTH, ///< the method name is longer than max_method_length_s
+        REQ_ERROR_URI_LENGTH     ///< then uri is longer than max_uri_length_s
       };
 
     private:
 
-      std::string method_;  ///< the request method
-      std::string uri_;     ///< the request uri
-      int major_version_;   ///< the HTTP major version number
-      int minor_version_;   ///< the HTTP minor version number
-      parsing_state state_; ///< the current parsing state
-      bool major_read_;     ///< true if major version was read
-      bool minor_read_;     ///< true if minor version was read
-      bool valid_;          ///< true if the request line is valid
-      bool fail_;           ///< true if the request line failed validation
+      std::string method_;   ///< the request method
+      std::string uri_;      ///< the request uri
+      size_t      ws_count_; ///< the current whitespace count
+      char major_version_;   ///< the HTTP major version character
+      char minor_version_;   ///< the HTTP minor version character
+      Request state_;        ///< the current parsing state
+      bool valid_;           ///< true if the request line is valid
+      bool fail_;            ///< true if the request line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -64,6 +71,18 @@ namespace via
       bool parse_char(char c);
 
     public:
+
+      /// whether to enforce strict parsing of CRLF
+      static bool strict_crlf_s;
+
+      /// the maximum number of consectutive whitespace characters.
+      static size_t max_ws_s;
+
+      /// the maximum length of a request method, default 16 chars
+      static size_t max_method_length_s;
+
+      /// the maximum length of a uri.
+      static size_t max_uri_length_s;
 
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
@@ -73,11 +92,10 @@ namespace via
       explicit request_line() :
         method_(),
         uri_(),
+        ws_count_(0),
         major_version_(0),
         minor_version_(0),
         state_(REQ_METHOD),
-        major_read_(false),
-        minor_read_(false),
         valid_(false),
         fail_(false)
       {}
@@ -88,11 +106,10 @@ namespace via
       {
         method_.clear();
         uri_.clear();
+        ws_count_ = 0;
         major_version_ = 0;
         minor_version_ = 0;
         state_ = REQ_METHOD;
-        major_read_ =  false;
-        minor_read_ =  false;
         valid_ =  false;
         fail_ = false;
       }
@@ -103,35 +120,33 @@ namespace via
       {
         method_.swap(other.method_);
         uri_.swap(other.uri_);
+        std::swap(ws_count_, other.ws_count_);
         std::swap(major_version_, other.major_version_);
         std::swap(minor_version_, other.minor_version_);
         std::swap(state_, other.state_);
-        std::swap(major_read_, other.major_read_);
-        std::swap(minor_read_, other.minor_read_);
         std::swap(valid_, other.valid_);
         std::swap(fail_, other.fail_);
       }
 
       /// Virtual destructor.
       /// Since the class is inherited...
-      virtual ~request_line()
-      {}
+      virtual ~request_line() {}
 
       /// Parse the line as an HTTP request.
       /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (REQ_HTTP_END != state_))
+        while ((iter != end) && (REQ_VALID != state_))
         {
-          char c(static_cast<char>(*iter++));
+          char c(*iter++);
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
-        valid_ = (REQ_HTTP_END == state_);
+        valid_ = (REQ_VALID == state_);
         return valid_;
       }
 
@@ -147,13 +162,18 @@ namespace via
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.
-      int major_version() const
+      char major_version() const
       { return major_version_; }
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      int minor_version() const
+      char minor_version() const
       { return minor_version_; }
+
+      /// Accessor for the parsing state.
+      /// @return the parsing state.
+      Request state() const
+      { return state_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
@@ -165,27 +185,33 @@ namespace via
       bool fail() const
       { return fail_; }
 
+      /// Test for early HTTP versions
+      /// @return true if HTTP/1.0 or earlier.
+      bool is_http_1_0_or_earlier() const
+      {
+        return (major_version_ <= '0') ||
+              ((major_version_ == '1') && (minor_version_ == '0'));
+      }
+
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
       /// Constructor for creating a request for one of the standard methods
       /// defined in RFC2616.
-      /// @see http::request_method::method_id
-      /// @param id the HTTP request method id
+      /// @see http::request_method::id
+      /// @param method_id the HTTP request method id
       /// @param uri the HTTP uri, default blank
-      /// @param minor_version default 1
-      /// @param major_version default 1
-      explicit request_line(request_method::method_id id,
-                            std::string uri = "",
-                            int minor_version = 1,
-                            int major_version = 1) :
-        method_(request_method::name(id)),
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
+      explicit request_line(request_method::id::method method_id,
+                            std::string uri,
+                            char major_version = '1',
+                            char minor_version = '1') :
+        method_(request_method::name(method_id)),
         uri_(uri),
         major_version_(major_version),
         minor_version_(minor_version),
-        state_(REQ_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
+        state_(REQ_VALID),
         valid_(true),
         fail_(false)
       {}
@@ -193,19 +219,17 @@ namespace via
       /// Constructor for creating a request with a non-standard method.
       /// @param method the HTTP request method name
       /// @param uri the HTTP uri, default blank
-      /// @param minor_version default 1
-      /// @param major_version default 1
-      explicit request_line(const std::string& method,
-                            std::string uri = "",
-                            int minor_version = 1,
-                            int major_version = 1) :
+      /// @param major_version default '1'
+      /// @param minor_version default '1'
+      explicit request_line(std::string const& method,
+                            std::string const& uri,
+                            char major_version = '1',
+                            char minor_version = '1') :
         method_(method),
         uri_(uri),
         major_version_(major_version),
         minor_version_(minor_version),
-        state_(REQ_HTTP_END),
-        major_read_(true),
-        minor_read_(true),
+        state_(REQ_VALID),
         valid_(true),
         fail_(false)
       {}
@@ -222,12 +246,12 @@ namespace via
 
       /// Set the HTTP major version.
       /// @param major_version the HTTP major version.
-      void set_major_version(int major_version)
+      void set_major_version(char major_version)
       { major_version_ = major_version; }
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
-      void set_minor_version(int minor_version)
+      void set_minor_version(char minor_version)
       { minor_version_ = minor_version; }
 
       /// Output as a string.
@@ -253,6 +277,8 @@ namespace via
         headers_(),
         valid_(false)
       {}
+
+      virtual ~rx_request() {}
 
       /// Clear the rx_request.
       /// Sets all member variables to their initial state.
@@ -281,8 +307,8 @@ namespace via
       ///   - the end of the data buffer.
       /// @param end the end of the data buffer.
       /// @return true if parsed ok, false otherwise.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      bool parse(ForwardIterator1& iter, ForwardIterator2 end)
+      template<typename ForwardIterator>
+      bool parse(ForwardIterator& iter, ForwardIterator end)
       {
         if (!request_line::valid() && !request_line::parse(iter, end))
           return false;
@@ -307,12 +333,12 @@ namespace via
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
       bool is_head() const
-      { return request_method::name(request_method::HEAD) == method(); }
+      { return request_method::name(request_method::id::HEAD) == method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
       bool is_trace() const
-      { return request_method::name(request_method::TRACE) == method(); }
+      { return request_method::name(request_method::id::TRACE) == method(); }
 
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
@@ -324,8 +350,7 @@ namespace via
       /// otherwise
       bool expect_continue() const
       {
-        return major_version() >= 1 &&
-               minor_version() >= 1 &&
+        return !is_http_1_0_or_earlier() &&
                headers_.expect_continue();
       }
 
@@ -336,9 +361,9 @@ namespace via
       /// otherwise
       bool missing_host_header() const
       {
-        return major_version() == 1 &&
-               minor_version() == 1 &&
-               headers_.find(header_field::HOST).empty();
+        return major_version() == '1' &&
+               minor_version() == '1' &&
+               headers_.find(header_field::id::HOST).empty();
       }
 
       /// Accessor for the valid flag.
@@ -352,8 +377,7 @@ namespace via
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const
       {
-        return major_version() >= 1 &&
-               minor_version() >= 1 &&
+        return !is_http_1_0_or_earlier() &&
                !headers_.close_connection();
       }
     }; // class rx_request
@@ -370,18 +394,18 @@ namespace via
 
       /// Constructor for creating a request for one of the standard methods
       /// defined in RFC2616.
-      /// @see http::request_method::method_id
-      /// @param id the HTTP request method id
+      /// @see http::request_method::id
+      /// @param method_id the HTTP request method id
       /// @param uri the HTTP uri
       /// @param header_string default blank
-      /// @param minor_version default 1
       /// @param major_version default 1
-      explicit tx_request(request_method::method_id id,
+      /// @param minor_version default 1
+      explicit tx_request(request_method::id::method method_id,
                           std::string uri,
                           std::string header_string = "",
-                          int minor_version = 1,
-                          int major_version = 1) :
-        request_line(id, uri, minor_version, major_version),
+                          char major_version = '1',
+                          char minor_version = '1') :
+        request_line(method_id, uri, major_version, minor_version),
         header_string_(header_string)
       {}
 
@@ -389,16 +413,18 @@ namespace via
       /// @param method the HTTP request method name
       /// @param uri the HTTP uri
       /// @param header_string default blank
-      /// @param minor_version default 1
       /// @param major_version default 1
+      /// @param minor_version default 1
       explicit tx_request(const std::string& method,
                           std::string uri,
                           std::string header_string = "",
-                          int minor_version = 1,
-                          int major_version = 1) :
-        request_line(method, uri, minor_version, major_version),
+                          char major_version = '1',
+                          char minor_version = '1') :
+        request_line(method, uri, major_version, minor_version),
         header_string_(header_string)
       {}
+
+      virtual ~tx_request() {}
 
       /// Add a free form header to the request.
       /// @param field the header field name
@@ -410,8 +436,8 @@ namespace via
       /// @see http::header_field::field_id
       /// @param id the header field id
       /// @param value the header field value
-      void add_header(header_field::field_id id, const std::string& value)
-      { header_string_ += header_field::to_header(id, value);  }
+      void add_header(header_field::id::field field_id, const std::string& value)
+      { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add an http content length header line for the given size.
       /// @param size the size of the message body.
@@ -430,9 +456,9 @@ namespace via
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
         bool no_content_length(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::CONTENT_LENGTH)));
+              (header_field::standard_name(header_field::id::CONTENT_LENGTH)));
         bool no_transfer_encoding(std::string::npos == header_string_.find
-              (header_field::standard_name(header_field::TRANSFER_ENCODING)));
+              (header_field::standard_name(header_field::id::TRANSFER_ENCODING)));
         if (no_content_length && no_transfer_encoding)
           output += header_field::content_length(content_length);
         output += CRLF;
@@ -445,18 +471,21 @@ namespace via
     /// @class request_receiver
     /// A template class to receive HTTP requests and any associated data.
     /// @param Container the type of container in which the request is held.
-    /// @param translate_head whether the receiver passes a HEAD request to
-    /// the application as a GET request.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container, bool translate_head>
+    template <typename Container>
     class request_receiver
     {
-      rx_request request_; ///< the received request
-      rx_chunk<Container> chunk_;   ///< the received chunk
+      rx_request request_;         ///< the received request
+      rx_chunk<Container> chunk_;  ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
+      /// the appropriate response to the request:
+      /// either an error code or 100 Continue.
+      response_status::code::status response_code_;
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
       bool       concatenate_chunks_; ///< concatenate chunk data into the body
+      bool       translate_head_;  ///< pass a HEAD request as a GET request.
+      bool       require_host_;    ///< a host header is required.
 
     public:
 
@@ -464,13 +493,22 @@ namespace via
       /// Sets all member variables to their initial state.
       /// @param concatenate_chunks if true concatenate chunk data into the body
       /// otherwise the body just contains the data for each chunk.
-      explicit request_receiver(bool concatenate_chunks) :
+      /// @param translate_head if true the server shall always pass a HEAD request
+      /// to the application as a GET request.
+      /// @param require_host if true the server shall require all requests to
+      /// include a "Host:" header field. Required by RFC2616.
+      explicit request_receiver(bool concatenate_chunks,
+                                bool translate_head,
+                                bool require_host) :
         request_(),
         chunk_(),
         body_(),
+        response_code_(response_status::code::NO_CONTENT),
         continue_sent_(false),
         is_head_(false),
-        concatenate_chunks_(concatenate_chunks)
+        concatenate_chunks_(concatenate_chunks),
+        translate_head_(translate_head),
+        require_host_(require_host)
       {}
 
       /// clear the request_receiver.
@@ -507,12 +545,15 @@ namespace via
       Container const& body() const
       { return body_; }
 
+      /// Accessor for the response code.
+      response_status::code::status response_code() const
+      { return response_code_; }
+
       /// Receive data for an HTTP request, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      receiver_parsing_state receive(ForwardIterator1& iter,
-                                     ForwardIterator2 end)
+      template<typename ForwardIterator>
+      Rx receive(ForwardIterator& iter, ForwardIterator end)
       {
         // building a request
         bool request_parsed(!request_.valid());
@@ -524,6 +565,10 @@ namespace via
             // if a parsing error (not run out of data)
             if ((iter != end) || request_.fail())
             {
+              if (request_line::REQ_ERROR_URI_LENGTH == request_.state())
+                response_code_ = response_status::code::REQUEST_URI_TOO_LONG;
+              else
+                response_code_ = response_status::code::BAD_REQUEST;
               clear();
               return RX_INVALID;
             }
@@ -534,30 +579,43 @@ namespace via
 
         // build a request body or receive a chunk
         assert(request_.valid());
+        if (require_host_ && request_.missing_host_header())
+        {
+          response_code_ = response_status::code::BAD_REQUEST;
+          return RX_INVALID;
+        }
+
         if (!request_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
           size_t content_length(request_.content_length());
-          if (content_length == CONTENT_LENGTH_INVALID)
+          if ((content_length == ULONG_MAX) ||
+              (content_length > message_headers::max_content_length_s))
           {
+            if (content_length == ULONG_MAX)
+              response_code_ = response_status::code::BAD_REQUEST;
+            else
+              response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
             clear();
             return RX_INVALID;
           }
 
           // if there's a message body then insist on a content length header
-          long rx_size(end - iter);
+          ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
-              request_.headers().find(header_field::CONTENT_LENGTH).empty())
+              request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
+            response_code_ = response_status::code::LENGTH_REQUIRED;
             clear();
-            return RX_LENGTH_REQUIRED;
+            return RX_INVALID;
           }
 
           // received buffer contains more than the required data
-          long required(content_length - body_.size());
+          ptrdiff_t required(static_cast<ptrdiff_t>(content_length) -
+                             static_cast<ptrdiff_t>(body_.size()));
           if (rx_size > required)
           {
-              ForwardIterator1 next(iter + required);
+              ForwardIterator next(iter + required);
               body_.insert(body_.end(), iter, next);
           }
           else // received buffer <= required data
@@ -571,9 +629,8 @@ namespace via
           {
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
-            if (is_head_ && translate_head)
-              request_.set_method(request_method::name(request_method::GET));
-
+            if (is_head_ && translate_head_)
+              request_.set_method(request_method::name(request_method::id::GET));
             return RX_VALID;
           }
         }
@@ -590,6 +647,7 @@ namespace via
             // if a parsing error (not run out of data)
             if (iter != end)
             {
+              response_code_ = response_status::code::BAD_REQUEST;
               clear();
               return RX_INVALID;
             }
@@ -599,7 +657,10 @@ namespace via
           if (request_parsed)
           {
             if (request_.expect_continue() && !continue_sent_)
+            {
+              response_code_ = response_status::code::CONTINUE;
               return RX_EXPECT_CONTINUE;
+            }
             else
             {
               if (!concatenate_chunks_)

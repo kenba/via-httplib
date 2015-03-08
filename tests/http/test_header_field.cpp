@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -20,13 +20,13 @@ BOOST_AUTO_TEST_SUITE(TestHeaderFields)
 
 BOOST_AUTO_TEST_CASE(NamesEqual)
 {
-  for (int i(header_field::CACHE_CONTROL);
-       i <= header_field::EXTENSION_HEADER; ++i)
+  for (int i(static_cast<int>(header_field::id::CACHE_CONTROL));
+       i <= static_cast<int>(header_field::id::EXTENSION_HEADER); ++i)
   {
-    header_field::field_id id(static_cast<header_field::field_id>(i));
-    std::string lowerName(boost::algorithm::to_lower_copy(standard_name(id)));
+    header_field::id::field field_id(static_cast<header_field::id::field>(i));
+    std::string lowerName(boost::algorithm::to_lower_copy(header_field::standard_name(field_id)));
 
-    BOOST_CHECK_EQUAL(lowercase_name(id).c_str(), lowerName.c_str());
+    BOOST_CHECK_EQUAL(header_field::lowercase_name(field_id), lowerName);
   }
 }
 
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(ToHeaderString)
 
   std::string result(header_field::to_header(name, value));
 
-  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line, result);
 }
 
 BOOST_AUTO_TEST_CASE(ToHeaderEnum)
@@ -46,9 +46,9 @@ BOOST_AUTO_TEST_CASE(ToHeaderEnum)
   std::string value("ISO-8859-1");
   std::string line("Accept-Charset: ISO-8859-1\r\n");
 
-  std::string result(header_field::to_header(header_field::ACCEPT_CHARSET, value));
+  std::string result(header_field::to_header(header_field::id::ACCEPT_CHARSET, value));
 
-  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line, result);
 }
 
 BOOST_AUTO_TEST_CASE(ToHeaderDate)
@@ -62,13 +62,29 @@ BOOST_AUTO_TEST_CASE(ToHeaderDate)
   BOOST_CHECK(!memcmp(end.c_str(), result.c_str() + 31, end.size()));
 }
 
+BOOST_AUTO_TEST_CASE(ServerHeader)
+{
+  std::string line("Server: Via-httplib/1.0.5\r\n");
+
+  std::string result(header_field::server_header());
+  BOOST_CHECK_EQUAL(line, result);
+}
+
+BOOST_AUTO_TEST_CASE(ContentHttpHeader)
+{
+  std::string line("Content-Type: message/http\r\n");
+
+  std::string result(header_field::content_http_header());
+  BOOST_CHECK_EQUAL(line, result);
+}
+
 BOOST_AUTO_TEST_CASE(ContentLengthHeader)
 {
   size_t size(1234);
   std::string line("Content-Length: 1234\r\n");
 
   std::string result(header_field::content_length(size));
-  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line, result);
 }
 
 BOOST_AUTO_TEST_CASE(ChunkedHeader)
@@ -76,7 +92,7 @@ BOOST_AUTO_TEST_CASE(ChunkedHeader)
   std::string line("Transfer-Encoding: Chunked\r\n");
 
   std::string result(header_field::chunked_encoding());
-  BOOST_CHECK_EQUAL(line.c_str(), result.c_str());
+  BOOST_CHECK_EQUAL(line, result);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef CHARACTER_HPP_VIA_HTTPLIB_
 #define CHARACTER_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -49,6 +50,34 @@ namespace via
     /// @return true if character is a separator character, false otherwise.
     bool is_separator(char c);
 
+    /// Test whether a sequence of three characters is a percent encoding
+    /// character according to RFC 3986.
+    /// @param c the characters
+    /// @return true if character is a percent encoding character, false otherwise.
+    bool is_pct_encoded(char const* c);
+
+    /// Test whether a character is a gen-delim according to RFC3986.
+    /// @param c the character
+    /// @return true if character is a gen-delim character, false otherwise.
+    bool is_gen_delim(char c);
+
+    /// Test whether a character is a sub-delim according to RFC 3986.
+    /// @param c the character
+    /// @return true if character is a sub-delim character, false otherwise.
+    bool is_sub_delim(char c);
+
+    /// Test whether a character is a reserved character according to RFC3986.
+    /// I.e. whether it is a gen-delim or a sub-delim character.
+    /// @param c the character
+    /// @return true if character is a reserved character, false otherwise.
+    inline bool is_reserved(char c)
+    { return is_gen_delim(c) || is_sub_delim(c); }
+
+    /// Test whether a character is a unreserved character according to RFC3986.
+    /// @param c the character
+    /// @return true if character is a unreserved character, false otherwise.
+    bool is_unreserved(char c);
+
     /// Test whether a character is a token character.
     /// i.e. not a control or separator character.
     /// @param c the character
@@ -67,12 +96,13 @@ namespace via
     /// @param major_version the http major version number.
     /// @param minor_version the http minor version number.
     /// @return the http string for the given version.
-    std::string http_version(int major_version, int minor_version);
+    std::string http_version(char major_version, char minor_version);
 
     /// Convert a string representing a hexadecimal number to an unsigned int.
     /// @param hex_string the string containing a vald hexadecimal number
-    /// @return the number represented by the string, ULONG_MAX if invalid.
-    size_t from_hex_string(const std::string& hex_string);
+    /// @return the number represented by the string,
+    /// std::numeric_limits<size_t>::max() if invalid.
+    size_t from_hex_string(std::string const& hex_string);
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
@@ -81,14 +111,14 @@ namespace via
 
     /// Convert a string representing a decimal number to an unsigned int.
     /// @param dec_string the string containing a vald decimal number
-    /// @return the number represented by the string, ULONG_MAX if invalid.
-    size_t from_dec_string(const std::string& dec_string);
+    /// @return the number represented by the string,
+    /// std::numeric_limits<size_t>::max() if invalid.
+    size_t from_dec_string(std::string const& dec_string);
 
     /// Convert an int into a decimal string.
     /// @param number to be represented
     /// @return the string containing the number in decimal.
-    std::string to_dec_string(int number);
-
+    std::string to_dec_string(size_t number);
   }
 }
 

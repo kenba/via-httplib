@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -8,25 +8,44 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "request.hpp"
 #include "character.hpp"
+#include <limits>
 
 namespace via
 {
   namespace http
   {
+
+    bool request_line::strict_crlf_s(false);
+
+    size_t request_line::max_ws_s(8);
+
+    size_t request_line::max_method_length_s(16);
+
+    size_t request_line::max_uri_length_s(1024);
+
     //////////////////////////////////////////////////////////////////////////
     bool request_line::parse_char(char c)
     {
-
 
       switch (state_)
       {
       case REQ_METHOD:
         // Valid HTTP methods must be uppercase chars
         if (std::isupper(c))
+        {
           method_.push_back(c);
+          if (method_.size() > max_method_length_s)
+          {
+            state_ = REQ_ERROR_METHOD_LENGTH;
+            return false;
+          }
+        }
         // If this char is whitespace and method has been read
         else if (is_space_or_tab(c) && !method_.empty())
+        {
+          ws_count_ = 1;
           state_ = REQ_URI;
+        }
         else
           return false;
         break;
@@ -37,16 +56,42 @@ namespace via
         else if (is_space_or_tab(c))
         {
           // Ignore leading whitespace
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = REQ_ERROR_WS;
+            return false;
+          }
+
           if (!uri_.empty())
-            state_ = REQ_HTTP;
+          {
+            ws_count_ = 1;
+            state_ = REQ_HTTP_H;
+          }
         }
         else
+        {
           uri_.push_back(c);
+          if (uri_.size() > max_uri_length_s)
+          {
+            state_ = REQ_ERROR_URI_LENGTH;
+            return false;
+          }
+        }
         break;
 
-      case REQ_HTTP:
+      case REQ_HTTP_H:
         // Ignore leading whitespace
-        if (!is_space_or_tab(c))
+        if (is_space_or_tab(c))
+        {
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = REQ_ERROR_WS;
+            return false;
+          }
+        }
+        else
         {
           if ('H' == c)
             state_ = REQ_HTTP_T1;
@@ -86,45 +131,51 @@ namespace via
       case REQ_HTTP_MAJOR:
         if (std::isdigit(c))
         {
-          major_read_ = true;
-          major_version_ *= 10;
-          major_version_ += read_digit(c);
+          major_version_ = c;
+          state_ = REQ_HTTP_DOT;
         }
         else
-        {
-          if (major_read_ && ('.' == c))
-            state_ = REQ_HTTP_MINOR;
-          else
-            return false;
-        }
+          return false;
+        break;
+
+      case REQ_HTTP_DOT:
+        if ('.' == c)
+          state_ = REQ_HTTP_MINOR;
+        else
+          return false;
         break;
 
       case REQ_HTTP_MINOR:
         if (std::isdigit(c))
         {
-          minor_read_ = true;
-          minor_version_ *= 10;
-          minor_version_ += read_digit(c);
+          minor_version_ = c;
+          state_ = REQ_CR;
         }
         else
+          return false;
+        break;
+
+      case REQ_CR:
+        // The HTTP line should end with a \r\n...
+        if ('\r' == c)
+          state_ = REQ_LF;
+        else
         {
-          // The HTTP version should end with a \r\n...
-          if (is_end_of_line(c) && minor_read_)
-          {
-            if ('\r' == c)
-              state_ = REQ_HTTP_LF;
-            else // ('\n' == c) \\ but permit just \n
-              state_ = REQ_HTTP_END;
-          }
+          // but (if not being strict) permit just \n
+          if (!strict_crlf_s && ('\n' == c))
+            state_ = REQ_VALID;
           else
+          {
+            state_ = REQ_ERROR_CRLF;
             return false;
+          }
         }
         break;
 
-      case REQ_HTTP_LF:
+      case REQ_LF:
         if ('\n' == c)
-          state_ = REQ_HTTP_END;
-        else 
+          state_ = REQ_VALID;
+        else
           return false;
         break;
 
@@ -142,7 +193,7 @@ namespace via
       std::string output(method_);
       output += ' ' + uri_ + ' '
              + http_version(major_version_, minor_version_)
-             + "\r\n";
+             + CRLF;
       return output;
     }
     //////////////////////////////////////////////////////////////////////////

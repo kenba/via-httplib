@@ -3,7 +3,7 @@
 #ifndef HTTP_CONNECTION_HPP_VIA_HTTPLIB_
 #define HTTP_CONNECTION_HPP_VIA_HTTPLIB_
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -90,7 +90,7 @@ namespace via
     typename connection_type::weak_pointer connection_;
 
     /// The request receiver for this connection.
-    http::request_receiver<Container, translate_head> rx_;
+    http::request_receiver<Container> rx_;
 
     /// A flag to indicate that the server should always respond to an
     /// expect: 100-continue header with a 100 Continue response.
@@ -110,7 +110,7 @@ namespace via
                     bool concatenate_chunks,
                     bool continue_enabled) :
       connection_(connection),
-      rx_(concatenate_chunks),
+      rx_(concatenate_chunks, translate_head, require_host),
       continue_enabled_(continue_enabled)
     {}
 
@@ -245,7 +245,7 @@ namespace via
 
     /// Receive data on the underlying connection.
     /// @return the receiver_parsing_state
-    http::receiver_parsing_state receive()
+    http::Rx receive()
     {
       // attempt to get the pointer
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
@@ -257,17 +257,17 @@ namespace via
       typename rx_buffer_type::const_iterator iter(data.begin());
       typename rx_buffer_type::const_iterator end(iter);
       end += tcp_pointer->size();
-      http::receiver_parsing_state rx_state(rx_.receive(iter, end));
+      http::Rx rx_state(rx_.receive(iter, end));
 
       // Handle special cases
       switch (rx_state)
       {
       case http::RX_INVALID:
 #if defined(BOOST_ASIO_HAS_MOVE)
-        send(http::tx_response(http::response_status::BAD_REQUEST));
+        send(http::tx_response(http::response_status::code::BAD_REQUEST));
 #else
       {
-        http::tx_response bad_request(http::response_status::BAD_REQUEST);
+        http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
         send(bad_request);
       }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -275,10 +275,10 @@ namespace via
 
       case http::RX_LENGTH_REQUIRED:
 #if defined(BOOST_ASIO_HAS_MOVE)
-        send(http::tx_response(http::response_status::LENGTH_REQUIRED));
+        send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
 #else
       {
-        http::tx_response length_required(http::response_status::LENGTH_REQUIRED);
+        http::tx_response length_required(http::response_status::code::LENGTH_REQUIRED);
         send(length_required);
       }
 #endif // BOOST_ASIO_HAS_MOVE
@@ -290,9 +290,9 @@ namespace via
         if (continue_enabled_)
         {
 #if defined(BOOST_ASIO_HAS_MOVE)
-          send(http::tx_response(http::response_status::CONTINUE));
+          send(http::tx_response(http::response_status::code::CONTINUE));
 #else
-          http::tx_response continue_response(http::response_status::CONTINUE);
+          http::tx_response continue_response(http::response_status::code::CONTINUE);
           send(continue_response);
 #endif // BOOST_ASIO_HAS_MOVE
           rx_state = http::RX_INCOMPLETE;
@@ -307,7 +307,7 @@ namespace via
           if (trace_enabled)
           {
             // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::OK,
+            http::tx_response ok_response(http::response_status::code::OK,
                                    http::header_field::content_http_header());
 
             // The body of the response contains the TRACE request
@@ -319,9 +319,9 @@ namespace via
           else // otherwise, it responds with "Not Allowed"
           {
 #if defined(BOOST_ASIO_HAS_MOVE)
-            send(http::tx_response(http::response_status::METHOD_NOT_ALLOWED));
+            send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
 #else
-            http::tx_response not_allowed(http::response_status::METHOD_NOT_ALLOWED);
+            http::tx_response not_allowed(http::response_status::code::METHOD_NOT_ALLOWED);
             send(not_allowed);
 #endif // BOOST_ASIO_HAS_MOVE
           }
@@ -335,7 +335,7 @@ namespace via
           if (rx_.request().missing_host_header() && require_host)
           {
             std::string missing_host("Request lacks Host Header");
-            http::tx_response bad_request(http::response_status::BAD_REQUEST);
+            http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
             send(bad_request, missing_host.begin(), missing_host.end());
 
             rx_state = http::RX_INVALID;

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -33,19 +33,70 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::string http_version(int major_version, int minor_version)
+    bool is_pct_encoded(char const* c)
+    { return (c[0] == '%') && std::isxdigit(c[1]) && std::isxdigit(c[2]); }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool is_gen_delim(char c)
+    {
+      switch (c)
+      {
+      case ':': case '/': case '?': case '#': case '[': case ']': case '@':
+        return true;
+      default:
+        return false;
+      }
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool is_sub_delim(char c)
+    {
+      switch (c)
+      {
+      case '!': case '$': case '&': case '\'': case '(': case ')':
+      case '*': case '+': case ',': case ';': case '=':
+        return true;
+      default:
+        return false;
+      }
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool is_unreserved(char c)
+    {
+      if (std::isalnum(c))
+        return true;
+      else
+      {
+        switch (c)
+        {
+        case '-': case '.': case '_': case '~':
+          return true;
+        default:
+          return false;
+        }
+      }
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    std::string http_version(char major_version, char minor_version)
     {
       std::string output("HTTP/");
-      std::stringstream version;
-      version << major_version << '.' << minor_version;
-      output += version.str();
+      output.push_back(major_version);
+      output.push_back('.');
+      output.push_back(minor_version);
       return output;
     }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_hex_string(const std::string& hex_string)
+    size_t from_hex_string(std::string const& hex_string)
     {
+      // Ensure that the string only contains hexadecimal characters
       std::string::const_iterator iter(hex_string.begin());
       for (; iter != hex_string.end(); ++iter)
         if (!std::isxdigit(*iter))
@@ -64,8 +115,9 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_dec_string(const std::string& dec_string)
+    size_t from_dec_string(std::string const& dec_string)
     {
+      // Ensure that the string only contains decimal characters
       std::string::const_iterator iter(dec_string.begin());
       for (; iter != dec_string.end(); ++iter)
         if (!std::isdigit(*iter))
@@ -86,21 +138,17 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     std::string to_hex_string(size_t number)
     {
-      // Note: C++11 to_string would be cleaner, but would it convert to hex?
       std::stringstream number_stream;
       number_stream << std::hex << number;
-     // std::string number_string(number_stream.str());
       return number_stream.str();
     }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::string to_dec_string(int number)
+    std::string to_dec_string(size_t number)
     {
-      // Note: to_string is a C++11 function!
       std::stringstream number_stream;
       number_stream << number;
-     // std::string number_string(number_stream.str());
       return number_stream.str();
     }
     //////////////////////////////////////////////////////////////////////////

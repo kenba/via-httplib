@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,8 +14,6 @@
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   #include <regex>
 #else
-  //#include <tr1/regex>
-  // std::tr1::regex doesn't link in Qt, so use boost instead...
   #include <boost/regex.hpp>
 #endif
 
@@ -40,9 +38,20 @@ namespace via
 {
   namespace http
   {
+
+    bool field_line::strict_crlf_s(false);
+
+    size_t field_line::max_ws_s(8);
+
+    size_t field_line::max_length_s(1024);
+
     //////////////////////////////////////////////////////////////////////////
     bool field_line::parse_char(char c)
     {
+      // Ensure that the overall header length is within limitts
+      if (++length_ > max_length_s)
+        state_ = HEADER_ERROR_LENGTH;
+
       switch (state_)
       {
       case HEADER_NAME:
@@ -55,8 +64,16 @@ namespace via
         break;
 
       case HEADER_VALUE_LS:
+        // Ignore leading whitespace
         if (is_space_or_tab(c))
-          break;
+          // but only upto to a limit!
+          if (++ws_count_ > max_ws_s)
+          {
+            state_ = HEADER_ERROR_WS;
+            return false;
+          }
+          else
+            break;
         else
           state_ = HEADER_VALUE;
         // intentional fall-through
@@ -66,14 +83,22 @@ namespace via
           value_.push_back(c);
         else if ('\r' == c)
           state_ = HEADER_LF;
-        else // ('\n' == c) \\ but permit just \n
-          state_ = HEADER_END;
+        else // ('\n' == c)
+        {
+          if (strict_crlf_s)
+          {
+            state_ = HEADER_ERROR_CRLF;
+            return false;
+          }
+          else
+            state_ = HEADER_VALID;
+        }
         break;
 
       case HEADER_LF:
         if ('\n' == c)
-          state_ = HEADER_END;
-        else 
+          state_ = HEADER_VALID;
+        else
           return false;
         break;
 
@@ -84,6 +109,9 @@ namespace via
       return true;
     }
     //////////////////////////////////////////////////////////////////////////
+
+    size_t message_headers::max_length_s(ULONG_MAX);
+    size_t message_headers::max_content_length_s(ULONG_MAX);
 
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const
@@ -97,25 +125,29 @@ namespace via
         return EMPTY_STRING;
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     size_t message_headers::content_length() const
     {
       // Find whether there is a content length field.
-      const std::string& content_length(find(header_field::CONTENT_LENGTH));
+      const std::string& content_length(find(header_field::id::CONTENT_LENGTH));
       if (content_length.empty())
         return 0;
 
       // Get the length from the content length field.
-      return from_dec_string(content_length);
+      size_t length(from_dec_string(content_length));
+      if (length < max_content_length_s)
+        return length;
+      else
+        return ULONG_MAX;
     }
     //////////////////////////////////////////////////////////////////////////
-    
+
     //////////////////////////////////////////////////////////////////////////
     bool message_headers::is_chunked() const
     {
       // Find whether there is a transfer encoding header.
-      const std::string& xfer_encoding(find(header_field::TRANSFER_ENCODING));
+      const std::string& xfer_encoding(find(header_field::id::TRANSFER_ENCODING));
       if (xfer_encoding.empty())
         return false;
 
@@ -123,7 +155,6 @@ namespace via
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
       return (!std::regex_match(xfer_encoding, REGEX_IDENTITY));
 #else
-      //return (!std::tr1::regex_match(xfer_encoding, REGEX_IDENTITY));
       return (!boost::regex_match(xfer_encoding, REGEX_IDENTITY));
 #endif
     }
@@ -133,7 +164,7 @@ namespace via
     bool message_headers::close_connection() const
     {
       // Find whether there is a connection header.
-      const std::string& connection(find(header_field::CONNECTION));
+      const std::string& connection(find(header_field::id::CONNECTION));
       if (connection.empty())
         return false;
 
@@ -141,7 +172,6 @@ namespace via
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
       return (std::regex_match(connection, REGEX_CLOSE));
 #else
-      //return (std::tr1::regex_match(xfer_encoding, REGEX_CLOSE));
       return (boost::regex_match(connection, REGEX_CLOSE));
 #endif
     }
@@ -151,17 +181,16 @@ namespace via
     bool message_headers::expect_continue() const
     {
       // Find whether there is a expect header.
-      const std::string& connection(find(header_field::EXPECT));
+      const std::string& connection(find(header_field::id::EXPECT));
       if (connection.empty())
         return false;
 
-      // if C++11 or Visual Studio 2010 or newer
-      #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-            return (std::regex_match(connection, REGEX_CONTINUE));
-      #else
-            //return (std::tr1::regex_match(xfer_encoding, REGEX_CONTINUE));
-            return (boost::regex_match(connection, REGEX_CONTINUE));
-      #endif
+// if C++11 or Visual Studio 2010 or newer
+#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
+      return (std::regex_match(connection, REGEX_CONTINUE));
+#else
+      return (boost::regex_match(connection, REGEX_CONTINUE));
+#endif
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -173,8 +202,32 @@ namespace via
            iter(fields_.begin()); iter != fields_.end(); ++iter)
         output += header_field::to_header(iter->first, iter->second);
 
-      output += "\r\n";
       return output;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    bool are_headers_split(std::string const& headers)
+    {
+      char prev('0');
+      char pprev('0');
+
+      std::string::const_iterator iter(headers.begin());
+      for(; iter != headers.end(); ++iter)
+      {
+        if (*iter == '\n')
+        {
+          if (prev == '\n')
+            return true;
+          else if ((prev == '\r') && (pprev == '\n'))
+            return true;
+        }
+
+        pprev = prev;
+        prev = *iter;
+      }
+
+      return false;
     }
     //////////////////////////////////////////////////////////////////////////
   }
