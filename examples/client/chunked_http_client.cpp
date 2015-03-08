@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -24,14 +24,8 @@ namespace
   /// The number of chunks to send in a request.
   const int CHUNKS_TO_SEND(5);
 
-  /// The number of chunks sent so far.
+  /// The number of chunks remaining.
   int count(0);
-
-  /// The period to call the timeout handler in milliseconds.
-  unsigned int TIMEOUT_PERIOD(100);
-
-  /// A deadline timer to send the chunks to the server.
-  boost::shared_ptr<boost::asio::deadline_timer> chunk_timer;
 
   // An http_client.
   // Declared here so that it can be used in the response_handler and
@@ -44,11 +38,11 @@ namespace
   /// Send a chunnk to the server.
   bool send_a_chunk()
   {
-    if (++count < CHUNKS_TO_SEND)
+    if (--count > 0)
     {
       std::stringstream chunk_stream;
       chunk_stream << chunk_text;
-      chunk_stream << count << "\n" << std::ends;
+      chunk_stream << CHUNKS_TO_SEND - count << "\n" << std::ends;
 
       std::string chunk_to_send(chunk_stream.str());
 
@@ -58,27 +52,21 @@ namespace
       return true;
     }
     else
+    {
+      std::cout << "last_chunk" << std::endl;
       http_client->last_chunk();
+    }
 
     return false;
   }
 
-  /// A timeout callback function. Used to send the chunks.
-  void timeout_handler(const boost::system::error_code& ec)
+  /// The handler for the HTTP socket disconnecting.
+  void msg_sent_handler()
   {
-    if (ec != boost::asio::error::operation_aborted)
-    {
-      if (send_a_chunk())
-      {
-        // reset the timer to call this function again
-        chunk_timer->expires_from_now
-            (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-        chunk_timer->async_wait(boost::bind(&timeout_handler,
-                                boost::asio::placeholders::error));
-      }
-      else
-        chunk_timer->cancel();
-    }
+    std::cout << "msg_sent_handler" << std::endl;
+
+    if (count > 0)
+      send_a_chunk();
   }
 
   /// The handler for incoming HTTP responses.
@@ -94,10 +82,8 @@ namespace
     {
       std::cout << "Rx is CONTINUE" << std::endl;
 
-      chunk_timer->expires_from_now
-          (boost::posix_time::milliseconds(TIMEOUT_PERIOD));
-      chunk_timer->async_wait(boost::bind(&timeout_handler,
-                              boost::asio::placeholders::error));
+      count = CHUNKS_TO_SEND;
+      send_a_chunk();
     }
     else
     {
@@ -124,7 +110,6 @@ namespace
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    chunk_timer->cancel();
     http_client.reset();
   }
 }
@@ -153,11 +138,6 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    /// A deadline timer to send the chunks to the server.
-    chunk_timer.reset
-      (new boost::asio::deadline_timer(io_service,
-                             boost::posix_time::milliseconds(TIMEOUT_PERIOD)));
-
     // Create an http_client
     http_client = http_client_type::create(io_service);
 
@@ -165,6 +145,7 @@ int main(int argc, char *argv[])
     // and attempt to connect to the host on the standard http port (80)
     http_client->response_received_event(response_handler);
     http_client->chunk_received_event(chunk_handler);
+    http_client->msg_sent_event(msg_sent_handler);
     http_client->disconnected_event(disconnected_handler);
     if (!http_client->connect(host_name))
     {
@@ -173,9 +154,9 @@ int main(int argc, char *argv[])
     }
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::PUT, uri);
-    request.add_header(via::http::header_field::TRANSFER_ENCODING, "Chunked");
-    request.add_header(via::http::header_field::EXPECT, "100-continue");
+    via::http::tx_request request(via::http::request_method::id::PUT, uri);
+    request.add_header(via::http::header_field::id::TRANSFER_ENCODING, "Chunked");
+    request.add_header(via::http::header_field::id::EXPECT, "100-continue");
     http_client->send(request);
 
     // run the io_service to start communications

@@ -51,6 +51,10 @@ namespace
       http_client.reset();
     }
   }
+
+  /// A handler for the signal sent when an HTTP socket is disconnected.
+  void disconnected_handler()
+  { std::cout << "Socket disconnected" << std::endl; }
 }
 
 int main(int argc, char *argv[])
@@ -87,6 +91,8 @@ int main(int argc, char *argv[])
     // attach the response handler
     // and attempt to connect to the host on the standard https port (443)
     http_client->response_received_event(response_handler);
+    http_client->chunk_received_event(chunk_handler);
+    http_client->disconnected_event(disconnected_handler);
     if (!http_client->connect(host_name, "https"))
     {
       std::cout << "Error, could not resolve host: " << host_name << std::endl;
@@ -94,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::GET, uri);
+    via::http::tx_request request(via::http::request_method::id::GET, uri);
     http_client->send(request);
 
     // run the io_service to start communications

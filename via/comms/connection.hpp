@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef CONNECTION_HPP_VIA_HTTPLIB_
 #define CONNECTION_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -269,7 +270,7 @@ namespace via
 
         event_callback_(SENT, weak_from_this());
       }
-      
+
       /// @fn handshake_callback
       /// The function called whenever a socket adaptor receives a connection
       /// handshake.
@@ -296,7 +297,7 @@ namespace via
           }
           else
           {
-            pointer->shutdown();
+            pointer->close();
             pointer->signal_error(error);
           }
         }
@@ -321,7 +322,7 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake(boost::bind(&connection::handshake_callback, ptr, 
+            pointer->handshake(boost::bind(&connection::handshake_callback, ptr,
                                boost::asio::placeholders::error), false);
           else
           {
@@ -334,7 +335,7 @@ namespace via
                    ++host_iterator);
             else
             {
-              pointer->shutdown();
+              pointer->close();
               pointer->signal_error(error);
             }
           }
@@ -526,9 +527,9 @@ namespace via
                                          boost::asio::placeholders::error));
       }
 
-      /// @fn disconnect
+      /// @fn shutdown
       /// Shutdown the underlying socket adaptor.
-      void disconnect()
+      void shutdown()
       { SocketAdaptor::shutdown(); }
 
       /// @fn close

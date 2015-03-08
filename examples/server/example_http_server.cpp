@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014 Ken Barker
+// Copyright (c) 2014-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -25,7 +25,9 @@ namespace
   /// Ccloses the server and all it's connections leaving io_service.run
   /// with no more work to do...
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop(http_server_type* http_server)
+  void handle_stop(boost::system::error_code const&, // error,
+                   int, // signal_number,
+                   http_server_type* http_server)
   {
     std::cout << "Shutting down" << std::endl;
     http_server->close();
@@ -48,22 +50,22 @@ namespace
       via::http::rx_request const& request(connection->request());
 
       // The default response is 404 Not Found
-      via::http::tx_response response(via::http::response_status::NOT_FOUND);
+      via::http::tx_response response(via::http::response_status::code::NOT_FOUND);
       response.add_server_header();
       response.add_date_header();
       if (request.uri() == "/hello")
       {
         if ((request.method() == "GET") || (request.method() == "PUT"))
-          response.set_status(via::http::response_status::OK);
+          response.set_status(via::http::response_status::code::OK);
         else
         {
-          response.set_status(via::http::response_status::METHOD_NOT_ALLOWED);
-          response.add_header(via::http::header_field::ALLOW, "GET, PUT");
+          response.set_status(via::http::response_status::code::METHOD_NOT_ALLOWED);
+          response.add_header(via::http::header_field::id::ALLOW, "GET, PUT");
         }
       }
 
       if ((request.method() == "GET") &&
-          (response.status() == static_cast<int>(via::http::response_status::OK)))
+          (response.status() == static_cast<int>(via::http::response_status::code::OK)))
         connection->send(response, response_body);
       else
         connection->send(response);
@@ -124,17 +126,16 @@ namespace
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                       via::http::response_status::REQUEST_ENTITY_TOO_LARGE :
-                       via::http::response_status::CONTINUE);
+                       via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
+                       via::http::response_status::code::CONTINUE);
     weak_ptr.lock()->send(response);
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
   void disconnected_handler(http_connection::weak_pointer weak_ptr)
   {
-    std::cout << "socket_disconnected_handler" << std::endl;
+    std::cout << "Disconnected: " << weak_ptr.lock()->remote_address() << std::endl;
   }
-
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -189,7 +190,12 @@ int main(int argc, char *argv[])
 #if defined(SIGQUIT)
     signals_.add(SIGQUIT);
 #endif // #if defined(SIGQUIT)
-    signals_.async_wait(boost::bind(&handle_stop, &http_server));
+
+    // register the handle_stop callback
+    signals_.async_wait(boost::bind(&handle_stop,
+                                    boost::asio::placeholders::error,
+                                    boost::asio::placeholders::signal_number,
+                                    &http_server));
 
     // run the io_service to start communications
     io_service.run();

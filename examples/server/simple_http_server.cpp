@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -26,14 +26,14 @@ namespace
     std::cout << "Rx headers: " << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
-    via::http::tx_response response(via::http::response_status::OK);
+    via::http::tx_response response(via::http::response_status::code::OK);
     response.add_server_header();
     response.add_date_header();
     weak_ptr.lock()->send(response);
   }
 }
 
-int main(int argc, char *argv[])
+int main(int /* argc */, char** /* *argv[] */)
 {
   try
   {

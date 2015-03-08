@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef HTTP_SERVER_HPP_VIA_HTTPLIB_
 #define HTTP_SERVER_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -111,10 +112,10 @@ namespace via
 
     /// The signal sent when a socket is disconnected.
     typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>)> http_disconnected_signal;
+      <void (boost::weak_ptr<http_connection_type>)> http_connection_signal;
 
     /// The slot type associated with a socket disconnected signal.
-    typedef typename http_disconnected_signal::slot_type http_disconnected_signal_slot;
+    typedef typename http_connection_signal::slot_type http_connection_signal_slot;
 
   private:
     boost::shared_ptr<server_type> server_;   ///< the communications server
@@ -122,8 +123,9 @@ namespace via
     http_request_signal http_request_signal_; ///< the request callback function
     http_request_signal http_continue_signal_; ///< the continue callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
-                                              /// the disconncted callback function
-    http_disconnected_signal http_disconnected_signal_;
+    http_connection_signal http_connected_signal_; ///< the conncted callback function
+    http_connection_signal http_sent_signal_; ///< the signal sent callback function
+    http_connection_signal http_disconnected_signal_; ///< the disconncted callback function
     bool concatenate_chunks_; ///< true if the server does not have a chunk handler
     bool continue_enabled_;   ///< whether the server should send 100 Continue
 
@@ -156,9 +158,19 @@ namespace via
       http_continue_signal_.connect(slot);
     }
 
+    /// Connect the connected slot.
+    /// @param slot the slot for the socket connected signal.
+    void socket_connected_event(http_connection_signal_slot const& slot)
+    { http_connected_signal_.connect(slot); }
+
+    /// Connect the sent slot.
+    /// @param slot the slot for the message sent signal.
+    void message_sent_event(http_connection_signal_slot const& slot)
+    { http_sent_signal_.connect(slot); }
+
     /// Connect the disconnected slot.
     /// @param slot the slot for the socket disconnected signal.
-    void socket_disconnected_event(http_disconnected_signal_slot const& slot)
+    void socket_disconnected_event(http_connection_signal_slot const& slot)
     { http_disconnected_signal_.connect(slot); }
 
     /// Constructor.
@@ -169,6 +181,8 @@ namespace via
       http_request_signal_(),
       http_continue_signal_(),
       http_chunk_signal_(),
+      http_connected_signal_(),
+      http_sent_signal_(),
       http_disconnected_signal_(),
       concatenate_chunks_(true),
       continue_enabled_(true)
@@ -193,6 +207,33 @@ namespace via
                        bool ipv6 = false)
     { return server_->accept_connections(port, ipv6); }
 
+    /// Handle a connected signal from an underlying comms connection.
+    /// @param connection a weak ponter to the underlying comms connection.
+    void connected_handler(boost::weak_ptr<connection_type> connection)
+    {
+      // Use the raw pointer of the connection as the map key.
+      void* pointer(connection.lock().get());
+      if (!pointer)
+        return;
+
+      // search for the connection in the collection
+      connection_collection_iterator iter(http_connections_.find(pointer));
+      if (iter == http_connections_.end())
+      {
+        boost::shared_ptr<http_connection_type> http_connection
+            (http_connection_type::create(connection,
+                                          concatenate_chunks_,
+                                          continue_enabled_));
+        http_connections_.insert
+            (connection_collection_value_type(pointer, http_connection));
+        // signal that the socket is connected
+        http_connected_signal_(http_connection);
+      }
+      else
+        std::cerr << "http_server, error: duplicate connection for "
+                  << iter->second->remote_address() << std::endl;
+    }
+
     /// Receive data packets on an underlying communications connection.
     /// @param connection a weak pointer to the underlying comms connection.
     void receive_handler(boost::weak_ptr<connection_type> connection)
@@ -201,18 +242,16 @@ namespace via
       void* pointer(connection.lock().get());
       if (pointer)
       {
-        boost::shared_ptr<http_connection_type> http_connection;
+        // search for the connection in the collection
         connection_collection_iterator iter(http_connections_.find(pointer));
-        if (iter != http_connections_.end())
-          http_connection = iter->second;
-        else
+        if (iter == http_connections_.end())
         {
-          http_connection = http_connection_type::create(connection,
-                                                         concatenate_chunks_,
-                                                         continue_enabled_);
-          http_connections_.insert
-              (connection_collection_value_type(pointer, http_connection));
+          std::cerr << "http_server, receive_handler error: connection not found "
+                    << std::endl;
+          return;
         }
+
+        boost::shared_ptr<http_connection_type> http_connection(iter->second);
 
         http::Rx rx_state(http_connection->receive());
 
@@ -245,6 +284,20 @@ namespace via
                   << std::endl;
     }
 
+    /// Handle a sent signal from an underlying comms connection.
+    /// @param connection a weak ponter to the underlying comms connection.
+    void sent_handler(boost::weak_ptr<connection_type> connection)
+    {
+      // Use the raw pointer of the connection as the map key.
+      void* pointer(connection.lock().get());
+      if (!pointer)
+        return;
+
+      connection_collection_iterator iter(http_connections_.find(pointer));
+      if (iter != http_connections_.end())
+        http_sent_signal_(iter->second);
+    }
+
     /// Handle a disconnected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
     void disconnected_handler(boost::weak_ptr<connection_type> connection)
@@ -270,8 +323,14 @@ namespace via
     {
       switch(event)
       {
+      case via::comms::CONNECTED:
+        connected_handler(connection);
+        break;
       case via::comms::RECEIVED:
         receive_handler(connection);
+        break;
+      case via::comms::SENT:
+        sent_handler(connection);
         break;
       case via::comms::DISCONNECTED:
         disconnected_handler(connection);

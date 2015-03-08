@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define TCP_ADAPTOR_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -71,7 +72,7 @@ namespace via
         boost::system::error_code ec; // Default is success
         handshake_handler(ec);
       }
-        
+
       /// @fn connect_socket
       /// Attempts to connect to the given resolver iterator.
       /// @param connect_handler the connect callback function.
@@ -92,7 +93,7 @@ namespace via
 
       /// The type of resolver iterator used by this socket.
       typedef boost::asio::ip::tcp::resolver::iterator resolver_iterator;
-      
+
       /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()
       {}
@@ -170,7 +171,11 @@ namespace via
       /// This function determines whether the error is a socket disconnect.
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
-      { return (boost::asio::error::connection_reset == error); }
+      {
+        return (boost::asio::error::connection_refused == error)
+            || (boost::asio::error::connection_reset == error)
+            || (boost::asio::error::shut_down == error);
+      }
 
       /// @fn socket
       /// Accessor for the underlying tcp socket.

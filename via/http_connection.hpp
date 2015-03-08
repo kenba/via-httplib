@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef HTTP_CONNECTION_HPP_VIA_HTTPLIB_
 #define HTTP_CONNECTION_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -503,9 +504,25 @@ namespace via
       return send(tx_message);
     }
 
+    /// @fn remote_address
+    /// Get the remote address of the connection.
+    /// @return the remote address of the connection.
+    std::string remote_address() const
+    {
+      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+        return tcp_pointer->socket().remote_endpoint().address().to_string();
+      else
+        return std::string("");
+    }
+
     /// Disconnect the underlying connection.
     void disconnect()
-    { connection_.lock()->disconnect(); }
+    { connection_.lock()->shutdown(); }
+
+    /// Close the underlying connection.
+    void close()
+    { connection_.lock()->close(); }
   };
 
 }

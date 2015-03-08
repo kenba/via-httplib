@@ -1,33 +1,37 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2015 Ken Barker
+// Copyright (c) 2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file example_https_server.cpp
-/// @brief An example HTTPS server containing all of the callbacks.
+/// @file thread_pool_http_server.cpp
+/// @brief An example HTTP server containing all of the callbacks using
+/// a single io_service and a thread pool calling io_service::run().
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
+#include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
+#include <boost/thread.hpp>
 #include <iostream>
 
-/// Define an HTTPS server using std::string to store message bodies
-typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
-                                                            https_server_type;
-typedef https_server_type::http_connection_type https_connection;
-typedef https_server_type::chunk_type http_chunk_type;
+/// Define an HTTP server using std::string to store message bodies and an
+/// asio strand to protect the handlers
+typedef via::http_server<via::comms::tcp_adaptor, std::string,
+                         via::comms::DEFAULT_BUFFER_SIZE, true> http_server_type;
+typedef http_server_type::http_connection_type http_connection;
+typedef http_server_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
   /// The stop callback function.
-  /// Exits the application.
+  /// Ccloses the server and all it's connections leaving io_service.run
+  /// with no more work to do...
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(boost::system::error_code const&, // error,
                    int, // signal_number,
-                   https_server_type* http_server)
+                   http_server_type* http_server)
   {
     std::cout << "Shutting down" << std::endl;
     http_server->close();
@@ -39,10 +43,11 @@ namespace
                      + std::string("<body><h1>200 Accepted</h1></body>\r\n")
                      + std::string("</html>\r\n"));
 
+
   /// A function to send a response to a request.
-  void respond_to_request(https_connection::weak_pointer weak_ptr)
+  void respond_to_request(http_connection::weak_pointer weak_ptr)
   {
-    https_connection::shared_pointer connection(weak_ptr.lock());
+    http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
     {
       // Get the last request sent on this connection.
@@ -76,7 +81,7 @@ namespace
   /// The handler for incoming HTTP requests.
   /// Prints the request and determines whether the request is chunked.
   /// If not, it responds with a 200 OK response with some HTML in the body.
-  void request_handler(https_connection::weak_pointer weak_ptr,
+  void request_handler(http_connection::weak_pointer weak_ptr,
                        via::http::rx_request const& request,
                        std::string const& body)
   {
@@ -92,14 +97,13 @@ namespace
   /// Prints the chunk header and body to std::cout.
   /// Defined in case the request is a chunked message.
   /// @param http_connection
-  /// @param chunk the http chunk header
-  /// @param body the body (if any) associated with the chunk.
-  void chunk_handler(https_connection::weak_pointer weak_ptr,
+  /// @param chunk the http chunk
+  void chunk_handler(http_connection::weak_pointer weak_ptr,
                      http_chunk_type const& chunk,
                      std::string const& data)
   {
     std::cout << "Rx chunk: " << chunk.to_string() << "\n";
-    std::cout << "Chunk data: "    << data << std::endl;
+    std::cout << "Chunk data: "  << data << std::endl;
 
     // Only send a response to the last chunk.
     if (chunk.is_last())
@@ -114,7 +118,7 @@ namespace
   /// Prints the request and determines whether the request is too big.
   /// It either responds with a 100 CONTINUE or a 413 REQUEST_ENTITY_TOO_LARGE
   /// response.
-  void expect_continue_handler(https_connection::weak_pointer weak_ptr,
+  void expect_continue_handler(http_connection::weak_pointer weak_ptr,
                                via::http::rx_request const& request,
                                std::string const& /* body */)
   {
@@ -131,11 +135,18 @@ namespace
     weak_ptr.lock()->send(response);
   }
 
+  /// The handler for a new conection. Prints the client's address..
+  void connected_handler(http_connection::weak_pointer weak_ptr)
+  {
+    std::cout << "Connected: " << weak_ptr.lock()->remote_address() << std::endl;
+  }
+
   /// A handler for the signal sent when an HTTP socket is disconnected.
-  void disconnected_handler(https_connection::weak_pointer weak_ptr)
+  void disconnected_handler(http_connection::weak_pointer weak_ptr)
   {
     std::cout << "Disconnected: " << weak_ptr.lock()->remote_address() << std::endl;
   }
+
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -143,9 +154,9 @@ namespace
 int main(int argc, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
 
-  // Get a port number from the user
+  // Get a port number from the user (the default is 80)
   if (argc > 2)
   {
     std::cerr << "Usage: " << app_name << " [port number]\n"
@@ -161,37 +172,23 @@ int main(int argc, char *argv[])
 
   std::cout << app_name << ": " << port_number << std::endl;
 
-  // The values for the SSL functions
-  std::string password         = "test";
-  std::string certificate_file = "cacert.pem";
-  std::string private_key_file = "privkey.pem";
-
   try
   {
     // create an io_service for the server
     boost::asio::io_service io_service;
 
-    // create an https_server
-    https_server_type https_server(io_service);
-
-    // Set up SSL
-    https_server.set_password(password);
-    boost::system::error_code error
-        (https_server_type::set_ssl_files(certificate_file, private_key_file));
-    if (error)
-    {
-      std::cerr << "Error: "  << error.message() << std::endl;
-      return 1;
-    }
+    // create an http_server
+    http_server_type http_server(io_service);
 
     // connect the handler callback functions
-    https_server.request_received_event(request_handler);
-    https_server.chunk_received_event(chunk_handler);
-    https_server.request_expect_continue_event(expect_continue_handler);
-    https_server.socket_disconnected_event(disconnected_handler);
+    http_server.request_received_event(request_handler);
+    http_server.chunk_received_event(chunk_handler);
+    http_server.request_expect_continue_event(expect_continue_handler);
+    http_server.socket_connected_event(connected_handler);
+    http_server.socket_disconnected_event(disconnected_handler);
 
     // start accepting http connections on the given port
-    error = https_server.accept_connections(port_number);
+    boost::system::error_code error(http_server.accept_connections(port_number));
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
@@ -210,10 +207,30 @@ int main(int argc, char *argv[])
     signals_.async_wait(boost::bind(&handle_stop,
                                     boost::asio::placeholders::error,
                                     boost::asio::placeholders::signal_number,
-                                    &https_server));
+                                    &http_server));
 
-    // run the io_service to start communications
-    io_service.run();
+    // Determine the number of concurrent threads supported
+    size_t no_of_threads(boost::thread::hardware_concurrency());
+    std::cout << "No of threads: " << no_of_threads << std::endl;
+
+    if (no_of_threads > 0)
+    {
+      // Create a thread pool for the threads and run the asio io_service
+      // in each of the threads.
+      std::vector<boost::shared_ptr<boost::thread> > threads;
+      for (std::size_t i = 0; i < no_of_threads; ++i)
+      {
+        boost::shared_ptr<boost::thread> thread(new boost::thread(
+              boost::bind(&boost::asio::io_service::run, &io_service)));
+        threads.push_back(thread);
+      }
+
+      // Wait for all threads in the pool to exit.
+      for (std::size_t i = 0; i < threads.size(); ++i)
+        threads[i]->join();
+    }
+    else
+      io_service.run();
 
     std::cout << "io_service.run, all work has finished" << std::endl;
   }
@@ -225,3 +242,4 @@ int main(int argc, char *argv[])
   return 0;
 }
 //////////////////////////////////////////////////////////////////////////////
+

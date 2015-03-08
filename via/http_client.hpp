@@ -1,7 +1,8 @@
-#pragma once
-
 #ifndef HTTP_CLIENT_HPP_VIA_HTTPLIB_
 #define HTTP_CLIENT_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
@@ -80,11 +81,11 @@ namespace via
     typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
 
     /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal<void (void)> http_disconnected_signal;
+    typedef boost::signals2::signal<void (void)> http_event_signal;
 
     /// The slot type associated with a disconnected signal.
-    typedef typename http_disconnected_signal::slot_type
-                                                http_disconnected_signal_slot;
+    typedef typename http_event_signal::slot_type
+                                                http_event_signal_slot;
 
   private:
 
@@ -92,7 +93,8 @@ namespace via
     http::response_receiver<Container> rx_;       ///< the response receiver
     http_response_signal http_response_signal_;   ///< the response callback function
     http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
-    http_disconnected_signal http_disconnected_signal_;
+    http_event_signal http_sent_signal_;
+    http_event_signal http_disconnected_signal_;
     std::string host_name_;                       ///< the name of the host
 
     /// Send a packet on the connection.
@@ -120,6 +122,7 @@ namespace via
       rx_(),
       http_response_signal_(),
       http_chunk_signal_(),
+      http_sent_signal_(),
       http_disconnected_signal_(),
       host_name_()
     {
@@ -152,9 +155,14 @@ namespace via
     void chunk_received_event(http_chunk_signal_slot const& slot)
     { http_chunk_signal_.connect(slot); }
 
+    /// Connect the message sent slot.
+    /// @param slot the slot for the message sent signal.
+    void msg_sent_event(http_event_signal_slot const& slot)
+    { http_sent_signal_.connect(slot); }
+
     /// Connect the disconnected slot.
     /// @param slot the slot for the disconnected signal.
-    void disconnected_event(http_disconnected_signal_slot const& slot)
+    void disconnected_event(http_event_signal_slot const& slot)
     { http_disconnected_signal_.connect(slot); }
 
     /// Connect to the given host name and port.
@@ -231,7 +239,7 @@ namespace via
     /// @param request the request to send.
     void send(http::tx_request&& request)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message());
       Container tx_message(http_header.begin(), http_header.end());
       send(tx_message);
@@ -258,7 +266,7 @@ namespace via
     /// @param body the body to send
     void send(http::tx_request&& request, Container&& body)
     {
-      request.add_header(http::header_field::HOST, host_name_);
+      request.add_header(http::header_field::id::HOST, host_name_);
       std::string http_header(request.message(body.size()));
 
       body.insert(body.begin(),
@@ -375,12 +383,20 @@ namespace via
     /// @param event the type of event.
     // @param weak_ptr a weak ponter to the underlying comms connection.
     void event_handler(int event,
-                       typename connection_type::weak_pointer) // weak_ptr)
+                       typename connection_type::weak_pointer weak_ptr)
     {
+      // Use the raw pointer of the connection as the map key.
+      void* pointer(weak_ptr.lock().get());
+      if (!pointer)
+        return;
+
       switch(event)
       {
       case via::comms::RECEIVED:
         receive_handler();
+        break;
+      case via::comms::SENT:
+        http_sent_signal_();
         break;
       case via::comms::DISCONNECTED:
         http_disconnected_signal_();

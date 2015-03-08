@@ -1,9 +1,10 @@
-#pragma once
-
 #ifndef SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
 #define SSL_TCP_ADAPTOR_HPP_VIA_HTTPLIB_
+
+#pragma once
+
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -100,7 +101,7 @@ namespace via
         void handshake(ErrorHandler handshake_handler, bool is_server)
         {
           socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
-                                            : boost::asio::ssl::stream_base::client, 
+                                            : boost::asio::ssl::stream_base::client,
                                   handshake_handler);
         }
 
@@ -223,7 +224,9 @@ namespace via
         /// @return true if a disconnect error, false otherwise.
         bool is_disconnect(boost::system::error_code const& error)
         {
-          return (boost::asio::error::connection_reset == error)
+          return (boost::asio::error::connection_refused == error)
+              || (boost::asio::error::connection_reset == error)
+              || (boost::asio::error::shut_down == error)
               || (SSL_SHORT_READ == error.value());
         }
 
