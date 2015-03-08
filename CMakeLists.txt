@@ -26,7 +26,7 @@ else()
   set(Boost_COMPONENTS system thread regex )
 endif()
 
-find_package( Boost 1.55.0 REQUIRED ${Boost_COMPONENTS} )
+find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )
 find_package( OpenSSL )
 find_package( Threads )
 
