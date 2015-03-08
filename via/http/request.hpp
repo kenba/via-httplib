@@ -643,7 +643,7 @@ namespace via
           }
 
           // if there's a message body then insist on a content length header
-          ptrdiff_t rx_size(std::distance(iter, end));
+          std::ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
               request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
@@ -653,8 +653,8 @@ namespace via
           }
 
           // received buffer contains more than the required data
-          ptrdiff_t required(static_cast<ptrdiff_t>(content_length) -
-                             static_cast<ptrdiff_t>(body_.size()));
+          std::ptrdiff_t required(static_cast<std::ptrdiff_t>(content_length) -
+                                  static_cast<std::ptrdiff_t>(body_.size()));
           if (rx_size > required)
           {
               ForwardIterator next(iter + required);
