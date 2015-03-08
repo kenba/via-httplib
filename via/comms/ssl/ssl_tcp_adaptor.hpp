@@ -134,6 +134,9 @@ namespace via
         /// The default HTTPS port.
         static const unsigned short DEFAULT_HTTP_PORT = 443;
 
+        /// The default size of the receive buffer.
+        static const size_t DEFAULT_RX_BUFFER_SIZE = 8192;
+
         /// @fn ssl_context
         /// A static function to manage the ssl context for the ssl
         /// connections.

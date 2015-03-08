@@ -40,7 +40,6 @@ namespace via
   /// std::vector<char>.
   /// It must contain a contiguous array of bytes. E.g. std::string or
   /// std::array<char, size>
-  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
   /// @param translate_head if true the server shall always pass a HEAD request
@@ -55,28 +54,27 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container,
-            size_t buffer_size,
             bool use_strand,
             bool translate_head,
             bool require_host,
             bool trace_enabled>
   class http_connection : public boost::enable_shared_from_this
-       <http_connection<SocketAdaptor, Container, buffer_size,
+       <http_connection<SocketAdaptor, Container,
          use_strand, translate_head, require_host, trace_enabled> >
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
+    typedef comms::connection<SocketAdaptor, Container, use_strand>
                                                               connection_type;
 
     /// A weak pointer to this type.
     typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
+                      use_strand, translate_head, require_host, trace_enabled> >
        weak_pointer;
 
     /// A strong pointer to this type.
     typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
-         buffer_size, use_strand, translate_head, require_host, trace_enabled> >
+                      use_strand, translate_head, require_host, trace_enabled> >
        shared_pointer;
 
     /// The template requires a typename to access the iterator.

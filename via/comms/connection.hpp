@@ -24,9 +24,6 @@ namespace via
 {
   namespace comms
   {
-    /// The default size of the receive buffer.
-    enum { DEFAULT_BUFFER_SIZE = 8192 };
-
     //////////////////////////////////////////////////////////////////////////
     /// @class connection
     /// A template class that buffers tcp or ssl comms sockets.
@@ -45,33 +42,31 @@ namespace via
     /// std::vector<char>.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
-    /// @param buffer_size the size of the receive buffer, default 8192 bytes.
     /// @param use_strand if true use an asio::strand to wrap the handlers,
     /// default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename SocketAdaptor, typename Container = std::vector<char>,
-              size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
               bool use_strand = false>
     class connection : public SocketAdaptor,
         public boost::enable_shared_from_this
-            <connection<SocketAdaptor, Container, buffer_size, use_strand> >
+            <connection<SocketAdaptor, Container, use_strand> >
     {
     public:
 
+
       /// A weak pointer to a connection.
       typedef typename boost::weak_ptr<connection<SocketAdaptor, Container,
-                                                  buffer_size, use_strand> >
+                                                  use_strand> >
          weak_pointer;
 
       /// A shared pointer to a connection.
       typedef typename boost::shared_ptr<connection<SocketAdaptor, Container,
-                                                    buffer_size, use_strand> >
+                                                    use_strand> >
          shared_pointer;
 
       /// The enable_shared_from_this type of this class.
       typedef typename boost::enable_shared_from_this
-                  <connection<SocketAdaptor, Container,
-                              buffer_size, use_strand> > enable;
+                  <connection<SocketAdaptor, Container, use_strand> > enable;
 
       /// The resolver_iterator type of the SocketAdaptor
       typedef typename boost::asio::ip::tcp::resolver::iterator resolver_iterator;
@@ -96,6 +91,7 @@ namespace via
 
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
+      size_t rx_buffer_size_;              ///< The recieve buffer size.
       boost::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
       boost::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
@@ -348,7 +344,8 @@ namespace via
                           error_callback_type error_callback) :
         SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_(new Container()),
+        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
         error_callback_(error_callback),
@@ -368,7 +365,8 @@ namespace via
       explicit connection(boost::asio::io_service& io_service) :
         SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_(new Container()),
+        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
         event_callback_(),
         error_callback_(),
@@ -536,7 +534,7 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_buffer_->resize(buffer_size);
+        rx_buffer_->resize(rx_buffer_size_);
         read_data();
       }
 

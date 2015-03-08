@@ -44,19 +44,17 @@ namespace via
     /// std::vector<char>.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
-    /// @param buffer_size the size of the receive buffer, default 8192 bytes.
     /// @param use_strand if true use an asio::strand to wrap the handlers,
     /// default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename SocketAdaptor, typename Container = std::vector<char>,
-              size_t buffer_size = DEFAULT_BUFFER_SIZE, bool use_strand = false>
+              bool use_strand = false>
     class server : boost::noncopyable
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container, buffer_size, use_strand>
-                                                              connection_type;
+      typedef connection<SocketAdaptor, Container, use_strand> connection_type;
 
       /// A set of connections.
       typedef std::set<boost::shared_ptr<connection_type> > connections;

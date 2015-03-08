@@ -40,22 +40,21 @@ namespace via
   /// std::vector<char>.
   /// It must contain a contiguous array of bytes. E.g. std::string or
   /// std::array<char, size>
-  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
-            size_t buffer_size = comms::DEFAULT_BUFFER_SIZE, bool use_strand = false>
+            bool use_strand = false>
   class http_client
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, buffer_size, use_strand>
+    typedef comms::connection<SocketAdaptor, Container, use_strand>
                                                               connection_type;
 
     /// A shared pointer to this type.
     typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
-                                                 buffer_size, use_strand> > shared_pointer;
+                                                   use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;

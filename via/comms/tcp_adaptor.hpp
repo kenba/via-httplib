@@ -98,6 +98,9 @@ namespace via
       /// The default HTTP port.
       static const unsigned short DEFAULT_HTTP_PORT = 80;
 
+      /// The default size of the receive buffer.
+      static const size_t DEFAULT_RX_BUFFER_SIZE = 8192;
+
       /// @fn connect
       /// Connect the tcp socket to the given host name and port.
       /// @pre To be called by "client" connections only.

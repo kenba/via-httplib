@@ -17,8 +17,8 @@
 
 /// Define an HTTP server using std::string to store message bodies and an
 /// asio strand to protect the handlers
-typedef via::http_server<via::comms::tcp_adaptor, std::string,
-                         via::comms::DEFAULT_BUFFER_SIZE, true> http_server_type;
+typedef via::http_server<via::comms::tcp_adaptor, std::string, true>
+                                                             http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::chunk_type http_chunk_type;
 

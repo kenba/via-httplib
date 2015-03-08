@@ -42,7 +42,6 @@ namespace via
   /// std::vector<char>.
   /// It must contain a contiguous array of bytes. E.g. std::string or
   /// std::array<char, size>
-  /// @param buffer_size the size of the receive buffer, default 8192 bytes.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
   /// @param translate_head if true the server shall always pass a HEAD request
@@ -55,9 +54,7 @@ namespace via
   /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
   /// response.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
-            typename Container = std::vector<char>,
-            size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
+  template <typename SocketAdaptor, typename Container = std::vector<char>,
             bool use_strand = false,
             bool translate_head = true,
             bool require_host = true,
@@ -67,10 +64,10 @@ namespace via
   public:
 
     /// The server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container, buffer_size, use_strand> server_type;
+    typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, buffer_size, use_strand,
+    typedef http_connection<SocketAdaptor, Container, use_strand,
           translate_head, require_host, trace_enabled> http_connection_type;
 
     /// The underlying connection, TCP or SSL.
