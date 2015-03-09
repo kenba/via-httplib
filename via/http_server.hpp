@@ -110,10 +110,12 @@ namespace via
     size_t         max_body_size_;     ///< the maximum size of a request body
     size_t         max_chunk_size_;    ///< the maximum size of a request chunk
 
+    // HTTP server options
     bool require_host_header_; ///< whether the http server requires a host header
     bool translate_head_;      ///< whether the http server translates HEAD requests
     bool trace_enabled_;       ///< whether the http server responds to TRACE requests
 
+    // callback function pointers
     RequestHandler    http_request_handler_; ///< the request callback function
     RequestHandler    http_continue_handler_;///< the continue callback function
     ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
@@ -121,92 +123,8 @@ namespace via
     ConnectionHandler packet_sent_handler_;  ///< the packet sent callback function
     ConnectionHandler disconnected_handler_; ///< the disconncted callback function
 
-  public:
-
-    /// Connect the request received callback function.
-    /// @param handler the handler for a received HTTP request.
-    void request_received_event(RequestHandler handler)
-    { http_request_handler_ = handler; }
-
-    /// Connect the expect continue received callback function.
-    /// If the application registers a handler for this event, then the
-    /// application must determine how to respond to a request containing an
-    /// Expect: 100-continue header based upon it's other headers.
-    /// Otherwise, the server will automatically send a 100 Continue response,
-    /// so that the client can continue to send the body of the request.
-    /// @post disables automatic sending of a 100 Continue response
-    /// @param handler the handler for an "expects continue" request.
-    void request_expect_continue_event(RequestHandler handler)
-    { http_continue_handler_ = handler; }
-
-    /// Connect the chunk received callback function.
-    /// @param handler the handler for a received HTTP chunk.
-    void chunk_received_event(ChunkHandler handler)
-    { http_chunk_handler_ = handler; }
-
-    /// Connect the connected callback function.
-    /// @param handler the handler for the socket connected event.
-    void socket_connected_event(ConnectionHandler handler)
-    { connected_handler_= handler; }
-
-    /// Connect the message sent callback function.
-    /// @param handler the handler for the message sent signal.
-    void message_sent_event(ConnectionHandler handler)
-    { packet_sent_handler_= handler; }
-
-    /// Connect the disconnected callback function.
-    /// @param handler the handler for the socket disconnected signal.
-    void socket_disconnected_event(ConnectionHandler handler)
-    { disconnected_handler_ = handler; }
-
-    /// Constructor.
-    /// @param io_service a reference to the boost::asio::io_service.
-    explicit http_server(boost::asio::io_service& io_service) :
-      server_(server_type::create(io_service)),
-      http_connections_(),
-
-      // Set request parser parameters to default values
-      strict_crlf_        (true),
-      max_whitespace_     (http_request::DEFAULT_MAX_WHITESPACE_CHARS),
-      max_method_length_  (http_request::DEFAULT_MAX_METHOD_LENGTH),
-      max_uri_length_     (http_request::DEFAULT_MAX_URI_LENGTH),
-      max_line_length_    (http_request::DEFAULT_MAX_LINE_LENGTH),
-      max_header_number_  (http_request::DEFAULT_MAX_HEADER_NUMBER),
-      max_header_length_  (http_request::DEFAULT_MAX_HEADER_LENGTH),
-      max_body_size_      (http_request::DEFAULT_MAX_BODY_SIZE),
-      max_chunk_size_     (http_request::DEFAULT_MAX_CHUNK_SIZE),
-
-      require_host_header_(true),
-      translate_head_     (true),
-
-      trace_enabled_      (false),
-
-      http_request_handler_ (NULL),
-      http_continue_handler_(NULL),
-      http_chunk_handler_   (NULL),
-      connected_handler_    (NULL),
-      packet_sent_handler_  (NULL),
-      disconnected_handler_ (NULL)
-    {
-      server_->set_event_callback
-          (boost::bind(&http_server::event_handler, this, _1, _2));
-      server_->set_error_callback
-          (boost::bind(&http_server::error_handler, this,
-                        boost::asio::placeholders::error, _2));
-      // Set no delay, i.e. disable the Nagle algorithm
-      // An http_server will want to send messages immediately
-      server_->set_no_delay(true);
-    }
-
-    /// Start accepting connections on the communications server from the
-    /// given port.
-    /// @param port the port number to serve.
-    /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
-    /// @return the boost error code, false if no error occured
-    boost::system::error_code accept_connections
-                      (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
-                       bool ipv6 = false)
-    { return server_->accept_connections(port, ipv6); }
+    ////////////////////////////////////////////////////////////////////////
+    // http_server Event Handlers
 
     /// Handle a connected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
@@ -372,6 +290,136 @@ namespace via
       std::cerr << error <<  std::endl;
     }
 
+  public:
+
+    /// Constructor.
+    /// @param io_service a reference to the boost::asio::io_service.
+    explicit http_server(boost::asio::io_service& io_service) :
+      server_(server_type::create(io_service)),
+      http_connections_(),
+
+      // Set request parser parameters to default values
+      strict_crlf_        (true),
+      max_whitespace_     (http_request::DEFAULT_MAX_WHITESPACE_CHARS),
+      max_method_length_  (http_request::DEFAULT_MAX_METHOD_LENGTH),
+      max_uri_length_     (http_request::DEFAULT_MAX_URI_LENGTH),
+      max_line_length_    (http_request::DEFAULT_MAX_LINE_LENGTH),
+      max_header_number_  (http_request::DEFAULT_MAX_HEADER_NUMBER),
+      max_header_length_  (http_request::DEFAULT_MAX_HEADER_LENGTH),
+      max_body_size_      (http_request::DEFAULT_MAX_BODY_SIZE),
+      max_chunk_size_     (http_request::DEFAULT_MAX_CHUNK_SIZE),
+
+      require_host_header_(true),
+      translate_head_     (true),
+      trace_enabled_      (false),
+
+      http_request_handler_ (NULL),
+      http_continue_handler_(NULL),
+      http_chunk_handler_   (NULL),
+      connected_handler_    (NULL),
+      packet_sent_handler_  (NULL),
+      disconnected_handler_ (NULL)
+    {
+      server_->set_event_callback
+          (boost::bind(&http_server::event_handler, this, _1, _2));
+      server_->set_error_callback
+          (boost::bind(&http_server::error_handler, this,
+                        boost::asio::placeholders::error, _2));
+      // Set no delay, i.e. disable the Nagle algorithm
+      // An http_server will want to send messages immediately
+      server_->set_no_delay(true);
+    }
+
+    /// Start accepting connections on the communications server from the
+    /// given port.
+    /// @param port the port number to serve.
+    /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
+    /// @return the boost error code, false if no error occured
+    boost::system::error_code accept_connections
+                      (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
+                       bool ipv6 = false)
+    { return server_->accept_connections(port, ipv6); }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Event Handlers
+
+    /// Connect the request received callback function.
+    /// @param handler the handler for a received HTTP request.
+    void request_received_event(RequestHandler handler)
+    { http_request_handler_ = handler; }
+
+    /// Connect the expect continue received callback function.
+    /// If the application registers a handler for this event, then the
+    /// application must determine how to respond to a request containing an
+    /// Expect: 100-continue header based upon it's other headers.
+    /// Otherwise, the server will automatically send a 100 Continue response,
+    /// so that the client can continue to send the body of the request.
+    /// @post disables automatic sending of a 100 Continue response
+    /// @param handler the handler for an "expects continue" request.
+    void request_expect_continue_event(RequestHandler handler)
+    { http_continue_handler_ = handler; }
+
+    /// Connect the chunk received callback function.
+    /// @param handler the handler for a received HTTP chunk.
+    void chunk_received_event(ChunkHandler handler)
+    { http_chunk_handler_ = handler; }
+
+    /// Connect the connected callback function.
+    /// @param handler the handler for the socket connected event.
+    void socket_connected_event(ConnectionHandler handler)
+    { connected_handler_= handler; }
+
+    /// Connect the message sent callback function.
+    /// @param handler the handler for the message sent signal.
+    void message_sent_event(ConnectionHandler handler)
+    { packet_sent_handler_= handler; }
+
+    /// Connect the disconnected callback function.
+    /// @param handler the handler for the socket disconnected signal.
+    void socket_disconnected_event(ConnectionHandler handler)
+    { disconnected_handler_ = handler; }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Set HTTP Request Parser Parameters
+
+    void set_strict_crlf(bool enable = true)
+    { strict_crlf_ = enable; }
+
+    void set_max_whitespace(unsigned char max_length =
+        http_request::DEFAULT_MAX_WHITESPACE_CHARS)
+    { max_whitespace_ = max_length; }
+
+    void set_max_method_length(unsigned char max_length =
+        http_request::DEFAULT_MAX_METHOD_LENGTH)
+    { max_method_length_ = max_length; }
+
+    void set_max_uri_length(size_t max_length =
+        http_request::DEFAULT_MAX_URI_LENGTH)
+    { max_uri_length_ = max_length; }
+
+    void set_max_header_line_length(unsigned short max_length =
+        http_request::DEFAULT_MAX_LINE_LENGTH)
+    { max_line_length_ = max_length; }
+
+    void set_max_number_of_headers(unsigned short max_number =
+        http_request::DEFAULT_MAX_HEADER_NUMBER)
+    { max_header_number_ = max_number; }
+
+    void set_max_headers_length(size_t max_length =
+        http_request::DEFAULT_MAX_HEADER_LENGTH)
+    { max_header_length_ = max_length; }
+
+    void set_max_body_size(size_t max_size =
+        http_request::DEFAULT_MAX_BODY_SIZE)
+    { max_body_size_ = max_size; }
+
+    void set_max_chunk_size(size_t max_size =
+        http_request::DEFAULT_MAX_CHUNK_SIZE)
+    { max_chunk_size_ = max_size; }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Set HTTP server options
+
     void set_translate_head(bool enable)
     { translate_head_ = enable; }
 
@@ -394,6 +442,9 @@ namespace via
     /// @param timeout the timeout in milliseconds.
     void set_timeout(int timeout)
     { server_->set_timeout(timeout); }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Set HTTPS options
 
     /// Set the password for an SSL connection.
     /// Note: only valid for SSL connections, do NOT call for TCP servers.
