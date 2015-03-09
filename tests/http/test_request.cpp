@@ -617,7 +617,8 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   bool complete (rx_state == RX_VALID);
   BOOST_CHECK(complete);
@@ -634,7 +635,8 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
   std::string request_data1("G");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -657,7 +659,8 @@ BOOST_AUTO_TEST_CASE(InValidGet1)
   std::string request_data1("g");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   BOOST_CHECK(rx_state == RX_INVALID);
 }
@@ -667,7 +670,8 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -705,7 +709,8 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   std::string::iterator next(request_data1.begin());
 
   // Receiver concatenates chunks
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -757,7 +762,9 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver(false, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -809,7 +816,9 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver(false, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state
       (the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
@@ -848,7 +857,8 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -867,7 +877,8 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -892,7 +903,9 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver(true, false, false);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_require_host_header(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -931,7 +944,8 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   std::string::iterator next(request_data1.begin());
 
   // set request_receiver max_content_length to 25 to fail
-  request_receiver<std::string> the_request_receiver(true, false, true, 25);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 25, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -956,7 +970,9 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver(false, false, true);
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
