@@ -42,25 +42,10 @@ namespace via
   /// std::array<char, size>
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
-  /// @param translate_head if true the server shall always pass a HEAD request
-  /// to the application as a GET request.
-  /// @param require_host if true the server shall require all requests to
-  /// include a "Host:" header field. Required by RFC2616.
-  /// @param trace_enabled if true the server will echo back the TRACE message
-  /// and all of it's headers in the body of the response.
-  /// Although required by RFC2616 it's considered a security vulnerability
-  /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
-  /// response.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
-            typename Container,
-            bool use_strand,
-            bool translate_head,
-            bool require_host,
-            bool trace_enabled>
+  template <typename SocketAdaptor, typename Container, bool use_strand>
   class http_connection : public boost::enable_shared_from_this
-       <http_connection<SocketAdaptor, Container,
-         use_strand, translate_head, require_host, trace_enabled> >
+                      <http_connection<SocketAdaptor, Container, use_strand> >
   {
   public:
     /// The underlying connection, TCP or SSL.
@@ -69,13 +54,11 @@ namespace via
 
     /// A weak pointer to this type.
     typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
-                      use_strand, translate_head, require_host, trace_enabled> >
-       weak_pointer;
+                                     use_strand> > weak_pointer;
 
     /// A strong pointer to this type.
     typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
-                      use_strand, translate_head, require_host, trace_enabled> >
-       shared_pointer;
+                                       use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -92,6 +75,9 @@ namespace via
     /// expect: 100-continue header with a 100 Continue response.
     bool continue_enabled_;
 
+    /// A flag to indicate that the server will echo back the TRACE message.
+    bool trace_enabled_;
+
     /// Constructor.
     /// Note: the constructor is private to ensure that an http_connection
     /// can only be created as a shared pointer by the create method.
@@ -102,12 +88,25 @@ namespace via
     /// @param continue_enabled if true the server shall always immediately
     /// respond to an HTTP1.1 request containing an Expect: 100-continue
     /// header with a 100 Continue response.
+    /// @param translate_head if true the server shall always pass a HEAD request
+    /// to the application as a GET request.
+    /// @param require_host if true the server shall require all requests to
+    /// include a "Host:" header field. Required by RFC2616.
+    /// @param trace_enabled if true the server will echo back the TRACE message
+    /// and all of it's headers in the body of the response.
+    /// Although required by RFC2616 it's considered a security vulnerability
+    /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
+    /// response.
     http_connection(typename connection_type::weak_pointer connection,
                     bool concatenate_chunks,
-                    bool continue_enabled) :
+                    bool continue_enabled,
+                    bool translate_head,
+                    bool require_host,
+                    bool trace_enabled) :
       connection_(connection),
       rx_(concatenate_chunks, translate_head, require_host),
-      continue_enabled_(continue_enabled)
+      continue_enabled_(continue_enabled),
+      trace_enabled_(trace_enabled)
     {}
 
     /// Send a packet on the connection.
@@ -209,10 +208,16 @@ namespace via
     /// header with a 100 Continue response.
     static shared_pointer create(typename connection_type::weak_pointer connection,
                                  bool concatenate_chunks,
-                                 bool continue_enabled)
+                                 bool continue_enabled,
+                                 bool translate_head,
+                                 bool require_host,
+                                 bool trace_enabled)
     { return shared_pointer(new http_connection(connection,
                                                 concatenate_chunks,
-                                                continue_enabled)); }
+                                                continue_enabled,
+                                                translate_head,
+                                                require_host,
+                                                trace_enabled)); }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
@@ -299,7 +304,7 @@ namespace via
         if (rx_.request().is_trace())
         {
           // if enabled, the server reflects the message back.
-          if (trace_enabled)
+          if (trace_enabled_)
           {
             // Response is OK with a Content-Type: message/http header
             http::tx_response ok_response(http::response_status::code::OK,
@@ -323,18 +328,6 @@ namespace via
 
           // Set the state as invalid, since the server has responded to the request
           rx_state = http::RX_INVALID;
-        }
-        else // Not a TRACE request
-        {
-          // A fully compliant HTTP server MUST reject a request without a Host header
-          if (rx_.request().missing_host_header() && require_host)
-          {
-            std::string missing_host("Request lacks Host Header");
-            http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
-            send(bad_request, missing_host.begin(), missing_host.end());
-
-            rx_state = http::RX_INVALID;
-          }
         }
         break;
 

@@ -44,21 +44,9 @@ namespace via
   /// std::array<char, size>
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
-  /// @param translate_head if true the server shall always pass a HEAD request
-  /// to the application as a GET request.
-  /// @param require_host if true the server shall require all requests to
-  /// include a "Host:" header field. Required by RFC2616.
-  /// @param trace_enabled if true the server will echo back the TRACE message
-  /// and all of it's headers in the body of the response.
-  /// Although required by RFC2616 it's considered a security vulnerability
-  /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
-  /// response.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
-            bool use_strand = false,
-            bool translate_head = true,
-            bool require_host = true,
-            bool trace_enabled = false>
+            bool use_strand = false>
   class http_server
   {
   public:
@@ -67,8 +55,8 @@ namespace via
     typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, use_strand,
-          translate_head, require_host, trace_enabled> http_connection_type;
+    typedef http_connection<SocketAdaptor, Container, use_strand>
+                                                       http_connection_type;
 
     /// The underlying connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
@@ -125,6 +113,9 @@ namespace via
     http_connection_signal http_disconnected_signal_; ///< the disconncted callback function
     bool concatenate_chunks_; ///< true if the server does not have a chunk handler
     bool continue_enabled_;   ///< whether the server should send 100 Continue
+    bool translate_head_;     ///< whether the server translate HEAD requests
+    bool require_host_;       ///< whether the server requires a host header
+    bool trace_enabled_;      ///< whether the server responds to TRACE requests
 
   public:
 
@@ -182,7 +173,10 @@ namespace via
       http_sent_signal_(),
       http_disconnected_signal_(),
       concatenate_chunks_(true),
-      continue_enabled_(true)
+      continue_enabled_(true),
+      translate_head_(true),
+      require_host_(true),
+      trace_enabled_(false)
     {
       server_->set_event_callback
           (boost::bind(&http_server::event_handler, this, _1, _2));
@@ -220,7 +214,10 @@ namespace via
         boost::shared_ptr<http_connection_type> http_connection
             (http_connection_type::create(connection,
                                           concatenate_chunks_,
-                                          continue_enabled_));
+                                          continue_enabled_,
+                                          translate_head_,
+                                          require_host_,
+                                          trace_enabled_));
         http_connections_.insert
             (connection_collection_value_type(pointer, http_connection));
         // signal that the socket is connected
@@ -346,6 +343,15 @@ namespace via
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
     }
+
+    void set_translate_head(bool enable)
+    { translate_head_ = enable; }
+
+    void set_require_host(bool enable)
+    { require_host_ = enable; }
+
+    void set_trace_enabled(bool enable)
+    { trace_enabled_ = enable; }
 
     /// @fn set_keep_alive
     /// Set the tcp keep alive status for all future connections.
