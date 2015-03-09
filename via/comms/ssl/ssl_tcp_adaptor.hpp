@@ -181,11 +181,16 @@ namespace via
         /// @fn shutdown
         /// The ssl tcp socket shutdown function.
         /// Disconnects the socket.
-        void shutdown()
+        void shutdown(ErrorHandler shutdown_handler)
+        { socket_.async_shutdown(shutdown_handler); }
+
+        /// @fn cancel
+        /// The tcp socket cancel function.
+        /// Cancels any send, receive or connect operations
+        void cancel()
         {
           boost::system::error_code ignoredEc;
-          socket_.lowest_layer().shutdown
-              (boost::asio::ip::tcp::socket::shutdown_both, ignoredEc);
+          socket_.lowest_layer().cancel (ignoredEc);
         }
 
         /// @fn close

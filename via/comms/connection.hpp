@@ -322,6 +322,19 @@ namespace via
         }
       }
 
+      /// @fn shutdown_callback
+      /// The function called whenever a socket adaptor attempts to disconnect.
+      /// It is required so that HTTPS clients can shutdown gracefully.
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
+      static void shutdown_callback(weak_pointer ptr,
+                                    boost::system::error_code const& error)
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer && (boost::asio::error::operation_aborted != error))
+          pointer->close();
+      }
+
       /// Constructor for server connections.
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
@@ -512,7 +525,11 @@ namespace via
       /// @fn shutdown
       /// Shutdown the underlying socket adaptor.
       void shutdown()
-      { SocketAdaptor::shutdown(); }
+      {
+        SocketAdaptor::shutdown(boost::bind(&connection::shutdown_callback,
+                                            weak_from_this(),
+                                            boost::asio::placeholders::error));
+      }
 
       /// @fn close
       /// Close the underlying socket adaptor.

@@ -35,7 +35,7 @@ namespace
     std::cout << "Rx body: "     << body << std::endl;
 
     if (!response.is_chunked())
-      http_client.reset();
+      http_client->connection()->shutdown();
   }
 
   /// The handler for incoming HTTP chunks.
@@ -48,13 +48,16 @@ namespace
     if (chunk.is_last())
     {
       std::cout << "Rx last chunk" << std::endl;
-      http_client.reset();
+      http_client->connection()->shutdown();
     }
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
   void disconnected_handler()
-  { std::cout << "Socket disconnected" << std::endl; }
+  {
+    std::cout << "Socket disconnected" << std::endl;
+    http_client->connection()->shutdown();
+  }
 }
 
 int main(int argc, char *argv[])

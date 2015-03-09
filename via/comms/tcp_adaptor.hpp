@@ -130,11 +130,21 @@ namespace via
       /// @fn shutdown
       /// The tcp socket shutdown function.
       /// Disconnects the socket.
-      void shutdown()
+      void shutdown(ErrorHandler shutdown_handler)
       {
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::tcp::socket::shutdown_both,
                           ignoredEc);
+        shutdown_handler(ignoredEc);
+      }
+
+      /// @fn cancel
+      /// The tcp socket cancel function.
+      /// Cancels any send, receive or connect operations
+      void cancel()
+      {
+        boost::system::error_code ignoredEc;
+        socket_.cancel (ignoredEc);
       }
 
       /// @fn close
