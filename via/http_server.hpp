@@ -333,11 +333,11 @@ namespace via
     /// Start accepting connections on the communications server from the
     /// given port.
     /// @param port the port number to serve.
-    /// @param ipv6 true for an IPV6 server, false for IPV4, default false.
+    /// @param ipv6 true for an IPV6/IPV4 server, false IPV4 only, default true.
     /// @return the boost error code, false if no error occured
     boost::system::error_code accept_connections
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
-                       bool ipv6 = false)
+                       bool ipv6 = true)
     { return server_->accept_connections(port, ipv6); }
 
     ////////////////////////////////////////////////////////////////////////

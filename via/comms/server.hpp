@@ -72,8 +72,11 @@ namespace via
       /// The asio::io_service to use.
       boost::asio::io_service& io_service_;
 
-      /// The acceptor for this server.
-      boost::asio::ip::tcp::acceptor acceptor_;
+      /// The IPv6 acceptor for this server.
+      boost::asio::ip::tcp::acceptor acceptor_v6_;
+
+      /// The IPv4 acceptor for this server.
+      boost::asio::ip::tcp::acceptor acceptor_v4_;
 
       /// The next connection to be accepted.
       boost::shared_ptr<connection_type> next_connection_;
@@ -103,7 +106,7 @@ namespace via
       /// @param error the error, if any.
       void accept_handler(const boost::system::error_code& error)
       {
-        if (acceptor_.is_open() &&
+        if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
             (boost::asio::error::operation_aborted != error))
         {
           if (error)
@@ -157,9 +160,15 @@ namespace via
                                 boost::bind(&server::event_handler, this, _1, _2),
                                 boost::bind(&server::error_handler, this,
                                             boost::asio::placeholders::error, _2));
-        acceptor_.async_accept(next_connection_->socket(),
-                               boost::bind(&server::accept_handler, this,
-                                           boost::asio::placeholders::error));
+        if (acceptor_v6_.is_open())
+          acceptor_v6_.async_accept(next_connection_->socket(),
+                                 boost::bind(&server::accept_handler, this,
+                                             boost::asio::placeholders::error));
+
+        if (acceptor_v4_.is_open())
+          acceptor_v4_.async_accept(next_connection_->socket(),
+                                 boost::bind(&server::accept_handler, this,
+                                             boost::asio::placeholders::error));
       }
 
     public:
@@ -173,7 +182,8 @@ namespace via
       /// and connections.
       explicit server(boost::asio::io_service& io_service) :
         io_service_(io_service),
-        acceptor_(io_service),
+        acceptor_v6_(io_service),
+        acceptor_v4_(io_service),
         next_connection_(),
         connections_(),
         password_(),
@@ -196,7 +206,8 @@ namespace via
                       event_callback_type event_callback,
                       error_callback_type error_callback) :
         io_service_(io_service),
-        acceptor_(io_service),
+        acceptor_v6_(io_service),
+        acceptor_v4_(io_service),
         next_connection_(),
         connections_(),
         password_(),
@@ -240,19 +251,38 @@ namespace via
       /// @return the boost error code, false if no error occured
       boost::system::error_code accept_connections(unsigned short port, bool ipv6)
       {
-        // Open the acceptor with the option to reuse the address
-        // (i.e. SO_REUSEADDR).
-        boost::asio::ip::tcp::endpoint endpoint
-          (ipv6 ? boost::asio::ip::tcp::v6() : boost::asio::ip::tcp::v4(), port);
-        acceptor_.open(endpoint.protocol());
-        acceptor_.set_option
-          (boost::asio::ip::tcp::acceptor::reuse_address(true));
+        // Determine whether the IPv6 acceptor accepts both IPv6 & IPv4
+        boost::asio::ip::v6_only ipv6_only(false);
         boost::system::error_code ec;
-        acceptor_.bind(endpoint, ec);
-        if (ec)
-          return ec;
 
-        acceptor_.listen();
+        if (ipv6)
+        {
+          acceptor_v6_.open(boost::asio::ip::tcp::v6(), ec);
+          if (!ec)
+          {
+            acceptor_v6_.set_option(ipv6_only, ec);
+            acceptor_v6_.get_option(ipv6_only);
+            acceptor_v6_.set_option
+              (boost::asio::ip::tcp::acceptor::reuse_address(true));
+            acceptor_v6_.bind
+              (boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
+            acceptor_v6_.listen();
+          }
+        }
+
+        if (!acceptor_v6_.is_open() || ipv6_only)
+        {
+          acceptor_v4_.open(boost::asio::ip::tcp::v4(), ec);
+          if (!ec)
+          {
+            acceptor_v4_.set_option
+                (boost::asio::ip::tcp::acceptor::reuse_address(true));
+            acceptor_v4_.bind
+              (boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
+            acceptor_v4_.listen();
+          }
+        }
+
         start_accept();
         return ec;
       }
@@ -320,7 +350,8 @@ namespace via
       /// Close the server and all of the connections associated with it.
       void close()
       {
-        acceptor_.close();
+        acceptor_v6_.close();
+        acceptor_v4_.close();
         next_connection_.reset();
         connections_.clear();
       }
