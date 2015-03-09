@@ -78,37 +78,6 @@ namespace via
     /// A flag to indicate that the server will echo back the TRACE message.
     bool trace_enabled_;
 
-    /// Constructor.
-    /// Note: the constructor is private to ensure that an http_connection
-    /// can only be created as a shared pointer by the create method.
-    /// @param connection a weak pointer to the underlying connection.
-    /// @param concatenate_chunks if true the server shall always concatenate
-    /// chunk data into the request body, otherwise the body shall contain
-    /// the data for each chunk.
-    /// @param continue_enabled if true the server shall always immediately
-    /// respond to an HTTP1.1 request containing an Expect: 100-continue
-    /// header with a 100 Continue response.
-    /// @param translate_head if true the server shall always pass a HEAD request
-    /// to the application as a GET request.
-    /// @param require_host if true the server shall require all requests to
-    /// include a "Host:" header field. Required by RFC2616.
-    /// @param trace_enabled if true the server will echo back the TRACE message
-    /// and all of it's headers in the body of the response.
-    /// Although required by RFC2616 it's considered a security vulnerability
-    /// nowadays, so the default behaviour is to send a 405 "Method Not Allowed"
-    /// response.
-    http_connection(typename connection_type::weak_pointer connection,
-                    bool concatenate_chunks,
-                    bool continue_enabled,
-                    bool translate_head,
-                    bool require_host,
-                    bool trace_enabled) :
-      connection_(connection),
-      rx_(concatenate_chunks, translate_head, require_host),
-      continue_enabled_(continue_enabled),
-      trace_enabled_(trace_enabled)
-    {}
-
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
     bool send(Container const& packet)
@@ -197,27 +166,41 @@ namespace via
 
   public:
 
-    /// Create.
-    /// A factory method to create a shared pointer to this type.
+    /// Constructor.
+    /// Note: only a shared pointer to this type should be created.
     /// @param connection a weak pointer to the underlying connection.
-    /// @param concatenate_chunks if true the server shall always concatenate
-    /// chunk data into the request body, otherwise the body shall contain
-    /// the data for each chunk.
-    /// @param continue_enabled if true the server shall always immediately
-    /// respond to an HTTP1.1 request containing an Expect: 100-continue
-    /// header with a 100 Continue response.
-    static shared_pointer create(typename connection_type::weak_pointer connection,
-                                 bool concatenate_chunks,
-                                 bool continue_enabled,
-                                 bool translate_head,
-                                 bool require_host,
-                                 bool trace_enabled)
-    { return shared_pointer(new http_connection(connection,
-                                                concatenate_chunks,
-                                                continue_enabled,
-                                                translate_head,
-                                                require_host,
-                                                trace_enabled)); }
+    http_connection(typename connection_type::weak_pointer connection,
+                    bool           strict_crlf,
+                    unsigned char  max_whitespace,
+                    unsigned char  max_method_length,
+                    size_t         max_uri_length,
+                    unsigned short max_line_length,
+                    unsigned short max_header_number,
+                    size_t         max_header_length,
+                    size_t         max_body_size,
+                    size_t         max_chunk_size) :
+      connection_(connection),
+      rx_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
+          max_line_length, max_header_number, max_header_length,
+          max_body_size, max_chunk_size),
+      continue_enabled_(true),
+      trace_enabled_(false)
+    {}
+
+    void set_require_host_header(bool enable)
+    { rx_.set_require_host_header(enable); }
+
+    void set_translate_head(bool enable)
+    { rx_.set_translate_head(enable); }
+
+    void set_concatenate_chunks(bool enable)
+    { rx_.set_concatenate_chunks(enable); }
+
+    void set_auto_continue(bool enable)
+    { continue_enabled_ = enable; }
+
+    void set_trace_enabled(bool enable)
+    { trace_enabled_ = enable; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.

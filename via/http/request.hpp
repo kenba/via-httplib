@@ -557,29 +557,20 @@ namespace via
 
       /// Constructor.
       /// Sets all member variables to their initial state.
-      /// @param concatenate_chunks if true concatenate chunk data into the body
-      /// otherwise the body just contains the data for each chunk.
-      /// @param translate_head if true the server shall always pass a HEAD request
-      /// to the application as a GET request.
-      /// @param require_host if true the server shall require all requests to
-      /// include a "Host:" header field. Required by RFC2616.
-      explicit request_receiver(bool concatenate_chunks,
-                                bool translate_head,
-                                bool require_host,
-                                bool           strict_crlf = true,
-                                unsigned char  max_whitespace = DEFAULT_MAX_WHITESPACE_CHARS,
-                                unsigned char  max_method_length = DEFAULT_MAX_METHOD_LENGTH,
-                                size_t         max_uri_length = DEFAULT_MAX_URI_LENGTH,
-                                unsigned short max_line_length = DEFAULT_MAX_LINE_LENGTH,
-                                unsigned short max_header_number = DEFAULT_MAX_HEADER_NUMBER,
-                                size_t         max_header_length = DEFAULT_MAX_HEADER_LENGTH,
-                                size_t max_body_size  = DEFAULT_MAX_BODY_SIZE,
-                                size_t max_chunk_size = DEFAULT_MAX_CHUNK_SIZE) :
+      explicit request_receiver(bool           strict_crlf,
+                                unsigned char  max_whitespace,
+                                unsigned char  max_method_length,
+                                size_t         max_uri_length,
+                                unsigned short max_line_length,
+                                unsigned short max_header_number,
+                                size_t         max_header_length,
+                                size_t         max_body_size,
+                                size_t         max_chunk_size) :
         max_body_size_(max_body_size),
-        require_host_header_(require_host),
+        require_host_header_(true),
 
-        translate_head_(translate_head),
-        concatenate_chunks_(concatenate_chunks),
+        translate_head_(true),
+        concatenate_chunks_(true),
 
         request_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
                  max_line_length, max_header_number, max_header_length),
@@ -590,6 +581,15 @@ namespace via
         continue_sent_(false),
         is_head_(false)
       {}
+
+      void set_require_host_header(bool enable)
+      { require_host_header_= enable; }
+
+      void set_translate_head(bool enable)
+      { translate_head_ = enable; }
+
+      void set_concatenate_chunks(bool enable)
+      { concatenate_chunks_ = enable; }
 
       /// clear the request_receiver.
       /// Sets all member variables to their initial state.

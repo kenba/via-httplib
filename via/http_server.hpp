@@ -76,6 +76,8 @@ namespace via
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
+    typedef typename http::request_receiver<Container> http_request;
+
     /// The signal sent when a request is received.
     typedef boost::signals2::signal
       <void (boost::weak_ptr<http_connection_type>,
@@ -105,17 +107,31 @@ namespace via
   private:
     boost::shared_ptr<server_type> server_;   ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
+
+    // Request parser parameters
+    bool           strict_crlf_;       ///< enforce strict parsing of CRLF
+    unsigned char  max_whitespace_;    ///< the max no of consectutive whitespace characters.
+    unsigned char  max_method_length_; ///< the maximum length of a request method
+    size_t         max_uri_length_;    ///< the maximum length of a uri.
+    unsigned short max_line_length_;   ///< the max length of a field line
+    unsigned short max_header_number_; ///< the max no of header fields
+    size_t         max_header_length_; ///< the max cumulative length
+    size_t         max_body_size_;     ///< the maximum size of a request body
+    size_t         max_chunk_size_;    ///< the maximum size of a request chunk
+    bool         require_host_header_; ///< whether the server requires a host header
+
+    bool translate_head_;     ///< whether the server translate HEAD requests
+    bool concatenate_chunks_; ///< true if the server does not have a chunk handler
+
+    bool continue_enabled_;   ///< whether the server should send 100 Continue
+    bool trace_enabled_;      ///< whether the server responds to TRACE requests
+
     http_request_signal http_request_signal_; ///< the request callback function
     http_request_signal http_continue_signal_; ///< the continue callback function
     http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
     http_connection_signal http_connected_signal_; ///< the conncted callback function
     http_connection_signal http_sent_signal_; ///< the signal sent callback function
     http_connection_signal http_disconnected_signal_; ///< the disconncted callback function
-    bool concatenate_chunks_; ///< true if the server does not have a chunk handler
-    bool continue_enabled_;   ///< whether the server should send 100 Continue
-    bool translate_head_;     ///< whether the server translate HEAD requests
-    bool require_host_;       ///< whether the server requires a host header
-    bool trace_enabled_;      ///< whether the server responds to TRACE requests
 
   public:
 
@@ -166,17 +182,31 @@ namespace via
     explicit http_server(boost::asio::io_service& io_service) :
       server_(server_type::create(io_service)),
       http_connections_(),
+
+      // Set request parser parameters to default values
+      strict_crlf_        (true),
+      max_whitespace_     (http_request::DEFAULT_MAX_WHITESPACE_CHARS),
+      max_method_length_  (http_request::DEFAULT_MAX_METHOD_LENGTH),
+      max_uri_length_     (http_request::DEFAULT_MAX_URI_LENGTH),
+      max_line_length_    (http_request::DEFAULT_MAX_LINE_LENGTH),
+      max_header_number_  (http_request::DEFAULT_MAX_HEADER_NUMBER),
+      max_header_length_  (http_request::DEFAULT_MAX_HEADER_LENGTH),
+      max_body_size_      (http_request::DEFAULT_MAX_BODY_SIZE),
+      max_chunk_size_     (http_request::DEFAULT_MAX_CHUNK_SIZE),
+
+      require_host_header_(true),
+      translate_head_     (true),
+      concatenate_chunks_ (true), // callback
+
+      continue_enabled_   (true), // callback
+      trace_enabled_      (false),
+
       http_request_signal_(),
       http_continue_signal_(),
       http_chunk_signal_(),
       http_connected_signal_(),
       http_sent_signal_(),
-      http_disconnected_signal_(),
-      concatenate_chunks_(true),
-      continue_enabled_(true),
-      translate_head_(true),
-      require_host_(true),
-      trace_enabled_(false)
+      http_disconnected_signal_()
     {
       server_->set_event_callback
           (boost::bind(&http_server::event_handler, this, _1, _2));
@@ -211,13 +241,25 @@ namespace via
       connection_collection_iterator iter(http_connections_.find(pointer));
       if (iter == http_connections_.end())
       {
+        // Create and configure a new http_connection_type.
         boost::shared_ptr<http_connection_type> http_connection
-            (http_connection_type::create(connection,
-                                          concatenate_chunks_,
-                                          continue_enabled_,
-                                          translate_head_,
-                                          require_host_,
-                                          trace_enabled_));
+            (new http_connection_type(connection,
+                                      strict_crlf_,
+                                      max_whitespace_,
+                                      max_method_length_,
+                                      max_uri_length_,
+                                      max_line_length_,
+                                      max_header_number_,
+                                      max_header_length_,
+                                      max_body_size_,
+                                      max_chunk_size_));
+
+        http_connection->set_require_host_header(require_host_header_);
+        http_connection->set_translate_head(translate_head_);
+        http_connection->set_concatenate_chunks(concatenate_chunks_);
+        http_connection->set_auto_continue(continue_enabled_);
+        http_connection->set_trace_enabled(trace_enabled_);
+
         http_connections_.insert
             (connection_collection_value_type(pointer, http_connection));
         // signal that the socket is connected
@@ -347,8 +389,8 @@ namespace via
     void set_translate_head(bool enable)
     { translate_head_ = enable; }
 
-    void set_require_host(bool enable)
-    { require_host_ = enable; }
+    void set_require_host_header(bool enable)
+    { require_host_header_ = enable; }
 
     void set_trace_enabled(bool enable)
     { trace_enabled_ = enable; }
