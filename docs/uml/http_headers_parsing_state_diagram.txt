@@ -1,0 +1,31 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title HTTP Headers Parsing States
+
+[*] --> NAME
+
+NAME : Check alpha chars -
+NAME : make lower case
+NAME : & check header length
+NAME --> VALUE : Ok
+NAME --> Error : Failure
+
+VALUE : Check whitespace length
+VALUE : & header length
+VALUE --> CRLF : Ok
+VALUE --> Error : Failure
+
+CRLF : Check CR & LF chars
+CRLF --> STORE : Ok
+CRLF --> Error : Failure
+
+STORE : Store Header name & value
+STORE : & check headers length
+STORE --> VALUE : Continuation header
+STORE --> NAME : Another header
+STORE --> [*] : Ok
+STORE --> Error : Failure
+
+@enduml

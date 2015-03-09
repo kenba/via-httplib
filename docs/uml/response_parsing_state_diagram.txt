@@ -1,0 +1,30 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title HTTP Response Parsing States
+
+[*] --> ResponseLine
+
+ResponseLine : Parse HTTP
+ResponseLine : response line
+ResponseLine --> Headers : Ok
+ResponseLine --> Error : Failure
+
+Headers : Parse HTTP
+Headers : headers
+Headers --> Length : Not chunked
+Headers --> Chunked : Chunked
+Headers --> Error : Failure
+
+Length : If present
+Length : check valid
+Length --> Error : Failure
+Length --> [*] : Ok
+
+Chunked : Parse HTTP
+Chunked : chunk header
+Chunked --> Error : Failure
+Chunked --> [*] : Ok
+
+@enduml

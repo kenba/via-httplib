@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Louis Henry Nayegon.
+# Copyright (c) 2013-2015 Louis Henry Nayegon.
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -26,7 +26,7 @@ else()
   set(Boost_COMPONENTS system thread regex )
 endif()
 
-find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )
+find_package( Boost 1.55.0 REQUIRED ${Boost_COMPONENTS} )
 find_package( OpenSSL )
 find_package( Threads )
 
@@ -37,9 +37,11 @@ endif()
 if(Boost_FOUND)
   if (MSVC)
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(MSVC)
   if (WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-D_WIN32_WINNT=0x0600)
   endif(WIN32)
   include_directories(${Boost_INCLUDE_DIRS})
 
@@ -56,4 +58,10 @@ if(Boost_FOUND)
 
   install(PROGRAMS ${VIA_HTTPLIB_LIBRARY_NAME}
     DESTINATION bin)
+    
+  install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME}
+    DESTINATION lib)
+
+  install(DIRECTORY via
+    DESTINATION include)
 endif()

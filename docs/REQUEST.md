@@ -89,9 +89,8 @@ It is used to store the received HTTP headers for both requests and responses.
 The `message_headers` class provides a couple of `find` functions to search for a
 specific header in the received `message_headers`:
 
-+ `const std::string& find(header_field::field_id id) const;`  
-  For standard header fields: `header_field::field_id`
-  is defined in `<via/http/header_field.hpp>`.
++ `const std::string& find(header_field::id field_id) const;`  
+  For standard header fields: `header_field::id` is defined in `<via/http/header_field.hpp>`.
 + `const std::string& find(const std::string& name) const;`  
   For non-standard header fields, although it will find standard header fields
   if given a standard header field name.
@@ -119,7 +118,7 @@ The `tx_response` class is defined in `<via/http/response.hpp>`.
 
 The class has two Constructors:
 
-    explicit tx_response(response_status::status_code status,
+    explicit tx_response(response_status::code status_code,
                          std::string header_string = "");
 
 and
@@ -128,7 +127,7 @@ and
                          int status,
                          std::string header_string = "");
 
-The first constructor just requires a `via::http::response_status::status_code`,
+The first constructor just requires a `via::http::response_status::code`,
 this is an enumeration of the standard HTTP response status codes, see:
 `<via/http/response_status.hpp>`
 
@@ -142,11 +141,11 @@ them together in this parameter.
 There are also "set" and "add" functions in the `tx_response` class so that the 
 status and headers can be set after the class has been constructed, i.e.:  
 
- + `void set_status(response_status::status_code status)`  
+ + `void set_status(response_status::code status)`  
     Set a standard HTTP response status (defined in `<via/http/response_status.hpp>`)
  + `void set_status_and_reason(int status, const std::string& reason_phrase)`  
     Set a non- standard response status and the reason phrase associated with it.
- + `void add_header(header_field::field_id id, const std::string& value)`  
+ + `void add_header(header_field::id field_id, const std::string& value)`  
     Add a standard HTTP header field (defined in `<via/http/header_field.hpp>`)
     to the response.
  + `void add_header(std::string const& field, const std::string& value)`  

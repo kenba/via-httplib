@@ -1,34 +1,63 @@
-via-httplib
-===========
+via-httplib: A C++ HTTP Library
+===============================
 
 A library for embedding an HTTP or HTTPS server in C++ applications.
 
-The library's aim is to provide an asynchronous HTTP server that complies with [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html) using standard C++ types 
+`via-httplib` is an asynchronous C++ HTTP server built upon `boost asio` that
+aims to provide a simple, secure lightweight server that complies with the
+requirements of [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html)
 wherever possible.
 
-Note: also supports HTTP and HTTPS clients.
+![HTTP Server Classes](docs/images/http_server_classes.png)
 
+`via::http_server` is a class template requiring a `socket_adaptor` to instantiate it.
+For example the following code declares an plain HTTP server that passes data in a
+`std::vector<char>` (the default).
+
+    #include "via/comms/tcp_adaptor.hpp"
+    #include "via/http_server.hpp"
+    
+    typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
+    
+Whilst the example below declares an HTTPS server that passes data in a `std::string`.
+
+    #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
+    #include "via/http_server.hpp"
+    
+    typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string> https_server_type;
+  
+Information on how to use the library can be found here: [User Guide](docs/USE.md).
+
+Information on how to secure a via-httplib server can be found here: [HTTP Server Security](docs/SECURITY.md).
+  
+The library also contains C++ HTTP and HTTPS client code see: [Clients](docs/CLIENT.md).
+    
 Requirements
 ------------
 
-+ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/)
++ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
 
-+ A reasonably up to date C++ compiler, see [old compilers](http://www.boost.org/users/news/old_compilers.html)
++ A C++ compiler. This is the C++03 version.  
+It's currently tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1` so backwards
+compatibility cannot be guaranteed. Also please be aware of this warning from `boost`:
+[old compilers](http://www.boost.org/users/news/old_compilers.html)  
 
-+ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/)
++ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
-Getting Started
----------------
++ For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
+
+Installing
+----------
 
 Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
-and follow the instructions here: [Make](MAKE.md).  
+and follow the instructions here: [Make](docs/MAKE.md).  
 Or simply build the .cpp files into your application (there are only 8 of them).
 
 `via-http` lib depends on the `boost` libraries.
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
-[boost getting started](http://www.boost.org/doc/libs/1_55_0/more/getting_started/index.html).
+[boost getting started](http://www.boost.org/doc/libs/1_57_0/more/getting_started/index.html).
 
 The `boost asio` library (and hence `via-httplib`) depends upon the
 `OpenSSL` library to implement SSL/TLS sockets.
@@ -41,7 +70,29 @@ package from [openssl source](http://www.openssl.org/source/) and build it.
 Note: a binary distribution may be available for your machine,
 see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
 which could save you a lot of trouble, since building the `OpenSSL` binaries can
-be a long and difficult process...  
+be a long-winded process...
+
+Structure
+---------
+
+Directory structure and contents:
+
+| Directory            | Contents                                                                 |
+|----------------------|--------------------------------------------------------------------------|
+| [via](via)           | The `via-httplib` API classes: [http_server](via/http_server.hpp), [http_connection](via/http_connection.hpp) and [http_client](http_client.hpp). |
+| `via/comms`          | The TCP/IP communications software.                                      |
+| `via/comms/ssl`      | The SSL specific TCP/IP communications software.                         |
+| `via/http`           | HTTP parsers and encoders.                                               |
+| `examples`           | Sample SSL certificates for the HTTPS examples.                          |
+| [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
+| [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
+| `tests`              | A main function for the `boost Test` library.                            |
+| `tests/http`         | HTTP parser and encoder tests.                                           |
+| `docs`               | [Make](docs/MAKE.md), [User Guide](docs/USE.md), [Server Security](docs/SECURITY.md) and [Design Notes](docs/DESIGN.md) |
+| `docs/uml`           | UML diagrams in [PlantUML](http://plantuml.sourceforge.net/index.html) format. |
+| `docs/images`        | Images (mainly UML diagrams) in png format.                              |
+
+![Via Namespaces](docs/images/via_namespaces.png)
 
 Example
 -------
@@ -68,14 +119,14 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	    std::cout << "Rx headers: " << request.headers().to_string();
 	    std::cout << "Rx body: "    << body << std::endl;
 	
-	    via::http::tx_response response(via::http::response_status::OK);
-        response.add_server_header();
-        response.add_date_header();
+	    via::http::tx_response response(via::http::response_status::code::OK);
+	    response.add_server_header();
+	    response.add_date_header();
 	    weak_ptr.lock()->send(response);
 	  }
 	}
-	
-	int main(int argc, char *argv[])
+    
+    int main(int argc, char *argv[])
 	{
 	  try
 	  {
@@ -104,8 +155,7 @@ A simple HTTP server ([`simple_http_server.cpp`](examples/server/simple_http_ser
 	
 	  return 0;
 	}
-
-
+    
 This server will output all of the requests that it receives to std::cout and respond with a `200 OK` response to each of them.
 e.g. a request from Google Chrome on a Windows 7 PC:
 
@@ -138,6 +188,14 @@ An equivalent simple HTTPS server can be found here:[`simple_https_server.cpp`](
 Further Information
 -------------------
 
-[User Guide](USE.md)
+[Make](docs/MAKE.md)
 
-[Design Notes](DESIGN.md)
+[User Guide](docs/USE.md)
+
+[Server Security](docs/SECURITY.md)
+
+[Design](docs/DESIGN.md)
+
+In addition to the markdown files above, the code is annotated with Doxygen comments.  
+You can generate the Doxygen documentation by running `doxygen Doxyfile` from the
+[docs](docs) directory.

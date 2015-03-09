@@ -1,0 +1,46 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title http_client events 
+
+actor application
+application -> http_client : connect
+
+loop
+== normal request ==
+
+application -> http_client : request
+application <- http_client : response
+
+== expect continue request ==
+
+application -> http_client : request
+application <- http_client : response (continue)
+
+application -> http_client : body
+application <- http_client : response
+
+== chunked request ==
+
+application -> http_client : request
+loop
+application -> http_client : chunk
+end
+application <- http_client : response
+
+== chunked response ==
+
+application -> http_client : request
+application <- http_client : response
+loop
+application <- http_client : chunk
+end
+
+end
+
+opt socket disconnected callback
+application <- http_client     : disconnected
+end
+
+@enduml
