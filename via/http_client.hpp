@@ -18,8 +18,6 @@
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
 #include <boost/shared_ptr.hpp>
-#include <boost/signals2.hpp>
-#include <deque>
 #include <iostream>
 #include <boost/bind.hpp>
 
@@ -59,39 +57,34 @@ namespace via
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
-    /// The signal sent when a response is received.
-    typedef boost::signals2::signal<void (http::rx_response const&,
-                                      Container const&)> http_response_signal;
-
-    /// The slot type associated with a response received signal.
-    typedef typename http_response_signal::slot_type http_response_signal_slot;
+    /// The type of the response_receiver.
+    typedef typename http::response_receiver<Container> http_response;
 
     /// The chunk type
     typedef typename http::rx_chunk<Container> chunk_type;
 
-    /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal<void (chunk_type const&,
-                                          Container const&)> http_chunk_signal;
+    /// The ResponseHandler type.
+    typedef TR1::function <void (http::rx_response const&, Container const&)>
+      ResponseHandler;
 
-    /// The slot type associated with a chunk received signal.
-    typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
+    /// The ChunkHandler type.
+    typedef TR1::function <void (chunk_type const&, Container const&)>
+      ChunkHandler;
 
-    /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal<void (void)> http_event_signal;
-
-    /// The slot type associated with a disconnected signal.
-    typedef typename http_event_signal::slot_type
-                                                http_event_signal_slot;
+    /// The ConnectionHandler type.
+    typedef TR1::function <void (void)>
+      ConnectionHandler;
 
   private:
 
     boost::shared_ptr<connection_type> connection_; ///< the comms connection
-    http::response_receiver<Container> rx_;       ///< the response receiver
-    http_response_signal http_response_signal_;   ///< the response callback function
-    http_chunk_signal http_chunk_signal_;         ///< the response chunk callback function
-    http_event_signal http_sent_signal_;
-    http_event_signal http_disconnected_signal_;
-    std::string host_name_;                       ///< the name of the host
+    http::response_receiver<Container> rx_;         ///< the response receiver
+    std::string host_name_;                         ///< the name of the host
+
+    ResponseHandler   http_response_handler_; ///< the response callback function
+    ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
+    ConnectionHandler packet_sent_handler_;   ///< the sent callback function
+    ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
 
     /// Send a packet on the connection.
     /// @param packet the data packet to send.
@@ -116,11 +109,11 @@ namespace via
     explicit http_client(boost::asio::io_service& io_service) :
       connection_(connection_type::create(io_service)),
       rx_(),
-      http_response_signal_(),
-      http_chunk_signal_(),
-      http_sent_signal_(),
-      http_disconnected_signal_(),
-      host_name_()
+      host_name_(),
+      http_response_handler_(NULL),
+      http_chunk_handler_(NULL),
+      packet_sent_handler_(NULL),
+      disconnected_handler_(NULL)
     {
       connection_->set_event_callback
           (boost::bind(&http_client::event_handler, this, _1, _2));
@@ -141,25 +134,28 @@ namespace via
     static shared_pointer create(boost::asio::io_service& io_service)
     { return shared_pointer(new http_client(io_service)); }
 
-    /// Connect the response received slot.
-    /// @param slot the slot for the response received signal.
-    void response_received_event(http_response_signal_slot const& slot)
-    { http_response_signal_.connect(slot); }
+    ////////////////////////////////////////////////////////////////////////
+    // Event Handlers
 
-    /// Connect the chunk received slot.
-    /// @param slot the slot for the chunk received signal.
-    void chunk_received_event(http_chunk_signal_slot const& slot)
-    { http_chunk_signal_.connect(slot); }
+    /// Connect the response received callback function.
+    /// @param handler the handler for a received HTTP response.
+    void response_received_event(ResponseHandler handler)
+    { http_response_handler_ = handler; }
 
-    /// Connect the message sent slot.
-    /// @param slot the slot for the message sent signal.
-    void msg_sent_event(http_event_signal_slot const& slot)
-    { http_sent_signal_.connect(slot); }
+    /// Connect the chunk received callback function.
+    /// @param handler the handler for a received HTTP chunk.
+    void chunk_received_event(ChunkHandler handler)
+    { http_chunk_handler_ = handler; }
 
-    /// Connect the disconnected slot.
-    /// @param slot the slot for the disconnected signal.
-    void disconnected_event(http_event_signal_slot const& slot)
-    { http_disconnected_signal_.connect(slot); }
+    /// Connect the message sent callback function.
+    /// @param handler the handler for the message sent signal.
+    void msg_sent_event(ConnectionHandler handler)
+    { packet_sent_handler_ = handler; }
+
+    /// Connect the disconnected callback function.
+    /// @param handler the handler for the socket disconnected signal.
+    void disconnected_event(ConnectionHandler handler)
+    { disconnected_handler_ = handler; }
 
     /// Connect to the given host name and port.
     /// @param host_name the host to connect to.
@@ -204,11 +200,12 @@ namespace via
       switch (rx_state)
       {
       case http::RX_VALID:
-        http_response_signal_(rx_.response(), rx_.body());
+        http_response_handler_(rx_.response(), rx_.body());
         return;
 
       case http::RX_CHUNK:
-        http_chunk_signal_(rx_.chunk(), rx_.chunk().data());
+        if (http_chunk_handler_ != NULL)
+          http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
         return;
 
       case http::RX_INVALID:
@@ -391,10 +388,12 @@ namespace via
         receive_handler();
         break;
       case via::comms::SENT:
-        http_sent_signal_();
+        if (packet_sent_handler_ != NULL)
+          packet_sent_handler_();
         break;
       case via::comms::DISCONNECTED:
-        http_disconnected_signal_();
+        if (disconnected_handler_ != NULL)
+          disconnected_handler_();
         break;
       default:
         break;
