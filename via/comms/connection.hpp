@@ -72,20 +72,11 @@ namespace via
       typedef typename boost::asio::ip::tcp::resolver::iterator resolver_iterator;
 
       /// Event callback function type.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      typedef std::function<void (int, weak_pointer)> event_callback_type;
-#else
-      typedef std::tr1::function<void (int, weak_pointer)> event_callback_type;
-#endif
+      typedef TR1::function<void (int, weak_pointer)> event_callback_type;
 
       /// Error callback function type.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      typedef std::function<void (boost::system::error_code const&,
+      typedef TR1::function<void (boost::system::error_code const&,
                                   weak_pointer)> error_callback_type;
-#else
-      typedef std::tr1::function<void (boost::system::error_code const&,
-                                       weak_pointer)> error_callback_type;
-#endif
 
     private:
 

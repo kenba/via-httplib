@@ -16,7 +16,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
-#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #ifdef HTTP_SSL
 #include <boost/asio/ssl/context.hpp>
@@ -56,14 +55,14 @@ namespace via
 
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor, Container, use_strand>
-                                                       http_connection_type;
+      http_connection_type;
 
     /// The underlying connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
     typedef std::map<void*, boost::shared_ptr<http_connection_type> >
-        connection_collection;
+      connection_collection;
 
     /// The template requires a typename to access the iterator.
     typedef typename connection_collection::iterator
@@ -76,33 +75,25 @@ namespace via
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
+    /// The type of the request_receiver.
     typedef typename http::request_receiver<Container> http_request;
-
-    /// The signal sent when a request is received.
-    typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>,
-             http::rx_request const&, Container const&)> http_request_signal;
-
-    /// The slot type associated with a request received signal.
-    typedef typename http_request_signal::slot_type http_request_signal_slot;
 
     /// The chunk type
     typedef typename http::rx_chunk<Container> chunk_type;
 
-    /// The signal sent when a chunk is received.
-    typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>,
-             chunk_type const&, Container const&)> http_chunk_signal;
+    /// The RequestHandler type.
+    typedef TR1::function <void (boost::weak_ptr<http_connection_type>,
+                                 http::rx_request const&, Container const&)>
+      RequestHandler;
 
-    /// The slot type associated with a chunk received signal.
-    typedef typename http_chunk_signal::slot_type http_chunk_signal_slot;
+    /// The ChunkHandler type.
+    typedef TR1::function <void (boost::weak_ptr<http_connection_type>,
+                                 chunk_type const&, Container const&)>
+      ChunkHandler;
 
-    /// The signal sent when a socket is disconnected.
-    typedef boost::signals2::signal
-      <void (boost::weak_ptr<http_connection_type>)> http_connection_signal;
-
-    /// The slot type associated with a socket disconnected signal.
-    typedef typename http_connection_signal::slot_type http_connection_signal_slot;
+    /// The ConnectionHandler type.
+    typedef TR1::function <void (boost::weak_ptr<http_connection_type>)>
+      ConnectionHandler;
 
   private:
     boost::shared_ptr<server_type> server_;   ///< the communications server
@@ -118,64 +109,55 @@ namespace via
     size_t         max_header_length_; ///< the max cumulative length
     size_t         max_body_size_;     ///< the maximum size of a request body
     size_t         max_chunk_size_;    ///< the maximum size of a request chunk
-    bool         require_host_header_; ///< whether the server requires a host header
 
-    bool translate_head_;     ///< whether the server translate HEAD requests
-    bool concatenate_chunks_; ///< true if the server does not have a chunk handler
+    bool require_host_header_; ///< whether the http server requires a host header
+    bool translate_head_;      ///< whether the http server translates HEAD requests
+    bool trace_enabled_;       ///< whether the http server responds to TRACE requests
 
-    bool continue_enabled_;   ///< whether the server should send 100 Continue
-    bool trace_enabled_;      ///< whether the server responds to TRACE requests
-
-    http_request_signal http_request_signal_; ///< the request callback function
-    http_request_signal http_continue_signal_; ///< the continue callback function
-    http_chunk_signal http_chunk_signal_;     ///< the response chunk callback function
-    http_connection_signal http_connected_signal_; ///< the conncted callback function
-    http_connection_signal http_sent_signal_; ///< the signal sent callback function
-    http_connection_signal http_disconnected_signal_; ///< the disconncted callback function
+    RequestHandler    http_request_handler_; ///< the request callback function
+    RequestHandler    http_continue_handler_;///< the continue callback function
+    ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
+    ConnectionHandler connected_handler_;    ///< the connected callback function
+    ConnectionHandler packet_sent_handler_;  ///< the packet sent callback function
+    ConnectionHandler disconnected_handler_; ///< the disconncted callback function
 
   public:
 
-    /// Connect the request received slot.
-    /// @param slot the slot for the request received signal.
-    void request_received_event(http_request_signal_slot const& slot)
-    { http_request_signal_.connect(slot); }
+    /// Connect the request received callback function.
+    /// @param handler the handler for a received HTTP request.
+    void request_received_event(RequestHandler handler)
+    { http_request_handler_ = handler; }
 
-    /// Connect the chunk received slot.
-    /// @param slot the slot for the chunk received signal.
-    void chunk_received_event(http_chunk_signal_slot const& slot)
-    {
-      concatenate_chunks_ = false;
-      http_chunk_signal_.connect(slot);
-    }
-
-    /// Connect the expect continue received slot.
-    /// If the application registers a slot for this event, then the
+    /// Connect the expect continue received callback function.
+    /// If the application registers a handler for this event, then the
     /// application must determine how to respond to a request containing an
     /// Expect: 100-continue header based upon it's other headers.
-    /// Otherwise, the server will send a 100 Continue response, so that the
-    /// client can continue to send the body of the request.
+    /// Otherwise, the server will automatically send a 100 Continue response,
+    /// so that the client can continue to send the body of the request.
     /// @post disables automatic sending of a 100 Continue response
-    /// @param slot the slot for the expects continue signal.
-    void request_expect_continue_event(http_request_signal_slot const& slot)
-    {
-      continue_enabled_ = false;
-      http_continue_signal_.connect(slot);
-    }
+    /// @param handler the handler for an "expects continue" request.
+    void request_expect_continue_event(RequestHandler handler)
+    { http_continue_handler_ = handler; }
 
-    /// Connect the connected slot.
-    /// @param slot the slot for the socket connected signal.
-    void socket_connected_event(http_connection_signal_slot const& slot)
-    { http_connected_signal_.connect(slot); }
+    /// Connect the chunk received callback function.
+    /// @param handler the handler for a received HTTP chunk.
+    void chunk_received_event(ChunkHandler handler)
+    { http_chunk_handler_ = handler; }
 
-    /// Connect the sent slot.
-    /// @param slot the slot for the message sent signal.
-    void message_sent_event(http_connection_signal_slot const& slot)
-    { http_sent_signal_.connect(slot); }
+    /// Connect the connected callback function.
+    /// @param handler the handler for the socket connected event.
+    void socket_connected_event(ConnectionHandler handler)
+    { connected_handler_= handler; }
 
-    /// Connect the disconnected slot.
-    /// @param slot the slot for the socket disconnected signal.
-    void socket_disconnected_event(http_connection_signal_slot const& slot)
-    { http_disconnected_signal_.connect(slot); }
+    /// Connect the message sent callback function.
+    /// @param handler the handler for the message sent signal.
+    void message_sent_event(ConnectionHandler handler)
+    { packet_sent_handler_= handler; }
+
+    /// Connect the disconnected callback function.
+    /// @param handler the handler for the socket disconnected signal.
+    void socket_disconnected_event(ConnectionHandler handler)
+    { disconnected_handler_ = handler; }
 
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
@@ -196,17 +178,15 @@ namespace via
 
       require_host_header_(true),
       translate_head_     (true),
-      concatenate_chunks_ (true), // callback
 
-      continue_enabled_   (true), // callback
       trace_enabled_      (false),
 
-      http_request_signal_(),
-      http_continue_signal_(),
-      http_chunk_signal_(),
-      http_connected_signal_(),
-      http_sent_signal_(),
-      http_disconnected_signal_()
+      http_request_handler_ (NULL),
+      http_continue_handler_(NULL),
+      http_chunk_handler_   (NULL),
+      connected_handler_    (NULL),
+      packet_sent_handler_  (NULL),
+      disconnected_handler_ (NULL)
     {
       server_->set_event_callback
           (boost::bind(&http_server::event_handler, this, _1, _2));
@@ -256,14 +236,15 @@ namespace via
 
         http_connection->set_require_host_header(require_host_header_);
         http_connection->set_translate_head(translate_head_);
-        http_connection->set_concatenate_chunks(concatenate_chunks_);
-        http_connection->set_auto_continue(continue_enabled_);
+        http_connection->set_concatenate_chunks(http_chunk_handler_ == NULL);
+        http_connection->set_auto_continue(http_continue_handler_ == NULL);
         http_connection->set_trace_enabled(trace_enabled_);
 
         http_connections_.insert
             (connection_collection_value_type(pointer, http_connection));
         // signal that the socket is connected
-        http_connected_signal_(http_connection);
+        if (connected_handler_ != NULL)
+          connected_handler_(http_connection);
       }
       else
         std::cerr << "http_server, error: duplicate connection for "
@@ -294,19 +275,19 @@ namespace via
         switch (rx_state)
         {
         case http::RX_VALID:
-          http_request_signal_(http_connection,
+          http_request_handler_(http_connection,
                                http_connection->request(),
                                http_connection->body());
           break;
 
         case http::RX_EXPECT_CONTINUE:
-          http_continue_signal_(http_connection,
+          http_continue_handler_(http_connection,
                                 http_connection->request(),
                                 http_connection->body());
           break;
 
         case http::RX_CHUNK:
-          http_chunk_signal_(http_connection,
+          http_chunk_handler_(http_connection,
                              http_connection->chunk(),
                              http_connection->chunk().data());
           break;
@@ -329,9 +310,12 @@ namespace via
       if (!pointer)
         return;
 
-      connection_collection_iterator iter(http_connections_.find(pointer));
-      if (iter != http_connections_.end())
-        http_sent_signal_(iter->second);
+      if (packet_sent_handler_ != NULL)
+      {
+        connection_collection_iterator iter(http_connections_.find(pointer));
+        if (iter != http_connections_.end())
+          packet_sent_handler_(iter->second);
+      }
     }
 
     /// Handle a disconnected signal from an underlying comms connection.
@@ -347,7 +331,9 @@ namespace via
       if (iter != http_connections_.end())
       {
         // Signal the application
-        http_disconnected_signal_(iter->second);
+        if (disconnected_handler_ != NULL)
+          disconnected_handler_(iter->second);
+
         http_connections_.erase(iter);
       }
     }

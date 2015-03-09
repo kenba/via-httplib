@@ -40,18 +40,6 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        /// A connection hander callback function type.
-        /// @param error the (boost) error code.
-        /// @param host_iterator the resolver_iterator
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-        typedef std::function<void (boost::system::error_code const&,
-                                    boost::asio::ip::tcp::resolver::iterator)>
-#else
-        typedef std::tr1::function<void (boost::system::error_code const&,
-                                         boost::asio::ip::tcp::resolver::iterator)>
-#endif
-                                               ConnectHandler;
-
         /// The asio io_service.
         boost::asio::io_service& io_service_;
         /// The asio SSL TCP socket.

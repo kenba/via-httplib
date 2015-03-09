@@ -23,8 +23,10 @@
 // if C++11 or Visual Studio 2010 or newer
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
 #include <functional>
+#define TR1 std
 #else
 #include <tr1/functional>
+#define TR1 std::tr1
 #endif
 
 namespace via
@@ -43,23 +45,23 @@ namespace via
     /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-    typedef std::function<void (boost::system::error_code const&)>
-#else
-    typedef std::tr1::function<void (boost::system::error_code const&)>
-#endif
-                                               ErrorHandler;
+    typedef TR1::function<void (boost::system::error_code const&)>
+      ErrorHandler;
 
     /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-    typedef std::function<void (boost::system::error_code const&, size_t)>
-#else
-    typedef std::tr1::function<void (boost::system::error_code const&, size_t)>
-#endif
-                                           CommsHandler;
+    typedef TR1::function<void (boost::system::error_code const&, size_t)>
+      CommsHandler;
+
+    /// @typedef ConnectHandler
+    /// A connect hander callback function type.
+    /// @param error the (boost) error code.
+    /// @param host_iterator the resolver_iterator
+    typedef TR1::function<void (boost::system::error_code const&,
+                                boost::asio::ip::tcp::resolver::iterator)>
+      ConnectHandler;
 
     /// @typedef ConstBuffers
     /// A deque of asio::const_buffers.
