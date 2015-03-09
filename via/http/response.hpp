@@ -18,7 +18,6 @@
 #include "headers.hpp"
 #include "chunk.hpp"
 #include <algorithm>
-#include <cassert>
 
 namespace via
 {
@@ -56,19 +55,21 @@ namespace via
 
     private:
 
-      /// Parser parameters
+      // Parser parameters
       bool           strict_crlf_;       ///< enforce strict parsing of CRLF
       unsigned char  max_whitespace_;    ///< the max no of consectutive whitespace characters.
       unsigned short max_status_no_;     ///< the maximum number of a response status
       size_t         max_reason_length_; ///< the maximum length of a response reason
 
-      /// Response information
+      // Response information
       int status_;                ///< the response status code
       std::string reason_phrase_; ///< the response reason phrase
-      size_t ws_count_;           ///< the current whitespace count
       char major_version_;        ///< the HTTP major version number
       char minor_version_;        ///< the HTTP minor version number
+
+      // Parser state
       Response state_;            ///< the current parsing state
+      unsigned short ws_count_;   ///< the current whitespace count
       bool status_read_;          ///< true if status code was read
       bool valid_;                ///< true if the response line is valid
       bool fail_;                 ///< true if the response line failed validation
@@ -86,27 +87,29 @@ namespace via
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
       /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param strict_crlf enforce strict parsing of CRLF.
       /// @param max_whitespace the maximum number of consectutive whitespace
       /// characters allowed in a request: min 1, max 254.
       /// @param max_status_no the maximum number of an HTTP response status
       /// max 65534.
       /// @param max_reason_length the maximum length of a response reason
       /// max 65534.
-      explicit response_line(bool           strict_crlf, //       = false,
-                             unsigned char  max_whitespace, //    = 8,
-                             unsigned short max_status_no, //     = 1024,
-                             unsigned short max_reason_length) : // = 254) :
+      explicit response_line(bool           strict_crlf,
+                             unsigned char  max_whitespace,
+                             unsigned short max_status_no,
+                             unsigned short max_reason_length) :
         strict_crlf_(strict_crlf),
         max_whitespace_(max_whitespace),
         max_status_no_(max_status_no),
         max_reason_length_(max_reason_length),
+
         status_(0),
         reason_phrase_(""),
-        ws_count_(0),
         major_version_(0),
         minor_version_(0),
+
         state_(RESP_HTTP_H),
+        ws_count_(0),
         status_read_(false),
         valid_(false),
         fail_(false)
@@ -118,10 +121,11 @@ namespace via
       {
         status_ = 0;
         reason_phrase_.clear();
-        ws_count_ = 0;
         major_version_ = 0;
         minor_version_ = 0;
+
         state_ = RESP_HTTP_H;
+        ws_count_ = 0;
         status_read_ = false;
         valid_ =  false;
         fail_ = false;
@@ -133,10 +137,11 @@ namespace via
       {
         std::swap(status_, other.status_);
         reason_phrase_.swap(other.reason_phrase_);
-        std::swap(ws_count_, other.ws_count_);
         std::swap(major_version_, other.major_version_);
         std::swap(minor_version_, other.minor_version_);
+
         std::swap(state_, other.state_);
+        std::swap(ws_count_, other.ws_count_);
         std::swap(status_read_, other.status_read_);
         std::swap(valid_, other.valid_);
         std::swap(fail_, other.fail_);
@@ -219,11 +224,18 @@ namespace via
       explicit response_line(response_status::code::status status_code,
                              char major_version = '1',
                              char minor_version = '1') :
+        strict_crlf_(false),
+        max_whitespace_(254),
+        max_status_no_(65534),
+        max_reason_length_(65534),
+
         status_(static_cast<int>(status_code)),
         reason_phrase_(response_status::reason_phrase(status_code)),
         major_version_(major_version),
         minor_version_(minor_version),
+
         state_(RESP_VALID),
+        ws_count_(0),
         status_read_(true),
         valid_(true),
         fail_(false)
@@ -238,13 +250,20 @@ namespace via
                              std::string const& reason_phrase,
                              char major_version = '1',
                              char minor_version = '1') :
+        strict_crlf_(false),
+        max_whitespace_(254),
+        max_status_no_(65534),
+        max_reason_length_(65534),
+
         status_(status),
         reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
                     (static_cast<response_status::code::status>(status))),
         major_version_(major_version),
         minor_version_(minor_version),
+
         state_(RESP_VALID),
+        ws_count_(0),
         status_read_(true),
         valid_(true),
         fail_(false)
@@ -297,15 +316,15 @@ namespace via
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
       /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param strict_crlf enforce strict parsing of CRLF.
       /// @param max_whitespace the maximum number of consectutive whitespace
       /// characters allowed in a request: min 1, max 254.
-      /// @param max_status_no the maximum number of an HTTP response status
+      /// @param max_status_no the maximum number of an HTTP response status:
       /// max 65534.
-      /// @param max_reason_length the maximum length of a response reason
+      /// @param max_reason_length the maximum length of a response reason:
       /// max 65534.
       /// @param max_line_length the maximum length of an HTTP header field line:
-      /// default 1024, min 1, max 65534.
+      /// max 65534.
       /// @param max_header_number the maximum number of HTTP header field lines:
       /// max 65534.
       /// @param max_header_length the maximum cumulative length the HTTP header
@@ -508,17 +527,60 @@ namespace via
     template <typename Container>
     class response_receiver
     {
-      rx_response response_; ///< the received response
-      rx_chunk<Container> chunk_;    ///< the received chunk
-      Container   body_;     ///< the response body or data for the last chunk
+      /// Parser parameters
+      size_t max_body_size_;      ///< the maximum size of a response body.
+
+      /// Response information
+      rx_response response_;      ///< the received response
+      rx_chunk<Container> chunk_; ///< the received chunk
+      Container   body_;          ///< the response body or data for the last chunk
 
     public:
 
-      /// Default constructor.
-      /// Sets all member variables to their initial state.
-      explicit response_receiver() :
-        response_(false, 8, 1024, 254, 1024, 100, 8190),
-        chunk_(false, 254, 65534, ULONG_MAX, 65534, ULONG_MAX),
+      static const unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 254;
+      static const unsigned short DEFAULT_MAX_STATUS_NUMBER    = 65534;
+      static const unsigned short DEFAULT_MAX_REASON_LENGTH    = 65534;
+      static const unsigned short DEFAULT_MAX_LINE_LENGTH      = 65534;
+      static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 65534;
+      static const size_t         DEFAULT_MAX_HEADER_LENGTH    = ULONG_MAX;
+      static const size_t         DEFAULT_MAX_BODY_SIZE        = ULONG_MAX;
+      static const size_t         DEFAULT_MAX_CHUNK_SIZE       = ULONG_MAX;
+
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request: default 254, min 1, max 254.
+      /// @param max_status_no the maximum number of an HTTP response status:
+      /// default 65534, max 65534.
+      /// @param max_reason_length the maximum length of a response reason
+      /// default 65534, max 65534.
+      /// @param max_line_length the maximum length of an HTTP header field line:
+      /// default 65534, min 1, max 65534.
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// default 65534, max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: default 4 billion, max 4 billion.
+      /// @param max_body_size the maximum size of a response body:
+      /// default 4 billion, max 4 billion.
+      /// @param max_chunk_size the maximum size of a response chunk:
+      /// default 4 billion, max 4 billion.
+      explicit response_receiver(
+          bool           strict_crlf       = false,
+          unsigned char  max_whitespace    = DEFAULT_MAX_WHITESPACE_CHARS,
+          unsigned short max_status_no     = DEFAULT_MAX_STATUS_NUMBER,
+          unsigned short max_reason_length = DEFAULT_MAX_REASON_LENGTH,
+          unsigned short max_line_length   = DEFAULT_MAX_LINE_LENGTH,
+          unsigned short max_header_number = DEFAULT_MAX_HEADER_NUMBER,
+          size_t         max_header_length = DEFAULT_MAX_HEADER_LENGTH,
+          size_t         max_body_size     = DEFAULT_MAX_BODY_SIZE,
+          size_t         max_chunk_size    = DEFAULT_MAX_CHUNK_SIZE) :
+        max_body_size_(max_body_size),
+        response_(strict_crlf, max_whitespace, max_status_no, max_reason_length,
+                  max_line_length, max_header_number, max_header_length),
+        chunk_(strict_crlf, max_whitespace, max_line_length, max_chunk_size,
+               max_header_number, max_header_length),
         body_()
       {}
 
@@ -573,12 +635,12 @@ namespace via
         }
 
         // build a response body or receive a chunk
-        assert(response_.valid());
         if (!response_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
           size_t content_length(response_.content_length());
-          if (content_length == ULONG_MAX)
+          if ((content_length == ULONG_MAX) ||
+              (content_length > max_body_size_))
           {
             clear();
             return RX_INVALID;

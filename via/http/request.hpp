@@ -55,21 +55,23 @@ namespace via
 
     private:
 
-      /// Parser parameters
+      // Parser parameters
       bool          strict_crlf_;       ///< enforce strict parsing of CRLF
       unsigned char max_whitespace_;    ///< the max no of consectutive whitespace characters.
-      unsigned char max_method_length_; ///< the max length of a request method
+      unsigned char max_method_length_; ///< the maximum length of a request method
       size_t        max_uri_length_;    ///< the maximum length of a uri.
 
-      /// Request information
+      // Request information
       std::string method_;   ///< the request method
       std::string uri_;      ///< the request uri
-      size_t      ws_count_; ///< the current whitespace count
       char major_version_;   ///< the HTTP major version character
       char minor_version_;   ///< the HTTP minor version character
-      Request state_;        ///< the current parsing state
-      bool valid_;           ///< true if the request line is valid
-      bool fail_;            ///< true if the request line failed validation
+
+      // Parser state
+      Request state_;           ///< the current parsing state
+      unsigned short ws_count_; ///< the current whitespace count
+      bool valid_;              ///< true if the request line is valid
+      bool fail_;               ///< true if the request line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -84,7 +86,7 @@ namespace via
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
       /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param strict_crlf enforce strict parsing of CRLF.
       /// @param max_whitespace the maximum number of consectutive whitespace
       /// characters allowed in a request: min 1, max 254.
       /// @param max_method_length the maximum length of an HTTP request method:
@@ -99,12 +101,14 @@ namespace via
         max_whitespace_(max_whitespace),
         max_method_length_(max_method_length),
         max_uri_length_(max_uri_length),
+
         method_(),
         uri_(),
-        ws_count_(0),
         major_version_(0),
         minor_version_(0),
+
         state_(REQ_METHOD),
+        ws_count_(0),
         valid_(false),
         fail_(false)
       {}
@@ -115,10 +119,11 @@ namespace via
       {
         method_.clear();
         uri_.clear();
-        ws_count_ = 0;
         major_version_ = 0;
         minor_version_ = 0;
+
         state_ = REQ_METHOD;
+        ws_count_ = 0;
         valid_ =  false;
         fail_ = false;
       }
@@ -129,10 +134,11 @@ namespace via
       {
         method_.swap(other.method_);
         uri_.swap(other.uri_);
-        std::swap(ws_count_, other.ws_count_);
         std::swap(major_version_, other.major_version_);
         std::swap(minor_version_, other.minor_version_);
+
         std::swap(state_, other.state_);
+        std::swap(ws_count_, other.ws_count_);
         std::swap(valid_, other.valid_);
         std::swap(fail_, other.fail_);
       }
@@ -220,11 +226,14 @@ namespace via
         max_whitespace_(8),
         max_method_length_(8),
         max_uri_length_(1024),
+
         method_(request_method::name(method_id)),
         uri_(uri),
         major_version_(major_version),
         minor_version_(minor_version),
+
         state_(REQ_VALID),
+        ws_count_ (0),
         valid_(true),
         fail_(false)
       {}
@@ -242,11 +251,14 @@ namespace via
         max_whitespace_(8),
         max_method_length_(8),
         max_uri_length_(1024),
+
         method_(method),
         uri_(uri),
         major_version_(major_version),
         minor_version_(minor_version),
+
         state_(REQ_VALID),
+        ws_count_ (0),
         valid_(true),
         fail_(false)
       {}
@@ -290,26 +302,26 @@ namespace via
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
       /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF, default false.
+      /// @param strict_crlf enforce strict parsing of CRLF.
       /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request: default 8, min 1, max 254.
+      /// characters allowed in a request:min 1, max 254.
       /// @param max_method_length the maximum length of an HTTP request method:
-      /// default 8, min 1, max 254.
+      /// min 1, max 254.
       /// @param max_uri_length the maximum length of an HTTP request uri:
-      /// default 1024, min 1, max 4 billion.
+      /// min 1, max 4 billion.
       /// @param max_line_length the maximum length of an HTTP header field line:
-      /// default 1024, min 1, max 65534.
+      /// min 1, max 65534.
       /// @param max_header_number the maximum number of HTTP header field lines:
       /// max 65534.
       /// @param max_header_length the maximum cumulative length the HTTP header
       /// fields: max 4 billion.
-      explicit rx_request(bool           strict_crlf, //       = false,
-                          unsigned char  max_whitespace, //    = 8,
-                          unsigned char  max_method_length, // = 8,
-                          size_t         max_uri_length, //    = 1024,
-                          unsigned short max_line_length, //   = 1024,
-                          unsigned short max_header_number, // = 100,
-                          size_t         max_header_length) : // = 8190) :
+      explicit rx_request(bool           strict_crlf,
+                          unsigned char  max_whitespace,
+                          unsigned char  max_method_length,
+                          size_t         max_uri_length,
+                          unsigned short max_line_length,
+                          unsigned short max_header_number,
+                          size_t         max_header_length) :
         request_line(strict_crlf, max_whitespace,
                      max_method_length, max_uri_length),
         headers_(strict_crlf, max_whitespace, max_line_length,
@@ -514,8 +526,15 @@ namespace via
     template <typename Container>
     class request_receiver
     {
-      size_t max_content_length_;
+      /// Parser parameters
+      size_t max_body_size_;       ///< the maximum size of a request body.
+      bool   require_host_header_; ///< a host header is required.
 
+      /// Behaviour
+      bool   translate_head_;      ///< pass a HEAD request as a GET request.
+      bool   concatenate_chunks_;  ///< concatenate chunk data into the body
+
+      /// Request information
       rx_request request_;         ///< the received request
       rx_chunk<Container> chunk_;  ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
@@ -524,11 +543,17 @@ namespace via
       response_status::code::status response_code_;
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
-      bool       concatenate_chunks_; ///< concatenate chunk data into the body
-      bool       translate_head_;  ///< pass a HEAD request as a GET request.
-      bool       require_host_;    ///< a host header is required.
 
     public:
+
+      static const unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 8;
+      static const unsigned char  DEFAULT_MAX_METHOD_LENGTH    = 8;
+      static const size_t         DEFAULT_MAX_URI_LENGTH       = 1024;
+      static const unsigned short DEFAULT_MAX_LINE_LENGTH      = 1024;
+      static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 100;
+      static const size_t         DEFAULT_MAX_HEADER_LENGTH    = 8190;
+      static const size_t         DEFAULT_MAX_BODY_SIZE        = 1048576;
+      static const size_t         DEFAULT_MAX_CHUNK_SIZE       = 1048576;
 
       /// Constructor.
       /// Sets all member variables to their initial state.
@@ -541,17 +566,29 @@ namespace via
       explicit request_receiver(bool concatenate_chunks,
                                 bool translate_head,
                                 bool require_host,
-                                size_t max_content_length = 1048576) :
-        max_content_length_(max_content_length),
-        request_(false, 8, 8, 1024, 1024, 100, 8190), // TODO
-        chunk_(false, 8, 1024, max_content_length, 100, 8190), // TODO
+                                bool           strict_crlf = true,
+                                unsigned char  max_whitespace = DEFAULT_MAX_WHITESPACE_CHARS,
+                                unsigned char  max_method_length = DEFAULT_MAX_METHOD_LENGTH,
+                                size_t         max_uri_length = DEFAULT_MAX_URI_LENGTH,
+                                unsigned short max_line_length = DEFAULT_MAX_LINE_LENGTH,
+                                unsigned short max_header_number = DEFAULT_MAX_HEADER_NUMBER,
+                                size_t         max_header_length = DEFAULT_MAX_HEADER_LENGTH,
+                                size_t max_body_size  = DEFAULT_MAX_BODY_SIZE,
+                                size_t max_chunk_size = DEFAULT_MAX_CHUNK_SIZE) :
+        max_body_size_(max_body_size),
+        require_host_header_(require_host),
+
+        translate_head_(translate_head),
+        concatenate_chunks_(concatenate_chunks),
+
+        request_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
+                 max_line_length, max_header_number, max_header_length),
+        chunk_(strict_crlf, max_whitespace, max_line_length, max_chunk_size,
+               max_header_number, max_header_length),
         body_(),
         response_code_(response_status::code::NO_CONTENT),
         continue_sent_(false),
-        is_head_(false),
-        concatenate_chunks_(concatenate_chunks),
-        translate_head_(translate_head),
-        require_host_(require_host)
+        is_head_(false)
       {}
 
       /// clear the request_receiver.
@@ -621,7 +658,7 @@ namespace via
         }
 
         // build a request body or receive a chunk
-        if (require_host_ && request_.missing_host_header())
+        if (require_host_header_ && request_.missing_host_header())
         {
           response_code_ = response_status::code::BAD_REQUEST;
           return RX_INVALID;
@@ -632,7 +669,7 @@ namespace via
           // if there is a content length header, ensure it's valid
           size_t content_length(request_.content_length());
           if ((content_length == ULONG_MAX) ||
-              (content_length > max_content_length_))
+              (content_length > max_body_size_))
           {
             if (content_length == ULONG_MAX)
               response_code_ = response_status::code::BAD_REQUEST;
