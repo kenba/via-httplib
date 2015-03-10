@@ -21,9 +21,20 @@ typedef https_client_type::chunk_type http_chunk_type;
 namespace
 {
   // An https_client.
-  // Declared here so that it can be used in the response_handler and
-  // chunk_handler.
+  // Declared here so that it can be used in the connected_handler,
+  // response_handler and chunk_handler.
   https_client_type::shared_pointer http_client;
+
+  // The uri from the user
+  std::string uri;
+
+  /// A handler for the signal sent when an HTTP socket is connected.
+  void connected_handler()
+  {
+    // Create an http request and send it to the host.
+    via::http::tx_request request(via::http::request_method::id::GET, uri);
+    http_client->send(request);
+  }
 
   /// The handler for incoming HTTP requests.
   /// Prints the response.
@@ -74,7 +85,7 @@ int main(int argc, char *argv[])
   }
 
   std::string host_name(argv[1]);
-  std::string uri(argv[2]);
+  uri = argv[2];
   std::cout << app_name <<" host: " << host_name
             << " uri: " << uri << std::endl;
   try
@@ -82,8 +93,9 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create an http_client
-    http_client = https_client_type::create(io_service);
+    // Create an http_client and attach the response & chunk handlers
+    http_client =
+        https_client_type::create(io_service, response_handler, chunk_handler);
 
     // Set up SSL
     std::string certificate_file = "cacert.pem";
@@ -91,11 +103,11 @@ int main(int argc, char *argv[])
        (https_client_type::connection_type::ssl_context());
     ssl_context.load_verify_file(certificate_file);
 
-    // attach the response handler
-    // and attempt to connect to the host on the standard https port (443)
-    http_client->response_received_event(response_handler);
-    http_client->chunk_received_event(chunk_handler);
+    // attach the optional handlers
+    http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
+
+    // attempt to connect to the host on the standard https port (443)
     if (!http_client->connect(host_name, "https"))
     {
       std::cout << "Error, could not resolve host: " << host_name << std::endl;

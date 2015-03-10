@@ -77,40 +77,41 @@ namespace via
     http::response_receiver<Container> rx_;         ///< the response receiver
     std::string host_name_;                         ///< the name of the host
 
+    std::string tx_header_; /// A buffer for the HTTP request header.
+    Container   tx_body_;   /// A buffer for the HTTP request body.
+
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
+    ConnectionHandler connected_handler_;     ///< the connected callback function
     ConnectionHandler packet_sent_handler_;   ///< the sent callback function
     ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
 
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    void send(Container const& packet)
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
+    bool send(comms::ConstBuffers buffers)
     {
       rx_.clear();
-      connection_->send_data(packet);
+      return connection_->send_data(buffers);
     }
-
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    void send(Container&& packet)
-    {
-      rx_.clear();
-      connection_->send_data(packet);
-    }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Constructor.
     /// @param io_service the asio io_service to use.
+    /// @param response_handler the handler for received HTTP responses.
+    /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
     explicit http_client(boost::asio::io_service& io_service,
-               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) :
+                         ResponseHandler response_handler,
+                         ChunkHandler    chunk_handler,
+                         size_t          rx_buffer_size) :
       connection_(connection_type::create(io_service, rx_buffer_size)),
       rx_(),
       host_name_(),
-      http_response_handler_(NULL),
-      http_chunk_handler_(NULL),
+      tx_header_(),
+      tx_body_(),
+      http_response_handler_(response_handler),
+      http_chunk_handler_(chunk_handler),
+      connected_handler_(NULL),
       packet_sent_handler_(NULL),
       disconnected_handler_(NULL)
     {
@@ -130,21 +131,24 @@ namespace via
     /// The factory function to create connections.
     /// @param io_service the boost asio io_service used by the underlying
     /// connection.
-    static shared_pointer create(boost::asio::io_service& io_service)
-    { return shared_pointer(new http_client(io_service)); }
+    /// @param response_handler the handler for received HTTP responses.
+    /// @param chunk_handler the handler for received HTTP chunks.
+    /// @param rx_buffer_size the size of the receive_buffer, default
+    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    static shared_pointer create(boost::asio::io_service& io_service,
+                                 ResponseHandler response_handler,
+                                 ChunkHandler    chunk_handler,
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+    { return shared_pointer(new http_client(io_service, response_handler,
+                                            chunk_handler, rx_buffer_size)); }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
 
-    /// Connect the response received callback function.
-    /// @param handler the handler for a received HTTP response.
-    void response_received_event(ResponseHandler handler)
-    { http_response_handler_ = handler; }
-
-    /// Connect the chunk received callback function.
-    /// @param handler the handler for a received HTTP chunk.
-    void chunk_received_event(ChunkHandler handler)
-    { http_chunk_handler_ = handler; }
+    /// Connect the connected callback function.
+    /// @param handler the handler for the socket connected signal.
+    void connected_event(ConnectionHandler handler)
+    { connected_handler_ = handler; }
 
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
@@ -217,154 +221,102 @@ namespace via
 
     /// Send an HTTP request without a body.
     /// @param request the request to send.
-    void send(http::tx_request& request)
+    bool send(http::tx_request request)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message());
-      Container tx_message(http_header.begin(), http_header.end());
-      send(tx_message);
+      tx_header_ = request.message();
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }
-
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send an HTTP request without a body.
-    /// @param request the request to send.
-    void send(http::tx_request&& request)
-    {
-      request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message());
-      Container tx_message(http_header.begin(), http_header.end());
-      send(tx_message);
-    }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
-    void send(http::tx_request& request, Container const& body)
+    bool send(http::tx_request request, Container body)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message());
+      tx_header_ = request.message(body.size());
+      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
 
-      Container tx_message(body);
-      tx_message.insert(tx_message.begin(),
-                        http_header.begin(), http_header.end());
-      send(tx_message);
+      tx_body_.swap(body);
+      buffers.push_back(boost::asio::buffer(tx_body_));
+      return send(buffers);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP request with a body.
+    /// @pre The contents of the buffers are NOT buffered.
+    /// Their lifetime MUST exceed that of the connection
     /// @param request the request to send.
     /// @param body the body to send
-    void send(http::tx_request&& request, Container&& body)
+    bool send(http::tx_request request, comms::ConstBuffers buffers)
     {
       request.add_header(http::header_field::id::HOST, host_name_);
-      std::string http_header(request.message(body.size()));
+      tx_header_ = request.message(boost::asio::buffer_size(buffers));
 
-      body.insert(body.begin(),
-                  http_header.begin(), http_header.end());
-      send(body);
+      buffers.push_front(boost::asio::buffer(tx_header_));
+      return send(buffers);
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
-    /// Send an HTTP request with a body.
-    /// @param request the request to send.
-    /// @param begin a constant iterator to the beginning of the body to send.
-    /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    bool send(http::tx_request& request,
-              ForwardIterator1 begin, ForwardIterator2 end)
+    /// Send an HTTP request body.
+    /// @pre the request must have been sent beforehand.
+    /// @param body the body to send
+    /// @return true if sent, false otherwise.
+    bool send_body(Container body)
     {
-      request.add_header(http::header_field::id::HOST, host_name_);
-      size_t size(end - begin);
-      std::string http_header(request.message(size));
-
-      Container tx_message;
-      tx_message.reserve(http_header.size() + size);
-      tx_message.assign(http_header.begin(), http_header.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      return send(tx_message);
+      tx_body_.swap(body);
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_body_)));
     }
+
+    /// Send an HTTP request body.
+    /// @pre the request must have been sent beforehand.
+    /// @pre The contents of the buffers are NOT buffered.
+    /// Their lifetime MUST exceed that of the connection
+    /// @param buffers the body to send
+    /// @return true if sent, false otherwise.
+    bool send_body(comms::ConstBuffers buffers)
+    { return send(buffers); }
 
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    void send_chunk(Container const& chunk, std::string extension = "")
+    bool send_chunk(Container chunk, std::string extension = "")
     {
       size_t size(chunk.size());
       http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      tx_header_ = chunk_header.to_string();
+      tx_body_.swap(chunk);
 
-      Container tx_message(chunk);
-      tx_message.insert(tx_message.begin(),
-                        chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(),
-                        http::CRLF.begin(), http::CRLF.end());
-      send(tx_message);
+      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
+      buffers.push_back(boost::asio::buffer(tx_body_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
-    /// @param chunk the body chunk to send
+    /// @param buffers the body chunk to send
     /// @param extension the (optional) chunk extension.
-    void send_chunk(Container&& chunk, std::string extension = "")
+    bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
     {
-      size_t size(chunk.size());
+      // Calculate the overall size of the data in the buffers
+      size_t size(boost::asio::buffer_size(buffers));
+
       http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
-
-      chunk.insert(chunk.begin(),
-                   chunk_string.begin(), chunk_string.end());
-      chunk.insert(chunk.end(),
-                   http::CRLF.begin(), http::CRLF.end());
-      send(chunk);
-    }
-#endif // BOOST_ASIO_HAS_MOVE
-
-    /// Send an HTTP body chunk.
-    /// @param begin a constant iterator to the beginning of the chunk to send.
-    /// @param end a constant iterator to the end of the chunk to send.
-    /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    void send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
-                    std::string extension = "")
-    {
-      size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
-
-      Container tx_message;
-      tx_message.reserve(chunk_string.size() + size);
-      tx_message.assign(chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      tx_message.insert(tx_message.end(),
-                        http::CRLF.begin(), http::CRLF.end());
-      send(tx_message);
+      tx_header_ = chunk_header.to_string();
+      buffers.push_front(boost::asio::buffer(tx_header_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send the last HTTP chunk for a request.
     /// @param extension the (optional) chunk extension.
     /// @param trailer_string the (optional) chunk trailers.
-    void last_chunk(std::string extension = "",
+    bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
       http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      tx_header_ = last_chunk.message();
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      send(tx_message);
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }
-
-    /// Send a message body on the connection.
-    /// @param body the body to send.
-    void send_body(Container const& body)
-    { send(body); }
-
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send a message body on the connection.
-    /// @param body the body to send.
-    void send_body(Container&& body)
-    { send(body); }
-#endif  // BOOST_ASIO_HAS_MOVE
 
     /// Disconnect the underlying connection.
     void disconnect()
@@ -383,6 +335,10 @@ namespace via
 
       switch(event)
       {
+      case via::comms::CONNECTED:
+        if (connected_handler_ != NULL)
+          connected_handler_();
+        break;
       case via::comms::RECEIVED:
         receive_handler();
         break;

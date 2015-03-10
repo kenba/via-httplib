@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014 Ken Barker
+// Copyright (c) 2014-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -20,6 +20,25 @@ typedef http_client_type::chunk_type http_chunk_type;
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
+  // An http_client.
+  // Declared here so that it can be used in the connected_handler,
+  // response_handler and chunk_handler.
+  http_client_type::shared_pointer http_client;
+
+  // The method from the user
+  std::string method;
+
+  // The uri from the user
+  std::string uri;
+
+  /// A handler for the signal sent when an HTTP socket is connected.
+  void connected_handler()
+  {
+    // Create an http request and send it to the host.
+    via::http::tx_request request(method, uri);
+    http_client->send(request);
+  }
+
   /// The handler for incoming HTTP requests.
   /// Prints the response.
   void response_handler(via::http::rx_response const& response,
@@ -30,7 +49,7 @@ namespace
     std::cout << "Rx body: "     << body << std::endl;
 
     if (!response.is_chunked())
-      exit(0);
+      http_client.reset();
   }
 
   /// The handler for incoming HTTP chunks.
@@ -43,16 +62,13 @@ namespace
     if (chunk.is_last())
     {
       std::cout << "Rx last chunk" << std::endl;
-      exit(0);
+      http_client.reset();
     }
   }
 
   /// The handler for the HTTP socket disconnecting.
   void disconnected_handler()
-  {
-    std::cout << "Socket disconnected" << std::endl;
-    exit(0);
-  }
+  { std::cout << "Socket disconnected" << std::endl; }
 }
 //////////////////////////////////////////////////////////////////////////////
 
@@ -71,8 +87,8 @@ int main(int argc, char *argv[])
   }
 
   std::string host_name(argv[1]);
-  std::string method(argv[2]);
-  std::string uri(argv[3]);
+  method = argv[2];
+  uri    = argv[3];
   std::cout << app_name << " host: " << host_name
             << " method: " << method
             << " uri: " << uri << std::endl;
@@ -81,24 +97,20 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create an http_client
-    http_client_type::shared_pointer http_client
-        (http_client_type::create(io_service));
+    // Create an http_client and attach the response & chunk handlers
+    http_client =
+        http_client_type::create(io_service, response_handler, chunk_handler);
 
-    // Attach the callback handlers
-    // and attempt to connect to the host on the standard http port (80)
-    http_client->response_received_event(response_handler);
-    http_client->chunk_received_event(chunk_handler);
+    // attach the optional handlers
+    http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
+
+    // attempt to connect to the host on the standard http port (80)
     if (!http_client->connect(host_name))
     {
-      std::cout << "Could not resolve host: " << host_name << std::endl;
+      std::cout << "Error, could not resolve host: " << host_name << std::endl;
       return 1;
     }
-
-    // Create an http request and send it to the host.
-    via::http::tx_request request(method, uri);
-    http_client->send(request);
 
     // run the io_service to start communications
     io_service.run();

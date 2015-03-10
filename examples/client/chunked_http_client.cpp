@@ -28,9 +28,22 @@ namespace
   int count(0);
 
   // An http_client.
-  // Declared here so that it can be used in the response_handler and
-  // send_a_chunk function.
+  // Declared here so that it can be used in the connected_handler,
+  // response_handler and send_a_chunk function.
   http_client_type::shared_pointer http_client;
+
+  // The uri from the user
+  std::string uri;
+
+  /// A handler for the signal sent when an HTTP socket is connected.
+  void connected_handler()
+  {
+    // Create an http request and send it to the host.
+    via::http::tx_request request(via::http::request_method::id::PUT, uri);
+    request.add_header(via::http::header_field::id::TRANSFER_ENCODING, "Chunked");
+    request.add_header(via::http::header_field::id::EXPECT, "100-continue");
+    http_client->send(request);
+  }
 
   /// Something to send in the chunks.
   const std::string chunk_text("HTTP chunk number: ");
@@ -130,7 +143,7 @@ int main(int argc, char *argv[])
   }
 
   std::string host_name(argv[1]);
-  std::string uri(argv[2]);
+  uri = argv[2];
   std::cout << app_name <<" host: " << host_name
             << " uri: " << uri << std::endl;
   try
@@ -138,26 +151,25 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create an http_client
-    http_client = http_client_type::create(io_service);
+    // Create an http_client and attach the response & chunk handlers
+    http_client =
+        http_client_type::create(io_service, response_handler, chunk_handler);
 
-    // Attach the callback handlers
-    // and attempt to connect to the host on the standard http port (80)
-    http_client->response_received_event(response_handler);
-    http_client->chunk_received_event(chunk_handler);
+    // Create an http_client and attach the response & chunk handlers
+    http_client =
+        http_client_type::create(io_service, response_handler, chunk_handler);
+
+    // attach the optional handlers
+    http_client->connected_event(connected_handler);
     http_client->msg_sent_event(msg_sent_handler);
     http_client->disconnected_event(disconnected_handler);
+
+    // attempt to connect to the host on the standard http port (80)
     if (!http_client->connect(host_name))
     {
       std::cout << "Could not resolve host: " << host_name << std::endl;
       return 1;
     }
-
-    // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::id::PUT, uri);
-    request.add_header(via::http::header_field::id::TRANSFER_ENCODING, "Chunked");
-    request.add_header(via::http::header_field::id::EXPECT, "100-continue");
-    http_client->send(request);
 
     // run the io_service to start communications
     io_service.run();
