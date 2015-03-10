@@ -71,6 +71,12 @@ namespace via
     /// The request receiver for this connection.
     http::request_receiver<Container> rx_;
 
+    /// A buffer for the HTTP header of the response message.
+    std::string tx_header_;
+
+    /// A buffer for the body of the response message.
+    Container tx_body_;
+
     /// A flag to indicate that the server should always respond to an
     /// expect: 100-continue header with a 100 Continue response.
     bool continue_enabled_;
@@ -78,40 +84,24 @@ namespace via
     /// A flag to indicate that the server will echo back the TRACE message.
     bool trace_enabled_;
 
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    bool send(Container const& packet)
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
+    bool send(comms::ConstBuffers const& buffers)
     {
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(packet);
+        tcp_pointer->send_data(buffers);
         return true;
       }
       else
         return false;
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    bool send(Container&& packet)
-    {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-      {
-        tcp_pointer->send_data(packet);
-        return true;
-      }
-      else
-        return false;
-    }
-#endif  // BOOST_ASIO_HAS_MOVE
-
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
+    /// Send buffers on the connection.
+    /// @param buffers the data to write.
     /// @param is_continue whether this is a 100 Continue response
-    bool send(Container const& packet, bool is_continue)
+    bool send(comms::ConstBuffers const& buffers, bool is_continue)
     {
       bool keep_alive(rx_.request().keep_alive());
       if (is_continue)
@@ -122,7 +112,7 @@ namespace via
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(packet);
+        tcp_pointer->send_data(buffers);
 
         if (keep_alive)
           return true;
@@ -134,35 +124,6 @@ namespace via
                   << std::endl;
       return false;
     }
-
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send a packet on the connection.
-    /// @param packet the data packet to send.
-    /// @param is_continue whether this is a 100 Continue response
-    bool send(Container&& packet, bool is_continue)
-    {
-      bool keep_alive(rx_.request().keep_alive());
-      if (is_continue)
-        rx_.set_continue_sent();
-      else
-        rx_.clear();
-
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-      {
-        tcp_pointer->send_data(packet);
-
-        if (keep_alive)
-          return true;
-        else
-          tcp_pointer->shutdown();
-      }
-      else
-        std::cerr << "http_connection::send connection weak pointer expired"
-                  << std::endl;
-      return false;
-    }
-#endif
 
   public:
 
@@ -200,6 +161,8 @@ namespace via
       rx_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
           max_line_length, max_header_number, max_header_length,
           max_body_size, max_chunk_size),
+      tx_header_(),
+      tx_body_(),
       continue_enabled_(true),
       trace_enabled_(false)
     {}
@@ -275,6 +238,9 @@ namespace via
     /// @return the receiver_parsing_state
     http::Rx receive()
     {
+      // A buffer to store the body used to transmit a message.
+      static std::string tx_body_buffer;
+
       // attempt to get the pointer
       boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (!tcp_pointer)
@@ -338,10 +304,12 @@ namespace via
                                    http::header_field::content_http_header());
 
             // The body of the response contains the TRACE request
-            std::string trace_request(rx_.request().to_string());
-            trace_request += rx_.request().headers().to_string();
+            tx_body_buffer.clear();
+            tx_body_buffer = rx_.request().to_string();
+            tx_body_buffer += rx_.request().headers().to_string();
 
-            send(ok_response, trace_request.begin(), trace_request.end());
+            send(ok_response,
+                 comms::ConstBuffers(1, boost::asio::buffer(tx_body_buffer)));
           }
           else // otherwise, it responds with "Not Allowed"
           {
@@ -365,144 +333,142 @@ namespace via
       return rx_state;
     }
 
-    /// Send an HTTP response without a body.
-    /// @param response the response to send.
-    bool send(http::tx_response& response)
+    /// Send the appropriate HTTP response to the request.
+    /// @return true if sent, false otherwise.
+    bool send_response()
     {
+      http::tx_response response(rx_.response_code());
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      tx_header_ = response.message();
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)),
+                  response.is_continue());
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP response without a body.
+    /// @pre the response must not contain any split headers.
     /// @param response the response to send.
-    bool send(http::tx_response&& response)
+    /// @return true if sent, false otherwise.
+    bool send(http::tx_response response)
     {
+      if (!response.is_valid())
+        return false;
+
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message());
+      tx_header_ = response.message();
 
-      Container tx_message(http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)),
+                  response.is_continue());
     }
-#endif // BOOST_ASIO_HAS_MOVE
 
     /// Send an HTTP response with a body.
+    /// @pre the response must not contain any split headers.
     /// @param response the response to send.
     /// @param body the body to send
-    bool send(http::tx_response& response, Container const& body)
+    /// @return true if sent, false otherwise.
+    bool send(http::tx_response response, Container body)
     {
+      if (!response.is_valid())
+        return false;
+
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
-
-      Container tx_message(body);
-
-      // Don't send a body in response to a HEAD request
-      if (rx_.is_head())
-        tx_message.clear();
-
-      tx_message.insert(tx_message.begin(),
-                        http_header.begin(), http_header.end());
-      return send(tx_message, response.is_continue());
-    }
-
-#if defined(BOOST_ASIO_HAS_MOVE)
-    /// Send an HTTP response with a body.
-    /// @param response the response to send.
-    /// @param body the body to send
-    bool send(http::tx_response&& response, Container&& body)
-    {
-      response.set_major_version(rx_.request().major_version());
-      response.set_minor_version(rx_.request().minor_version());
-      std::string http_header(response.message(body.size()));
-
-      // Don't send a body in response to a HEAD request
-      if (rx_.is_head())
-        body.clear();
-
-      body.insert(body.begin(),
-                  http_header.begin(), http_header.end());
-      return send(body, response.is_continue());
-    }
-#endif // BOOST_ASIO_HAS_MOVE
-
-    /// Send an HTTP response with a body.
-    /// @param response the response to send.
-    /// @param begin a constant iterator to the beginning of the body to send.
-    /// @param end a constant iterator to the end of the body to send.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    bool send(http::tx_response& response,
-              ForwardIterator1 begin, ForwardIterator2 end)
-    {
-      response.set_major_version(rx_.request().major_version());
-      response.set_minor_version(rx_.request().minor_version());
-      size_t size(end - begin);
-      std::string http_header(response.message(size));
-
-      Container tx_message;
-      tx_message.reserve(http_header.size() + size);
-      tx_message.assign(http_header.begin(), http_header.end());
+      tx_header_ = response.message();
+      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
 
       // Don't send a body in response to a HEAD request
       if (!rx_.is_head())
-        tx_message.insert(tx_message.end(), begin, end);
-      return send(tx_message, response.is_continue());
+      {
+        tx_body_.swap(body);
+        buffers.push_back(boost::asio::buffer(tx_body_));
+      }
+
+      return send(buffers, response.is_continue());
+    }
+
+    /// Send an HTTP response with a body.
+    /// @pre The contents of the buffers are NOT buffered.
+    /// Their lifetime MUST exceed that of the connection
+    /// @param response the response to send.
+    /// @param buffers a deque of asio::buffers containing the body to send.
+    bool send(http::tx_response response, comms::ConstBuffers buffers)
+    {
+      if (!response.is_valid())
+        return false;
+
+      // Calculate the overall size of the data in the buffers
+      size_t size(boost::asio::buffer_size(buffers));
+
+      // Don't send a body in response to a HEAD request
+      if (rx_.is_head())
+        buffers.clear();
+
+      response.set_major_version(rx_.request().major_version());
+      response.set_minor_version(rx_.request().minor_version());
+      tx_header_ = response.message(size);
+      buffers.push_front(boost::asio::buffer(tx_header_));
+
+      return send(buffers, response.is_continue());
+    }
+
+    /// Send an HTTP response body.
+    /// @pre the response must have been sent beforehand.
+    /// @param body the body to send
+    /// @return true if sent, false otherwise.
+    bool send_body(Container body)
+    {
+      if (rx_.is_head())
+        return false;
+
+      tx_body_.swap(body);
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_body_)));
+    }
+
+    /// Send an HTTP response body.
+    /// @pre the response must have been sent beforehand.
+    /// @pre The contents of the buffers are NOT buffered.
+    /// Their lifetime MUST exceed that of the connection
+    /// @param buffers the body to send
+    /// @return true if sent, false otherwise.
+    bool send_body(comms::ConstBuffers buffers)
+    {
+      if (rx_.is_head())
+        return false;
+
+      return send(buffers);
     }
 
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container const& chunk, std::string extension = "")
+    bool send_chunk(Container chunk, std::string extension = "")
     {
       size_t size(chunk.size());
       http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
+      tx_header_ = chunk_header.to_string();
+      tx_body_.swap(chunk);
 
-      Container tx_message(chunk);
-      tx_message.insert(tx_message.begin(),
-                        chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(tx_message);
+      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
+      buffers.push_back(boost::asio::buffer(tx_body_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
     /// Send an HTTP body chunk.
-    /// @param chunk the body chunk to send
+    /// @param buffers the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container&& chunk, std::string extension = "")
+    bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
     {
-      size_t size(chunk.size());
+      // Calculate the overall size of the data in the buffers
+      size_t size(boost::asio::buffer_size(buffers));
+
       http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
-
-      chunk.insert(chunk.begin(),
-                   chunk_string.begin(), chunk_string.end());
-      chunk.insert(chunk.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(chunk);
-    }
-#endif // BOOST_ASIO_HAS_MOVE
-
-    /// Send an HTTP body chunk.
-    /// @param begin a constant iterator to the beginning of the body to send.
-    /// @param end a constant iterator to the end of the body to send.
-    /// @param extension the (optional) chunk extension.
-    template<typename ForwardIterator1, typename ForwardIterator2>
-    bool send_chunk(ForwardIterator1 begin, ForwardIterator2 end,
-                    std::string extension = "")
-    {
-      size_t size(end - begin);
-      http::chunk_header chunk_header(size, extension);
-      std::string chunk_string(chunk_header.to_string());
-
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      tx_message.insert(tx_message.end(), begin, end);
-      tx_message.insert(tx_message.end(), http::CRLF.begin(),  http::CRLF.end());
-      return send(tx_message);
+      tx_header_ = chunk_header.to_string();
+      buffers.push_front(boost::asio::buffer(tx_header_));
+      buffers.push_back(boost::asio::buffer(http::CRLF));
+      return send(buffers);
     }
 
     /// Send the last HTTP chunk for a response.
@@ -512,10 +478,9 @@ namespace via
                     std::string trailer_string = "")
     {
       http::last_chunk last_chunk(extension, trailer_string);
-      std::string chunk_string(last_chunk.message());
+      tx_header_ = last_chunk.message();
 
-      Container tx_message(chunk_string.begin(), chunk_string.end());
-      return send(tx_message);
+      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }
 
     /// @fn remote_address
