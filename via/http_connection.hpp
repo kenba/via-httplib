@@ -169,6 +169,23 @@ namespace via
     /// Constructor.
     /// Note: only a shared pointer to this type should be created.
     /// @param connection a weak pointer to the underlying connection.
+    /// @param strict_crlf enforce strict parsing of CRLF.
+    /// @param max_whitespace the maximum number of consectutive whitespace
+    /// characters allowed in a request:min 1, max 254.
+    /// @param max_method_length the maximum length of an HTTP request method:
+    /// min 1, max 254.
+    /// @param max_uri_length the maximum length of an HTTP request uri:
+    /// min 1, max 4 billion.
+    /// @param max_line_length the maximum length of an HTTP header field line:
+    /// min 1, max 65534.
+    /// @param max_header_number the maximum number of HTTP header field lines:
+    /// max 65534.
+    /// @param max_header_length the maximum cumulative length the HTTP header
+    /// fields: max 4 billion.
+    /// @param max_body_size the maximum size of an HTTP request body:
+    /// max 4 billion.
+    /// @param max_chunk_size the maximum size of an HTTP request chunk:
+    /// max 4 billion.
     http_connection(typename connection_type::weak_pointer connection,
                     bool           strict_crlf,
                     unsigned char  max_whitespace,
@@ -187,20 +204,47 @@ namespace via
       trace_enabled_(false)
     {}
 
+    /// Enable whether the http server requires every HTTP request to contain
+    /// a Host header. Note a Host header is required by RFC2616.
+    /// @post Host header verification enabled/disabled.
+    /// @param enable enable the function.
     void set_require_host_header(bool enable)
     { rx_.set_require_host_header(enable); }
 
+    /// Enable whether the http server translates HEAD requests into GET
+    /// requests for the application.
+    /// Note: http_server never sends a body in a response to a HEAD request.
+    /// @post HEAD translation enabled/disabled.
+    /// @param enable enable the function.
     void set_translate_head(bool enable)
     { rx_.set_translate_head(enable); }
 
+    /// Enable whether the http server echos TRACE requests.
+    /// The standard HTTP response to a TRACE request is to echo back the
+    /// TRACE message and all of it's headers in the body of the response.
+    /// However it's considered a security vulnerability nowadays, so the
+    /// default behaviour is to send a 405 "Method Not Allowed" response instead.
+    /// Enable whether the http server responds to TRACE requests.
+    /// @param enable enable the function.
+    void set_trace_enabled(bool enable)
+    { trace_enabled_ = enable; }
+
+    /// Enable whether the http server concatenates chunked requests.
+    /// If a ChunkHandler is not registered with the http_server then any
+    /// recieved chunks will be concatenated into the request message body.
+    /// @post chunk concatenation enabled/disabled.
+    /// @param enable enable the function.
     void set_concatenate_chunks(bool enable)
     { rx_.set_concatenate_chunks(enable); }
 
+    /// Enable whether the http server always sends a 100 Continue response.
+    /// to a request containing an Expects: 100-Continue header.
+    /// If a request_expect_continue_event is not registered with the
+    /// http_server then the server will always sends a 100 Continue response.
+    /// @post auto continue response enabled/disabled.
+    /// @param enable enable the function.
     void set_auto_continue(bool enable)
     { continue_enabled_ = enable; }
-
-    void set_trace_enabled(bool enable)
-    { trace_enabled_ = enable; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.

@@ -25,19 +25,15 @@ namespace via
 {
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_client
-  /// An HTTP client.
-  /// The class can be configured to use either tcp or ssl sockets depending
-  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor respectively.
-  /// @see comms::connection
+  /// The class template can be configured to use either tcp or ssl sockets
+  /// depending upon which class is provided as the SocketAdaptor:
+  /// tcp_adaptor or ssl::ssl_tcp_adaptor.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the tx buffer, default
-  /// std::vector<char>.
-  /// It must contain a contiguous array of bytes. E.g. std::string or
-  /// std::array<char, size>
+  /// @param SocketAdaptor the type of socket to use:
+  /// tcp_adaptor or ssl::ssl_tcp_adaptor
+  /// @param Container the container to use for the tx buffer:
+  /// std::vector<char> or std::string, default std::vector<char>.
   /// @param use_strand if true use an asio::strand to wrap the handlers,
   /// default false.
   ////////////////////////////////////////////////////////////////////////////
@@ -373,7 +369,7 @@ namespace via
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
-    // @param weak_ptr a weak ponter to the underlying comms connection.
+    /// @param weak_ptr a weak ponter to the underlying comms connection.
     void event_handler(int event,
                        typename connection_type::weak_pointer weak_ptr)
     {

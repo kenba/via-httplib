@@ -247,15 +247,16 @@ namespace via
       /// @fn accept_connections
       /// Create the acceptor and wait for connections.
       /// @param port the port number to serve.
-      /// @param ipv6 true for an IPV6 server, false for IPV4.
+      /// @param ipv4_only whether an IPV4 only server is required.
       /// @return the boost error code, false if no error occured
-      boost::system::error_code accept_connections(unsigned short port, bool ipv6)
+      boost::system::error_code accept_connections(unsigned short port, bool ipv4_only)
       {
         // Determine whether the IPv6 acceptor accepts both IPv6 & IPv4
         boost::asio::ip::v6_only ipv6_only(false);
         boost::system::error_code ec;
 
-        if (ipv6)
+        // Open the IPv6 acceptor unless IPv4 only mode
+        if (!ipv4_only)
         {
           acceptor_v6_.open(boost::asio::ip::tcp::v6(), ec);
           if (!ec)
@@ -270,6 +271,8 @@ namespace via
           }
         }
 
+        // Open the IPv4 acceptor if the IPv6 acceptor is not open or it
+        // only supports IPv6
         if (!acceptor_v6_.is_open() || ipv6_only)
         {
           acceptor_v4_.open(boost::asio::ip::tcp::v4(), ec);

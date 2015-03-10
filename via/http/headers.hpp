@@ -190,7 +190,7 @@ namespace via
       /// @param strict_crlf enforce strict parsing of CRLF.
       /// @param max_whitespace the maximum number of consectutive whitespace
       /// characters allowed in a request: min 1, max 254.
-      /// @param max_field_length the maximum length of an HTTP header field line:
+      /// @param max_line_length the maximum length of an HTTP header field line:
       /// max 65534.
       /// @param max_header_number the maximum number of HTTP header field lines:
       /// max 65534.
@@ -283,7 +283,7 @@ namespace via
       const std::string& find(const std::string& name) const;
 
       /// Find the value for a given header id.
-      /// @param id the id of the header.
+      /// @param field_id the id of the header.
       /// @return the value, blank if not found
       const std::string& find(header_field::id::field field_id) const
       { return find(header_field::lowercase_name(field_id)); }

@@ -270,8 +270,7 @@ namespace via
       {}
 
       /// Set the response status for standard responses.
-      /// @see http::response_status::status_code
-      /// @param status the response status.
+      /// @param status_code the response status.
       void set_status(response_status::code::status status_code)
       {
         status_ = static_cast<int>(status_code);
@@ -465,7 +464,7 @@ namespace via
 
       /// Add a standard header to the response.
       /// @see http::header_field::field_id
-      /// @param id the header field id
+      /// @param field_id the header field id
       /// @param value the header field value
       void add_header(header_field::id::field field_id, const std::string& value)
       { header_string_ += header_field::to_header(field_id, value);  }
@@ -537,13 +536,30 @@ namespace via
 
     public:
 
+      /// The default maximum number of consectutive whitespace characters
+      /// allowed in a response header.
       static const unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 254;
+
+      /// The default maximum number of a response status.
       static const unsigned short DEFAULT_MAX_STATUS_NUMBER    = 65534;
+
+      /// The default maximum number of characters allowed in a response reason.
       static const unsigned short DEFAULT_MAX_REASON_LENGTH    = 65534;
+
+      /// The default maximum number of characters allowed in a response header
+      /// line.
       static const unsigned short DEFAULT_MAX_LINE_LENGTH      = 65534;
+
+      /// The default maximum number of fields allowed in the response headers.
       static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 65534;
+
+      /// The default maximum number of characters allowed in the response headers.
       static const size_t         DEFAULT_MAX_HEADER_LENGTH    = ULONG_MAX;
+
+      /// The default maximum size of a response body.
       static const size_t         DEFAULT_MAX_BODY_SIZE        = ULONG_MAX;
+
+      /// The default maximum size of a response chunk.
       static const size_t         DEFAULT_MAX_CHUNK_SIZE       = ULONG_MAX;
 
       /// Constructor.

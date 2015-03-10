@@ -485,7 +485,7 @@ namespace via
 
       /// Add a standard header to the request.
       /// @see http::header_field::field_id
-      /// @param id the header field id
+      /// @param field_id the header field id
       /// @param value the header field value
       void add_header(header_field::id::field field_id, const std::string& value)
       { header_string_ += header_field::to_header(field_id, value);  }
@@ -546,17 +546,51 @@ namespace via
 
     public:
 
+      /// The default maximum number of consectutive whitespace characters
+      /// allowed in a request header.
       static const unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 8;
+
+      /// The default maximum number of characters allowed in a request method.
       static const unsigned char  DEFAULT_MAX_METHOD_LENGTH    = 8;
+
+      /// The default maximum number of characters allowed in a request uri.
       static const size_t         DEFAULT_MAX_URI_LENGTH       = 1024;
+
+      /// The default maximum number of characters allowed in a request header
+      /// line.
       static const unsigned short DEFAULT_MAX_LINE_LENGTH      = 1024;
+
+      /// The default maximum number of fields allowed in the request headers.
       static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 100;
+
+      /// The default maximum number of characters allowed in the request headers.
       static const size_t         DEFAULT_MAX_HEADER_LENGTH    = 8190;
+
+      /// The default maximum size of a request body.
       static const size_t         DEFAULT_MAX_BODY_SIZE        = 1048576;
+
+      /// The default maximum size of a request chunk.
       static const size_t         DEFAULT_MAX_CHUNK_SIZE       = 1048576;
 
       /// Constructor.
       /// Sets all member variables to their initial state.
+      /// @param strict_crlf enforce strict parsing of CRLF.
+      /// @param max_whitespace the maximum number of consectutive whitespace
+      /// characters allowed in a request:min 1, max 254.
+      /// @param max_method_length the maximum length of an HTTP request method:
+      /// min 1, max 254.
+      /// @param max_uri_length the maximum length of an HTTP request uri:
+      /// min 1, max 4 billion.
+      /// @param max_line_length the maximum length of an HTTP header field line:
+      /// min 1, max 65534.
+      /// @param max_header_number the maximum number of HTTP header field lines:
+      /// max 65534.
+      /// @param max_header_length the maximum cumulative length the HTTP header
+      /// fields: max 4 billion.
+      /// @param max_body_size the maximum size of an HTTP request body:
+      /// max 4 billion.
+      /// @param max_chunk_size the maximum size of an HTTP request chunk:
+      /// max 4 billion.
       explicit request_receiver(bool           strict_crlf,
                                 unsigned char  max_whitespace,
                                 unsigned char  max_method_length,
@@ -582,12 +616,21 @@ namespace via
         is_head_(false)
       {}
 
+      /// Enable whether every HTTP request is required to contain
+      /// a Host header. Note a Host header is required by RFC2616.
+      /// @post Host header verification enabled/disabled.
+      /// @param enable enable the function.
       void set_require_host_header(bool enable)
       { require_host_header_= enable; }
 
+      /// Enable whether HEAD requests are translated into GET
+      /// requests for the application.
+      /// @param enable enable the function.
       void set_translate_head(bool enable)
       { translate_head_ = enable; }
 
+      /// Enable whether chunked requests will be concatenated.
+      /// @param enable enable the function.
       void set_concatenate_chunks(bool enable)
       { concatenate_chunks_ = enable; }
 

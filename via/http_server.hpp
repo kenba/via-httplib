@@ -14,6 +14,39 @@
 /// @file http_server.hpp
 /// @brief Contains the http_server template class.
 //////////////////////////////////////////////////////////////////////////////
+/// @mainpage via-httplib: A C++ HTTP Library
+///
+/// @section server_sec Servers
+///
+/// Servers receive HTTP requests into via::http::request_receiver and send
+/// HTTP responses in a via::http::tx_response.
+///
+/// @subsection http_server_sec HTTP Server
+///
+/// An HTTP server class is declared by instantiating the via::http_server
+/// template class with via::comms::tcp_adaptor.
+///
+/// @subsection https_server_sec HTTPS Server
+///
+/// An HTTPS server class is declared by instantiating the via::http_server
+/// template class with via::comms::ssl::ssl_tcp_adaptor.
+///
+/// @section client_sec Clients
+///
+/// Clients send HTTP requests in a via::http::tx_request and receive
+/// HTTP responses in a via::http::response_receiver.
+///
+/// @subsection http_client_sec HTTP Client
+///
+/// A HTTP client class is declared by instantiating the via::http_client
+/// template class with via::comms::tcp_adaptor.
+///
+/// @subsection https_client_sec HTTPS Client
+///
+/// A HTTP client class is declared by instantiating the via::http_client
+/// template class with via::comms::ssl::ssl_tcp_adaptor.
+///
+//////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
 #include <boost/bind.hpp>
@@ -27,21 +60,17 @@ namespace via
 {
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_server
-  /// An HTTP server.
-  /// The class can be configured to use either tcp or ssl sockets depending
-  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor respectively.
-  /// @see http_connection
-  /// @see comms::connection
+  /// The class template can be configured to use either tcp or ssl sockets
+  /// depending upon which class is provided as the SocketAdaptor:
+  /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the tx buffer, default
-  /// std::vector<char>.
-  /// It must contain a contiguous array of bytes. E.g. std::string or
-  /// std::array<char, size>
-  /// @param use_strand if true use an asio::strand to wrap the handlers,
+  /// @param SocketAdaptor the type of socket to use:
+  /// tcp_adaptor or ssl::ssl_tcp_adaptor
+  /// @param Container the container to use for the tx buffer:
+  /// std::vector<char> (the default) or std::string.
+  /// @param use_strand for multi-threaded
+  /// if true use an asio::strand to wrap the handlers,
   /// default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
@@ -50,14 +79,14 @@ namespace via
   {
   public:
 
-    /// The server for the underlying connections, TCP or SSL.
+    /// The comms server for the underlying connections, TCP or SSL.
     typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
 
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor, Container, use_strand>
       http_connection_type;
 
-    /// The underlying connection, TCP or SSL.
+    /// The underlying comms connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
@@ -330,15 +359,15 @@ namespace via
       server_->set_no_delay(true);
     }
 
-    /// Start accepting connections on the communications server from the
-    /// given port.
-    /// @param port the port number to serve.
-    /// @param ipv6 true for an IPV6/IPV4 server, false IPV4 only, default true.
+    /// Start accepting connections on the given port and protocol.
+    /// @param port the port number to serve:
+    /// default 80 for HTTP or 443 for HTTPS.
+    /// @param ipv4_only whether an IPV4 only server is required, default false.
     /// @return the boost error code, false if no error occured
     boost::system::error_code accept_connections
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
-                       bool ipv6 = true)
-    { return server_->accept_connections(port, ipv6); }
+                       bool ipv4_only = false)
+    { return server_->accept_connections(port, ipv4_only); }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
@@ -349,6 +378,7 @@ namespace via
     { http_request_handler_ = handler; }
 
     /// Connect the expect continue received callback function.
+    ///
     /// If the application registers a handler for this event, then the
     /// application must determine how to respond to a request containing an
     /// Expect: 100-continue header based upon it's other headers.
@@ -360,6 +390,7 @@ namespace via
     { http_continue_handler_ = handler; }
 
     /// Connect the chunk received callback function.
+    /// @post disables automatic concatenating of chunks.
     /// @param handler the handler for a received HTTP chunk.
     void chunk_received_event(ChunkHandler handler)
     { http_chunk_handler_ = handler; }
@@ -382,37 +413,55 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Set HTTP Request Parser Parameters
 
+    /// Set whether to require strict CRLF HTTP request checking.
+    /// @param enable default true.
     void set_strict_crlf(bool enable = true)
     { strict_crlf_ = enable; }
 
+    /// Set the maximum number of consecutive whitespace characters to allow.
+    /// @param max_length default http_request::DEFAULT_MAX_WHITESPACE_CHARS.
     void set_max_whitespace(unsigned char max_length =
         http_request::DEFAULT_MAX_WHITESPACE_CHARS)
     { max_whitespace_ = max_length; }
 
+    /// Set the maximum HTTP request method length to allow.
+    /// @param max_length default http_request::DEFAULT_MAX_METHOD_LENGTH.
     void set_max_method_length(unsigned char max_length =
         http_request::DEFAULT_MAX_METHOD_LENGTH)
     { max_method_length_ = max_length; }
 
+    /// Set the maximum HTTP request uri length to allow.
+    /// @param max_length default http_request::DEFAULT_MAX_URI_LENGTH.
     void set_max_uri_length(size_t max_length =
         http_request::DEFAULT_MAX_URI_LENGTH)
     { max_uri_length_ = max_length; }
 
+    /// Set the maximum HTTP request header line length to allow.
+    /// @param max_length default http_request::DEFAULT_MAX_LINE_LENGTH.
     void set_max_header_line_length(unsigned short max_length =
         http_request::DEFAULT_MAX_LINE_LENGTH)
     { max_line_length_ = max_length; }
 
+    /// Set the maximum number of HTTP request header fields to allow.
+    /// @param max_number default http_request::DEFAULT_MAX_HEADER_NUMBER.
     void set_max_number_of_headers(unsigned short max_number =
         http_request::DEFAULT_MAX_HEADER_NUMBER)
     { max_header_number_ = max_number; }
 
+    /// Set the maximum total length of HTTP request headers to allow.
+    /// @param max_length default http_request::DEFAULT_MAX_HEADER_LENGTH.
     void set_max_headers_length(size_t max_length =
         http_request::DEFAULT_MAX_HEADER_LENGTH)
     { max_header_length_ = max_length; }
 
+    /// Set the maximum HTTP request body size to allow.
+    /// @param max_size default http_request::DEFAULT_MAX_BODY_SIZE.
     void set_max_body_size(size_t max_size =
         http_request::DEFAULT_MAX_BODY_SIZE)
     { max_body_size_ = max_size; }
 
+    /// Set the maximum HTTP request chunk size to allow.
+    /// @param max_size default http_request::DEFAULT_MAX_CHUNK_SIZE.
     void set_max_chunk_size(size_t max_size =
         http_request::DEFAULT_MAX_CHUNK_SIZE)
     { max_chunk_size_ = max_size; }
@@ -420,16 +469,31 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Set HTTP server options
 
-    void set_translate_head(bool enable)
-    { translate_head_ = enable; }
-
-    void set_require_host_header(bool enable)
+    /// Enable whether the http server requires every HTTP request to contain
+    /// a Host header. Note a Host header is required by RFC2616.
+    /// @post Host header verification enabled/disabled.
+    /// @param enable enable the function, default true.
+    void set_require_host_header(bool enable = true)
     { require_host_header_ = enable; }
 
-    void set_trace_enabled(bool enable)
+    /// Enable whether the http server translates HEAD requests into GET
+    /// requests for the application.
+    /// Note: http_server never sends a body in a response to a HEAD request.
+    /// @post HEAD translation enabled/disabled.
+    /// @param enable enable the function, default true.
+    void set_translate_head(bool enable = true)
+    { translate_head_ = enable; }
+
+    /// Enable whether the http server echos TRACE requests.
+    ///
+    /// The standard HTTP response to a TRACE request is to echo back the
+    /// TRACE message and all of it's headers in the body of the response.
+    /// However it's considered a security vulnerability nowadays, so the
+    /// default behaviour is to send a 405 "Method Not Allowed" response instead.
+    /// @param enable enable the function, default false.
+    void set_trace_enabled(bool enable = false)
     { trace_enabled_ = enable; }
 
-    /// @fn set_keep_alive
     /// Set the tcp keep alive status for all future connections.
     /// @param enable if true enables the tcp socket keep alive status.
     void set_keep_alive(bool enable)
@@ -447,13 +511,13 @@ namespace via
     // Set HTTPS options
 
     /// Set the password for an SSL connection.
-    /// Note: only valid for SSL connections, do NOT call for TCP servers.
+    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
     /// @param password the SSL password
     void set_password(std::string const& password)
     { server_->set_password(password); }
 
     /// Set the files required for an SSL server.
-    /// Note: only valid for SSL connections, do NOT call for TCP servers.
+    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
     /// @param certificate_file the server SSL certificate file.
     /// @param key_file the private key file
     /// @param dh_file the dh file.
@@ -497,7 +561,6 @@ namespace via
       return error;
     }
 
-    /// @fn close
     /// Close the http server and all of the connections associated with it.
     void close()
     {
