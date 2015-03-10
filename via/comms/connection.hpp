@@ -460,11 +460,12 @@ namespace via
       /// @param io_service the boost asio io_service for the socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      /// @param rx_buffer_size the size of the receive_buffer.
+      /// @param rx_buffer_size the size of the receive_buffer,
+      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    event_callback_type event_callback,
                                    error_callback_type error_callback,
-                                   size_t              rx_buffer_size)
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
       {
         return shared_pointer(new connection(io_service, event_callback,
                                              error_callback, rx_buffer_size));
@@ -472,9 +473,10 @@ namespace via
 
       /// The factory function to create client connections.
       /// @param io_service the boost asio io_service for the socket adaptor.
-      /// @param rx_buffer_size the size of the receive_buffer.
+      /// @param rx_buffer_size the size of the receive_buffer,
+      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
       static shared_pointer create(boost::asio::io_service& io_service,
-                                   size_t                   rx_buffer_size)
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
       { return shared_pointer(new connection(io_service, rx_buffer_size)); }
 
       /// @fn set_event_callback
@@ -581,7 +583,6 @@ namespace via
           write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
       }
 
-      /// @fn send_data
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.

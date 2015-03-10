@@ -368,7 +368,7 @@ namespace via
 
     /// Disconnect the underlying connection.
     void disconnect()
-    { connection_->disconnect(); }
+    { connection_->shutdown(); }
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.

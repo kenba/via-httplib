@@ -107,9 +107,13 @@ namespace via
       virtual ~udp_adaptor()
       {}
 
+      /// The default size of the receive buffer.
+      static const size_t DEFAULT_RX_BUFFER_SIZE = 2048;
+
       /// Enable multicast reception on the given port_number and address.
       /// @param port_number the UDP port
       /// @param multicast_address the multicast address to receive from.
+      /// @param listen_address the local address for the local endpoint.
       /// @return true if successful, false otherwise.
       bool receive_multicast(unsigned short port_number,
                              std::string const& multicast_address,
