@@ -794,7 +794,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK3)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_LENGTH_REQUIRED);
+  bool ok (rx_state == RX_INVALID);
   BOOST_CHECK(ok);
 }
 
