@@ -469,6 +469,12 @@ namespace via
     void set_trace_enabled(bool enable = false)
     { trace_enabled_ = enable; }
 
+    /// Set the size of the server receive buffer.
+    /// @param size the new size of the receive buffer, default
+    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    void set_rx_buffer_size(size_t size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+    { server_->set_rx_buffer_size(size); }
+
     /// Set the tcp keep alive status for all future connections.
     /// @param enable if true enables the tcp socket keep alive status.
     void set_keep_alive(bool enable)

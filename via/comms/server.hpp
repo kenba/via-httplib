@@ -90,10 +90,11 @@ namespace via
       event_callback_type event_callback_;   ///< The event callback function.
       error_callback_type error_callback_;   ///< The error callback function.
 
-      /// The send and receive timeouts, in milliseconds, zero is disabled.
+      size_t rx_buffer_size_; ///< The size of the receive buffer.
+      /// The connection timeouts, in milliseconds, zero is disabled.
       int timeout_;
-      bool no_delay_;                        ///< The tcp no delay status.
-      bool keep_alive_;                      ///< The tcp keep alive status.
+      bool no_delay_;         ///< The tcp no delay status.
+      bool keep_alive_;       ///< The tcp keep alive status.
 
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
@@ -159,7 +160,8 @@ namespace via
         next_connection_ = connection_type::create(io_service_,
                                 boost::bind(&server::event_handler, this, _1, _2),
                                 boost::bind(&server::error_handler, this,
-                                            boost::asio::placeholders::error, _2));
+                                            boost::asio::placeholders::error, _2),
+                                                   rx_buffer_size_);
         if (acceptor_v6_.is_open())
           acceptor_v6_.async_accept(next_connection_->socket(),
                                  boost::bind(&server::accept_handler, this,
@@ -189,6 +191,7 @@ namespace via
         password_(),
         event_callback_(),
         error_callback_(),
+        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
         timeout_(0),
         no_delay_(false),
         keep_alive_(false)
@@ -327,6 +330,11 @@ namespace via
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
+
+      /// Set the size of the receive buffer.
+      /// @param size the new size of the receive buffer.
+      void set_rx_buffer_size(size_t size)
+      { rx_buffer_size_ = size; }
 
       /// @fn set_no_delay
       /// Set the tcp no delay status for all future connections.

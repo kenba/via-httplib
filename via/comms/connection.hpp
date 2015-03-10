@@ -343,12 +343,14 @@ namespace via
       /// socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
+      /// @param rx_buffer_size the size of the receive_buffer.
       explicit connection(boost::asio::io_service& io_service,
                           event_callback_type event_callback,
-                          error_callback_type error_callback) :
+                          error_callback_type error_callback,
+                          size_t rx_buffer_size) :
         SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
@@ -366,10 +368,13 @@ namespace via
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      explicit connection(boost::asio::io_service& io_service) :
+      /// @param rx_buffer_size the size of the receive_buffer, default
+      /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+      explicit connection(boost::asio::io_service& io_service,
+                          size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) :
         SocketAdaptor(io_service),
         strand_(io_service),
-        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
         event_callback_(),
@@ -459,12 +464,14 @@ namespace via
       /// @param io_service the boost asio io_service for the socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
+      /// @param rx_buffer_size the size of the receive_buffer.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    event_callback_type event_callback,
-                                   error_callback_type error_callback)
+                                   error_callback_type error_callback,
+                                   size_t              rx_buffer_size)
       {
         return shared_pointer(new connection(io_service, event_callback,
-                                             error_callback));
+                                             error_callback, rx_buffer_size));
       }
 
       /// The factory function to create client connections.
