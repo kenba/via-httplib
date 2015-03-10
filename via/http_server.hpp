@@ -199,90 +199,47 @@ namespace via
     }
 
     /// Receive data packets on an underlying communications connection.
-    /// @param connection a weak pointer to the underlying comms connection.
-    void receive_handler(boost::weak_ptr<connection_type> connection)
+    /// @param iter a valid iterator into the connection collection.
+    void receive_handler(connection_collection_iterator iter)
     {
-      // Use the raw pointer of the connection as the map key.
-      void* pointer(connection.lock().get());
-      if (pointer)
+      boost::shared_ptr<http_connection_type> http_connection(iter->second);
+
+      http::Rx rx_state(http_connection->receive());
+      switch (rx_state)
       {
-        // search for the connection in the collection
-        connection_collection_iterator iter(http_connections_.find(pointer));
-        if (iter == http_connections_.end())
-        {
-          std::cerr << "http_server, receive_handler error: connection not found "
-                    << std::endl;
-          return;
-        }
+      case http::RX_VALID:
+        http_request_handler_(http_connection,
+                             http_connection->request(),
+                             http_connection->body());
+        break;
 
-        boost::shared_ptr<http_connection_type> http_connection(iter->second);
+      case http::RX_EXPECT_CONTINUE:
+        http_continue_handler_(http_connection,
+                              http_connection->request(),
+                              http_connection->body());
+        break;
 
-        http::Rx rx_state(http_connection->receive());
+      case http::RX_CHUNK:
+        http_chunk_handler_(http_connection,
+                           http_connection->chunk(),
+                           http_connection->chunk().data());
+        break;
 
-        switch (rx_state)
-        {
-        case http::RX_VALID:
-          http_request_handler_(http_connection,
-                               http_connection->request(),
-                               http_connection->body());
-          break;
-
-        case http::RX_EXPECT_CONTINUE:
-          http_continue_handler_(http_connection,
-                                http_connection->request(),
-                                http_connection->body());
-          break;
-
-        case http::RX_CHUNK:
-          http_chunk_handler_(http_connection,
-                             http_connection->chunk(),
-                             http_connection->chunk().data());
-          break;
-
-        default:
-          break;
-        }
-      }
-      else
-        std::cerr << "Error: http_server::receive_handler connection expired"
-                  << std::endl;
-    }
-
-    /// Handle a sent signal from an underlying comms connection.
-    /// @param connection a weak ponter to the underlying comms connection.
-    void sent_handler(boost::weak_ptr<connection_type> connection)
-    {
-      // Use the raw pointer of the connection as the map key.
-      void* pointer(connection.lock().get());
-      if (!pointer)
-        return;
-
-      if (packet_sent_handler_ != NULL)
-      {
-        connection_collection_iterator iter(http_connections_.find(pointer));
-        if (iter != http_connections_.end())
-          packet_sent_handler_(iter->second);
+      default:
+        break;
       }
     }
 
     /// Handle a disconnected signal from an underlying comms connection.
-    /// @param connection a weak ponter to the underlying comms connection.
-    void disconnected_handler(boost::weak_ptr<connection_type> connection)
+    /// Noitfy the handler and erase the connection from the collection.
+    /// @param iter a valid iterator into the connection collection.
+    void disconnected_handler(connection_collection_iterator iter)
     {
-      // Use the raw pointer of the connection as the map key.
-      void* pointer(connection.lock().get());
-      if (!pointer)
-        return;
+      // Noitfy the disconnected handler if one exists
+      if (disconnected_handler_ != NULL)
+        disconnected_handler_(iter->second);
 
-      connection_collection_iterator iter(http_connections_.find(pointer));
-      if (iter != http_connections_.end())
-      {
-        // Signal the application
-        if (disconnected_handler_ != NULL)
-          disconnected_handler_(iter->second);
-
-        http_connections_.erase(iter);
-      }
+      http_connections_.erase(iter);
     }
 
     /// Receive an event from the underlying comms connection.
@@ -290,22 +247,40 @@ namespace via
     /// @param connection a weak ponter to the underlying comms connection.
     void event_handler(int event, boost::weak_ptr<connection_type> connection)
     {
-      switch(event)
-      {
-      case via::comms::CONNECTED:
+      if (via::comms::CONNECTED == event)
         connected_handler(connection);
-        break;
-      case via::comms::RECEIVED:
-        receive_handler(connection);
-        break;
-      case via::comms::SENT:
-        sent_handler(connection);
-        break;
-      case via::comms::DISCONNECTED:
-        disconnected_handler(connection);
-        break;
-      default:
-        break;
+      else
+      {
+        // Get the raw pointer of the connection
+        void* pointer(connection.lock().get());
+        if (!pointer)
+          return;
+
+        // search for the connection in the collection
+        connection_collection_iterator iter(http_connections_.find(pointer));
+        if (iter == http_connections_.end())
+        {
+          std::cerr << "http_server, event_handler error: connection not found "
+                    << std::endl;
+          return;
+        }
+
+        switch(event)
+        {
+        case via::comms::RECEIVED:
+          receive_handler(iter);
+          break;
+        case via::comms::SENT:
+          // Noitfy the sent handler if one exists
+          if (packet_sent_handler_ != NULL)
+            packet_sent_handler_(iter->second);
+          break;
+        case via::comms::DISCONNECTED:
+          disconnected_handler(iter);
+          break;
+        default:
+          ;
+        }
       }
     }
 
