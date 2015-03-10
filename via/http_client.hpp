@@ -102,8 +102,11 @@ namespace via
 
     /// Constructor.
     /// @param io_service the asio io_service to use.
-    explicit http_client(boost::asio::io_service& io_service) :
-      connection_(connection_type::create(io_service)),
+    /// @param rx_buffer_size the size of the receive_buffer, default
+    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    explicit http_client(boost::asio::io_service& io_service,
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) :
+      connection_(connection_type::create(io_service, rx_buffer_size)),
       rx_(),
       host_name_(),
       http_response_handler_(NULL),

@@ -368,10 +368,9 @@ namespace via
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      /// @param rx_buffer_size the size of the receive_buffer, default
-      /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+      /// @param rx_buffer_size the size of the receive_buffer.
       explicit connection(boost::asio::io_service& io_service,
-                          size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) :
+                          size_t rx_buffer_size) :
         SocketAdaptor(io_service),
         strand_(io_service),
         rx_buffer_size_(rx_buffer_size),
@@ -476,8 +475,10 @@ namespace via
 
       /// The factory function to create client connections.
       /// @param io_service the boost asio io_service for the socket adaptor.
-      static shared_pointer create(boost::asio::io_service& io_service)
-      { return shared_pointer(new connection(io_service)); }
+      /// @param rx_buffer_size the size of the receive_buffer.
+      static shared_pointer create(boost::asio::io_service& io_service,
+                                   size_t                   rx_buffer_size)
+      { return shared_pointer(new connection(io_service, rx_buffer_size)); }
 
       /// @fn set_event_callback
       /// Function to set the event callback function.
