@@ -125,6 +125,10 @@ namespace via
       ConnectionHandler;
 
   private:
+
+    ////////////////////////////////////////////////////////////////////////
+    // Variables
+
     boost::shared_ptr<server_type> server_;   ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
 
@@ -153,7 +157,7 @@ namespace via
     ConnectionHandler disconnected_handler_; ///< the disconncted callback function
 
     ////////////////////////////////////////////////////////////////////////
-    // http_server Event Handlers
+    // Functions
 
     /// Handle a connected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
@@ -294,6 +298,8 @@ namespace via
       std::cerr << error <<  std::endl;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+
   public:
 
     /// Constructor.
@@ -386,7 +392,7 @@ namespace via
     { disconnected_handler_ = handler; }
 
     ////////////////////////////////////////////////////////////////////////
-    // Set HTTP Request Parser Parameters
+    // HTTP Request Parser Parameter set functions
 
     /// Set whether to require strict CRLF HTTP request checking.
     /// @param enable default true.
@@ -442,7 +448,7 @@ namespace via
     { max_chunk_size_ = max_size; }
 
     ////////////////////////////////////////////////////////////////////////
-    // Set HTTP server options
+    // HTTP server options set functions
 
     /// Enable whether the http server requires every HTTP request to contain
     /// a Host header. Note a Host header is required by RFC2616.
@@ -489,7 +495,7 @@ namespace via
     { server_->set_timeout(timeout); }
 
     ////////////////////////////////////////////////////////////////////////
-    // Set HTTPS options
+    // HTTPS set functions
 
     /// Set the password for an SSL connection.
     /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
@@ -541,6 +547,9 @@ namespace via
 #endif // HTTP_SSL
       return error;
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // other functions
 
     /// Close the http server and all of the connections associated with it.
     void close()

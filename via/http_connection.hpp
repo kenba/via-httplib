@@ -65,6 +65,9 @@ namespace via
 
   private:
 
+    ////////////////////////////////////////////////////////////////////////
+    // Variables
+
     /// A weak pointer to underlying connection.
     typename connection_type::weak_pointer connection_;
 
@@ -83,6 +86,9 @@ namespace via
 
     /// A flag to indicate that the server will echo back the TRACE message.
     bool trace_enabled_;
+
+    ////////////////////////////////////////////////////////////////////////
+    // Functions
 
     /// Send buffers on the connection.
     /// @param buffers the data to write.
@@ -124,6 +130,8 @@ namespace via
                   << std::endl;
       return false;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
   public:
 
@@ -167,6 +175,9 @@ namespace via
       trace_enabled_(false)
     {}
 
+    ////////////////////////////////////////////////////////////////////////
+    // Event Handlers
+
     /// Enable whether the http server requires every HTTP request to contain
     /// a Host header. Note a Host header is required by RFC2616.
     /// @post Host header verification enabled/disabled.
@@ -209,6 +220,9 @@ namespace via
     void set_auto_continue(bool enable)
     { continue_enabled_ = enable; }
 
+    ////////////////////////////////////////////////////////////////////////
+    // Accessors
+
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
     http::rx_request const& request() const
@@ -224,15 +238,17 @@ namespace via
     Container const& body() const
     { return rx_.body(); }
 
-    /// Accessor for the beginning of the body.
-    /// @return a constant iterator to the beginning of the body.
-    Container_const_iterator body_begin() const
-    { return rx_.body().begin(); }
-
-    /// Accessor for the end of the body.
-    /// @return a constant iterator to the end of the body.
-    Container_const_iterator body_end() const
-    { return rx_.body().end(); }
+    /// @fn remote_address
+    /// Get the remote address of the connection.
+    /// @return the remote address of the connection.
+    std::string remote_address() const
+    {
+      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      if (tcp_pointer)
+        return tcp_pointer->socket().remote_endpoint().address().to_string();
+      else
+        return std::string("");
+    }
 
     /// Receive data on the underlying connection.
     /// @return the receiver_parsing_state
@@ -333,6 +349,9 @@ namespace via
       return rx_state;
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // send (response) functions
+
     /// Send the appropriate HTTP response to the request.
     /// @return true if sent, false otherwise.
     bool send_response()
@@ -389,8 +408,9 @@ namespace via
     }
 
     /// Send an HTTP response with a body.
+    /// @pre the response must not contain any split headers.
     /// @pre The contents of the buffers are NOT buffered.
-    /// Their lifetime MUST exceed that of the connection
+    /// Their lifetime MUST exceed that of the write
     /// @param response the response to send.
     /// @param buffers a deque of asio::buffers containing the body to send.
     bool send(http::tx_response response, comms::ConstBuffers buffers)
@@ -413,6 +433,9 @@ namespace via
       return send(buffers, response.is_continue());
     }
 
+    ////////////////////////////////////////////////////////////////////////
+    // send_body functions
+
     /// Send an HTTP response body.
     /// @pre the response must have been sent beforehand.
     /// @param body the body to send
@@ -429,7 +452,7 @@ namespace via
     /// Send an HTTP response body.
     /// @pre the response must have been sent beforehand.
     /// @pre The contents of the buffers are NOT buffered.
-    /// Their lifetime MUST exceed that of the connection
+    /// Their lifetime MUST exceed that of the write
     /// @param buffers the body to send
     /// @return true if sent, false otherwise.
     bool send_body(comms::ConstBuffers buffers)
@@ -439,6 +462,9 @@ namespace via
 
       return send(buffers);
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // send_chunk functions
 
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
@@ -457,6 +483,8 @@ namespace via
     }
 
     /// Send an HTTP body chunk.
+    /// @pre The contents of the buffers are NOT buffered.
+    /// Their lifetime MUST exceed that of the write
     /// @param buffers the body chunk to send
     /// @param extension the (optional) chunk extension.
     bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
@@ -483,17 +511,8 @@ namespace via
       return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }
 
-    /// @fn remote_address
-    /// Get the remote address of the connection.
-    /// @return the remote address of the connection.
-    std::string remote_address() const
-    {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-        return tcp_pointer->socket().remote_endpoint().address().to_string();
-      else
-        return std::string("");
-    }
+    ////////////////////////////////////////////////////////////////////////
+    // other functions
 
     /// Disconnect the underlying connection.
     void disconnect()
