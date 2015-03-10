@@ -30,16 +30,13 @@ namespace via
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor respectively.
-    /// The other template parameters configure the type of container to use
-    /// for the transmit buffers, the size of the receive buffer and
-    /// whether to use asio::strand for an io_service running in multiple
-    /// treads.
+
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @param Container the container to use for the tx buffer, default
-    /// std::vector<char>.
+    /// @param Container the container to use for the rx & tx buffers, default
+    /// std::vector<char> or std::string.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
     /// @param use_strand if true use an asio::strand to wrap the handlers,
@@ -104,7 +101,7 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers buffers)
+      bool write_data(ConstBuffers const& buffers)
       {
         if (connected_)
         {
@@ -561,6 +558,15 @@ namespace via
       Container const& rx_buffer() const
       { return *rx_buffer_; }
 
+      /// @fn connected
+      /// Accessor for the connected_ flag.
+      bool connected() const
+      { return connected_; }
+
+      /// Accessor to set the connected_ flag.
+      void set_connected(bool enable)
+      { connected_ = enable; }
+
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
       /// The packet is added to the back of the transmit queue and sent if
@@ -573,6 +579,21 @@ namespace via
 
         if (!transmitting_ && was_empty)
           write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
+      }
+
+      /// @fn send_data
+      /// Send the data in the buffers.
+      /// @param buffers the data to write.
+      /// @return true if the buffers are being sent, false otherwise.
+      bool send_data(ConstBuffers const& buffers)
+      {
+        if (!transmitting_ && tx_queue_->empty())
+        {
+          transmitting_ = write_data(buffers);
+          return transmitting_;
+        }
+        else
+          return false;
       }
 
 #if defined(BOOST_ASIO_HAS_MOVE)

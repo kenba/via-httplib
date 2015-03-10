@@ -67,7 +67,7 @@ namespace via
   /// @see comms::ssl::ssl_tcp_adaptor
   /// @param SocketAdaptor the type of socket to use:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the tx buffer:
+  /// @param Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
   /// @param use_strand for multi-threaded
   /// if true use an asio::strand to wrap the handlers,

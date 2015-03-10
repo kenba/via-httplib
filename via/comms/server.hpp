@@ -30,18 +30,13 @@ namespace via
     /// connections.
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
-    /// ssl::ssl_tcp_adaptor respectively.
-    /// The other template parameters configure the type of container to use
-    /// for the transmit buffers, the size of the receive buffer and
-    /// whether to use asio::strand for an io_service running in multiple
-    /// treads.
     /// @see connection
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @param Container the container to use for the tx buffer, default
-    /// std::vector<char>.
+    /// @param Container the container to use for the rx & tx buffers,
+    /// std::vector<char> or std::string.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
     /// @param use_strand if true use an asio::strand to wrap the handlers,
