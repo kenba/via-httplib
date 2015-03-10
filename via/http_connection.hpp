@@ -272,25 +272,11 @@ namespace via
       switch (rx_state)
       {
       case http::RX_INVALID:
-#if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::code::BAD_REQUEST));
-#else
-      {
-        http::tx_response bad_request(http::response_status::code::BAD_REQUEST);
-        send(bad_request);
-      }
-#endif // BOOST_ASIO_HAS_MOVE
         break;
 
       case http::RX_LENGTH_REQUIRED:
-#if defined(BOOST_ASIO_HAS_MOVE)
         send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
-#else
-      {
-        http::tx_response length_required(http::response_status::code::LENGTH_REQUIRED);
-        send(length_required);
-      }
-#endif // BOOST_ASIO_HAS_MOVE
         rx_state = http::RX_INVALID;
         break;
 
@@ -298,12 +284,7 @@ namespace via
         // Determine whether the server should send a 100 Continue response
         if (continue_enabled_)
         {
-#if defined(BOOST_ASIO_HAS_MOVE)
           send(http::tx_response(http::response_status::code::CONTINUE));
-#else
-          http::tx_response continue_response(http::response_status::code::CONTINUE);
-          send(continue_response);
-#endif // BOOST_ASIO_HAS_MOVE
           rx_state = http::RX_INCOMPLETE;
         }
         break;
@@ -329,12 +310,7 @@ namespace via
           }
           else // otherwise, it responds with "Not Allowed"
           {
-#if defined(BOOST_ASIO_HAS_MOVE)
             send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
-#else
-            http::tx_response not_allowed(http::response_status::code::METHOD_NOT_ALLOWED);
-            send(not_allowed);
-#endif // BOOST_ASIO_HAS_MOVE
           }
 
           // Set the state as invalid, since the server has responded to the request

@@ -597,22 +597,6 @@ namespace via
           return false;
       }
 
-#if defined(BOOST_ASIO_HAS_MOVE)
-      /// @fn send_data(Container&& packet)
-      /// Send a packet of data, move version for C++11.
-      /// The packet is added to the back of the transmit queue and sent if
-      /// the queue was empty.
-      /// @param packet the data packet to write.
-      void send_data(Container&& packet)
-      {
-        bool notWriting(tx_queue_.empty());
-        tx_queue_.push_back(packet);
-
-        if (notWriting)
-          write_data();
-      }
-#endif // BOOST_ASIO_HAS_MOVE
-
       /// @fn send_data(ForwardIterator1 begin, ForwardIterator2 end)
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.
