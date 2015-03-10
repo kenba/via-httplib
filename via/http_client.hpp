@@ -85,6 +85,7 @@ namespace via
 
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
+    ResponseHandler   http_invalid_handler;   ///< the invalid callback function
     ConnectionHandler connected_handler_;     ///< the connected callback function
     ConnectionHandler packet_sent_handler_;   ///< the sent callback function
     ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
@@ -107,25 +108,37 @@ namespace via
       Container const& data(connection_->rx_buffer());
       Container_const_iterator iter(data.begin());
       Container_const_iterator end(data.end());
-      http::Rx rx_state(rx_.receive(iter, end));
 
-      switch (rx_state)
+      std::cout << "rx_buffer: " << data << std::endl;
+
+      // Get the receive parser for this connection
+      http::Rx rx_state(http::RX_VALID);
+
+      // Loop around the received buffer while there's valid data to read
+      while ((iter != end) && (rx_state != http::RX_INVALID))
       {
-      case http::RX_VALID:
-        http_response_handler_(rx_.response(), rx_.body());
-        return;
+        rx_state = rx_.receive(iter, end);
 
-      case http::RX_CHUNK:
-        if (http_chunk_handler_ != NULL)
-          http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
-        return;
+        switch (rx_state)
+        {
+        case http::RX_VALID:
+          http_response_handler_(rx_.response(), rx_.body());
+          return;
 
-      case http::RX_INVALID:
-        break;
+        case http::RX_CHUNK:
+          if (http_chunk_handler_ != NULL)
+            http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
+          return;
 
-      default:
-        break;
-      }
+        case http::RX_INVALID:
+          if (http_invalid_handler != NULL)
+            http_invalid_handler(rx_.response(), rx_.body());
+          break;
+
+        default:
+          break;
+        } // end switch
+      } // end while
     }
 
     /// Receive an event from the underlying comms connection.
@@ -188,6 +201,7 @@ namespace via
       tx_body_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
+      http_invalid_handler(NULL),
       connected_handler_(NULL),
       packet_sent_handler_(NULL),
       disconnected_handler_(NULL)

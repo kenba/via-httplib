@@ -217,69 +217,72 @@ namespace via
       Container_const_iterator end(rx_buffer.end());
 
       // Get the receive parser for this connection
-      http::Rx rx_state(http_connection->rx().receive(iter, end));
+      http::Rx rx_state(http::RX_VALID);
 
-      switch (rx_state)
+      // Loop around the received buffer while there's valid data to read
+      while ((iter != end) && (rx_state != http::RX_INVALID))
       {
-      case http::RX_VALID:
-        // Determine whether this is a TRACE request
-        if (http_connection->request().is_trace())
+        rx_state = http_connection->rx().receive(iter, end);
+
+        switch (rx_state)
         {
-          // if enabled, the server reflects the message back.
-          if (trace_enabled_)
+        case http::RX_VALID:
+          // Determine whether this is a TRACE request
+          if (http_connection->request().is_trace())
           {
-            // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::code::OK);
-            ok_response.add_content_http_header();
+            // if enabled, the server reflects the message back.
+            if (trace_enabled_)
+            {
+              // Response is OK with a Content-Type: message/http header
+              http::tx_response ok_response(http::response_status::code::OK);
+              ok_response.add_content_http_header();
 
-            // The body of the response contains the TRACE request
-            tx_trace_buffer = http_connection->request().to_string();
-            tx_trace_buffer += http_connection->request().headers().to_string();
+              // The body of the response contains the TRACE request
+              tx_trace_buffer = http_connection->request().to_string();
+              tx_trace_buffer += http_connection->request().headers().to_string();
 
-            http_connection->send(ok_response, tx_trace_buffer);
+              http_connection->send(ok_response, tx_trace_buffer);
+            }
+            else // otherwise, it responds with "Not Allowed"
+              // http_connection->send_response();
+              http_connection->send(http::tx_response
+                            (http::response_status::code::METHOD_NOT_ALLOWED));
           }
-          else // otherwise, it responds with "Not Allowed"
-            // http_connection->send_response();
-            http_connection->send(http::tx_response
-                          (http::response_status::code::METHOD_NOT_ALLOWED));
-        }
-        else
-          http_request_handler_(http_connection,
-                                http_connection->rx().request(),
-                                http_connection->rx().body());
-        break;
+          else
+            http_request_handler_(http_connection,
+                                  http_connection->rx().request(),
+                                  http_connection->rx().body());
+          break;
 
-      case http::RX_EXPECT_CONTINUE:
-        if (http_continue_handler_ != NULL)
-          http_continue_handler_(http_connection,
+        case http::RX_EXPECT_CONTINUE:
+          if (http_continue_handler_ != NULL)
+            http_continue_handler_(http_connection,
+                                   http_connection->rx().request(),
+                                   http_connection->rx().body());
+          else
+            http_connection->send_response();
+          break;
+
+        case http::RX_CHUNK:
+          if (http_chunk_handler_ != NULL)
+            http_chunk_handler_(http_connection,
+                                http_connection->rx().chunk(),
+                                http_connection->rx().chunk().data());
+          break;
+
+        case http::RX_INVALID:
+          if (http_invalid_handler != NULL)
+            http_invalid_handler(http_connection,
                                  http_connection->rx().request(),
                                  http_connection->rx().body());
-        else
-          http_connection->send_response();
-        break;
+          else
+            http_connection->send_response();
+          break;
 
-      case http::RX_CHUNK:
-        if (http_chunk_handler_ != NULL)
-          http_chunk_handler_(http_connection,
-                              http_connection->rx().chunk(),
-                              http_connection->rx().chunk().data());
-        break;
-
-      case http::RX_INVALID:
-      case http::RX_LENGTH_REQUIRED:
-        if (http_invalid_handler != NULL)
-          http_invalid_handler(http_connection,
-                               http_connection->rx().request(),
-                               http_connection->rx().body());
-        else
-          http_connection->send_response();
-        break;
-
-      default:
-        break;
-      }
-
-
+        default:
+          break;
+        } // end switch
+      } // end while
     }
 
     /// Handle a disconnected signal from an underlying comms connection.

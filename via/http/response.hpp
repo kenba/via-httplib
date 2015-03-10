@@ -668,7 +668,7 @@ namespace via
               response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
           {
             clear();
-            return RX_LENGTH_REQUIRED;
+            return RX_INVALID;
           }
 
           // received buffer contains more than the required data

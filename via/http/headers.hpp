@@ -27,7 +27,6 @@ namespace via
     enum Rx
     {
       RX_INVALID,         ///< the message is invalid
-      RX_LENGTH_REQUIRED, ///< the message requires a content-length header
       RX_EXPECT_CONTINUE, ///< the client expects a 100 Continue response
       RX_INCOMPLETE,      ///< the message requires more data
       RX_VALID,           ///< a valid request or response
