@@ -150,6 +150,7 @@ namespace via
 
     // callback function pointers
     RequestHandler    http_request_handler_; ///< the request callback function
+    RequestHandler    http_invalid_handler;  ///< the invalid callback function
     RequestHandler    http_continue_handler_;///< the continue callback function
     ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
     ConnectionHandler connected_handler_;    ///< the connected callback function
@@ -188,8 +189,6 @@ namespace via
         http_connection->set_require_host_header(require_host_header_);
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(http_chunk_handler_ == NULL);
-        http_connection->set_auto_continue(http_continue_handler_ == NULL);
-        http_connection->set_trace_enabled(trace_enabled_);
 
         http_connections_.insert
             (connection_collection_value_type(pointer, http_connection));
@@ -204,34 +203,83 @@ namespace via
 
     /// Receive data packets on an underlying communications connection.
     /// @param iter a valid iterator into the connection collection.
-    void receive_handler(connection_collection_iterator iter)
+    void receive_handler(connection_collection_iterator conn)
     {
-      boost::shared_ptr<http_connection_type> http_connection(iter->second);
+      // A buffer to store the body used to transmit a message.
+      static std::string tx_trace_buffer;
 
-      http::Rx rx_state(http_connection->receive());
+      // Get the connection
+      boost::shared_ptr<http_connection_type> http_connection(conn->second);
+
+      // Get the receive buffer
+      Container const& rx_buffer(http_connection->rx_buffer());
+      Container_const_iterator iter(rx_buffer.begin());
+      Container_const_iterator end(rx_buffer.end());
+
+      // Get the receive parser for this connection
+      http::Rx rx_state(http_connection->rx().receive(iter, end));
+
       switch (rx_state)
       {
       case http::RX_VALID:
-        http_request_handler_(http_connection,
-                             http_connection->request(),
-                             http_connection->body());
+        // Determine whether this is a TRACE request
+        if (http_connection->request().is_trace())
+        {
+          // if enabled, the server reflects the message back.
+          if (trace_enabled_)
+          {
+            // Response is OK with a Content-Type: message/http header
+            http::tx_response ok_response(http::response_status::code::OK);
+            ok_response.add_content_http_header();
+
+            // The body of the response contains the TRACE request
+            tx_trace_buffer = http_connection->request().to_string();
+            tx_trace_buffer += http_connection->request().headers().to_string();
+
+            http_connection->send(ok_response, tx_trace_buffer);
+          }
+          else // otherwise, it responds with "Not Allowed"
+            // http_connection->send_response();
+            http_connection->send(http::tx_response
+                          (http::response_status::code::METHOD_NOT_ALLOWED));
+        }
+        else
+          http_request_handler_(http_connection,
+                                http_connection->rx().request(),
+                                http_connection->rx().body());
         break;
 
       case http::RX_EXPECT_CONTINUE:
-        http_continue_handler_(http_connection,
-                              http_connection->request(),
-                              http_connection->body());
+        if (http_continue_handler_ != NULL)
+          http_continue_handler_(http_connection,
+                                 http_connection->rx().request(),
+                                 http_connection->rx().body());
+        else
+          http_connection->send_response();
         break;
 
       case http::RX_CHUNK:
-        http_chunk_handler_(http_connection,
-                           http_connection->chunk(),
-                           http_connection->chunk().data());
+        if (http_chunk_handler_ != NULL)
+          http_chunk_handler_(http_connection,
+                              http_connection->rx().chunk(),
+                              http_connection->rx().chunk().data());
+        break;
+
+      case http::RX_INVALID:
+      case http::RX_LENGTH_REQUIRED:
+        if (http_invalid_handler != NULL)
+          http_invalid_handler(http_connection,
+                               http_connection->rx().request(),
+                               http_connection->rx().body());
+        else
+          http_connection->send_response();
         break;
 
       default:
         break;
       }
+
+
     }
 
     /// Handle a disconnected signal from an underlying comms connection.
@@ -324,6 +372,7 @@ namespace via
       trace_enabled_      (false),
 
       http_request_handler_ (NULL),
+      http_invalid_handler  (NULL),
       http_continue_handler_(NULL),
       http_chunk_handler_   (NULL),
       connected_handler_    (NULL),

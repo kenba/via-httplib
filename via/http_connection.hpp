@@ -80,13 +80,6 @@ namespace via
     /// A buffer for the body of the response message.
     Container tx_body_;
 
-    /// A flag to indicate that the server should always respond to an
-    /// expect: 100-continue header with a 100 Continue response.
-    bool continue_enabled_;
-
-    /// A flag to indicate that the server will echo back the TRACE message.
-    bool trace_enabled_;
-
     ////////////////////////////////////////////////////////////////////////
     // Functions
 
@@ -170,9 +163,7 @@ namespace via
           max_line_length, max_header_number, max_header_length,
           max_body_size, max_chunk_size),
       tx_header_(),
-      tx_body_(),
-      continue_enabled_(true),
-      trace_enabled_(false)
+      tx_body_()
     {}
 
     ////////////////////////////////////////////////////////////////////////
@@ -193,16 +184,6 @@ namespace via
     void set_translate_head(bool enable)
     { rx_.set_translate_head(enable); }
 
-    /// Enable whether the http server echos TRACE requests.
-    /// The standard HTTP response to a TRACE request is to echo back the
-    /// TRACE message and all of it's headers in the body of the response.
-    /// However it's considered a security vulnerability nowadays, so the
-    /// default behaviour is to send a 405 "Method Not Allowed" response instead.
-    /// Enable whether the http server responds to TRACE requests.
-    /// @param enable enable the function.
-    void set_trace_enabled(bool enable)
-    { trace_enabled_ = enable; }
-
     /// Enable whether the http server concatenates chunked requests.
     /// If a ChunkHandler is not registered with the http_server then any
     /// recieved chunks will be concatenated into the request message body.
@@ -211,32 +192,8 @@ namespace via
     void set_concatenate_chunks(bool enable)
     { rx_.set_concatenate_chunks(enable); }
 
-    /// Enable whether the http server always sends a 100 Continue response.
-    /// to a request containing an Expects: 100-Continue header.
-    /// If a request_expect_continue_event is not registered with the
-    /// http_server then the server will always sends a 100 Continue response.
-    /// @post auto continue response enabled/disabled.
-    /// @param enable enable the function.
-    void set_auto_continue(bool enable)
-    { continue_enabled_ = enable; }
-
     ////////////////////////////////////////////////////////////////////////
     // Accessors
-
-    /// Accessor for the HTTP request header.
-    /// @return a constant reference to an rx_request.
-    http::rx_request const& request() const
-    { return rx_.request(); }
-
-    /// Accessor for the received HTTP chunk.
-    /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const
-    { return rx_.chunk(); }
-
-    /// Accessor for the body.
-    /// @return a constant reference to the body.
-    Container const& body() const
-    { return rx_.body(); }
 
     /// @fn remote_address
     /// Get the remote address of the connection.
@@ -250,80 +207,29 @@ namespace via
         return std::string("");
     }
 
-    /// Receive data on the underlying connection.
-    /// @return the receiver_parsing_state
-    http::Rx receive()
-    {
-      // A buffer to store the body used to transmit a message.
-      static std::string tx_body_buffer;
+    /// Accessor for the receive buffer.
+    /// @return a constant reference to the receive buffer.
+    Container const& rx_buffer() const
+    { return connection_.lock()->rx_buffer(); }
 
-      // attempt to get the pointer
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (!tcp_pointer)
-        return http::RX_INCOMPLETE;
+    /// The request receiver for this connection.
+    http::request_receiver<Container>& rx()
+    { return rx_; }
 
-      // read the data
-      Container const& data(tcp_pointer->rx_buffer());
-      Container_const_iterator iter(data.begin());
-      Container_const_iterator end(data.end());
-      http::Rx rx_state(rx_.receive(iter, end));
+    /// Accessor for the HTTP request header.
+    /// @return a constant reference to an rx_request.
+    http::rx_request const& request() const
+    { return rx_.request(); }
 
-      // Handle special cases
-      switch (rx_state)
-      {
-      case http::RX_INVALID:
-        send(http::tx_response(http::response_status::code::BAD_REQUEST));
-        break;
+    /// Accessor for the body.
+    /// @return a constant reference to the body.
+    Container const& body() const
+    { return rx_.body(); }
 
-      case http::RX_LENGTH_REQUIRED:
-        send(http::tx_response(http::response_status::code::LENGTH_REQUIRED));
-        rx_state = http::RX_INVALID;
-        break;
-
-      case http::RX_EXPECT_CONTINUE:
-        // Determine whether the server should send a 100 Continue response
-        if (continue_enabled_)
-        {
-          send(http::tx_response(http::response_status::code::CONTINUE));
-          rx_state = http::RX_INCOMPLETE;
-        }
-        break;
-
-      case http::RX_VALID:
-        // Determine whether this is a TRACE request
-        if (rx_.request().is_trace())
-        {
-          // if enabled, the server reflects the message back.
-          if (trace_enabled_)
-          {
-            // Response is OK with a Content-Type: message/http header
-            http::tx_response ok_response(http::response_status::code::OK,
-                                   http::header_field::content_http_header());
-
-            // The body of the response contains the TRACE request
-            tx_body_buffer.clear();
-            tx_body_buffer = rx_.request().to_string();
-            tx_body_buffer += rx_.request().headers().to_string();
-
-            send(ok_response,
-                 comms::ConstBuffers(1, boost::asio::buffer(tx_body_buffer)));
-          }
-          else // otherwise, it responds with "Not Allowed"
-          {
-            send(http::tx_response(http::response_status::code::METHOD_NOT_ALLOWED));
-          }
-
-          // Set the state as invalid, since the server has responded to the request
-          rx_state = http::RX_INVALID;
-        }
-        break;
-
-      default:
-        ;
-      }
-
-      return rx_state;
-    }
+    /// Accessor for the received HTTP chunk.
+    /// @return a constant reference to an rx_chunk.
+    http::rx_chunk<Container> const& chunk() const
+    { return rx_.chunk(); }
 
     ////////////////////////////////////////////////////////////////////////
     // send (response) functions
