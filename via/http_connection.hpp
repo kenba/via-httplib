@@ -71,6 +71,9 @@ namespace via
     /// A weak pointer to underlying connection.
     typename connection_type::weak_pointer connection_;
 
+    /// The remote address of the connection_.
+    std::string remote_address_;
+
     /// The request receiver for this connection.
     http::request_receiver<Container> rx_;
 
@@ -159,6 +162,8 @@ namespace via
                     size_t         max_body_size,
                     size_t         max_chunk_size) :
       connection_(connection),
+      remote_address_(connection_.lock()->socket().
+                      remote_endpoint().address().to_string()),
       rx_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
           max_line_length, max_header_number, max_header_length,
           max_body_size, max_chunk_size),
@@ -195,17 +200,10 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Accessors
 
-    /// @fn remote_address
-    /// Get the remote address of the connection.
+    /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
     std::string remote_address() const
-    {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
-      if (tcp_pointer)
-        return tcp_pointer->socket().remote_endpoint().address().to_string();
-      else
-        return std::string("");
-    }
+    { return remote_address_; }
 
     /// Accessor for the receive buffer.
     /// @return a constant reference to the receive buffer.
