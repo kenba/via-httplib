@@ -18,6 +18,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
 #include <boost/asio/ssl.hpp>
+#include <iostream>
 
 // Enable SSL support.
 #ifndef HTTP_SSL
@@ -177,8 +178,17 @@ namespace via
         /// @fn shutdown
         /// The ssl tcp socket shutdown function.
         /// Disconnects the socket.
-        void shutdown(ErrorHandler shutdown_handler)
-        { socket_.async_shutdown(shutdown_handler); }
+        void shutdown(CommsHandler close_handler)
+        {
+          static const char buffer[] = "";
+          // std::cout << "ssl_tcp_adaptor shutdown: "<<  std::endl;
+          boost::system::error_code ec;
+          socket_.shutdown(ec);
+
+          boost::asio::async_write(socket_,
+                                   boost::asio::const_buffers_1(&buffer[0], 1),
+                                   close_handler);
+        }
 
         /// @fn cancel
         /// The tcp socket cancel function.
@@ -195,7 +205,8 @@ namespace via
         void close()
         {
           boost::system::error_code ignoredEc;
-          socket_.lowest_layer().close (ignoredEc);
+          if (socket().is_open())
+            socket().close (ignoredEc);
         }
 
         /// @fn start
@@ -213,8 +224,17 @@ namespace via
         /// @return true if a disconnect error, false otherwise.
         bool is_disconnect(boost::system::error_code const& error)
         {
-          return (boost::asio::error::get_ssl_category() == error.category())
-              && (ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ) == error.value());
+          bool ssl_err(boost::asio::error::get_ssl_category() == error.category());
+
+          if ((boost::asio::error::eof == error) ||
+              (ssl_err && (ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ) == error.value())))
+          {
+            boost::system::error_code ec;
+            socket_.shutdown(ec);
+            return true;
+          }
+          else
+            return ssl_err;
         }
 
         /// @fn socket

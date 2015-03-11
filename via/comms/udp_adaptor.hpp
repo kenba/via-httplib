@@ -286,12 +286,12 @@ namespace via
       /// @fn shutdown
       /// The udp socket shutdown function.
       /// Disconnects the socket.
-      void shutdown(ErrorHandler shutdown_handler)
+      void shutdown(CommsHandler) // close_handler)
       {
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::udp::socket::shutdown_both,
                           ignoredEc);
-        shutdown_handler(ignoredEc);
+        close();
       }
 
       /// @fn cancel
@@ -326,7 +326,7 @@ namespace via
       /// This function determines whether the error is a socket disconnect.
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
-      { return false; }
+      { return boost::asio::error::eof == error; }
 
       /// @fn socket
       /// Accessor for the underlying udp socket.

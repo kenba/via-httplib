@@ -151,7 +151,7 @@ namespace via
       /// Common disconnection error codes are:
       ///  + connection_refused - server not available for a client connection.
       ///  + connection_reset - the other side closed the connection.
-      ///  + eof - end of file or stream.
+      ///  + connection_aborted - routing / firewall issue.
       ///  + bad_descriptor - socket is in the process of closing, see:
       /// http://sourceforge.net/p/asio/mailman/message/6493983/
       /// @return true if a disconnect error, false otherwise.
@@ -161,7 +161,7 @@ namespace via
         {
         case boost::asio::error::connection_refused:
         case boost::asio::error::connection_reset:
-        case boost::asio::error::eof:
+        case boost::asio::error::connection_aborted:
         case boost::asio::error::bad_descriptor:
           return true;
         default:
@@ -339,16 +339,19 @@ namespace via
         }
       }
 
-      /// @fn shutdown_callback
-      /// The function called whenever a socket adaptor attempts to disconnect.
-      /// It is required so that HTTPS clients can shutdown gracefully.
+      /// @fn close_callback
+      /// The function called when a socket adaptor attempts to disconnect.
+      /// It is required so that HTTPS clients can shutdown gracefully, see:
+      /// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
-      static void shutdown_callback(weak_pointer ptr,
-                                    boost::system::error_code const& error)
+      /// @param bytes_transferred the number of bytess(it's a write callback).
+      static void close_callback(weak_pointer ptr,
+                                 boost::system::error_code const&, // error,
+                                 size_t)  // bytes_transferred)
       {
         shared_pointer pointer(ptr.lock());
-        if (pointer && (boost::asio::error::operation_aborted != error))
+        if (pointer)
           pointer->close();
       }
 
@@ -553,9 +556,11 @@ namespace via
       /// Shutdown the underlying socket adaptor.
       void shutdown()
       {
-        SocketAdaptor::shutdown(boost::bind(&connection::shutdown_callback,
+        // Call shutdown with the close_callback
+        SocketAdaptor::shutdown(boost::bind(&connection::close_callback,
                                             weak_from_this(),
-                                            boost::asio::placeholders::error));
+                                            boost::asio::placeholders::error,
+                                            boost::asio::placeholders::bytes_transferred));
       }
 
       /// @fn close
