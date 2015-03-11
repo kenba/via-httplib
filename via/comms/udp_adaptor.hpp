@@ -326,10 +326,7 @@ namespace via
       /// This function determines whether the error is a socket disconnect.
       /// @return true if a disconnect error, false otherwise.
       bool is_disconnect(boost::system::error_code const& error)
-      {
-        return (boost::asio::error::connection_refused == error)
-            || (boost::asio::error::connection_reset == error);
-     }
+      { return false; }
 
       /// @fn socket
       /// Accessor for the underlying udp socket.

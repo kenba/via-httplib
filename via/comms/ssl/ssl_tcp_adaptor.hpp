@@ -47,10 +47,6 @@ namespace via
         /// The host iterator used by the resolver.
         boost::asio::ip::tcp::resolver::iterator host_iterator_;
 
-        /// The value of an SSL short read.
-        /// Received when an SSL socket disconnects.
-        static const int SSL_SHORT_READ = 335544539;
-
         /// @fn resolve_host
         /// Resolves the host name and port.
         /// @param host_name the host name.
@@ -212,13 +208,13 @@ namespace via
 
         /// @fn is_disconnect
         /// This function determines whether the error is a socket disconnect.
+        /// I.e. an SSL short read, see:
+        /// http://stackoverflow.com/questions/22575315/how-to-gracefully-shutdown-a-boost-asio-ssl-client
         /// @return true if a disconnect error, false otherwise.
         bool is_disconnect(boost::system::error_code const& error)
         {
-          return (boost::asio::error::connection_refused == error)
-              || (boost::asio::error::connection_reset == error)
-              || (boost::asio::error::shut_down == error)
-              || (SSL_SHORT_READ == error.value());
+          return (boost::asio::error::get_ssl_category() == error.category())
+              && (ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ) == error.value());
         }
 
         /// @fn socket

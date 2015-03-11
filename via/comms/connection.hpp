@@ -147,16 +147,36 @@ namespace via
                           rx_buffer_));
       }
 
+      /// This function determines whether the error is a socket disconnect.
+      /// Common disconnection error codes are:
+      ///  + connection_refused - server not available for a client connection.
+      ///  + connection_reset - the other side closed the connection.
+      ///  + eof - end of file or stream.
+      ///  + bad_descriptor - socket is in the process of closing, see:
+      /// http://sourceforge.net/p/asio/mailman/message/6493983/
+      /// @return true if a disconnect error, false otherwise.
+      bool is_error_a_disconnect(boost::system::error_code const& error)
+      {
+        switch(error.value())
+        {
+        case boost::asio::error::connection_refused:
+        case boost::asio::error::connection_reset:
+        case boost::asio::error::eof:
+        case boost::asio::error::bad_descriptor:
+          return true;
+        default:
+          return SocketAdaptor::is_disconnect(error);
+        }
+      }
+
       /// @fn signal_error
       /// This function is called whenever an error event occurs.
-      /// It sends the error signal, unless the socket adaptor determines
-      /// that the error is a disconnect, in which case it sends a
-      /// DISCONNECTED event instead.
-      /// @param error the boost asio error.
+      /// It determines whether the error code is for a disconnect in which
+      /// case it sends a DISCONNECTED signal otherwise it sends the
+      /// error signal.
       void signal_error(boost::system::error_code const& error)
       {
-          if ((error == boost::asio::error::eof) ||
-                SocketAdaptor::is_disconnect(error))
+        if (is_error_a_disconnect(error))
           event_callback_(DISCONNECTED, weak_from_this());
         else
           error_callback_(error, weak_from_this());
