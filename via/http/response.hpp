@@ -447,8 +447,7 @@ namespace via
         header_string_(header_string)
       {}
 
-      virtual ~tx_response()
-      {}
+      virtual ~tx_response() {}
 
       /// Set the header_string_ to the value given.
       /// Note: will overwrite any other headers, so must be called before
@@ -475,6 +474,10 @@ namespace via
       void add_header(std::string const& field, const std::string& value)
       { header_string_ += header_field::to_header(field, value);  }
 
+      /// Add an http content length header line for the given size.
+      void add_content_length_header(size_t size)
+      { header_string_ += header_field::content_length(size); }
+
       /// Add a Date header to the response.
       void add_date_header()
       { header_string_ += header_field::date_header(); }
@@ -486,10 +489,6 @@ namespace via
       /// Add a http content header to the response.
       void add_content_http_header()
       { header_string_ += header_field::content_http_header(); }
-
-      /// Add an http content length header line for the given size.
-      void add_content_length_header(size_t size)
-      { header_string_ += header_field::content_length(size); }
 
       /// Determine whether the response is valid.
       /// @return true if the response does not contain "split headers".
@@ -634,8 +633,6 @@ namespace via
         bool response_parsed(!response_.valid());
         if (response_parsed)
         {
-          chunk_.clear();
-
           // failed to parse response
           if (!response_.parse(iter, end))
           {

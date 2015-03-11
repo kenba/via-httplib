@@ -381,41 +381,10 @@ namespace via
       size_t content_length() const
       { return headers_.content_length(); }
 
-      /// Whether the request is "HEAD"
-      /// @return true if the request is "HEAD"
-      bool is_head() const
-      { return request_method::name(request_method::id::HEAD) == method(); }
-
-      /// Whether the request is "TRACE"
-      /// @return true if the request is "TRACE"
-      bool is_trace() const
-      { return request_method::name(request_method::id::TRACE) == method(); }
-
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
       bool is_chunked() const
       { return headers_.is_chunked(); }
-
-      /// Whether the client expects a "100-continue" response.
-      /// @return true if the server should send a 100-Continue header, false
-      /// otherwise
-      bool expect_continue() const
-      {
-        return !is_http_1_0_or_earlier() &&
-               headers_.expect_continue();
-      }
-
-      /// Whether a request is missing a Host: header.
-      /// I.e. if the request is HTTP 1.1 then it should contain a host
-      /// header field.
-      /// @return true if the request should have a host header, false
-      /// otherwise
-      bool missing_host_header() const
-      {
-        return major_version() == '1' &&
-               minor_version() == '1' &&
-               headers_.find(header_field::id::HOST).empty();
-      }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
@@ -431,6 +400,37 @@ namespace via
         return !is_http_1_0_or_earlier() &&
                !headers_.close_connection();
       }
+
+      /// Whether a request is missing a Host: header.
+      /// I.e. if the request is HTTP 1.1 then it should contain a host
+      /// header field.
+      /// @return true if the request should have a host header, false
+      /// otherwise
+      bool missing_host_header() const
+      {
+        return major_version() == '1' &&
+               minor_version() == '1' &&
+               headers_.find(header_field::id::HOST).empty();
+      }
+
+      /// Whether the client expects a "100-continue" response.
+      /// @return true if the server should send a 100-Continue header, false
+      /// otherwise
+      bool expect_continue() const
+      {
+        return !is_http_1_0_or_earlier() &&
+               headers_.expect_continue();
+      }
+
+      /// Whether the request is "HEAD"
+      /// @return true if the request is "HEAD"
+      bool is_head() const
+      { return request_method::name(request_method::id::HEAD) == method(); }
+
+      /// Whether the request is "TRACE"
+      /// @return true if the request is "TRACE"
+      bool is_trace() const
+      { return request_method::name(request_method::id::TRACE) == method(); }
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
@@ -477,11 +477,12 @@ namespace via
 
       virtual ~tx_request() {}
 
-      /// Add a free form header to the request.
-      /// @param field the header field name
-      /// @param value the header field value
-      void add_header(std::string const& field, const std::string& value)
-      { header_string_ += header_field::to_header(field, value);  }
+      /// Set the header_string_ to the value given.
+      /// Note: will overwrite any other headers, so must be called before
+      /// the following add_header fucntions.
+      /// @param header_string the new header string
+      void set_header_string(std::string const& header_string)
+      { header_string_ = header_string; }
 
       /// Add a standard header to the request.
       /// @see http::header_field::field_id
@@ -489,6 +490,12 @@ namespace via
       /// @param value the header field value
       void add_header(header_field::id::field field_id, const std::string& value)
       { header_string_ += header_field::to_header(field_id, value);  }
+
+      /// Add a free form header to the request.
+      /// @param field the header field name
+      /// @param value the header field value
+      void add_header(std::string const& field, const std::string& value)
+      { header_string_ += header_field::to_header(field, value);  }
 
       /// Add an http content length header line for the given size.
       /// @param size the size of the message body.
@@ -634,6 +641,10 @@ namespace via
       void set_concatenate_chunks(bool enable)
       { concatenate_chunks_ = enable; }
 
+      /// set the continue_sent_ flag
+      void set_continue_sent()
+      { continue_sent_ = true; }
+
       /// clear the request_receiver.
       /// Sets all member variables to their initial state.
       void clear()
@@ -641,13 +652,10 @@ namespace via
         request_.clear();
         chunk_.clear();
         body_.clear();
+        // response_code_ is required for response so NOT cleared.
         continue_sent_ = false;
         is_head_ = false;
       }
-
-      /// set the continue_sent_ flag
-      void set_continue_sent()
-      { continue_sent_ = true; }
 
       /// Accessor for the is_head flag.
       bool is_head() const
@@ -707,6 +715,7 @@ namespace via
           return RX_INVALID;
         }
 
+        // build a response body or receive a chunk
         if (!request_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
