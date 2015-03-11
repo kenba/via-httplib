@@ -315,6 +315,63 @@ BOOST_AUTO_TEST_CASE(ValidChunk5)
   BOOST_CHECK_EQUAL('f', the_chunk.data()[the_chunk.size()-1]);
 }
 
+BOOST_AUTO_TEST_CASE(ValidMultipleChunks1)
+{
+  std::string chunk_data("f;\r\n123456789abcdef\r\n"); // a complete chunk
+  chunk_data += "a;\r\n0123456789\r\n"; // and another
+  chunk_data += "0;\r\n\r\n"; // last chunk
+
+  std::string::iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk(false, 8, 1024, 1048576, 100, 8190);
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data()[0]);
+  BOOST_CHECK_EQUAL('f', the_chunk.data()[the_chunk.size()-1]);
+  BOOST_CHECK(!the_chunk.is_last());
+
+  the_chunk.clear();
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(10U, the_chunk.size());
+  BOOST_CHECK_EQUAL('0', the_chunk.data()[0]);
+  BOOST_CHECK_EQUAL('9', the_chunk.data()[the_chunk.size()-1]);
+  BOOST_CHECK(!the_chunk.is_last());
+
+  the_chunk.clear();
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
+  BOOST_CHECK(the_chunk.is_last());
+}
+
+BOOST_AUTO_TEST_CASE(ValidMultipleChunks2)
+{
+  // As above but without CR's after chunk data
+  std::string chunk_data("f;\r\n123456789abcdef\n"); // a complete chunk
+  chunk_data += "a;\r\n0123456789\n"; // and another
+  chunk_data += "0;\r\n\r\n"; // last chunk
+
+  std::string::iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk(false, 8, 1024, 1048576, 100, 8190);
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(15U, the_chunk.size());
+  BOOST_CHECK_EQUAL('1', the_chunk.data()[0]);
+  BOOST_CHECK_EQUAL('f', the_chunk.data()[the_chunk.size()-1]);
+  BOOST_CHECK(!the_chunk.is_last());
+
+  the_chunk.clear();
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(10U, the_chunk.size());
+  BOOST_CHECK_EQUAL('0', the_chunk.data()[0]);
+  BOOST_CHECK_EQUAL('9', the_chunk.data()[the_chunk.size()-1]);
+  BOOST_CHECK(!the_chunk.is_last());
+
+  the_chunk.clear();
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
+  BOOST_CHECK(the_chunk.is_last());
+}
+
 BOOST_AUTO_TEST_CASE(InValidChunk1)
 {
   std::string chunk_data("g;\r\n");
@@ -342,6 +399,17 @@ BOOST_AUTO_TEST_CASE(InValidChunk3)
   std::string::iterator next(chunk_data.begin());
 
   rx_chunk<std::string> the_chunk(false, 8, 1024, 1048576, 100, 8190);
+  BOOST_CHECK(!the_chunk.parse(next, chunk_data.end()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidChunk4)
+{
+  // missing \r after chunk dat is strict crlf mode
+  std::string chunk_data("f;\r\n");
+  chunk_data += "123456789abcdef\n";
+  std::string::iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk(true, 8, 1024, 1048576, 100, 8190);
   BOOST_CHECK(!the_chunk.parse(next, chunk_data.end()));
 }
 

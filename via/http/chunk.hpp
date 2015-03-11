@@ -148,6 +148,11 @@ namespace via
         return valid_;
       }
 
+      /// Accessor for the strict crlf parsing state.
+      /// @return the strict_crlf_ state.
+      bool strict_crlf() const
+      { return strict_crlf_; }
+
       /// Accessor for the chunk size.
       /// @return the chunk size in bytes.
       size_t size() const
@@ -301,14 +306,20 @@ namespace via
               iter = next;
             }
 
-            // Chunk must end in CRLF, allow just LF
+            // Chunk should end in CRLF
             if ('\r' == *iter)
               ++iter;
+            else
+            { // enforce if strict
+              if (strict_crlf())
+                return false;
+            }
 
+            // But it must end with an LF
             if ((iter == end) || ('\n' != *iter))
               return false;
-
-            ++iter;
+            else // ('\n' == *iter)
+              ++iter;
           }
           else // not enough received data, just add it to data
           {
