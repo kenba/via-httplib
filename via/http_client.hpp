@@ -109,8 +109,6 @@ namespace via
       Container_const_iterator iter(data.begin());
       Container_const_iterator end(data.end());
 
-      std::cout << "rx_buffer: " << data << std::endl;
-
       // Get the receive parser for this connection
       http::Rx rx_state(http::RX_VALID);
 
@@ -123,12 +121,12 @@ namespace via
         {
         case http::RX_VALID:
           http_response_handler_(rx_.response(), rx_.body());
-          return;
+          break;
 
         case http::RX_CHUNK:
           if (http_chunk_handler_ != NULL)
             http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
-          return;
+          break;
 
         case http::RX_INVALID:
           if (http_invalid_handler != NULL)
