@@ -631,6 +631,11 @@ namespace via
       {
         // building a response
         bool response_parsed(!response_.valid());
+
+        // reset a valid non-chunked response
+        if (response_.valid() && !response_.is_chunked())
+          clear();
+
         if (response_parsed)
         {
           // failed to parse response
