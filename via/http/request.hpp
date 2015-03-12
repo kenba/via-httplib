@@ -680,6 +680,15 @@ namespace via
       response_status::code::status response_code() const
       { return response_code_; }
 
+      /// Create the body of the TRACE response in the request body.
+      /// @return the body for a TRACE response.
+      Container trace_body()
+      {
+        std::string trace_buffer(request().to_string());
+        trace_buffer += request().headers().to_string();
+        return Container(trace_buffer.begin(), trace_buffer.end());
+      }
+
       /// Receive data for an HTTP request, body or data chunk.
       /// @param iter an iterator to the beginning of the received data.
       /// @param end an iterator to the end of the received data.

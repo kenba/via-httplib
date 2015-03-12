@@ -206,9 +206,6 @@ namespace via
     /// @param iter a valid iterator into the connection collection.
     void receive_handler(connection_collection_iterator conn)
     {
-      // A buffer to store the body used to transmit a message.
-      static std::string tx_trace_buffer;
-
       // Get the connection
       boost::shared_ptr<http_connection_type> http_connection(conn->second);
 
@@ -235,14 +232,11 @@ namespace via
             if (trace_enabled_)
             {
               // Response is OK with a Content-Type: message/http header
+              // The body of the response contains the TRACE request
               http::tx_response ok_response(http::response_status::code::OK);
               ok_response.add_content_http_header();
-
-              // The body of the response contains the TRACE request
-              tx_trace_buffer = http_connection->request().to_string();
-              tx_trace_buffer += http_connection->request().headers().to_string();
-
-              http_connection->send(ok_response, tx_trace_buffer);
+              http_connection->send(ok_response,
+                                    http_connection->rx().trace_body());
             }
             else // otherwise, it responds with "Not Allowed"
             {
