@@ -147,6 +147,7 @@ namespace via
     bool require_host_header_; ///< whether the http server requires a host header
     bool translate_head_;      ///< whether the http server translates HEAD requests
     bool trace_enabled_;       ///< whether the http server responds to TRACE requests
+    bool auto_disconnect_;     ///< whether the http server disconnects invalid requests
 
     // callback function pointers
     RequestHandler    http_request_handler_; ///< the request callback function
@@ -244,9 +245,13 @@ namespace via
               http_connection->send(ok_response, tx_trace_buffer);
             }
             else // otherwise, it responds with "Not Allowed"
+            {
               // http_connection->send_response();
               http_connection->send(http::tx_response
                             (http::response_status::code::METHOD_NOT_ALLOWED));
+              if (auto_disconnect_)
+                http_connection->disconnect();
+            }
           }
           else
             http_request_handler_(http_connection,
@@ -276,7 +281,11 @@ namespace via
                                  http_connection->rx().request(),
                                  http_connection->rx().body());
           else
+          {
             http_connection->send_response();
+            if (auto_disconnect_)
+              http_connection->disconnect();
+          }
           break;
 
         default:
@@ -355,7 +364,9 @@ namespace via
 
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
-    explicit http_server(boost::asio::io_service& io_service) :
+    /// @param http_request_handler the handle for HTTP request messages.
+    explicit http_server(boost::asio::io_service& io_service,
+                         RequestHandler http_request_handler = NULL) :
       server_(server_type::create(io_service)),
       http_connections_(),
 
@@ -373,8 +384,9 @@ namespace via
       require_host_header_(true),
       translate_head_     (true),
       trace_enabled_      (false),
+      auto_disconnect_    (false),
 
-      http_request_handler_ (NULL),
+      http_request_handler_ (http_request_handler),
       http_invalid_handler  (NULL),
       http_continue_handler_(NULL),
       http_chunk_handler_   (NULL),
@@ -408,6 +420,16 @@ namespace via
     /// Connect the request received callback function.
     /// @param handler the handler for a received HTTP request.
     void request_received_event(RequestHandler handler)
+    { http_request_handler_ = handler; }
+
+    /// Connect the invalid request received callback function.
+    ///
+    /// If the application registers a handler for this event, then the
+    /// application must determine how to respond to invalid requests.
+    /// @post disables automatic sending of an invalid response message.
+    /// @post disables auto_disconnect_ (if enabled).
+    /// @param handler the handler for a invalid request received.
+    void invalid_request_handler(RequestHandler handler)
     { http_request_handler_ = handler; }
 
     /// Connect the expect continue received callback function.
@@ -526,6 +548,13 @@ namespace via
     /// @param enable enable the function, default false.
     void set_trace_enabled(bool enable = false)
     { trace_enabled_ = enable; }
+
+    /// Enable whether the http server automatically disconnects invalid requests.
+    /// @pre if invalid_request_handler is called to register an application
+    /// handler for invlaid requests then auto_disconnect_ is ignored.
+    /// @param enable enable the function, default false.
+    void set_auto_disconnect(bool enable = false)
+    { auto_disconnect_ = enable; }
 
     /// Set the size of the server receive buffer.
     /// @param size the new size of the receive buffer, default
