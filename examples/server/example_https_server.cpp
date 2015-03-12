@@ -81,7 +81,7 @@ namespace
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
-    std::cout << "Rx headers: " << request.headers().to_string();
+    std::cout << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
     if (!request.is_chunked())
@@ -98,16 +98,16 @@ namespace
                      http_chunk_type const& chunk,
                      std::string const& data)
   {
-    std::cout << "Rx chunk: " << chunk.to_string() << "\n";
-    std::cout << "Chunk data: "    << data << std::endl;
-
     // Only send a response to the last chunk.
     if (chunk.is_last())
     {
-      std::cout << "Last chunk, extension: " << chunk.extension() << "\n";
-      std::cout << "trailers: " << chunk.trailers().to_string() << std::endl;
+      std::cout << "Rx chunk is last, extension: " << chunk.extension()
+                << " trailers: " << chunk.trailers().to_string() << std::endl;
       respond_to_request(weak_ptr);
     }
+    else
+      std::cout << "Rx chunk, size: " << chunk.size()
+                << " data: " << data << std::endl;
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -121,8 +121,8 @@ namespace
     static const size_t MAX_LENGTH(1048576);
 
     std::cout << "expect_continue_handler\n";
-    std::cout << "rx request: " << request.to_string();
-    std::cout << "rx headers: " << request.headers().to_string() << std::endl;
+    std::cout << "Rx request: " << request.to_string();
+    std::cout << request.headers().to_string() << std::endl;
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
     boost::asio::io_service io_service;
 
     // create an https_server
-    https_server_type https_server(io_service);
+    https_server_type https_server(io_service, request_handler);
 
     // Set up SSL
     https_server.set_password(password);
@@ -185,10 +185,11 @@ int main(int argc, char *argv[])
     }
 
     // connect the handler callback functions
-    https_server.request_received_event(request_handler);
     https_server.chunk_received_event(chunk_handler);
     https_server.request_expect_continue_event(expect_continue_handler);
     https_server.socket_disconnected_event(disconnected_handler);
+
+    https_server.set_auto_disconnect(true);
 
     // start accepting http connections on the given port
     error = https_server.accept_connections(port_number);

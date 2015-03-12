@@ -24,7 +24,7 @@ namespace
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
-    std::cout << "Rx headers: " << request.headers().to_string();
+    std::cout << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
     via::http::tx_response response(via::http::response_status::code::OK);
@@ -50,8 +50,8 @@ int main(int /* argc */, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create the HTTP server
-    https_server_type https_server(io_service);
+    // Create the HTTP server and attach the request handler
+    https_server_type https_server(io_service, request_handler);
 
     // Set up SSL
     https_server.set_password(password);
@@ -63,7 +63,6 @@ int main(int /* argc */, char *argv[])
       return 1;
     }
 
-    // attach the request handler
     https_server.request_received_event(request_handler);
 
     // and accept IPV4 connections on the default port (443)

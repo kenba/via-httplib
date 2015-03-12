@@ -49,16 +49,19 @@ namespace
     {
       std::stringstream chunk_stream;
       chunk_stream << chunk_text;
-      chunk_stream << CHUNKS_TO_SEND - count << "\n" << std::ends;
+      chunk_stream << CHUNKS_TO_SEND - count << std::ends;
 
       std::string chunk_to_send(chunk_stream.str());
 
-      std::cout << "chunk_to_send: " << chunk_to_send << std::endl;
+      std::cout << "send_chunk: " << chunk_to_send << std::endl;
 
       connection->send_chunk(chunk_to_send);
     }
-    else
+    else if (count >= 0)
+    {
+      std::cout << "last_chunk" << std::endl;
       connection->last_chunk();
+    }
   }
 
   /// A handler for the signal sent when an HTTP message is sent.
@@ -87,13 +90,15 @@ namespace
       response.add_date_header();
       if (request.uri() == "/hello")
       {
-        if ((request.method() == "GET") || (request.method() == "PUT"))
+        if (request.method() == "GET")
           response.set_status(via::http::response_status::code::OK);
+        else if ((request.method() == "POST") || (request.method() == "PUT"))
+          response.set_status(via::http::response_status::code::NO_CONTENT);
         else
         {
           response.set_status(via::http::response_status::code::METHOD_NOT_ALLOWED);
           response.add_header(via::http::header_field::id::ALLOW,
-                              "GET, PUT");
+                              "GET, HEAD, POST, PUT");
         }
       }
 
@@ -101,7 +106,6 @@ namespace
       if ((request.method() == "GET") &&
           (response.status() == static_cast<int>(via::http::response_status::code::OK)))
       {
-        count = CHUNKS_TO_SEND;
         response.add_header(via::http::header_field::id::TRANSFER_ENCODING,
                             "Chunked");
       }
@@ -126,7 +130,7 @@ namespace
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
-    std::cout << "Rx headers: " << request.headers().to_string();
+    std::cout << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
     if (!request.is_chunked())
@@ -142,16 +146,16 @@ namespace
                      http_chunk_type const& chunk,
                      std::string const& data)
   {
-    std::cout << "Rx chunk: " << chunk.to_string() << "\n";
-    std::cout << "Chunk data: "  << data << std::endl;
-
     // Only send a response to the last chunk.
     if (chunk.is_last())
     {
-      std::cout << "Last chunk, extension: " << chunk.extension() << "\n";
-      std::cout << "trailers: " << chunk.trailers().to_string() << std::endl;
+      std::cout << "Rx chunk is last, extension: " << chunk.extension()
+                << " trailers: " << chunk.trailers().to_string() << std::endl;
       respond_to_request(weak_ptr);
     }
+    else
+      std::cout << "Rx chunk, size: " << chunk.size()
+                << " data: " << data << std::endl;
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -162,11 +166,11 @@ namespace
                                via::http::rx_request const& request,
                                std::string const& /* body */)
   {
-    static const size_t MAX_LENGTH(1048576);
+    static const size_t MAX_LENGTH(1024);
 
     std::cout << "expect_continue_handler\n";
-    std::cout << "rx request: " << request.to_string();
-    std::cout << "rx headers: " << request.headers().to_string() << std::endl;
+    std::cout << "Rx request: " << request.to_string();
+    std::cout << request.headers().to_string() << std::endl;
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
@@ -211,15 +215,16 @@ int main(int argc, char *argv[])
     boost::asio::io_service io_service;
 
     // create an http_server
-    http_server_type http_server(io_service);
+    http_server_type http_server(io_service, request_handler);
 
     // connect the handler callback functions
     http_server.socket_connected_event(connected_handler);
-    http_server.request_received_event(request_handler);
     http_server.chunk_received_event(chunk_handler);
     http_server.request_expect_continue_event(expect_continue_handler);
     http_server.message_sent_event(msg_sent_handler);
     http_server.socket_disconnected_event(disconnected_handler);
+
+    http_server.set_auto_disconnect(true);
 
     // start accepting http connections on the given port
     boost::system::error_code error(http_server.accept_connections(port_number));

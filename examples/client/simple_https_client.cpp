@@ -41,33 +41,33 @@ namespace
   void response_handler(via::http::rx_response const& response,
                         std::string const& body)
   {
-    std::cout << "Rx response: " << response.to_string();
-    std::cout << "Rx headers: "  << response.headers().to_string();
+    std::cout << "Rx response: " << response.to_string()
+              << response.headers().to_string();
     std::cout << "Rx body: "     << body << std::endl;
 
     if (!response.is_chunked())
-      http_client->connection()->shutdown();
+      http_client->disconnect();
   }
 
   /// The handler for incoming HTTP chunks.
   /// Prints the chunk header and data to std::cout.
   void chunk_handler(http_chunk_type const& chunk, std::string const& data)
   {
-    std::cout << "Rx chunk: " << chunk.to_string();
-    std::cout << "Chunk data: " << data << std::endl;
-
     if (chunk.is_last())
     {
-      std::cout << "Rx last chunk" << std::endl;
-      http_client->connection()->shutdown();
+      std::cout << "Rx chunk is last, extension: " << chunk.extension()
+                << " trailers: " << chunk.trailers().to_string() << std::endl;
+      http_client->disconnect();
     }
+    else
+      std::cout << "Rx chunk, size: " << chunk.size()
+                << " data: " << data << std::endl;
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    http_client->connection()->shutdown();
   }
 }
 
@@ -113,10 +113,6 @@ int main(int argc, char *argv[])
       std::cout << "Error, could not resolve host: " << host_name << std::endl;
       return 1;
     }
-
-    // Create an http request and send it to the host.
-    via::http::tx_request request(via::http::request_method::id::GET, uri);
-    http_client->send(request);
 
     // run the io_service to start communications
     io_service.run();

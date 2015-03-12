@@ -23,7 +23,7 @@ namespace
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
-    std::cout << "Rx headers: " << request.headers().to_string();
+    std::cout << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
     via::http::tx_response response(via::http::response_status::code::OK);
@@ -42,8 +42,7 @@ int main(int /* argc */, char** /* *argv[] */)
 
     // Create the HTTP server, attach the request handler
     // and accept IPV4 connections on the default port (80)
-    http_server_type http_server(io_service);
-    http_server.request_received_event(request_handler);
+    http_server_type http_server(io_service, request_handler);
     boost::system::error_code error(http_server.accept_connections());
     if (error)
     {

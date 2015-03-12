@@ -49,59 +49,55 @@ namespace
   const std::string chunk_text("HTTP chunk number: ");
 
   /// Send a chunnk to the server.
-  bool send_a_chunk()
+  void send_a_chunk()
   {
     if (--count > 0)
     {
       std::stringstream chunk_stream;
       chunk_stream << chunk_text;
-      chunk_stream << CHUNKS_TO_SEND - count << "\n" << std::ends;
+      chunk_stream << CHUNKS_TO_SEND - count << std::ends;
 
       std::string chunk_to_send(chunk_stream.str());
 
-      std::cout << "chunk_to_send: " << chunk_to_send << std::endl;
+      std::cout << "send_chunk: " << chunk_to_send << std::endl;
 
       http_client->send_chunk(chunk_to_send);
-      return true;
     }
-    else
+    else if (count >= 0)
     {
       std::cout << "last_chunk" << std::endl;
       http_client->last_chunk();
     }
-
-    return false;
   }
 
-  /// The handler for the HTTP socket disconnecting.
+  /// A handler for the signal sent when an HTTP message is sent.
   void msg_sent_handler()
   {
-    std::cout << "msg_sent_handler" << std::endl;
-
     if (count > 0)
       send_a_chunk();
   }
 
   /// The handler for incoming HTTP responses.
-  /// Prints the response.
+  /// Prints the response nd determines whether the response is continue.
+  /// If so it sends chunks, otherwise it disconnects the connection unless
+  /// the response is chunked.
   void response_handler(via::http::rx_response const& response,
                         std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string();
-    std::cout << "Rx headers: "  << response.headers().to_string();
-    std::cout << "Rx body: "     << body << std::endl;
+    std::cout << response.headers().to_string();
+    std::cout << "Rx body: "    << body << std::endl;
 
     if (response.is_continue())
     {
-      std::cout << "Rx is CONTINUE" << std::endl;
-
+      std::cout << "Response is 100-Continue" << std::endl;
       count = CHUNKS_TO_SEND;
       send_a_chunk();
     }
     else
     {
       if (!response.is_chunked())
-        http_client.reset();
+       http_client->disconnect();
     }
   }
 
@@ -109,21 +105,21 @@ namespace
   /// Prints the chunk header and data to std::cout.
   void chunk_handler(http_chunk_type const& chunk, std::string const& data)
   {
-    std::cout << "Rx chunk: " << chunk.to_string() << "\n";
-    std::cout << "Rx data: "  << data << std::endl;
-
     if (chunk.is_last())
     {
-      std::cout << "Rx last chunk" << std::endl;
-      http_client.reset();
+      std::cout << "Rx chunk is last, extension: " << chunk.extension()
+                << " trailers: " << chunk.trailers().to_string() << std::endl;
+      http_client->disconnect();
     }
+    else
+      std::cout << "Rx chunk, size: " << chunk.size()
+                << " data: " << data << std::endl;
   }
 
   /// The handler for the HTTP socket disconnecting.
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    http_client.reset();
   }
 }
 //////////////////////////////////////////////////////////////////////////////
