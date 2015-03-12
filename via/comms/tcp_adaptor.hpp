@@ -161,10 +161,10 @@ namespace via
 
       /// @fn is_disconnect
       /// This function determines whether the error is a socket disconnect.
-      /// @param error the error_code
+      // @param error the error_code
       // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(boost::system::error_code const& error, bool&)
+      bool is_disconnect(boost::system::error_code const&, bool&)
       { return false; }
 
       /// @fn socket
