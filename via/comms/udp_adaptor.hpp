@@ -294,22 +294,14 @@ namespace via
         close();
       }
 
-      /// @fn cancel
-      /// The udp socket cancel function.
-      /// Cancels any send, receive or connect operations
-      void cancel()
-      {
-        boost::system::error_code ignoredEc;
-        socket_.cancel (ignoredEc);
-      }
-
       /// @fn close
       /// The udp socket close function.
       /// Cancels any send, receive or connect operations and closes the socket.
       void close()
       {
         boost::system::error_code ignoredEc;
-        socket_.close (ignoredEc);
+        if (socket_.is_open())
+          socket_.close (ignoredEc);
       }
 
       /// @fn start
@@ -324,9 +316,11 @@ namespace via
 
       /// @fn is_disconnect
       /// This function determines whether the error is a socket disconnect.
+      /// @param error the error_code
+      // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(boost::system::error_code const& error)
-      { return boost::asio::error::eof == error; }
+      bool is_disconnect(boost::system::error_code const& error, bool&)
+      { return false; }
 
       /// @fn socket
       /// Accessor for the underlying udp socket.

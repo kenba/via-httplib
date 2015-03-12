@@ -18,7 +18,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
 #include <boost/asio/ssl.hpp>
-#include <iostream>
 
 // Enable SSL support.
 #ifndef HTTP_SSL
@@ -178,25 +177,17 @@ namespace via
         /// @fn shutdown
         /// The ssl tcp socket shutdown function.
         /// Disconnects the socket.
-        void shutdown(CommsHandler close_handler)
+        /// Note: the handlers are required to shutdown SSL gracefully, see:
+        /// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699
+        /// @param shutdown_handler the handler for async_shutdown
+        /// @param close_handler the handler for async_write
+        void shutdown(ErrorHandler shutdown_handler, CommsHandler close_handler)
         {
           static const char buffer[] = "";
-          // std::cout << "ssl_tcp_adaptor shutdown: "<<  std::endl;
-          boost::system::error_code ec;
-          socket_.shutdown(ec);
-
+          socket_.async_shutdown(shutdown_handler);
           boost::asio::async_write(socket_,
                                    boost::asio::const_buffers_1(&buffer[0], 1),
                                    close_handler);
-        }
-
-        /// @fn cancel
-        /// The tcp socket cancel function.
-        /// Cancels any send, receive or connect operations
-        void cancel()
-        {
-          boost::system::error_code ignoredEc;
-          socket_.lowest_layer().cancel (ignoredEc);
         }
 
         /// @fn close
@@ -218,23 +209,20 @@ namespace via
         }
 
         /// @fn is_disconnect
-        /// This function determines whether the error is a socket disconnect.
-        /// I.e. an SSL short read, see:
-        /// http://stackoverflow.com/questions/22575315/how-to-gracefully-shutdown-a-boost-asio-ssl-client
+        /// This function determines whether the error is a socket disconnect,
+        /// it also determines whether the caller should perfrom an SSL
+        /// shutdown.
+        /// @param error the error_code
+        /// @retval ssl_shutdown - an ssl_disconnect should be performed
         /// @return true if a disconnect error, false otherwise.
-        bool is_disconnect(boost::system::error_code const& error)
+        bool is_disconnect(boost::system::error_code const& error,
+                           bool& ssl_shutdown)
         {
-          bool ssl_err(boost::asio::error::get_ssl_category() == error.category());
+          bool ssl_error(boost::asio::error::get_ssl_category() == error.category());
+          ssl_shutdown = ssl_error &&
+                         (SSL_R_SHORT_READ == ERR_GET_REASON(error.value()));
 
-          if ((boost::asio::error::eof == error) ||
-              (ssl_err && (ERR_PACK(ERR_LIB_SSL, 0, SSL_R_SHORT_READ) == error.value())))
-          {
-            boost::system::error_code ec;
-            socket_.shutdown(ec);
-            return true;
-          }
-          else
-            return ssl_err;
+          return ssl_error;
         }
 
         /// @fn socket

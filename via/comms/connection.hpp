@@ -159,13 +159,21 @@ namespace via
       {
         switch(error.value())
         {
+        case boost::asio::error::eof:
         case boost::asio::error::connection_refused:
         case boost::asio::error::connection_reset:
         case boost::asio::error::connection_aborted:
         case boost::asio::error::bad_descriptor:
           return true;
         default:
-          return SocketAdaptor::is_disconnect(error);
+          {
+          bool ssl_shutdown(false);
+          bool is_a_disconnect(SocketAdaptor::is_disconnect(error, ssl_shutdown));
+          if (ssl_shutdown)
+            shutdown();
+
+          return is_a_disconnect;
+          }
         }
       }
 
@@ -339,10 +347,20 @@ namespace via
         }
       }
 
+      /// @fn shutdown_callback
+      /// A function called when an SSL socket adaptor attempts to disconnect.
+      /// @param ptr a weak pointer to the connection
+      /// @param error the boost asio error (if any).
+      static void shutdown_callback(weak_pointer ptr,
+                                    boost::system::error_code const&) // error
+      {
+        shared_pointer pointer(ptr.lock());
+        if (pointer)
+          pointer->event_callback_(DISCONNECTED, ptr);
+      }
+
       /// @fn close_callback
-      /// The function called when a socket adaptor attempts to disconnect.
-      /// It is required so that HTTPS clients can shutdown gracefully, see:
-      /// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699
+      /// A function called when an SSL socket adaptor attempts to disconnect.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the number of bytess(it's a write callback).
@@ -556,8 +574,11 @@ namespace via
       /// Shutdown the underlying socket adaptor.
       void shutdown()
       {
-        // Call shutdown with the close_callback
-        SocketAdaptor::shutdown(boost::bind(&connection::close_callback,
+        // Call shutdown with the callbacks
+        SocketAdaptor::shutdown(boost::bind(&connection::shutdown_callback,
+                                            weak_from_this(),
+                                            boost::asio::placeholders::error),
+                                boost::bind(&connection::close_callback,
                                             weak_from_this(),
                                             boost::asio::placeholders::error,
                                             boost::asio::placeholders::bytes_transferred));
