@@ -360,7 +360,7 @@ namespace via
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param http_request_handler the handle for HTTP request messages.
     explicit http_server(boost::asio::io_service& io_service,
-                         RequestHandler http_request_handler = NULL) :
+                         RequestHandler http_request_handler) :
       server_(server_type::create(io_service)),
       http_connections_(),
 
@@ -381,12 +381,12 @@ namespace via
       auto_disconnect_    (false),
 
       http_request_handler_ (http_request_handler),
-      http_invalid_handler  (NULL),
-      http_continue_handler_(NULL),
-      http_chunk_handler_   (NULL),
-      connected_handler_    (NULL),
-      packet_sent_handler_  (NULL),
-      disconnected_handler_ (NULL)
+      http_invalid_handler  (),
+      http_continue_handler_(),
+      http_chunk_handler_   (),
+      connected_handler_    (),
+      packet_sent_handler_  (),
+      disconnected_handler_ ()
     {
       server_->set_event_callback
           (boost::bind(&http_server::event_handler, this, _1, _2));

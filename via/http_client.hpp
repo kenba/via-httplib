@@ -166,6 +166,7 @@ namespace via
       case via::comms::DISCONNECTED:
         if (disconnected_handler_ != NULL)
           disconnected_handler_();
+        connection_->close();
         break;
       default:
         break;
@@ -199,10 +200,10 @@ namespace via
       tx_body_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
-      http_invalid_handler(NULL),
-      connected_handler_(NULL),
-      packet_sent_handler_(NULL),
-      disconnected_handler_(NULL)
+      http_invalid_handler(),
+      connected_handler_(),
+      packet_sent_handler_(),
+      disconnected_handler_()
     {
       connection_->set_event_callback
           (boost::bind(&http_client::event_handler, this, _1, _2));
