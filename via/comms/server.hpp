@@ -86,6 +86,12 @@ namespace via
       error_callback_type error_callback_;   ///< The error callback function.
 
       size_t rx_buffer_size_; ///< The size of the receive buffer.
+
+      // Socket parameters
+
+      int receive_buffer_size_; ///< The tcp receive buffer size.
+      int send_buffer_size_;    ///< The tcp send buffer size.
+
       /// The connection timeouts, in milliseconds, zero is disabled.
       int timeout_;
       bool no_delay_;         ///< The tcp no delay status.
@@ -109,7 +115,8 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
-            next_connection_->start(no_delay_, keep_alive_, timeout_);
+            next_connection_->start(no_delay_, keep_alive_, timeout_,
+                                    receive_buffer_size_, send_buffer_size_);
             connections_.insert(next_connection_);
             next_connection_.reset();
           }
@@ -187,6 +194,8 @@ namespace via
         event_callback_(),
         error_callback_(),
         rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        receive_buffer_size_(0),
+        send_buffer_size_(0),
         timeout_(0),
         no_delay_(false),
         keep_alive_(false)
@@ -331,6 +340,16 @@ namespace via
       void set_rx_buffer_size(size_t size)
       { rx_buffer_size_ = size; }
 
+      /// Set the size of the tcp sockets receive buffer.
+      /// @param size the new size of the socket receive buffer, must be > 0.
+      void set_receive_buffer_size(int size)
+      { receive_buffer_size_ = size; }
+
+      /// Set the size of the tcp sockets send buffer.
+      /// @param size the new size of the socket send buffer, must be > 0.
+      void set_send_buffer_size(int size)
+      { send_buffer_size_ = size; }
+
       /// @fn set_no_delay
       /// Set the tcp no delay status for all future connections.
       /// @param enable if true it disables the Nagle algorithm.
@@ -356,8 +375,12 @@ namespace via
       /// Close the server and all of the connections associated with it.
       void close()
       {
-        acceptor_v6_.close();
-        acceptor_v4_.close();
+        if (acceptor_v6_.is_open())
+          acceptor_v6_.close();
+
+        if (acceptor_v4_.is_open())
+          acceptor_v4_.close();
+
         next_connection_.reset();
         connections_.clear();
       }

@@ -86,6 +86,8 @@ namespace via
       error_callback_type error_callback_; ///< The error callback function.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
       int timeout_;
+      int receive_buffer_size_; ///< The socket receive buffer size.
+      int send_buffer_size_;    ///< The socket send buffer size.
       bool transmitting_;                  ///< Whether a write's in progress
       bool no_delay_;                      ///< The tcp no delay status.
       bool keep_alive_;                    ///< The tcp keep alive status.
@@ -394,6 +396,8 @@ namespace via
         event_callback_(event_callback),
         error_callback_(error_callback),
         timeout_(0),
+        receive_buffer_size_(0),
+        send_buffer_size_(0),
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
@@ -417,6 +421,8 @@ namespace via
         event_callback_(),
         error_callback_(),
         timeout_(0),
+        receive_buffer_size_(0),
+        send_buffer_size_(0),
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
@@ -465,6 +471,20 @@ namespace via
 #endif
       }
 
+      /// Set the socket's receive buffer size.
+      void resize_receive_buffer()
+      {
+        SocketAdaptor::socket().set_option
+            (boost::asio::socket_base::receive_buffer_size(receive_buffer_size_));
+      }
+
+      /// Set the socket's send buffer size.
+      void resize_send_buffer()
+      {
+        SocketAdaptor::socket().set_option
+            (boost::asio::socket_base::send_buffer_size(send_buffer_size_));
+      }
+
       /// @fn set_socket_options
       /// Disable the nagle algorithm (no delay) on the socket and
       /// (optionally) enable keep alive on the socket and set the tcp
@@ -479,6 +499,12 @@ namespace via
 
         if (timeout_ > 0)
           tcp_timeouts();
+
+        if (receive_buffer_size_ > 0)
+          resize_receive_buffer();
+
+        if (send_buffer_size_ > 0)
+          resize_send_buffer();
       }
 
     public:
@@ -558,13 +584,18 @@ namespace via
       /// the connection.
       /// @param no_delay whether to enable tcp no delay
       /// @param keep_alive whether to enable tcp keep alive
-      /// @param timeout the send and receive timeouts, in milliseconds,
+      /// @param timeout the send and receive timeouts, in milliseconds
+      /// @param receive_buffer_size the size of the socket's receive buffer
+      /// @param send_buffer_size the size of the socket's send buffer
       /// zero is disabled
-      void start(bool no_delay, bool keep_alive, int timeout)
+      void start(bool no_delay, bool keep_alive, int timeout,
+                 int receive_buffer_size, int send_buffer_size)
       {
-        no_delay_   = no_delay;
-        keep_alive_ = keep_alive;
-        timeout_    = timeout;
+        no_delay_            = no_delay;
+        keep_alive_          = keep_alive;
+        timeout_             = timeout;
+        receive_buffer_size_ = receive_buffer_size;
+        send_buffer_size_    = send_buffer_size;
         SocketAdaptor::start(boost::bind(&connection::handshake_callback,
                                          weak_from_this(),
                                          boost::asio::placeholders::error));
@@ -686,6 +717,54 @@ namespace via
         timeout_ = timeout;
         if (connected_)
           tcp_timeouts();
+      }
+
+      /// Get the socket's receive buffer size.
+      /// @return the size of the socket's receive buffer if connected, otherwise 0.
+      int receive_buffer_size()
+      {
+        if (connected_)
+        {
+          boost::asio::socket_base::receive_buffer_size option;
+          SocketAdaptor::socket().get_option(option);
+          return option.value();
+        }
+        else
+          return 0;
+      }
+
+      /// @fn set_receive_buffer_size
+      /// Set the size of the tcp receive buffer.
+      /// @param receive_buffer_size the size of the receive buffer in bytes.
+      void set_receive_buffer_size(int receive_buffer_size)
+      {
+        receive_buffer_size_ = receive_buffer_size;
+        if (connected_)
+          resize_receive_buffer();
+      }
+
+      /// Get the socket's send buffer size.
+      /// @return the size of the socket's send buffer if connected, otherwise 0.
+      int send_buffer_size()
+      {
+        if (connected_)
+        {
+          boost::asio::socket_base::send_buffer_size option;
+          SocketAdaptor::socket().get_option(option);
+          return option.value();
+        }
+        else
+          return 0;
+      }
+
+      /// @fn set_send_buffer_size
+      /// Set the size of the tcp send buffer.
+      /// @param receive_buffer_size the size of the send buffer in bytes.
+      void set_send_buffer_size(int send_buffer_size)
+      {
+        send_buffer_size_ = send_buffer_size;
+        if (connected_)
+          resize_send_buffer();
       }
     };
 

@@ -401,6 +401,11 @@ namespace via
     /// Close the underlying connection.
     void close()
     { connection_.lock()->close(); }
+
+    /// Accessor function for the comms connection.
+    /// @return a weak pointer to the connection
+    typename connection_type::weak_pointer connection()
+    { return connection_; }
   };
 
 }

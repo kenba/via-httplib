@@ -632,6 +632,11 @@ namespace via
       http_connections_.clear();
       server_->close();
     }
+
+    /// Accessor function for the comms server.
+    /// @return a shared pointer to the server
+    boost::shared_ptr<server_type> server()
+    { return server_; }
   };
 
 }
