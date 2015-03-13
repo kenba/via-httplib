@@ -117,7 +117,7 @@ namespace via
 
       /// Clear the response_line.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         status_ = 0;
         reason_phrase_.clear();
@@ -133,7 +133,7 @@ namespace via
 
       /// Swap member variables with another response_line.
       /// @param other the other response_line
-      void swap(response_line& other)
+      void swap(response_line& other) NOEXCEPT
       {
         std::swap(status_, other.status_);
         reason_phrase_.swap(other.reason_phrase_);
@@ -171,42 +171,42 @@ namespace via
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.
-      char major_version() const
+      char major_version() const NOEXCEPT
       { return major_version_; }
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      char minor_version() const
+      char minor_version() const NOEXCEPT
       { return minor_version_; }
 
       /// Accessor for the response status.
       /// @return the response status number.
-      int status() const
+      int status() const NOEXCEPT
       { return status_; }
 
       /// Whether this is a continue response.
       /// @return true if this is a continue response, false otherwise.
-      bool is_continue() const
+      bool is_continue() const NOEXCEPT
       { return status_ == static_cast<int>(response_status::code::CONTINUE); }
 
       /// Accessor for the response reason string.
       /// @return the response reason string.
-      const std::string& reason_phrase() const
+      const std::string& reason_phrase() const NOEXCEPT
       { return reason_phrase_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const
+      bool valid() const NOEXCEPT
       { return valid_; }
 
       /// Accessor for the fail flag.
       /// @return the fail flag.
-      bool fail() const
+      bool fail() const NOEXCEPT
       { return fail_; }
 
       /// Test for early HTTP versions
       /// @return true if HTTP/1.0 or earlier.
-      bool is_http_1_0_or_earlier() const
+      bool is_http_1_0_or_earlier() const NOEXCEPT
       {
         return (major_version_ <= '0') ||
               ((major_version_ == '1') && (minor_version_ == '0'));
@@ -288,12 +288,12 @@ namespace via
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
-      void set_minor_version(char minor_version)
+      void set_minor_version(char minor_version) NOEXCEPT
       { minor_version_ = minor_version; }
 
       /// Set the HTTP major version.
       /// @param major_version the HTTP major version.
-      void set_major_version(char major_version)
+      void set_major_version(char major_version) NOEXCEPT
       { major_version_ = major_version; }
 
       /// Output as a string.
@@ -346,7 +346,7 @@ namespace via
 
       /// Clear the rx_response.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         response_line::clear();
         headers_.clear();
@@ -355,7 +355,7 @@ namespace via
 
       /// Swap member variables with another rx_response.
       /// @param other the other rx_response
-      void swap(rx_response& other)
+      void swap(rx_response& other) NOEXCEPT
       {
         response_line::swap(other);
         headers_.swap(other.headers_);
@@ -386,22 +386,22 @@ namespace via
 
       /// Accessor for the response message headers.
       /// @return a constant reference to the message_headers
-      const message_headers& headers() const
+      const message_headers& headers() const NOEXCEPT
       { return headers_; }
 
       /// The size in the content_length header (if there is one)
       /// @return the content_length header value.
-      size_t content_length() const
+      size_t content_length() const NOEXCEPT
       { return headers_.content_length(); }
 
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
-      bool is_chunked() const
+      bool is_chunked() const NOEXCEPT
       { return headers_.is_chunked(); }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const
+      bool valid() const NOEXCEPT
       { return valid_; }
 
       /// Whether the connection should be kept alive.
@@ -492,7 +492,7 @@ namespace via
 
       /// Determine whether the response is valid.
       /// @return true if the response does not contain "split headers".
-      bool is_valid() const
+      bool is_valid() const NOEXCEPT
       { return !are_headers_split(header_string_); }
 
       /// The http message header string.
@@ -601,7 +601,7 @@ namespace via
 
       /// clear the response_receiver.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         response_.clear();
         chunk_.clear();
@@ -610,17 +610,17 @@ namespace via
 
       /// Accessor for the HTTP response header.
       /// @return a constant reference to an rx_response.
-      rx_response const& response() const
+      rx_response const& response() const NOEXCEPT
       { return response_; }
 
       /// Accessor for the received chunk.
       /// @return a constant reference to the received chunk.
-      rx_chunk<Container> const& chunk() const
+      rx_chunk<Container> const& chunk() const NOEXCEPT
       { return chunk_; }
 
       /// Accessor for the response body / last chunk data.
       /// @return a constant reference to the data.
-      Container const& body() const
+      Container const& body() const NOEXCEPT
       { return body_; }
 
       /// Receive data for an HTTP response, body or data chunk.

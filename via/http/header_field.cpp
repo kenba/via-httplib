@@ -158,7 +158,7 @@ namespace via
     namespace header_field
     {
       ////////////////////////////////////////////////////////////////////////
-      const std::string& standard_name(id::field field_id)
+      const std::string& standard_name(id::field field_id) NOEXCEPT
       {
         switch(field_id)
         {
@@ -224,7 +224,7 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      const std::string& lowercase_name(id::field field_id)
+      const std::string& lowercase_name(id::field field_id) NOEXCEPT
       {
         switch(field_id)
         {

@@ -97,7 +97,7 @@ namespace via
 
       /// clear the field_line.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         name_.clear();
         value_.clear();
@@ -108,7 +108,7 @@ namespace via
 
       /// swap member variables with another field_line.
       /// @param other the other field_line
-      void swap(field_line& other)
+      void swap(field_line& other) NOEXCEPT
       {
         name_.swap(other.name_);
         value_.swap(other.value_);
@@ -146,16 +146,16 @@ namespace via
 
       /// Accessor for the field name.
       /// @return the field name (as a lower case string)
-      const std::string& name() const
+      const std::string& name() const NOEXCEPT
       { return name_; }
 
       /// Accessor for the field value.
       /// @return the field value in the same case that it was received in.
-      const std::string& value() const
+      const std::string& value() const NOEXCEPT
       { return value_; }
 
       /// Calculate the length of the header.
-      size_t length() const
+      size_t length() const NOEXCEPT
       { return name_.size() + value_.size(); }
     }; // class field_line
 
@@ -210,7 +210,7 @@ namespace via
 
       /// Clear the message_headers.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         fields_.clear();
         field_.clear();
@@ -220,7 +220,7 @@ namespace via
 
       /// Swap member variables with another message_headers.
       /// @param other the other message_headers
-      void swap(message_headers& other)
+      void swap(message_headers& other) NOEXCEPT
       {
         fields_.swap(other.fields_);
         field_.swap(other.field_);
@@ -291,7 +291,7 @@ namespace via
       /// @return the value of the Content-Length field or
       /// CONTENT_LENGTH_INVALID if it was invalid.
       /// May also return zero if it was not found.
-      size_t content_length() const;
+      size_t content_length() const NOEXCEPT;
 
       /// Whether Chunked Transfer Coding is applied to the message.
       /// @return true if there is a transfer-encoding header and it does
@@ -309,7 +309,7 @@ namespace via
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const
+      bool valid() const NOEXCEPT
       { return valid_; }
 
       /// Output the message_headers as a string.
@@ -321,7 +321,7 @@ namespace via
 
     /// A function to determine whether the header string contains an extra
     /// CRLF pair, which could cause HTTP message spliting.
-    bool are_headers_split(std::string const& headers);
+    bool are_headers_split(std::string const& headers) NOEXCEPT;
   }
 }
 

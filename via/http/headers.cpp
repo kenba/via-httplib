@@ -13,25 +13,26 @@
 // if C++11 or Visual Studio 2010 or newer
 #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
   #include <regex>
+  /// C++03/C++11 compatibility, use std::regex in C++11
+  #define REGEX_STD std::regex
+  /// C++03/C++11 compatibility, use std::regex_match in C++11
+  #define REGEX_MATCH std::regex_match
+
 #else
   #include <boost/regex.hpp>
+  /// C++03/C++11 compatibility, use boost::regex in C++03
+  #define REGEX_STD boost::regex
+  /// C++03/C++11 compatibility, use boost::regex_match in C++03
+  #define REGEX_MATCH boost::regex_match
 #endif
 
 namespace
 {
   const std::string EMPTY_STRING("");
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-  const std::regex REGEX_IDENTITY(".*identity.*", std::regex::icase);
-  const std::regex REGEX_CLOSE(".*close.*", std::regex::icase);
-  const std::regex REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
-#else
-  //const std::tr1::regex REGEX_IDENTITY(".*identity.*", std::tr1::regex::icase);
-  const boost::regex REGEX_IDENTITY(".*identity.*", boost::regex::icase);
-  const boost::regex REGEX_CLOSE(".*close.*", boost::regex::icase);
-  const boost::regex REGEX_CONTINUE(".*100-continue.*", boost::regex::icase);
-#endif
+  const REGEX_STD REGEX_IDENTITY(".*identity.*", std::regex::icase);
+  const REGEX_STD REGEX_CLOSE(".*close.*", std::regex::icase);
+  const REGEX_STD REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
 }
 
 namespace via
@@ -117,7 +118,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t message_headers::content_length() const
+    size_t message_headers::content_length() const NOEXCEPT
     {
       // Find whether there is a content length field.
       const std::string& content_length(find(header_field::id::CONTENT_LENGTH));
@@ -137,12 +138,7 @@ namespace via
       if (xfer_encoding.empty())
         return false;
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      return (!std::regex_match(xfer_encoding, REGEX_IDENTITY));
-#else
-      return (!boost::regex_match(xfer_encoding, REGEX_IDENTITY));
-#endif
+      return (!REGEX_MATCH(xfer_encoding, REGEX_IDENTITY));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -154,12 +150,7 @@ namespace via
       if (connection.empty())
         return false;
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      return (std::regex_match(connection, REGEX_CLOSE));
-#else
-      return (boost::regex_match(connection, REGEX_CLOSE));
-#endif
+      return (REGEX_MATCH(connection, REGEX_CLOSE));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -171,12 +162,7 @@ namespace via
       if (connection.empty())
         return false;
 
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-      return (std::regex_match(connection, REGEX_CONTINUE));
-#else
-      return (boost::regex_match(connection, REGEX_CONTINUE));
-#endif
+      return (REGEX_MATCH(connection, REGEX_CONTINUE));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -193,7 +179,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool are_headers_split(std::string const& headers)
+    bool are_headers_split(std::string const& headers) NOEXCEPT
     {
       char prev('0');
       char pprev('0');

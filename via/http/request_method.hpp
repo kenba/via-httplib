@@ -48,7 +48,7 @@ namespace via
 
       /// The standard method name associated with ids above.
       /// @return the standard method name.
-      const std::string& name(id::method method_id);
+      const std::string& name(id::method method_id) NOEXCEPT;
     }
   }
 }

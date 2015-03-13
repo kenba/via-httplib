@@ -115,7 +115,7 @@ namespace via
 
       /// Clear the request_line.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         method_.clear();
         uri_.clear();
@@ -130,7 +130,7 @@ namespace via
 
       /// Swap member variables with another request_line.
       /// @param other the other request_line
-      void swap(request_line& other)
+      void swap(request_line& other) NOEXCEPT
       {
         method_.swap(other.method_);
         uri_.swap(other.uri_);
@@ -167,42 +167,42 @@ namespace via
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      const std::string& method() const
+      const std::string& method() const NOEXCEPT
       { return method_; }
 
       /// Accessor for the request uri.
       /// @return the request uri string.
-      const std::string& uri() const
+      const std::string& uri() const NOEXCEPT
       { return uri_; }
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.
-      char major_version() const
+      char major_version() const NOEXCEPT
       { return major_version_; }
 
       /// Accessor for the HTTP minor version number.
       /// @return the minor version number.
-      char minor_version() const
+      char minor_version() const NOEXCEPT
       { return minor_version_; }
 
       /// Accessor for the parsing state.
       /// @return the parsing state.
-      Request state() const
+      Request state() const NOEXCEPT
       { return state_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const
+      bool valid() const NOEXCEPT
       { return valid_; }
 
       /// Accessor for the fail flag.
       /// @return the fail flag.
-      bool fail() const
+      bool fail() const NOEXCEPT
       { return fail_; }
 
       /// Test for early HTTP versions
       /// @return true if HTTP/1.0 or earlier.
-      bool is_http_1_0_or_earlier() const
+      bool is_http_1_0_or_earlier() const NOEXCEPT
       {
         return (major_version_ <= '0') ||
               ((major_version_ == '1') && (minor_version_ == '0'));
@@ -275,12 +275,12 @@ namespace via
 
       /// Set the HTTP major version.
       /// @param major_version the HTTP major version.
-      void set_major_version(char major_version)
+      void set_major_version(char major_version) NOEXCEPT
       { major_version_ = major_version; }
 
       /// Set the HTTP minor version.
       /// @param minor_version the HTTP minor version.
-      void set_minor_version(char minor_version)
+      void set_minor_version(char minor_version) NOEXCEPT
       { minor_version_ = minor_version; }
 
       /// Output as a string.
@@ -333,7 +333,7 @@ namespace via
 
       /// Clear the rx_request.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         request_line::clear();
         headers_.clear();
@@ -342,7 +342,7 @@ namespace via
 
       /// Swap member variables with another rx_request.
       /// @param other the other rx_request
-      void swap(rx_request& other)
+      void swap(rx_request& other) NOEXCEPT
       {
         request_line::swap(other);
         headers_.swap(other.headers_);
@@ -373,29 +373,29 @@ namespace via
 
       /// Accessor for the request message headers.
       /// @return a constant reference to the message_headers
-      const message_headers& headers() const
+      const message_headers& headers() const NOEXCEPT
       { return headers_; }
 
       /// The size in the content_length header (if there is one)
       /// @return the content_length header value.
-      size_t content_length() const
+      size_t content_length() const NOEXCEPT
       { return headers_.content_length(); }
 
       /// Whether chunked transfer encoding is enabled.
       /// @return true if chunked transfer encoding is enabled.
-      bool is_chunked() const
+      bool is_chunked() const NOEXCEPT
       { return headers_.is_chunked(); }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const
+      bool valid() const NOEXCEPT
       { return valid_; }
 
       /// Whether the connection should be kept alive.
       /// I.e. if the request is HTTP 1.1 and there is not a connection: close
       /// header field.
       /// @return true if it should be kept alive, false otherwise.
-      bool keep_alive() const
+      bool keep_alive() const NOEXCEPT
       {
         return !is_http_1_0_or_earlier() &&
                !headers_.close_connection();
@@ -424,12 +424,12 @@ namespace via
 
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
-      bool is_head() const
+      bool is_head() const NOEXCEPT
       { return request_method::name(request_method::id::HEAD) == method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
-      bool is_trace() const
+      bool is_trace() const NOEXCEPT
       { return request_method::name(request_method::id::TRACE) == method(); }
     }; // class rx_request
 
@@ -627,27 +627,27 @@ namespace via
       /// a Host header. Note a Host header is required by RFC2616.
       /// @post Host header verification enabled/disabled.
       /// @param enable enable the function.
-      void set_require_host_header(bool enable)
+      void set_require_host_header(bool enable) NOEXCEPT
       { require_host_header_= enable; }
 
       /// Enable whether HEAD requests are translated into GET
       /// requests for the application.
       /// @param enable enable the function.
-      void set_translate_head(bool enable)
+      void set_translate_head(bool enable) NOEXCEPT
       { translate_head_ = enable; }
 
       /// Enable whether chunked requests will be concatenated.
       /// @param enable enable the function.
-      void set_concatenate_chunks(bool enable)
+      void set_concatenate_chunks(bool enable) NOEXCEPT
       { concatenate_chunks_ = enable; }
 
       /// set the continue_sent_ flag
-      void set_continue_sent()
+      void set_continue_sent() NOEXCEPT
       { continue_sent_ = true; }
 
       /// clear the request_receiver.
       /// Sets all member variables to their initial state.
-      void clear()
+      void clear() NOEXCEPT
       {
         request_.clear();
         chunk_.clear();
@@ -658,26 +658,26 @@ namespace via
       }
 
       /// Accessor for the is_head flag.
-      bool is_head() const
+      bool is_head() const NOEXCEPT
       { return is_head_; }
 
       /// Accessor for the HTTP request header.
       /// @return a constant reference to an rx_request.
-      rx_request const& request() const
+      rx_request const& request() const NOEXCEPT
       { return request_; }
 
       /// Accessor for the received chunk.
       /// @return a constant reference to the received chunk.
-      rx_chunk<Container> const& chunk() const
+      rx_chunk<Container> const& chunk() const NOEXCEPT
       { return chunk_; }
 
       /// Accessor for the request body / last chunk data.
       /// @return a constant reference to the data.
-      Container const& body() const
+      Container const& body() const NOEXCEPT
       { return body_; }
 
       /// Accessor for the response code.
-      response_status::code::status response_code() const
+      response_status::code::status response_code() const NOEXCEPT
       { return response_code_; }
 
       /// Create the body of the TRACE response in the request body.

@@ -14,6 +14,7 @@
 /// @file header_field.hpp
 /// @brief Enumerations and functions to handle HTTP header fields.
 //////////////////////////////////////////////////////////////////////////////
+#include "via/no_except.hpp"
 #include <string>
 #include <ctime>
 
@@ -90,12 +91,12 @@ namespace via
       /// Lookup the RFC2616 standard name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616.
-      const std::string& standard_name(id::field field_id);
+      const std::string& standard_name(id::field field_id) NOEXCEPT;
 
       /// Lookup the lowercase name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616 converted to lowercase.
-      const std::string& lowercase_name(id::field field_id);
+      const std::string& lowercase_name(id::field field_id) NOEXCEPT;
 
       /// Format the field name and value into an http header line.
       /// @param name header field name.

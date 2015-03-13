@@ -14,6 +14,7 @@
 /// @file character.hpp
 /// @brief Low level functions to classify characters and manipulate strings.
 //////////////////////////////////////////////////////////////////////////////
+#include "via/no_except.hpp"
 #include <cctype>
 #include <string>
 #include <climits>
@@ -29,67 +30,67 @@ namespace via
     /// i.e. CR or LF.
     /// @param c the character
     /// @return true if character is CR or LF, false otherwise.
-    inline bool is_end_of_line(char c)
+    inline bool is_end_of_line(char c) NOEXCEPT
     { return ('\r' == c) || ('\n' == c); }
 
     /// Test whether a character is a space or tab character.
     /// Note: equivalent to C++11 std::isblank in <cctype>
     /// @param c the character
     /// @return true if character is space or tab, false otherwise.
-    inline bool is_space_or_tab(char c)
+    inline bool is_space_or_tab(char c) NOEXCEPT
     { return (' ' == c) || ('\t' == c); }
 
     /// Test whether a character is a control character.
     /// @param c the character
     /// @return true if character is control character, false otherwise.
-    inline bool is_ctl(char c)
+    inline bool is_ctl(char c) NOEXCEPT
     { return ((0 <= c) && (31 >= c)) || (127 ==c); }
 
     /// Test whether a character is a separator character.
     /// @param c the character
     /// @return true if character is a separator character, false otherwise.
-    bool is_separator(char c);
+    bool is_separator(char c) NOEXCEPT;
 
     /// Test whether a sequence of three characters is a percent encoding
     /// character according to RFC 3986.
     /// @param c the characters
     /// @return true if character is a percent encoding character, false otherwise.
-    bool is_pct_encoded(char const* c);
+    bool is_pct_encoded(char const* c) NOEXCEPT;
 
     /// Test whether a character is a gen-delim according to RFC3986.
     /// @param c the character
     /// @return true if character is a gen-delim character, false otherwise.
-    bool is_gen_delim(char c);
+    bool is_gen_delim(char c) NOEXCEPT;
 
     /// Test whether a character is a sub-delim according to RFC 3986.
     /// @param c the character
     /// @return true if character is a sub-delim character, false otherwise.
-    bool is_sub_delim(char c);
+    bool is_sub_delim(char c) NOEXCEPT;
 
     /// Test whether a character is a reserved character according to RFC3986.
     /// I.e. whether it is a gen-delim or a sub-delim character.
     /// @param c the character
     /// @return true if character is a reserved character, false otherwise.
-    inline bool is_reserved(char c)
+    inline bool is_reserved(char c) NOEXCEPT
     { return is_gen_delim(c) || is_sub_delim(c); }
 
     /// Test whether a character is a unreserved character according to RFC3986.
     /// @param c the character
     /// @return true if character is a unreserved character, false otherwise.
-    bool is_unreserved(char c);
+    bool is_unreserved(char c) NOEXCEPT;
 
     /// Test whether a character is a token character.
     /// i.e. not a control or separator character.
     /// @param c the character
     /// @return true if character is a token character, false otherwise.
-    inline bool is_token(char c)
+    inline bool is_token(char c) NOEXCEPT
     { return !is_ctl(c) && !is_separator(c); }
 
     /// Convert a digit charcter to an integer.
     /// @pre the character must be a valid digit character.
     /// @param c the character
     /// @return the integer equivalent of the character
-    inline int read_digit(char c)
+    inline int read_digit(char c) NOEXCEPT
     { return (c -'0');}
 
     /// The http version string, i.e. HTTP/1.1
@@ -102,7 +103,7 @@ namespace via
     /// @param hex_string the string containing a vald hexadecimal number
     /// @return the number represented by the string,
     /// std::numeric_limits<size_t>::max() if invalid.
-    size_t from_hex_string(std::string const& hex_string);
+    size_t from_hex_string(std::string const& hex_string) NOEXCEPT;
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
@@ -113,7 +114,7 @@ namespace via
     /// @param dec_string the string containing a vald decimal number
     /// @return the number represented by the string,
     /// std::numeric_limits<size_t>::max() if invalid.
-    size_t from_dec_string(std::string const& dec_string);
+    size_t from_dec_string(std::string const& dec_string) NOEXCEPT;
 
     /// Convert an int into a decimal string.
     /// @param number to be represented

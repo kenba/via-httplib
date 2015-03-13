@@ -85,7 +85,8 @@ namespace via
     namespace response_status
     {
     //////////////////////////////////////////////////////////////////////////
-    const std::string& reason_phrase(code::status status_code)
+    const std::string& reason_phrase(code::status status_code) NOEXCEPT
+
     {
       switch(status_code)
       {

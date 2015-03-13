@@ -33,7 +33,7 @@ namespace via
     {
 
       //////////////////////////////////////////////////////////////////////////
-      const std::string& name(id::method method_id)
+      const std::string& name(id::method method_id) NOEXCEPT
       {
         switch(method_id)
         {

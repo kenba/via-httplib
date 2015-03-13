@@ -17,7 +17,7 @@ namespace via
     const std::string CRLF("\r\n");
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_separator(char c)
+    bool is_separator(char c) NOEXCEPT
     {
       switch (c)
       {
@@ -33,12 +33,12 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_pct_encoded(char const* c)
+    bool is_pct_encoded(char const* c) NOEXCEPT
     { return (c[0] == '%') && std::isxdigit(c[1]) && std::isxdigit(c[2]); }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_gen_delim(char c)
+    bool is_gen_delim(char c) NOEXCEPT
     {
       switch (c)
       {
@@ -51,7 +51,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_sub_delim(char c)
+    bool is_sub_delim(char c) NOEXCEPT
     {
       switch (c)
       {
@@ -65,7 +65,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_unreserved(char c)
+    bool is_unreserved(char c) NOEXCEPT
     {
       if (std::isalnum(c))
         return true;
@@ -94,7 +94,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_hex_string(std::string const& hex_string)
+    size_t from_hex_string(std::string const& hex_string) NOEXCEPT
     {
       // Ensure that the string only contains hexadecimal characters
       std::string::const_iterator iter(hex_string.begin());
@@ -115,7 +115,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_dec_string(std::string const& dec_string)
+    size_t from_dec_string(std::string const& dec_string) NOEXCEPT
     {
       // Ensure that the string only contains decimal characters
       std::string::const_iterator iter(dec_string.begin());

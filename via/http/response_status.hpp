@@ -15,6 +15,7 @@
 /// @brief Enumerations and functions to handle HTTP response statuses.
 //////////////////////////////////////////////////////////////////////////////
 #include <string>
+#include <via/no_except.hpp>
 
 namespace via
 {
@@ -84,7 +85,7 @@ namespace via
       /// See RFC2616 Section 6.1.1.
       /// @param status the reason status code
       /// @return the standard reason phrase associated with the status code.
-      const std::string& reason_phrase(code::status status_code);
+      const std::string& reason_phrase(code::status status_code) NOEXCEPT;
 
       /// Find whether there's a standard reason phrase for the status_code.
       /// See RFC2616 Section 6.1.1.
