@@ -63,8 +63,6 @@ int main(int /* argc */, char *argv[])
       return 1;
     }
 
-    https_server.request_received_event(request_handler);
-
     // and accept IPV4 connections on the default port (443)
     error = https_server.accept_connections();
     if (error)
