@@ -128,7 +128,7 @@ namespace via
         static boost::asio::ssl::context& ssl_context()
         {
           static boost::asio::ssl::context context_
-              (boost::asio::ssl::context::sslv23);
+              (boost::asio::ssl::context::tlsv12);
           return context_;
         }
 
