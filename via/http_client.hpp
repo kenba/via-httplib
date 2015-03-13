@@ -255,17 +255,17 @@ namespace via
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected signal.
-    void connected_event(ConnectionHandler handler)
+    void connected_event(ConnectionHandler handler) NOEXCEPT
     { connected_handler_ = handler; }
 
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
-    void msg_sent_event(ConnectionHandler handler)
+    void msg_sent_event(ConnectionHandler handler) NOEXCEPT
     { packet_sent_handler_ = handler; }
 
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
-    void disconnected_event(ConnectionHandler handler)
+    void disconnected_event(ConnectionHandler handler) NOEXCEPT
     { disconnected_handler_ = handler; }
 
     ////////////////////////////////////////////////////////////////////////
@@ -273,17 +273,17 @@ namespace via
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.
-    http::rx_response const& response() const
+    http::rx_response const& response() const NOEXCEPT
     { return rx_.response(); }
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const
+    http::rx_chunk<Container> const& chunk() const NOEXCEPT
     { return rx_.chunk(); }
 
     /// Accessor for the body.
     /// @return a constant reference to the body.
-    Container const& body() const
+    Container const& body() const NOEXCEPT
     { return rx_.body(); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -405,7 +405,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
-    boost::shared_ptr<connection_type> connection()
+    boost::shared_ptr<connection_type> connection() NOEXCEPT
     { return connection_; }
   };
 }

@@ -15,6 +15,7 @@
 /// @brief Contains the tcp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
+#include "via/no_except.hpp"
 
 namespace via
 {
@@ -164,13 +165,13 @@ namespace via
       // @param error the error_code
       // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(boost::system::error_code const&, bool&)
+      bool is_disconnect(boost::system::error_code const&, bool&) NOEXCEPT
       { return false; }
 
       /// @fn socket
       /// Accessor for the underlying tcp socket.
       /// @return a reference to the tcp socket.
-      boost::asio::ip::tcp::socket& socket()
+      boost::asio::ip::tcp::socket& socket() NOEXCEPT
       { return socket_; }
     };
 

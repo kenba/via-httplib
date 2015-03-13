@@ -17,6 +17,7 @@
 /// is provided by the OpenSSL library which must be included with this file.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
+#include "via/no_except.hpp"
 #include <boost/asio/ssl.hpp>
 
 // Enable SSL support.
@@ -216,7 +217,7 @@ namespace via
         /// @retval ssl_shutdown - an ssl_disconnect should be performed
         /// @return true if a disconnect error, false otherwise.
         bool is_disconnect(boost::system::error_code const& error,
-                           bool& ssl_shutdown)
+                           bool& ssl_shutdown) NOEXCEPT
         {
           bool ssl_error(boost::asio::error::get_ssl_category() == error.category());
           ssl_shutdown = ssl_error &&
@@ -229,7 +230,7 @@ namespace via
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket>
-        ::lowest_layer_type& socket()
+        ::lowest_layer_type& socket() NOEXCEPT
         { return socket_.lowest_layer(); }
       };
 

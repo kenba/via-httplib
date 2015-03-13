@@ -15,6 +15,7 @@
 /// @brief The connection template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
+#include "via/no_except.hpp"
 #include <boost/system/error_code.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -634,16 +635,16 @@ namespace via
       /// Accessor for the receive buffer.
       /// @pre Only valid within the receive event callback function.
       /// @return the receive buffer.
-      Container const& rx_buffer() const
+      Container const& rx_buffer() const NOEXCEPT
       { return *rx_buffer_; }
 
       /// @fn connected
       /// Accessor for the connected_ flag.
-      bool connected() const
+      bool connected() const NOEXCEPT
       { return connected_; }
 
       /// Accessor to set the connected_ flag.
-      void set_connected(bool enable)
+      void set_connected(bool enable) NOEXCEPT
       { connected_ = enable; }
 
       /// @fn send_data(Container const& packet)

@@ -178,7 +178,7 @@ namespace via
     /// a Host header. Note a Host header is required by RFC2616.
     /// @post Host header verification enabled/disabled.
     /// @param enable enable the function.
-    void set_require_host_header(bool enable)
+    void set_require_host_header(bool enable) NOEXCEPT
     { rx_.set_require_host_header(enable); }
 
     /// Enable whether the http server translates HEAD requests into GET
@@ -186,7 +186,7 @@ namespace via
     /// Note: http_server never sends a body in a response to a HEAD request.
     /// @post HEAD translation enabled/disabled.
     /// @param enable enable the function.
-    void set_translate_head(bool enable)
+    void set_translate_head(bool enable) NOEXCEPT
     { rx_.set_translate_head(enable); }
 
     /// Enable whether the http server concatenates chunked requests.
@@ -194,7 +194,7 @@ namespace via
     /// recieved chunks will be concatenated into the request message body.
     /// @post chunk concatenation enabled/disabled.
     /// @param enable enable the function.
-    void set_concatenate_chunks(bool enable)
+    void set_concatenate_chunks(bool enable) NOEXCEPT
     { rx_.set_concatenate_chunks(enable); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -202,31 +202,31 @@ namespace via
 
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
-    std::string remote_address() const
+    std::string remote_address() const NOEXCEPT
     { return remote_address_; }
 
     /// Accessor for the receive buffer.
     /// @return a constant reference to the receive buffer.
-    Container const& rx_buffer() const
+    Container const& rx_buffer() const NOEXCEPT
     { return connection_.lock()->rx_buffer(); }
 
     /// The request receiver for this connection.
-    http::request_receiver<Container>& rx()
+    http::request_receiver<Container>& rx() NOEXCEPT
     { return rx_; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
-    http::rx_request const& request() const
+    http::rx_request const& request() const NOEXCEPT
     { return rx_.request(); }
 
     /// Accessor for the body.
     /// @return a constant reference to the body.
-    Container const& body() const
+    Container const& body() const NOEXCEPT
     { return rx_.body(); }
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const
+    http::rx_chunk<Container> const& chunk() const NOEXCEPT
     { return rx_.chunk(); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -404,7 +404,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a weak pointer to the connection
-    typename connection_type::weak_pointer connection()
+    typename connection_type::weak_pointer connection() NOEXCEPT
     { return connection_; }
   };
 

@@ -14,6 +14,7 @@
 /// @brief The server template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
+#include "via/no_except.hpp"
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <set>
@@ -301,7 +302,7 @@ namespace via
       /// Get the password.
       /// @pre It must be an SSL server.
       /// @return The password.
-      const std::string password() const
+      const std::string password() const NOEXCEPT
       { return password_; }
 
       /// @fn set_password
@@ -322,7 +323,7 @@ namespace via
       /// @see server(boost::asio::io_service& io_service)
       /// @see create(boost::asio::io_service& io_service)
       /// @param event_callback the event callback function.
-      void set_event_callback(event_callback_type event_callback)
+      void set_event_callback(event_callback_type event_callback) NOEXCEPT
       { event_callback_ = event_callback; }
 
       /// @fn set_error_callback
@@ -332,34 +333,34 @@ namespace via
       /// @see server(boost::asio::io_service& io_service)
       /// @see create(boost::asio::io_service& io_service)
       /// @param error_callback the error callback function.
-      void set_error_callback(error_callback_type error_callback)
+      void set_error_callback(error_callback_type error_callback) NOEXCEPT
       { error_callback_ = error_callback; }
 
       /// Set the size of the receive buffer.
       /// @param size the new size of the receive buffer.
-      void set_rx_buffer_size(size_t size)
+      void set_rx_buffer_size(size_t size) NOEXCEPT
       { rx_buffer_size_ = size; }
 
       /// Set the size of the tcp sockets receive buffer.
       /// @param size the new size of the socket receive buffer, must be > 0.
-      void set_receive_buffer_size(int size)
+      void set_receive_buffer_size(int size) NOEXCEPT
       { receive_buffer_size_ = size; }
 
       /// Set the size of the tcp sockets send buffer.
       /// @param size the new size of the socket send buffer, must be > 0.
-      void set_send_buffer_size(int size)
+      void set_send_buffer_size(int size) NOEXCEPT
       { send_buffer_size_ = size; }
 
       /// @fn set_no_delay
       /// Set the tcp no delay status for all future connections.
       /// @param enable if true it disables the Nagle algorithm.
-      void set_no_delay(bool enable)
+      void set_no_delay(bool enable) NOEXCEPT
       { no_delay_ = enable; }
 
       /// @fn set_keep_alive
       /// Set the tcp keep alive status for all future connections.
       /// @param enable if true enables the tcp socket keep alive status.
-      void set_keep_alive(bool enable)
+      void set_keep_alive(bool enable) NOEXCEPT
       { keep_alive_ = enable; }
 
       /// @fn set_timeout
@@ -368,7 +369,7 @@ namespace via
       /// @post sockets will close if no activity has occured after the
       /// timeout period.
       /// @param timeout the timeout in milliseconds.
-      void set_timeout(int timeout)
+      void set_timeout(int timeout) NOEXCEPT
       { timeout_ = timeout; }
 
       /// @fn close
