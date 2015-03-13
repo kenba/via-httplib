@@ -293,8 +293,8 @@ namespace via
       /// The udp socket shutdown function.
       /// Disconnects the socket.
       /// Note: the handlers are required to shutdown SSL gracefully.
-      /// @param shutdown_handler the handler for async_shutdown
-      /// @param close_handler the handler for async_write
+      // @param shutdown_handler the handler for async_shutdown
+      // @param close_handler the handler for async_write
       void shutdown(ErrorHandler, // shutdown_handler,
                     CommsHandler) // close_handler)
       {

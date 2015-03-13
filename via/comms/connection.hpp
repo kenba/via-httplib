@@ -760,7 +760,7 @@ namespace via
 
       /// @fn set_send_buffer_size
       /// Set the size of the tcp send buffer.
-      /// @param receive_buffer_size the size of the send buffer in bytes.
+      /// @param send_buffer_size the size of the send buffer in bytes.
       void set_send_buffer_size(int send_buffer_size)
       {
         send_buffer_size_ = send_buffer_size;

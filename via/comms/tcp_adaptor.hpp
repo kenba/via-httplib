@@ -132,8 +132,8 @@ namespace via
       /// The tcp socket shutdown function.
       /// Disconnects the socket.
       /// Note: the handlers are required to shutdown SSL gracefully, see:
-      /// @param shutdown_handler the handler for async_shutdown
-      /// @param close_handler the handler for async_write
+      // @param shutdown_handler the handler for async_shutdown
+      // @param close_handler the handler for async_write
       void shutdown(ErrorHandler, // shutdown_handler,
                     CommsHandler) // close_handler)
       {
