@@ -225,39 +225,44 @@ namespace via
         switch (rx_state)
         {
         case http::RX_VALID:
-          // Determine whether this is a TRACE request
-          if (http_connection->request().is_trace())
+          // If it's NOT a TRACE request
+          if (!http_connection->request().is_trace())
           {
-            // if enabled, the server reflects the message back.
-            if (trace_enabled_)
-            {
-              // Response is OK with a Content-Type: message/http header
-              // The body of the response contains the TRACE request
-              http::tx_response ok_response(http::response_status::code::OK);
-              ok_response.add_content_http_header();
-              http_connection->send(ok_response,
-                                    http_connection->rx().trace_body());
-            }
-            else // otherwise, it responds with "Not Allowed"
-            {
-              // http_connection->send_response();
-              http_connection->send(http::tx_response
-                            (http::response_status::code::METHOD_NOT_ALLOWED));
-              if (auto_disconnect_)
-                http_connection->disconnect();
-            }
-          }
-          else
             http_request_handler_(http_connection,
-                                  http_connection->rx().request(),
-                                  http_connection->rx().body());
+                                  http_connection->request(),
+                                  http_connection->body());
+            break;
+          }
+          else if (trace_enabled_) // the server reflects the message back.
+          {
+            // Response is OK with a Content-Type: message/http header
+            // The body of the response contains the TRACE request
+            http::tx_response ok_response(http::response_status::code::OK);
+            ok_response.add_content_http_header();
+            http_connection->send(ok_response,
+                                  http_connection->rx().trace_body());
+            break;
+          }
+          // intentional fall through
+
+        case http::RX_INVALID:
+          if (http_invalid_handler != NULL)
+            http_invalid_handler(http_connection,
+                                 http_connection->request(),
+                                 http_connection->body());
+          else
+          {
+            http_connection->send_response();
+            if (auto_disconnect_)
+              http_connection->disconnect();
+          }
           break;
 
         case http::RX_EXPECT_CONTINUE:
           if (http_continue_handler_ != NULL)
             http_continue_handler_(http_connection,
-                                   http_connection->rx().request(),
-                                   http_connection->rx().body());
+                                   http_connection->request(),
+                                   http_connection->body());
           else
             http_connection->send_response();
           break;
@@ -265,21 +270,8 @@ namespace via
         case http::RX_CHUNK:
           if (http_chunk_handler_ != NULL)
             http_chunk_handler_(http_connection,
-                                http_connection->rx().chunk(),
-                                http_connection->rx().chunk().data());
-          break;
-
-        case http::RX_INVALID:
-          if (http_invalid_handler != NULL)
-            http_invalid_handler(http_connection,
-                                 http_connection->rx().request(),
-                                 http_connection->rx().body());
-          else
-          {
-            http_connection->send_response();
-            if (auto_disconnect_)
-              http_connection->disconnect();
-          }
+                                http_connection->chunk(),
+                                http_connection->chunk().data());
           break;
 
         default:

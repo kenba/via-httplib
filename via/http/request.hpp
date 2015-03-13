@@ -740,6 +740,19 @@ namespace via
             return RX_INVALID;
           }
 
+          // trace requests aren't allowed a body may be not be allowed period.
+          if (request_.is_trace())
+          {
+            if (content_length == 0)
+              response_code_ = response_status::code::METHOD_NOT_ALLOWED;
+            else
+            {
+              response_code_ = response_status::code::BAD_REQUEST;
+              clear();
+              return RX_INVALID;
+            }
+          }
+
           // if there's a message body then insist on a content length header
           std::ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
