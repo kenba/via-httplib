@@ -86,6 +86,12 @@ namespace via
       /// @return the standard reason phrase associated with the status code.
       const std::string& reason_phrase(code::status status_code);
 
+      /// Find whether there's a standard reason phrase for the status_code.
+      /// See RFC2616 Section 6.1.1.
+      /// @param status the reason status code
+      /// @return the standard reason phrase associated with the status code.
+      inline const std::string& reason_phrase(int status_code)
+      { return reason_phrase(static_cast<code::status>(status_code)); }
     }
   }
 }
