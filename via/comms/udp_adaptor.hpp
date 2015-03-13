@@ -131,10 +131,10 @@ namespace via
           return false;
 
         // if a listen_address is given then use it
+        boost::asio::ip::address local_address;
         if (!listen_address.empty())
         {
-          boost::system::error_code error;
-          boost::asio::ip::address local_address
+          local_address = boost::asio::ip::address
               (boost::asio::ip::address::from_string(listen_address, error));
           // Ensure that the listen_address is valid and the same protocol as
           // the multicast_address
@@ -165,7 +165,12 @@ namespace via
         if (error)
           return false;
 
-        socket_.set_option(boost::asio::ip::multicast::join_group(ip_address));
+        if (!listen_address.empty())
+          // Note: asio supports only v4 at the moment.
+          socket_.set_option(boost::asio::ip::multicast::join_group
+                               (ip_address.to_v4(), local_address.to_v4()));
+        else
+          socket_.set_option(boost::asio::ip::multicast::join_group(ip_address));
 
         return true;
       }
@@ -286,7 +291,11 @@ namespace via
       /// @fn shutdown
       /// The udp socket shutdown function.
       /// Disconnects the socket.
-      void shutdown(CommsHandler) // close_handler)
+      /// Note: the handlers are required to shutdown SSL gracefully.
+      /// @param shutdown_handler the handler for async_shutdown
+      /// @param close_handler the handler for async_write
+      void shutdown(ErrorHandler, // shutdown_handler,
+                    CommsHandler) // close_handler)
       {
         boost::system::error_code ignoredEc;
         socket_.shutdown (boost::asio::ip::udp::socket::shutdown_both,
