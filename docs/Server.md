@@ -130,7 +130,52 @@ run the server, see: [boost libs](http://www.boost.org/doc/libs/): Asio.
 
 The server will call `request_handler` whenever it receives a valid HTTP request from a client.  
 Note: the call to `io_service.run()` will not return until the server is closed.  
+
+## Sending Responses ##
+
+The server normally creates an HTTP response in a `via::http::tx_response` class
+passing it the response status code, e.g:
+
+    via::http::tx_response response(via::http::response_status::code::OK);
     
+The server can then add whatever headers it requires to the response, e.g.:
+
+    response.add_server_header();
+    response.add_date_header();
+    
+The response is then sent by calling one of the `http_connection`'s send functions, e.g.:
+
+    weak_ptr.lock()->send(response);
+    
+Note: since the pointer passed to the request handler is a weak pointer, `lock()`
+must be called to convert it into a `shared pointer` so that `send` can be called.
+
+The server has an number of different `send` functions that the application may call:
+
+| Function                     | Data         | Description                          |
+|------------------------------|--------------|--------------------------------------|
+| send(response)               |              | Send an HTTP `response` without a body. |
+| send(response, body)         | Container    | Send a `response` with `body`, data **buffered** by `http_connection`. |
+| send(response, buffers)      | ConstBuffers | Send a `response` with `body`, data **unbuffered**. |
+| send_body(body)              | Container    | Send response `body` data, **buffered** by `http_connection`. |
+| send_body(body, buffers)     | ConstBuffers | Send response `body` data, **unbuffered**. |
+| send_chunk(data)             | Container    | Send response `chunk` data, **buffered** by `http_connection`. |
+| send_chunk(buffers, buffers) | ConstBuffers | Send response `chunk` data, **unbuffered**. |
+| last_chunk()                 |              | Send response HTTP `last chunk`.  |
+
+All of the functions send the data asynchronously, i.e. they return before the data
+is sent. The application can choose between two types of functions depending upon
+whether the data that it is sending is temporary or not:
+
+ + **buffered** functions, i.e.: those taking a copy of Container as a parameter.
+ These functions take a copy of the data so the data is no longer required after the
+ function is called.
+ 
+ + **unbuffered** functions, i.e.: those taking a ConstBuffers as a parameter.
+ These functions take a `std::deque` of `asio::const_buffer`s that point to the data.
+ Therefore the data must **NOT** be temporary. It must exist until the `Message Sent`
+ event, see [Server Events](Server_Events.md).
+
 ## Examples ##
 
 An HTTP Server that incorporates the example code above:

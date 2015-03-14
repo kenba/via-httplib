@@ -50,7 +50,7 @@ The HTTP message bodies can be sent either buffered or un-buffered using
 |----------|-------------|
 | [Build Guide](docs/MAKE.md) | How to build the library. |
 | [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
-| [Client User Guide](docs/Clients.md) | How to use the library to create HTTP clients. |
+| [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
 | [Security Guide](docs/Server_Security.md) | How to configure the library securely. |
 | [Design](docs/Design_Top.md) | The library design. |
 | [examples/server](examples/server) | Example HTTP & HTTPS servers. |
