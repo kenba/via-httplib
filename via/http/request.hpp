@@ -829,8 +829,19 @@ namespace via
               if (chunk_.is_last())
                 return RX_VALID;
               else
-                body_.insert(body_.end(),
-                             chunk_.data().begin(), chunk_.data().end());
+              {
+                // Determine whether the total size of the concatenated chunks
+                // is within the maximum body size.
+                if ((body_.size() + chunk_.data().size()) > max_body_size_)
+                {
+                  response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
+                  clear();
+                  return RX_INVALID;
+                }
+                else // concatenate the chunk into the message body
+                  body_.insert(body_.end(),
+                               chunk_.data().begin(), chunk_.data().end());
+              }
             }
             else
               return RX_CHUNK;
