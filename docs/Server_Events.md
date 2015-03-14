@@ -153,7 +153,7 @@ Large" response:
 
 RFC2616 defines a set of appropriate responses for an HTTP server to send
 to an invalid HTTP request. Unfortunately, RFC2616 couldn't foresee all of
-the ways in which the protocol would be misused, see: [Security Guide](Security.md).  
+the ways in which the protocol would be misused, see: [Security Guide](Server_Security.md).  
 
 An invalid request may be a sign that the HTTP server is subject a
 Denial of Service (DoS) attack.
