@@ -357,7 +357,7 @@ namespace via
       http_connections_(),
 
       // Set request parser parameters to default values
-      strict_crlf_        (true),
+      strict_crlf_        (false),
       max_whitespace_     (http_request::DEFAULT_MAX_WHITESPACE_CHARS),
       max_method_length_  (http_request::DEFAULT_MAX_METHOD_LENGTH),
       max_uri_length_     (http_request::DEFAULT_MAX_URI_LENGTH),
@@ -403,15 +403,11 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
 
-    /// Connect the invalid request received callback function.
-    ///
-    /// If the application registers a handler for this event, then the
-    /// application must determine how to respond to invalid requests.
-    /// @post disables automatic sending of an invalid response message.
-    /// @post disables auto_disconnect_ (if enabled).
-    /// @param handler the handler for a invalid request received.
-    void invalid_request_handler(RequestHandler handler) NOEXCEPT
-    { http_request_handler_ = handler; }
+    /// Connect the chunk received callback function.
+    /// @post disables automatic concatenating of chunks.
+    /// @param handler the handler for a received HTTP chunk.
+    void chunk_received_event(ChunkHandler handler) NOEXCEPT
+    { http_chunk_handler_ = handler; }
 
     /// Connect the expect continue received callback function.
     ///
@@ -425,33 +421,37 @@ namespace via
     void request_expect_continue_event(RequestHandler handler) NOEXCEPT
     { http_continue_handler_ = handler; }
 
-    /// Connect the chunk received callback function.
-    /// @post disables automatic concatenating of chunks.
-    /// @param handler the handler for a received HTTP chunk.
-    void chunk_received_event(ChunkHandler handler) NOEXCEPT
-    { http_chunk_handler_ = handler; }
+    /// Connect the invalid request received callback function.
+    ///
+    /// If the application registers a handler for this event, then the
+    /// application must determine how to respond to invalid requests.
+    /// @post disables automatic sending of an invalid response message.
+    /// @post disables auto_disconnect_ (if enabled).
+    /// @param handler the handler for a invalid request received.
+    void invalid_request_event(RequestHandler handler) NOEXCEPT
+    { http_request_handler_ = handler; }
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected event.
     void socket_connected_event(ConnectionHandler handler) NOEXCEPT
     { connected_handler_= handler; }
 
-    /// Connect the message sent callback function.
-    /// @param handler the handler for the message sent signal.
-    void message_sent_event(ConnectionHandler handler) NOEXCEPT
-    { packet_sent_handler_= handler; }
-
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
     void socket_disconnected_event(ConnectionHandler handler) NOEXCEPT
     { disconnected_handler_ = handler; }
 
+    /// Connect the message sent callback function.
+    /// @param handler the handler for the message sent signal.
+    void message_sent_event(ConnectionHandler handler) NOEXCEPT
+    { packet_sent_handler_= handler; }
+
     ////////////////////////////////////////////////////////////////////////
     // HTTP Request Parser Parameter set functions
 
     /// Set whether to require strict CRLF HTTP request checking.
-    /// @param enable default true.
-    void set_strict_crlf(bool enable = true) NOEXCEPT
+    /// @param enable strict CRLF HTTP checking
+    void set_strict_crlf(bool enable) NOEXCEPT
     { strict_crlf_ = enable; }
 
     /// Set the maximum number of consecutive whitespace characters to allow.
@@ -548,7 +548,7 @@ namespace via
     void set_keep_alive(bool enable) NOEXCEPT
     { server_->set_keep_alive(enable); }
 
-    /// Set the send and receive timeout value for all future connections.
+    /// Set the send and receive timeout values for all future connections.
     /// @pre sockets may remain open forever
     /// @post sockets will close if no activity has occured after the
     /// timeout period.

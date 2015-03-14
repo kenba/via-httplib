@@ -341,6 +341,21 @@ namespace via
       void set_rx_buffer_size(size_t size) NOEXCEPT
       { rx_buffer_size_ = size; }
 
+      /// @fn set_timeout
+      /// Set the send and receive timeouts value for all future connections.
+      /// @pre sockets may remain open forever
+      /// @post sockets will close if no activity has occured after the
+      /// timeout period.
+      /// @param timeout the timeout in milliseconds.
+      void set_timeout(int timeout) NOEXCEPT
+      { timeout_ = timeout; }
+
+      /// @fn set_keep_alive
+      /// Set the tcp keep alive status for all future connections.
+      /// @param enable if true enables the tcp socket keep alive status.
+      void set_keep_alive(bool enable) NOEXCEPT
+      { keep_alive_ = enable; }
+
       /// Set the size of the tcp sockets receive buffer.
       /// @param size the new size of the socket receive buffer, must be > 0.
       void set_receive_buffer_size(int size) NOEXCEPT
@@ -356,21 +371,6 @@ namespace via
       /// @param enable if true it disables the Nagle algorithm.
       void set_no_delay(bool enable) NOEXCEPT
       { no_delay_ = enable; }
-
-      /// @fn set_keep_alive
-      /// Set the tcp keep alive status for all future connections.
-      /// @param enable if true enables the tcp socket keep alive status.
-      void set_keep_alive(bool enable) NOEXCEPT
-      { keep_alive_ = enable; }
-
-      /// @fn set_timeout
-      /// Set the send and receive timeout value for all future connections.
-      /// @pre sockets may remain open forever
-      /// @post sockets will close if no activity has occured after the
-      /// timeout period.
-      /// @param timeout the timeout in milliseconds.
-      void set_timeout(int timeout) NOEXCEPT
-      { timeout_ = timeout; }
 
       /// @fn close
       /// Close the server and all of the connections associated with it.
