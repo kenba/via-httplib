@@ -45,12 +45,14 @@ although the response message may contain a “Content-Length” message header,
 it MUST NOT contain any data, i.e. a message body.
 
 ### Design ###
-
+      
 The HTTP server consists of:
 
 + `http_connections` i.e. connections with an HTTP request parser and an HTTP
 response encoder.  
 + an `http_server` to manage the http_connections.
+
+![HTTP Server Classes](images/http_server_classes.png)
 
 Like the comms connections and server, the HTTP connections and server are
 implemented as template classes instantiated with a `SocketAdaptor` for the type

@@ -1,40 +1,20 @@
-# HTTP Server User Guide #
+# HTTP Server Events #
 
-## Class Template `http_server` ##
+ 
+ 
+ 
+ 
 
-An application creates an HTTP server type by instantiating the `http_server`
-class template.
 
-![HTTP Server Class Template](images/http_server_template_class_diagram.png)
 
-The `http_server` class template is defined in `<via/http_server.hpp>`:
 
-    namespace via
-    {
-      template <typename S, typename T = std::vector<char>, bool use_strand = false>
-      class http_server
-      {
-        ...
-      }
-    }
 
-The template parameters are described below: 
-
-| Parameter   | Default             | Description                            |
-|-------------|---------------------|----------------------------------------|
-| S           | None.               | The socket_adaptor: either via::comms::tcp_adaptor for HTTP, or via::comms::ssl::ssl_tcp_adaptor for HTTPS. |
-| T           | `std::vector<char>` | The container to use for message bodies: `std::vector<char>` or `std::string` |
-| use_strand  | false               | Enable an `asio::strand` to use multiple threads without explicit locking, see: [boost asio strands](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/overview/core/strands.html) |
 
 ### HTTP Server ###
 
 For example the following code declares an plain HTTP server that passes data in a
 `std::vector<char>` (the default).
 
-    #include "via/comms/tcp_adaptor.hpp"
-    #include "via/http_server.hpp"
-    
-    typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
       
 ### HTTPS Server ###
 

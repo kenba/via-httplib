@@ -1,0 +1,37 @@
+@startuml
+
+'Copyright (c) 2015 Ken Barker
+
+'title Request chunks sequence
+
+actor client
+client -> http_server : HTTP request with header,\nTransfer-encoding: Chunked
+
+alt default
+
+  loop
+  client -> http_server      : HTTP chunk
+  http_server -> http_server : concatenate chunk\ninto message body
+  end
+
+  client -> http_server      : HTTP last chunk
+  http_server -> application : request received\n(is_chunked)
+  http_server <- application : response
+
+
+else chunk received callback
+
+  http_server -> application : request received\n(is_chunked)
+  loop
+  client -> http_server      : HTTP chunk
+  http_server -> application : chunk received
+  end
+  client -> http_server      : HTTP last chunk
+  http_server -> application : chunk received\n(is_last)
+  http_server <- application : response
+
+end
+
+client <-http_server       : HTTP response
+
+@enduml
