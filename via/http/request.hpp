@@ -535,7 +535,6 @@ namespace via
     {
       /// Parser parameters
       size_t max_body_size_;       ///< the maximum size of a request body.
-      bool   require_host_header_; ///< a host header is required.
 
       /// Behaviour
       bool   translate_head_;      ///< pass a HEAD request as a GET request.
@@ -608,11 +607,8 @@ namespace via
                                 size_t         max_body_size,
                                 size_t         max_chunk_size) :
         max_body_size_(max_body_size),
-        require_host_header_(true),
-
         translate_head_(true),
         concatenate_chunks_(true),
-
         request_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
                  max_line_length, max_header_number, max_header_length),
         chunk_(strict_crlf, max_whitespace, max_line_length, max_chunk_size,
@@ -622,13 +618,6 @@ namespace via
         continue_sent_(false),
         is_head_(false)
       {}
-
-      /// Enable whether every HTTP request is required to contain
-      /// a Host header. Note a Host header is required by RFC2616.
-      /// @post Host header verification enabled/disabled.
-      /// @param enable enable the function.
-      void set_require_host_header(bool enable) NOEXCEPT
-      { require_host_header_= enable; }
 
       /// Enable whether HEAD requests are translated into GET
       /// requests for the application.
@@ -717,8 +706,8 @@ namespace via
           }
         }
 
-        // build a request body or receive a chunk
-        if (require_host_header_ && request_.missing_host_header())
+        // ensure that the request has a "host" header
+        if (request_.missing_host_header())
         {
           response_code_ = response_status::code::BAD_REQUEST;
           return RX_INVALID;

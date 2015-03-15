@@ -188,7 +188,6 @@ namespace via
                                       max_body_size_,
                                       max_chunk_size_));
 
-        http_connection->set_require_host_header(require_host_header_);
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
 
@@ -520,13 +519,6 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // HTTP server options set functions
-
-    /// Enable whether the http server requires every HTTP request to contain
-    /// a Host header. Note a Host header is required by RFC2616.
-    /// @post Host header verification enabled/disabled.
-    /// @param enable enable the function, default true.
-    void set_require_host_header(bool enable = true) NOEXCEPT
-    { require_host_header_ = enable; }
 
     /// Enable whether the http server translates HEAD requests into GET
     /// requests for the application.

@@ -172,14 +172,7 @@ namespace via
     {}
 
     ////////////////////////////////////////////////////////////////////////
-    // Event Handlers
-
-    /// Enable whether the http server requires every HTTP request to contain
-    /// a Host header. Note a Host header is required by RFC2616.
-    /// @post Host header verification enabled/disabled.
-    /// @param enable enable the function.
-    void set_require_host_header(bool enable) NOEXCEPT
-    { rx_.set_require_host_header(enable); }
+    // Request Parser Parameters
 
     /// Enable whether the http server translates HEAD requests into GET
     /// requests for the application.
