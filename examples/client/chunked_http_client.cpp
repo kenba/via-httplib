@@ -71,7 +71,7 @@ namespace
   }
 
   /// A handler for the signal sent when an HTTP message is sent.
-  void msg_sent_handler()
+  void message_sent_handler()
   {
     if (count > 0)
       send_a_chunk();
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 
     // attach the optional handlers
     http_client->connected_event(connected_handler);
-    http_client->msg_sent_event(msg_sent_handler);
+    http_client->message_sent_event(message_sent_handler);
     http_client->disconnected_event(disconnected_handler);
 
     // attempt to connect to the host on the standard http port (80)

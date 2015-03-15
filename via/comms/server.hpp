@@ -230,27 +230,25 @@ namespace via
       ~server()
       { close(); }
 
-      /// Function to create a shared pointer to a server.
-      /// @post the event_callback and error_callback functions MUST be set
-      /// AFTER this function has been called.
-      /// @see set_event_callback
-      /// @see set_error_callback
-      /// @param io_service the boost asio io_service used by the server.
-      static boost::shared_ptr<server> create(boost::asio::io_service& io_service)
-      { return boost::shared_ptr<server>(new server(io_service)); }
-
-      /// Function to create a shared pointer to a server.
-      /// @pre the event_callback and error_callback functions must exist.
-      /// E.g. if either of them are class member functions then the class
-      /// MUST have been constructed BEFORE this function is called.
-      /// @param io_service the boost asio io_service used by the server.
+      /// @fn set_event_callback
+      /// Set the event_callback function.
+      /// For use with the Constructor or create function that doesn't take
+      /// an event_callback parameter.
+      /// @see server(boost::asio::io_service& io_service)
+      /// @see create(boost::asio::io_service& io_service)
       /// @param event_callback the event callback function.
+      void set_event_callback(event_callback_type event_callback) NOEXCEPT
+      { event_callback_ = event_callback; }
+
+      /// @fn set_error_callback
+      /// Set the error_callback function.
+      /// For use with the Constructor or create function that doesn't take
+      /// an error_callback parameter.
+      /// @see server(boost::asio::io_service& io_service)
+      /// @see create(boost::asio::io_service& io_service)
       /// @param error_callback the error callback function.
-      static boost::shared_ptr<server> create(boost::asio::io_service& io_service,
-                                              event_callback_type event_callback,
-                                              error_callback_type error_callback)
-      { return boost::shared_ptr<server>(new server(io_service, event_callback,
-                                                    error_callback)); }
+      void set_error_callback(error_callback_type error_callback) NOEXCEPT
+      { error_callback_ = error_callback; }
 
       /// @fn accept_connections
       /// Create the acceptor and wait for connections.
@@ -315,26 +313,6 @@ namespace via
         connection_type::ssl_context().set_password_callback
             (boost::bind(&server::password, this));
       }
-
-      /// @fn set_event_callback
-      /// Set the event_callback function.
-      /// For use with the Constructor or create function that doesn't take
-      /// an event_callback parameter.
-      /// @see server(boost::asio::io_service& io_service)
-      /// @see create(boost::asio::io_service& io_service)
-      /// @param event_callback the event callback function.
-      void set_event_callback(event_callback_type event_callback) NOEXCEPT
-      { event_callback_ = event_callback; }
-
-      /// @fn set_error_callback
-      /// Set the error_callback function.
-      /// For use with the Constructor or create function that doesn't take
-      /// an error_callback parameter.
-      /// @see server(boost::asio::io_service& io_service)
-      /// @see create(boost::asio::io_service& io_service)
-      /// @param error_callback the error callback function.
-      void set_error_callback(error_callback_type error_callback) NOEXCEPT
-      { error_callback_ = error_callback; }
 
       /// Set the size of the receive buffer.
       /// @param size the new size of the receive buffer.

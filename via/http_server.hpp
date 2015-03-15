@@ -151,12 +151,12 @@ namespace via
 
     // callback function pointers
     RequestHandler    http_request_handler_; ///< the request callback function
-    RequestHandler    http_invalid_handler;  ///< the invalid callback function
-    RequestHandler    http_continue_handler_;///< the continue callback function
     ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
+    RequestHandler    http_continue_handler_;///< the continue callback function
+    RequestHandler    http_invalid_handler;  ///< the invalid callback function
     ConnectionHandler connected_handler_;    ///< the connected callback function
-    ConnectionHandler packet_sent_handler_;  ///< the packet sent callback function
     ConnectionHandler disconnected_handler_; ///< the disconncted callback function
+    ConnectionHandler message_sent_handler_; ///< the packet sent callback function
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -189,12 +189,12 @@ namespace via
 
         http_connection->set_require_host_header(require_host_header_);
         http_connection->set_translate_head(translate_head_);
-        http_connection->set_concatenate_chunks(http_chunk_handler_ == NULL);
+        http_connection->set_concatenate_chunks(!http_chunk_handler_);
 
         http_connections_.insert
             (connection_collection_value_type(pointer, http_connection));
         // signal that the socket is connected
-        if (connected_handler_ != NULL)
+        if (connected_handler_)
           connected_handler_(http_connection);
       }
       else
@@ -247,7 +247,7 @@ namespace via
           // intentional fall through
 
         case http::RX_INVALID:
-          if (http_invalid_handler != NULL)
+          if (http_invalid_handler)
             http_invalid_handler(http_connection,
                                  http_connection->request(),
                                  http_connection->body());
@@ -260,7 +260,7 @@ namespace via
           break;
 
         case http::RX_EXPECT_CONTINUE:
-          if (http_continue_handler_ != NULL)
+          if (http_continue_handler_)
             http_continue_handler_(http_connection,
                                    http_connection->request(),
                                    http_connection->body());
@@ -269,7 +269,7 @@ namespace via
           break;
 
         case http::RX_CHUNK:
-          if (http_chunk_handler_ != NULL)
+          if (http_chunk_handler_)
             http_chunk_handler_(http_connection,
                                 http_connection->chunk(),
                                 http_connection->chunk().data());
@@ -287,7 +287,7 @@ namespace via
     void disconnected_handler(connection_collection_iterator iter)
     {
       // Noitfy the disconnected handler if one exists
-      if (disconnected_handler_ != NULL)
+      if (disconnected_handler_)
         disconnected_handler_(iter->second);
 
       http_connections_.erase(iter);
@@ -323,8 +323,8 @@ namespace via
           break;
         case via::comms::SENT:
           // Noitfy the sent handler if one exists
-          if (packet_sent_handler_ != NULL)
-            packet_sent_handler_(iter->second);
+          if (message_sent_handler_)
+            message_sent_handler_(iter->second);
           break;
         case via::comms::DISCONNECTED:
           disconnected_handler(iter);
@@ -354,7 +354,7 @@ namespace via
     /// @param http_request_handler the handle for HTTP request messages.
     explicit http_server(boost::asio::io_service& io_service,
                          RequestHandler http_request_handler) :
-      server_(server_type::create(io_service)),
+      server_(new server_type(io_service)),
       http_connections_(),
 
       // Set request parser parameters to default values
@@ -374,12 +374,12 @@ namespace via
       auto_disconnect_    (false),
 
       http_request_handler_ (http_request_handler),
-      http_invalid_handler  (),
-      http_continue_handler_(),
       http_chunk_handler_   (),
+      http_continue_handler_(),
+      http_invalid_handler  (),
       connected_handler_    (),
-      packet_sent_handler_  (),
-      disconnected_handler_ ()
+      disconnected_handler_ (),
+      message_sent_handler_ ()
     {
       server_->set_event_callback
           (boost::bind(&http_server::event_handler, this, _1, _2));
@@ -445,7 +445,7 @@ namespace via
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
     void message_sent_event(ConnectionHandler handler) NOEXCEPT
-    { packet_sent_handler_= handler; }
+    { message_sent_handler_= handler; }
 
     ////////////////////////////////////////////////////////////////////////
     // HTTP Request Parser Parameter set functions
@@ -623,7 +623,7 @@ namespace via
 
     /// Accessor function for the comms server.
     /// @return a shared pointer to the server
-    boost::shared_ptr<server_type> server() NOEXCEPT
+    boost::shared_ptr<server_type> tcp_server() NOEXCEPT
     { return server_; }
   };
 

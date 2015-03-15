@@ -85,10 +85,10 @@ namespace via
 
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
-    ResponseHandler   http_invalid_handler;   ///< the invalid callback function
+    ResponseHandler   http_invalid_handler_;  ///< the invalid callback function
     ConnectionHandler connected_handler_;     ///< the connected callback function
-    ConnectionHandler packet_sent_handler_;   ///< the sent callback function
     ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
+    ConnectionHandler message_sent_handler_;  ///< the message sent callback function
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -125,13 +125,13 @@ namespace via
           break;
 
         case http::RX_CHUNK:
-          if (http_chunk_handler_ != NULL)
+          if (http_chunk_handler_)
             http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
           break;
 
         case http::RX_INVALID:
-          if (http_invalid_handler != NULL)
-            http_invalid_handler(rx_.response(), rx_.body());
+          if (http_invalid_handler_)
+            http_invalid_handler_(rx_.response(), rx_.body());
           break;
 
         default:
@@ -154,18 +154,18 @@ namespace via
       switch(event)
       {
       case via::comms::CONNECTED:
-        if (connected_handler_ != NULL)
+        if (connected_handler_)
           connected_handler_();
         break;
       case via::comms::RECEIVED:
         receive_handler();
         break;
       case via::comms::SENT:
-        if (packet_sent_handler_ != NULL)
-          packet_sent_handler_();
+        if (message_sent_handler_)
+          message_sent_handler_();
         break;
       case via::comms::DISCONNECTED:
-        if (disconnected_handler_ != NULL)
+        if (disconnected_handler_)
           disconnected_handler_();
         connection_->close();
         break;
@@ -201,10 +201,10 @@ namespace via
       tx_body_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
-      http_invalid_handler(),
+      http_invalid_handler_(),
       connected_handler_(),
-      packet_sent_handler_(),
-      disconnected_handler_()
+      disconnected_handler_(),
+      message_sent_handler_()
     {
       connection_->set_event_callback
           (boost::bind(&http_client::event_handler, this, _1, _2));
@@ -261,8 +261,8 @@ namespace via
 
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
-    void msg_sent_event(ConnectionHandler handler) NOEXCEPT
-    { packet_sent_handler_ = handler; }
+    void message_sent_event(ConnectionHandler handler) NOEXCEPT
+    { message_sent_handler_ = handler; }
 
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
