@@ -254,20 +254,25 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
 
+    /// Connect the invalid response received callback function.
+    /// @param handler the handler for an invalid response received.
+    void invalid_response_event(ResponseHandler handler) NOEXCEPT
+    { http_invalid_handler_ = handler; }
+
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected signal.
     void connected_event(ConnectionHandler handler) NOEXCEPT
     { connected_handler_ = handler; }
 
-    /// Connect the message sent callback function.
-    /// @param handler the handler for the message sent signal.
-    void message_sent_event(ConnectionHandler handler) NOEXCEPT
-    { message_sent_handler_ = handler; }
-
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
     void disconnected_event(ConnectionHandler handler) NOEXCEPT
     { disconnected_handler_ = handler; }
+
+    /// Connect the message sent callback function.
+    /// @param handler the handler for the message sent signal.
+    void message_sent_event(ConnectionHandler handler) NOEXCEPT
+    { message_sent_handler_ = handler; }
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors

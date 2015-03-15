@@ -3,13 +3,14 @@
 The client will call an application's event handlers (callback functions)
 whenever a significant event occurs.  
 
-| Event                 | Handler Type      | Description                        |
-|-----------------------|-------------------|------------------------------------|
-| **Response Received** | ResponseHandler   | An HTTP response has been received.|
-| Chunk Received        | ChunkHandler      | An HTTP chunk has been received.   |
-| Socket Connected      | ConnectionHandler | The socket is connected.           |
-| Socket Disconnected   | ConnectionHandler | The socket has disconnected.       |
-| Message Sent          | ConnectionHandler | A message has been sent over the socket. |
+| Event                 | Function to Register Callback | Description              |
+|-----------------------|-------------------------------|--------------------------|
+| **Response Received** | Constructor                   | A valid HTTP response has been received. |
+| **Chunk Received**    | Constructor                   | A valid HTTP chunk has been received. |
+| Invalid Response      | invalid_response_event        | An invalid HTTP response has been received. |
+| Socket Connected      | connected_event               | The socket is connected.  |
+| Socket Disconnected   | disconnected_event            | The socket has disconnected.  |
+| Message Sent          | message_sent_event            | A message has been sent on the connection. |
 
 Note **Response Received** is the only event that the application is required to
 provide an event handler for.
@@ -43,7 +44,7 @@ The `ResponseHandler` for the Response Received event is passed as a parameter i
 ### Chunk Received ###
 
 Normally an application will receive a message body with the response. However, from HTTP 1.1
-onwards, both HTTP requests and responses may contain "chunked" bodies see: [Chunked Transfer Encoding](Chunks.md).
+onwards, both HTTP requests and responses may contain "chunked" bodies see: [Chunked Transfer Encoding](Chunked_Encoding.md).
 
 Where a server sends a chunked response the mesasge body is sent in a number of "chunks".
 According to RFC2616 an application cannot be considered HTTP 1.1 compliant
@@ -56,7 +57,7 @@ The declaration of a `ChunkHandler` is:
     typedef std::function<void (http::rx_chunk<T> const&, Container const&)> ChunkHandler;
 
 where:
-    `Container` is the type of Container to use: `std::vector<char>` or `td::string`.
+    `Container` is the type of Container to use: `std::vector<char>` or `std::string`.
 
 
 The example code below shows how to declare a chunk handler:
@@ -71,6 +72,24 @@ The example code below shows how to declare a chunk handler:
 
 The `ChunkHandler` for the Chunk Received event is passed as a parameter in the 
 `http_client` constructor.
+
+## Invalid Response ##
+
+Just as the Server may receive an invalid request it's possible for a client to
+receive an invalid response.
+
+The declaration of a `ResponseHandler` is shown in the **Response Received** section.
+The example code below shows how to declare and register an invalid response handler:
+
+    /// The application's invalid response handler.
+    void invalid_response_handler(via::http::rx_response const& response,
+                                  std::string const& body)
+    {
+    ...
+    }
+    
+    /// register invalid_response_handler with the http_client
+    http_client->invalid_response_event(invalid_response_handler);
 
 ### Socket Connected ###
 
@@ -93,7 +112,7 @@ The example code below shows how to declare and register a connected handler:
     }
 
     /// register connected_handler with the http_client
-    http_client->connected_event(disconnected_handler);
+    http_client->connected_event(connected_handler);
 
 ### Socket Disconnected ###
 

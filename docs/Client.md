@@ -1,6 +1,6 @@
 # HTTP Client User Guide #
 
-## http_client class template ##
+![HTTP Client Class Template](images/http_client_template_class_diagram.png)
 
 An application create an HTTP client type by instantiating the `http_client` class template
 defined in `<via/http_client.hpp>`:
@@ -18,9 +18,9 @@ The `http_client` class template parameters are:
 
 | Parameter     | Default             | Description                            |
 |---------------|---------------------|----------------------------------------|
-| SocketAdaptor |                     | `via::comms::tcp_adaptor` for HTTP or `via::comms::ssl::ssl_tcp_adaptor` for HTTPS. |
-| Container     | `std::vector<char>` |`std::vector<char>` for data or `std::string` for text |
-| use_strand    | false               | Use an `asio::strand` to manage multiple threads, see: [boost asio strands](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/overview/core/strands.html) |
+| SocketAdaptor |                     | `via::comms::tcp_adaptor` for HTTP or<br>`via::comms::ssl::ssl_tcp_adaptor` for HTTPS. |
+| Container     | `std::vector<char>` |`std::vector<char>` for data or<br>`std::string` for text |
+| use_strand    | false               | Use an `asio::strand` to manage multiple threads,<br>see: [boost asio strands](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/overview/core/strands.html) |
  
  E.g. an HTTP client using std::string as a Container:
  
@@ -28,8 +28,6 @@ The `http_client` class template parameters are:
     #include "via/http_client.hpp"
     
     typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
-   
-![HTTP Client Class Template](images/http_client_template_class_diagram.png)
 
 ## Constructing and Configuring a client ##
 
@@ -79,17 +77,18 @@ The client will call an application's event handlers (callback functions)
 whenever a significant event occurs.  
 See [Client Events](Client_Events.md) for more details. 
 
-| Event                 | Handler Type      | Description                    |
-|-----------------------|-------------------|----------------------------------|
-| **Request Received**  | RequestHandler    | A valid HTTP response has been received. |
-| **Chunk Received**    | ChunkHandler      | A valid HTTP chunk has been received. |
-| Invalid Request       | RequestHandler    | An invalid HTTP response has been received. |
-| Socket Connected      | ConnectionHandler | A socket has connected. |
-| Socket Disconnected   | ConnectionHandler | A socket has disconnected. |
-| Message Sent          | ConnectionHandler | A message has been sent on the connection. |
 
-Note **Request Received** and **Chunk Received** are the only events that the application
-is required to provide an event handlers for.
+| Event                 | Function to Register Callback | Description              |
+|-----------------------|-------------------------------|--------------------------|
+| **Response Received** | Constructor                   | A valid HTTP response has been received. |
+| **Chunk Received**    | Constructor                   | A valid HTTP chunk has been received. |
+| Invalid Response      | invalid_response_event        | An invalid HTTP response has been received. |
+| Socket Connected      | connected_event               | The socket is connected.  |
+| Socket Disconnected   | disconnected_event            | The socket has disconnected.  |
+| Message Sent          | message_sent_event            | A message has been sent on the connection. |
+
+Note **Response Received** and **Chunk Received** are the only events for which
+the application is required to provide an event handlers.
     
 ### Client Configuration ###
 
@@ -103,6 +102,19 @@ Some of the more significant parameters (with their default values) are:
 | max_body_size     | 4Gb     | The maximum size of a response body.                |
 | max_chunk_size    | 4Gb     | The maximum size of each response chunk.            |
     
+### HTTPS Client Configuration
+
+Note: only valid for clients using `via::comms::ssl::ssl_tcp_adaptor` as a template parameter.
+
+SSL/TLS options can be set via the ssl_context, e.g.:
+
+    std::string certificate_file = "cacert.pem";
+    boost::asio::ssl::context& ssl_context(https_client_type::connection_type::ssl_context());
+    ssl_context.load_verify_file(certificate_file);
+    
+See: [asio ssl context base](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/reference/ssl__context_base.html)
+for options.
+
 ## Making Connections ##
 
 Once an `http_client` has been created and configured, it can connect to a server

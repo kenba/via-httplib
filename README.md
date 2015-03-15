@@ -1,19 +1,31 @@
 via-httplib: A C++ HTTP Library
 ===============================
 
-A library for embedding HTTP or HTTPS, IPV6 and IPV4 servers in C++ applications.
+A library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
 `via-httplib` is an asynchronous C++ HTTP server built upon `boost asio` that
-aims to provide a simple, secure, lightweight server that complies with the
+aims to provide a simple, secure and efficient server that complies with the
 requirements of [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html)
 wherever possible.
 
-The heart of the library is `via::http_server`: a class template requiring
-a `SocketAdaptor` to instantiate it:
+### SSL / TLS Configuration
 
- + a TCP/IP connection for a plain HTTP server
- + an SSL/TLS connection for an HTTPS server
-  
+The server is `via::http_server`, a class template requiring a
+`SocketAdaptor` to instantiate it:
+
+ + a `tcp_adaptor` for a plain **HTTP** server
+ + an `ssl_tcp_adaptor` for an **HTTPS** server  
+ 
+### IPV6 / IPV4 Configuration
+
+Whether the server accepts IPV6 and IPV4 connections or just IPV4 connections
+depends upon how the port is configured:
+
+ + **IPV6**, (the default) the server accepts both **IPV6** and **IPV4 **connections
+ + **IPV4 only**, the server only accepts **IPV4** connections  
+ 
+### Data / Text Configuration
+
 The server can be configured to pass HTTP message bodies in different types of
 containers, e.g.:
 
@@ -27,35 +39,9 @@ containers, e.g.:
 | `ssl_tcp_adaptor` | `std::vector<char>`   | An HTTPS data server. |
 | `ssl_tcp_adaptor` | `std::string`     | An HTTPS text server.         |
 
-For example the following code declares an plain HTTP server that passes data in a
-`std::vector<char>`:
+The HTTP message bodies can be sent using **buffered** or **unbuffered** methods.  
+The unbuffered methods use "scatter-gather" writes to avoid copying data.
 
-    #include "via/comms/tcp_adaptor.hpp"
-    #include "via/http_server.hpp"
-    
-    typedef via::http_server<via::comms::tcp_adaptor> http_server_type;
-
-![HTTP Server Class Template](docs/images/http_server_template_class_diagram.png)
-
-Whether the server accepts IPV6 and IPV4 connections or just IPV4 connections
-depends upon how the port is configured:
-
- + IPV6, (the default) the server accepts both IPV6 and IPV4 connections
- + IPV4 only, the server only accepts IPV4 connections
-
-The HTTP message bodies can be sent either buffered or un-buffered using
-"scatter-gather" writes for speed and memory efficiency.
-
-| Document | Description |
-|----------|-------------|
-| [Build Guide](docs/MAKE.md) | How to build the library. |
-| [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
-| [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
-| [Security Guide](docs/Server_Security.md) | How to configure the library securely. |
-| [Design](docs/Design_Top.md) | The library design. |
-| [examples/server](examples/server) | Example HTTP & HTTPS servers. |
-| [examples/client](examples/client) | Example HTTP & HTTPS clients. |
-  
 Requirements
 ------------
 
@@ -70,8 +56,8 @@ compatibility cannot be guaranteed. Also please be aware of this warning from `b
 
 + For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
-Installing
-----------
+Getting Started
+---------------
 
 Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
@@ -96,6 +82,16 @@ see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
 which could save you a lot of trouble, since building the `OpenSSL` binaries can
 be a long-winded process...
 
+| Document | Description |
+|----------|-------------|
+| [Build Guide](docs/MAKE.md) | How to build the library. |
+| [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
+| [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
+| [Security Guide](docs/Server_Security.md) | How to configure the library securely. |
+| [Design](docs/Design_Top.md) | The library design. |
+| [examples/server](examples/server) | Example HTTP & HTTPS servers. |
+| [examples/client](examples/client) | Example HTTP & HTTPS clients. |
+
 Namespace Structure
 -------------------
 
@@ -112,3 +108,13 @@ Directory Structure
 | `tests`              | A unit tests for the HTTP parsers and encoders.                          |
 | [docs](docs)         | The User Guides and design documents.                                    |
 | `docs/html`          | [Doxygen](http://www.stack.nl/~dimitri/doxygen/) output directory. Created by running `doxygen Doxyfile` in the [docs](docs) directory. | 
+
+Acknowledgements
+----------------
+
+Thanks to:
+ + **Neil Tisdale** for encouraging and inspiring me to create the library
+ + **Louis Nayegen** for helping to develop it and recommending GitHub  
+ + **Adam Leggett** for helping to identify and fix security, efficiency and Cmake issues
+ + **Christopher Kohlhoff** for the `asio` library, without which, this library wouldn't exist.
+ 

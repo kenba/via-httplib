@@ -2,7 +2,8 @@
 
 All HTTP/1.1 applications **MUST** be able to receive and decode "chunked"
 transfer-coding, see [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html)
-section 3.6.1. Chunked encoding modifies the body of a message in order to transfer
+section 3.6.1.  
+Chunked encoding modifies the body of a message in order to transfer
 it as a series of chunks. This allows dynamically produced content to be transferred.
 
 ## Receiving Chunks ##
@@ -31,22 +32,16 @@ header field containing anything other than "identity`.
 See [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 2.
 E.g.: Transfer-Encoding: Chunked
 
-
 Servers and Clients may send chunks using the `send_chunk` and `last_chunk` methods
-of `http_connection` and `http_client` respectively.
-
-The `http_connection` and `http_client` versions of `send_chunk` and `last_chunk`
-are very similar, the only difference being that the server versions return a
-boolean indicating whether the connection is still open.  
+of `http_connection` and `http_client`.
 
 ### Server ###
 
 `http_connection` chunk functions, see `<via/http_connection.hpp>`:
 
-    bool send_chunk(Container const& chunk, std::string extension = "");
+    bool send_chunk(Container chunk, std::string extension = "");
 
-    bool last_chunk(std::string extension = "",
-                    std::string trailer_string = "");
+    bool last_chunk(std::string extension = "", std::string trailer_string = "");
 
 The `extension` and `trailer_string` are defined in
 [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 3.6.1.
@@ -65,10 +60,9 @@ be able to delete it.
 
 `http_client` chunk functions, see `<via/http_client.hpp>`:
 
-    void send_chunk(Container const& chunk, std::string extension = "");
+    bool send_chunk(Container chunk, std::string extension = "");
 
-    void last_chunk(std::string extension = "",
-                    std::string trailer_string = "");
+    bool last_chunk(std::string extension = "", std::string trailer_string = "");
 
 A client's chunks must be sent via an `http_client` pointer.
 However, since the client owns the pointer, it can store the pointer however it wishes.
@@ -76,7 +70,7 @@ However, since the client owns the pointer, it can store the pointer however it 
 ## Examples ##
 
 An HTTP Server that sends a chunked response to GET /hello:
-[`chunked_http_server.cpp`](examples/server/chunked_http_server.cpp)
+[`chunked_http_server.cpp`](../examples/server/chunked_http_server.cpp)
 
 An HTTP Client that sends a chunked request to PUT /hello:
-[`chunked_http_client.cpp`](examples/client/chunked_http_client.cpp)
+[`chunked_http_client.cpp`](../examples/client/chunked_http_client.cpp)

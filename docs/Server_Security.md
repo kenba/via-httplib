@@ -1,10 +1,10 @@
-# HTTP Server Security #
+# HTTP Server Security
 
 Since RFC2616 was written a number of vulnerabilities in the HTTP protocol have
 been discovered and exploited, see
 [WASC Threat Classification](http://projects.webappsec.org/w/page/13246978/Threat%20Classification)
 
-## Denial of Service Attacks ##
+## Denial of Service Attacks
 
 The best known is a Denial of Service (aka DoS) attack where a number of
 clients flood an HTTP server with requests denying the service to legitimate
@@ -42,7 +42,7 @@ With regards to the backlog of pending connections and minimum incoming data rat
 `via-httplib` does not maintain any pending connections nor does it measure the
 incoming data rate.
  
-## HTTP Response Splitting ##
+## HTTP Response Splitting
 
 An HTTP Response Splitting attack exploits a security hole in an HTTP server
 which causes it to form an output stream that is interpreted by the target
@@ -62,7 +62,12 @@ characters.
 `via-httplib` contains functions to validate HTTP response headers and it
 will not send a response with a split header.
 
-## Acknowledgements ##
+## TLS Truncation Attack
 
-My thanks go to Adam Leggett of Kencast for pointing out these security
-vulnerabilities and recommending solutions.
+A TLS truncation attack blocks a victim's account logout requests so that
+the user unknowingly remains logged into a web service, see: [Truncation Attack](http://en.wikipedia.org/wiki/Transport_Layer_Security#Truncation_attack)
+
+This is a client vulnerability. However it shows the importance of shutting down
+SSL/TLS connections correctly. Simply, closing the TCP socket without 
+initiating an SSL shutdown makes the connection vulnerable, see: [Boost SSL async shutdown](http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699)
+

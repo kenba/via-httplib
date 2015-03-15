@@ -3,15 +3,15 @@
 The `http_server` will signal the application whenever a significant event
 occurs. Events that may be signalled are:
 
-| Event                 | Handler Type      | Description                    |
-|-----------------------|-------------------|----------------------------------|
-| **Request Received**  | RequestHandler    | A valid HTTP request has been received. |
-| Chunk Received        | ChunkHandler      | A valid HTTP chunk has been received. |
-| Expect Continue       | RequestHandler    | A valid HTTP request header has been received containing "Expect: 100-continue" |
-| Invalid Request       | RequestHandler    | An invalid HTTP request has been received. |
-| Socket Connected      | ConnectionHandler | A socket has connected. |
-| Socket Disconnected   | ConnectionHandler | A socket has disconnected. |
-| Message Sent          | ConnectionHandler | A message has been sent on the connection. |
+| Event                  | Function to Register Callback | Description      |
+|------------------------|-------------------------------|------------------|
+| **Request Received**   | request_received_event        | A valid HTTP request has been received. |
+| Chunk Received         | chunk_received_event          | A valid HTTP chunk has been received. |
+| Expect Continue        | request_expect_continue_event | A valid HTTP request has been received containing an "Expect: 100-continue" header. |
+| Invalid Request        | invalid_request_event         | An invalid HTTP request has been received. |
+| Socket Connected       | socket_connected_event        | A socket has connected. |
+| Socket Disconnected    | socket_disconnected_event     | A socket has disconnected. |
+| Message Sent           | message_sent_event            | A message has been sent on the connection. |
 
 Note **Request Received** is the only event that the application is required to
 provide an event handler for.
@@ -20,6 +20,7 @@ provide an event handler for.
 
 A Request Received event is signalled whenever the server receives a valid
 HTTP request from a client.  
+
 The application is required to provide an event handler for this event.
 
 ![HTTP Request Received](images/http_request_sequence_diagram.png)
@@ -47,13 +48,17 @@ E.g.:
     ...
     }
     
-The `RequestHandler` for the Request Received event is passed as a parameter
-in the `http_server` constructor.
+    // register request_handler with the http_server
+    http_server.request_received_event(request_handler);
+
+Note: if an application does **NOT** call request_received_event to register a
+`RequestHandler` prior to calling `accept_connections`, the call to
+`accept_connections` will **throw std::logic_error**.
 
 ## Chunk Received ##
 
 Normally an application will receive the message body with a request. However, HTTP 1.1
-requests and responses may contain "chunked" bodies, see: [Chunked Transfer Encoding](Chunks.md).
+requests and responses may contain "chunked" bodies, see: [Chunked Transfer Encoding](Chunked_Encoding.md).
 According to RFC2616 an HTTP 1.1 server **MUST** be able to handle chunked requests.  
 
 A "chunked" HTTP request is not complete until the last chunk has been received.

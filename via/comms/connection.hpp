@@ -639,7 +639,6 @@ namespace via
         }
       }
 
-      /// @fn read_buffer
       /// Accessor for the receive buffer.
       /// Swaps the contents of the receive buffer with the rx_buffer parameter
       /// and re-enables the receiver.
