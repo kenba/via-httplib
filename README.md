@@ -21,8 +21,8 @@ The server is `via::http_server`, a class template requiring a
 Whether the server accepts IPV6 and IPV4 connections or just IPV4 connections
 depends upon how the port is configured:
 
- + **IPV6**, (the default) the server accepts both **IPV6** and **IPV4 **connections
- + **IPV4 only**, the server only accepts **IPV4** connections  
+ + **IPV6**, (the default) the server accepts both IPV6 and IPV4 connections
+ + **IPV4 only**, the server only accepts IPV4 connections  
  
 ### Data / Text Configuration
 
@@ -114,7 +114,7 @@ Acknowledgements
 
 Thanks to:
  + **Neil Tisdale** for encouraging and inspiring me to create the library
- + **Louis Nayegen** for helping to develop it and recommending GitHub  
- + **Adam Leggett** for helping to identify and fix security, efficiency and Cmake issues
+ + **Louis Nayegon** for helping to develop it and recommending GitHub  
+ + **Adam Leggett** for helping to identify and fix security, efficiency and CMake issues
  + **Christopher Kohlhoff** for the `asio` library, without which, this library wouldn't exist.
  

@@ -3,7 +3,9 @@
 ## Response Parser Parameters
 
 These parameters affect how the parser identifies invalid HTTP response.
-Note: the default values for responses are as tolerant as they can be.  
+They are very similar to the request parser parameters used by the server.
+However, they are not currently configurable, the default response values
+are as tolerant as they can be.  
 
 | Parameter         | Default | Description                                         |
 |-------------------|---------|-----------------------------------------------------|
@@ -17,44 +19,16 @@ Note: the default values for responses are as tolerant as they can be.
 | max_body_size     | 4Gb     | The maximum size of a request body.                 |
 | max_chunk_size    | 4Gb     | The maximum size of each request chunk.             |
 
-### strict_crlf
+## TCP Client Option Parameters
 
-A strictly valid HTTP line must end with CRLF pair, however RFC2616 recommends
-that servers and clients are tolerant so allow an LF without the CR (the default).
+Access using `connection().set_`, e.g.:
 
-Enabling this value enforces strict CRLF parsing.
+    http_client->connection().set_receive_buffer_size(16384);
 
-### max_whitespace
-
-RFC2616 recommends that severs should allow "any amount of" whitespace characters.  
-This value set the maximum number of whitespace characters between HTTP elements: 
-default 254, 1 is the minimum.
-
-### max_status_no
-
-RFC2616 does not specify the maximum status number.
-
-### max_reason_length
-
-RFC2616 does not specify the length of the status reason.
-
-### max_line_length
-
-This is the maximum length of a header field line.
-
-### max_header_number
-
-The maximum number of header fields allowed in a response
-
-### max_header_length
-
-The maximum total size of the header fields for each response message.
-
-### max_body_size
-
-The maximum size of a response body.
-
-### max_chunk_size
-
-The maximum size of a response chunk.
-
+| Parameter           | Description                                         |
+|---------------------|-----------------------------------------------------|
+| timeout             | The tcp send and receive timeout values (in mS).    |
+| keep_alive          | The tcp keep alive status.                          |
+| rx_buffer_size      | The maximum size of the connection receive buffer (default 8192).  |
+| receive_buffer_size | The size of the tcp socket's receive buffer.        |
+| send_buffer_size    | The size of the tcp socket's send buffer.           |
