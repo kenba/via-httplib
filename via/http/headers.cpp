@@ -30,9 +30,9 @@ namespace
 {
   const std::string EMPTY_STRING("");
 
-  const REGEX_STD REGEX_IDENTITY(".*identity.*", std::regex::icase);
-  const REGEX_STD REGEX_CLOSE(".*close.*", std::regex::icase);
-  const REGEX_STD REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
+  const REGEX_STD REGEX_IDENTITY(".*identity.*",     REGEX_STD::icase);
+  const REGEX_STD REGEX_CLOSE   (".*close.*",        REGEX_STD::icase);
+  const REGEX_STD REGEX_CONTINUE(".*100-continue.*", REGEX_STD::icase);
 }
 
 namespace via
