@@ -82,6 +82,7 @@ namespace via
 
     std::string tx_header_; /// A buffer for the HTTP request header.
     Container   tx_body_;   /// A buffer for the HTTP request body.
+    Container   rx_buffer_;  /// A buffer for the last packet read.
 
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
@@ -105,10 +106,9 @@ namespace via
     void receive_handler()
     {
       // Get the receive buffer
-      Container rx_buffer;
-      connection_->read_rx_buffer(rx_buffer);
-      Container_const_iterator iter(rx_buffer.begin());
-      Container_const_iterator end(rx_buffer.end());
+      connection_->read_rx_buffer(rx_buffer_);
+      Container_const_iterator iter(rx_buffer_.begin());
+      Container_const_iterator end(rx_buffer_.end());
 
       // Get the receive parser for this connection
       http::Rx rx_state(http::RX_VALID);
@@ -199,6 +199,7 @@ namespace via
       host_name_(),
       tx_header_(),
       tx_body_(),
+      rx_buffer_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
       http_invalid_handler_(),
@@ -276,6 +277,9 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
+
+    Container const& rx_buffer() const
+    { return rx_buffer_; }
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.

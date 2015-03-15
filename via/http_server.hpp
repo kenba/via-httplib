@@ -210,8 +210,7 @@ namespace via
       boost::shared_ptr<http_connection_type> http_connection(conn->second);
 
       // Get the receive buffer
-      Container rx_buffer;
-      http_connection->read_rx_buffer(rx_buffer);
+      Container const& rx_buffer(http_connection->read_rx_buffer());
       Container_const_iterator iter(rx_buffer.begin());
       Container_const_iterator end(rx_buffer.end());
 
@@ -444,7 +443,7 @@ namespace via
     /// @post disables auto_disconnect_ (if enabled).
     /// @param handler the handler for a invalid request received.
     void invalid_request_event(RequestHandler handler) NOEXCEPT
-    { http_request_handler_ = handler; }
+    { http_invalid_handler = handler; }
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected event.

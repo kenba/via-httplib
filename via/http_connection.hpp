@@ -83,6 +83,9 @@ namespace via
     /// A buffer for the body of the response message.
     Container tx_body_;
 
+    /// A buffer for the last packet read on the connection.
+    Container rx_buffer_;
+
     ////////////////////////////////////////////////////////////////////////
     // Functions
 
@@ -168,7 +171,8 @@ namespace via
           max_line_length, max_header_number, max_header_length,
           max_body_size, max_chunk_size),
       tx_header_(),
-      tx_body_()
+      tx_body_(),
+      rx_buffer_()
     {}
 
     ////////////////////////////////////////////////////////////////////////
@@ -193,11 +197,19 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Accessors
 
-    /// Accessor for the receive buffer.
+    /// Read the last packet into the receive buffer.
     /// @post the receive buffer is invalid to read again.
-    /// @retval the receive buffer.
-    void read_rx_buffer(Container& rx_buffer)
-    { connection_.lock()->read_rx_buffer(rx_buffer); }
+    /// @return the receive buffer.
+    Container const& read_rx_buffer()
+    {
+      connection_.lock()->read_rx_buffer(rx_buffer_);
+      return rx_buffer_;
+    }
+
+    /// Accessor for the receive buffer.
+    /// @return the receive buffer.
+    Container const& rx_buffer() const NOEXCEPT
+    { return rx_buffer_; }
 
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
@@ -268,7 +280,7 @@ namespace via
 
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
-      tx_header_ = response.message();
+      tx_header_ = response.message(body.size());
       comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
 
       // Don't send a body in response to a HEAD request
