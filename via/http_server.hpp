@@ -210,7 +210,8 @@ namespace via
       boost::shared_ptr<http_connection_type> http_connection(conn->second);
 
       // Get the receive buffer
-      Container const& rx_buffer(http_connection->rx_buffer());
+      Container rx_buffer;
+      http_connection->read_rx_buffer(rx_buffer);
       Container_const_iterator iter(rx_buffer.begin());
       Container_const_iterator end(rx_buffer.end());
 

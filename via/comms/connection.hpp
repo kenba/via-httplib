@@ -89,10 +89,11 @@ namespace via
       int timeout_;
       int receive_buffer_size_; ///< The socket receive buffer size.
       int send_buffer_size_;    ///< The socket send buffer size.
-      bool transmitting_;                  ///< Whether a write's in progress
-      bool no_delay_;                      ///< The tcp no delay status.
-      bool keep_alive_;                    ///< The tcp keep alive status.
-      bool connected_;                     ///< If the socket is connected.
+      bool receiving_;          ///< Whether a read's in progress
+      bool transmitting_;       ///< Whether a write's in progress
+      bool no_delay_;           ///< The tcp no delay status.
+      bool keep_alive_;         ///< The tcp keep alive status.
+      bool connected_;          ///< If the socket is connected.
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -226,6 +227,7 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
+        receiving_ = false;
         rx_buffer_->resize(bytes_transferred);
         event_callback_(RECEIVED, weak_from_this());
         enable_reception();
@@ -399,6 +401,7 @@ namespace via
         timeout_(0),
         receive_buffer_size_(0),
         send_buffer_size_(0),
+        receiving_(false),
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
@@ -424,6 +427,7 @@ namespace via
         timeout_(0),
         receive_buffer_size_(0),
         send_buffer_size_(0),
+        receiving_(false),
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
@@ -627,16 +631,28 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        rx_buffer_->resize(rx_buffer_size_);
-        read_data();
+        if (!receiving_)
+        {
+          receiving_ = true;
+          rx_buffer_->resize(rx_buffer_size_);
+          read_data();
+        }
       }
 
-      /// @fn rx_buffer
+      /// @fn read_buffer
       /// Accessor for the receive buffer.
+      /// Swaps the contents of the receive buffer with the rx_buffer parameter
+      /// and re-enables the receiver.
+      /// This effectively double buffer's rx_buffer_, permitting the
+      /// receiver to be re-enabled without corrupting the data.
       /// @pre Only valid within the receive event callback function.
-      /// @return the receive buffer.
-      Container const& rx_buffer() const NOEXCEPT
-      { return *rx_buffer_; }
+      /// @post receive buffer is invalid to read again.
+      /// @retval the receive buffer.
+      void read_rx_buffer(Container& rx_buffer)
+      {
+        rx_buffer_->swap(rx_buffer);
+        enable_reception();
+      }
 
       /// @fn connected
       /// Accessor for the connected_ flag.

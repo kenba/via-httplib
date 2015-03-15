@@ -104,10 +104,11 @@ namespace via
     /// Receive data on the underlying connection.
     void receive_handler()
     {
-      // attempt to read the data
-      Container const& data(connection_->rx_buffer());
-      Container_const_iterator iter(data.begin());
-      Container_const_iterator end(data.end());
+      // Get the receive buffer
+      Container rx_buffer;
+      connection_->read_rx_buffer(rx_buffer);
+      Container_const_iterator iter(rx_buffer.begin());
+      Container_const_iterator end(rx_buffer.end());
 
       // Get the receive parser for this connection
       http::Rx rx_state(http::RX_VALID);

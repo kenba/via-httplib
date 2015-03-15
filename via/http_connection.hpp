@@ -200,15 +200,16 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Accessors
 
+    /// Accessor for the receive buffer.
+    /// @post the receive buffer is invalid to read again.
+    /// @retval the receive buffer.
+    void read_rx_buffer(Container& rx_buffer)
+    { connection_.lock()->read_rx_buffer(rx_buffer); }
+
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
     std::string remote_address() const NOEXCEPT
     { return remote_address_; }
-
-    /// Accessor for the receive buffer.
-    /// @return a constant reference to the receive buffer.
-    Container const& rx_buffer() const NOEXCEPT
-    { return connection_.lock()->rx_buffer(); }
 
     /// The request receiver for this connection.
     http::request_receiver<Container>& rx() NOEXCEPT
