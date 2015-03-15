@@ -82,7 +82,8 @@ namespace via
       boost::asio::io_service::strand strand_;
       size_t rx_buffer_size_;              ///< The recieve buffer size.
       boost::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
-      boost::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit buffers.
+      boost::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
+      ConstBuffers tx_buffers_;            ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
@@ -105,12 +106,14 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers const& buffers)
+      bool write_data(ConstBuffers buffers)
       {
+        tx_buffers_.swap(buffers);
+
         if (connected_)
         {
           if (use_strand)
-            SocketAdaptor::write(buffers,
+            SocketAdaptor::write(tx_buffers_,
                strand_.wrap(
                boost::bind(&connection::write_callback,
                            weak_from_this(),
@@ -118,7 +121,7 @@ namespace via
                            boost::asio::placeholders::bytes_transferred,
                            tx_queue_)));
           else
-            SocketAdaptor::write(buffers,
+            SocketAdaptor::write(tx_buffers_,
                boost::bind(&connection::write_callback,
                            weak_from_this(),
                            boost::asio::placeholders::error,
@@ -396,6 +399,7 @@ namespace via
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
+        tx_buffers_(),
         event_callback_(event_callback),
         error_callback_(error_callback),
         timeout_(0),
@@ -422,6 +426,7 @@ namespace via
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
+        tx_buffers_(),
         event_callback_(),
         error_callback_(),
         timeout_(0),
