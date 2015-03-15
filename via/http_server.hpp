@@ -54,6 +54,7 @@
 #include <boost/asio/ssl/context.hpp>
 #endif
 #include <map>
+#include <stdexcept>
 #include <iostream>
 
 namespace via
@@ -351,9 +352,7 @@ namespace via
 
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
-    /// @param http_request_handler the handle for HTTP request messages.
-    explicit http_server(boost::asio::io_service& io_service,
-                         RequestHandler http_request_handler) :
+    explicit http_server(boost::asio::io_service& io_service) :
       server_(new server_type(io_service)),
       http_connections_(),
 
@@ -373,7 +372,7 @@ namespace via
       trace_enabled_      (false),
       auto_disconnect_    (false),
 
-      http_request_handler_ (http_request_handler),
+      http_request_handler_ (),
       http_chunk_handler_   (),
       http_continue_handler_(),
       http_invalid_handler  (),
@@ -392,6 +391,10 @@ namespace via
     }
 
     /// Start accepting connections on the given port and protocol.
+    /// @pre http_server::request_received_event must have been called to register
+    /// the request received callback function before this function.
+    /// @throw logic_error if request_received_event has NOT been called
+    /// before this function.
     /// @param port the port number to serve:
     /// default 80 for HTTP or 443 for HTTPS.
     /// @param ipv4_only whether an IPV4 only server is required, default false.
@@ -399,10 +402,22 @@ namespace via
     boost::system::error_code accept_connections
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                        bool ipv4_only = false)
-    { return server_->accept_connections(port, ipv4_only); }
+    {
+      if (!http_request_handler_)
+        throw std::logic_error
+          ("via::http_server, a request_received_event is not registered");
+
+      return server_->accept_connections(port, ipv4_only);
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
+
+    /// Connect the request received callback function.
+    /// @post the application may call http_server::accept_connections.
+    /// @param handler the handler for a received HTTP request.
+    void request_received_event(RequestHandler handler) NOEXCEPT
+    { http_request_handler_ = handler; }
 
     /// Connect the chunk received callback function.
     /// @post disables automatic concatenating of chunks.
