@@ -759,11 +759,15 @@ namespace via
           {
               ForwardIterator next(iter + required);
               body_.insert(body_.end(), iter, next);
+              iter = next;
           }
           else // received buffer <= required data
           {
             if (end > iter)
+            {
               body_.insert(body_.end(), iter, end);
+              iter = end;
+            }
           }
 
           // determine whether the body is complete
@@ -783,18 +787,6 @@ namespace via
           if (chunk_.valid())
             chunk_.clear();
 
-          // failed to parse request
-          if (!chunk_.parse(iter, end))
-          {
-            // if a parsing error (not run out of data)
-            if (iter != end)
-            {
-              response_code_ = response_status::code::BAD_REQUEST;
-              clear();
-              return RX_INVALID;
-            }
-          }
-
           // If parsed the request header, respond if necessary
           if (request_parsed)
           {
@@ -807,6 +799,18 @@ namespace via
             {
               if (!concatenate_chunks_)
                 return RX_VALID;
+            }
+          }
+
+          // parse the chunk
+          if (!chunk_.parse(iter, end))
+          {
+            // if a parsing error (not run out of data)
+            if (iter != end)
+            {
+              response_code_ = response_status::code::BAD_REQUEST;
+              clear();
+              return RX_INVALID;
             }
           }
 

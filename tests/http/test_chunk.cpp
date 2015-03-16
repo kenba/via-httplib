@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk1)
 {
   std::string empty_string("");
   last_chunk the_chunk(empty_string, empty_string);
-  std::string chunk_string(the_chunk.message());
+  std::string chunk_string(the_chunk.to_string());
 
   BOOST_CHECK_EQUAL("0\r\n\r\n", chunk_string.c_str());
 }
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk2)
 {
   std::string empty_string("");
   last_chunk the_chunk("extension", empty_string);
-  std::string chunk_string(the_chunk.message());
+  std::string chunk_string(the_chunk.to_string());
 
   BOOST_CHECK_EQUAL("0; extension\r\n\r\n", chunk_string.c_str());
 }

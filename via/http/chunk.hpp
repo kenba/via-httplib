@@ -15,6 +15,7 @@
 /// @brief Classes to parse and encode HTTP chunks.
 //////////////////////////////////////////////////////////////////////////////
 #include "headers.hpp"
+#include <algorithm>
 
 namespace via
 {
@@ -293,15 +294,16 @@ namespace via
         }
         else // get the data
         {
-          size_t required(chunk_header::size() - data_.size());
-          size_t rx_size(end - iter);
+          std::ptrdiff_t data_required(static_cast<std::ptrdiff_t>(size()) -
+                                       static_cast<std::ptrdiff_t>(data_.size()));
+          std::ptrdiff_t rx_size(std::distance(iter, end));
 
           // received buffer contains more than just the required data
-          if (rx_size > required)
+          if (rx_size > data_required)
           {
-            if (required > 0)
+            if (data_required > 0)
             {
-              ForwardIterator next(iter + required);
+              ForwardIterator next(iter + data_required);
               data_.insert(data_.end(), iter, next);
               iter = next;
             }
@@ -377,8 +379,8 @@ namespace via
       void add_trailer(header_field::id::field field_id, std::string const& value)
       { trailer_string_ += header_field::to_header(field_id, value);  }
 
-      /// The http message header string.
-      std::string message() const;
+      /// The http chunk header string.
+      std::string to_string() const;
     };
 
   }

@@ -905,7 +905,6 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
 
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
-  the_request_receiver.set_require_host_header(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
@@ -914,11 +913,11 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
       ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
   request_data += "Content-Type: application/json\r\n";
   request_data += "Content-Length: 26\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n";
   request_data += "Connection: Keep-Alive\r\n\r\n"; // Note: extra CRLF
   request_data += "Accept-Encoding: gzip";
   request_data += "Accept-Language: en-GB,*\r\n";
-  request_data += "User-Agent: Mozilla/5.0\r\n";
-  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
   ok = (rx_state == RX_VALID);
@@ -1003,4 +1002,219 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_SUITE(TestRequestLoopback)
+
+BOOST_AUTO_TEST_CASE(LoopbackGet1)
+{
+  tx_request client_request(request_method::id::GET, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  std::string request_data1(client_request.message());
+  std::string::iterator iter(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
+  BOOST_CHECK(iter == request_data1.end());
+
+  bool ok (rx_state == RX_VALID);
+  BOOST_CHECK(ok);
+
+  rx_request const& the_request(the_request_receiver.request());
+  BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
+  BOOST_CHECK_EQUAL("/hello", the_request.uri().c_str());
+  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackPut1)
+{
+  // Two PUT requests with bodies all in separate buffers
+  std::string request_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_request client_request(request_method::id::PUT, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  std::string request_data1(client_request.message(request_body1.size()));
+  std::string::iterator iter(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
+  BOOST_CHECK(iter == request_data1.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = request_body1.begin();
+  rx_state = the_request_receiver.receive(iter, request_body1.end());
+  BOOST_CHECK(iter == request_body1.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  // The second request
+  std::string request_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
+
+  client_request.clear();
+  client_request = tx_request(request_method::id::PUT, "/goodbye");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  std::string request_data2(client_request.message(request_body2.size()));
+  iter = request_data2.begin();
+
+  // reset the receiver
+  the_request_receiver.clear();
+  rx_state = the_request_receiver.receive(iter, request_data2.end());
+  BOOST_CHECK(iter == request_data2.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = request_body2.begin();
+  rx_state = the_request_receiver.receive(iter, request_body2.end());
+  BOOST_CHECK(iter == request_body2.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackPut2)
+{
+  // Two PUT requests with bodies all in separate buffers
+  std::string request_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_request client_request(request_method::id::POST, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  std::string request_data1(client_request.message(request_body1.size()));
+
+  // The second request
+  std::string request_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
+
+  client_request.clear();
+  client_request = tx_request(request_method::id::PUT, "/goodbye");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  std::string request_data2(client_request.message(request_body2.size()));
+
+  std::string request_buffer(request_data1 + request_body1 +
+                             request_data2 + request_body2);
+
+  std::string::iterator iter(request_buffer.begin());
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
+  BOOST_CHECK(iter != request_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  // reset the receiver
+  the_request_receiver.clear();
+  rx_state = the_request_receiver.receive(iter, request_buffer.end());
+  BOOST_CHECK(iter == request_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackPost1)
+{
+  // A POST requests with two bodies in chunked buffers.
+  tx_request client_request(request_method::id::POST, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  std::string request_data1(client_request.message());
+  std::string::iterator iter(request_data1.begin());
+
+//  std::cout << "request_data1: " << request_data1 << std::endl;
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_concatenate_chunks(false);
+  Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
+  BOOST_CHECK(iter == request_data1.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+  chunk_header chunk_header1(chunk_body1.size());
+  std::string  http_chunk_1(chunk_header1.to_string());
+  chunk_body1 += CRLF;
+
+  iter = http_chunk_1.begin();
+  rx_state = the_request_receiver.receive(iter, http_chunk_1.end());
+  BOOST_CHECK(iter == http_chunk_1.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = chunk_body1.begin();
+  rx_state = the_request_receiver.receive(iter, chunk_body1.end());
+  BOOST_CHECK(iter == chunk_body1.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
+  chunk_header chunk_header2(chunk_body2.size());
+  std::string  http_chunk_2(chunk_header2.to_string());
+  chunk_body2 += CRLF;
+
+  iter = http_chunk_2.begin();
+  rx_state = the_request_receiver.receive(iter, http_chunk_2.end());
+  BOOST_CHECK(iter == http_chunk_2.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = chunk_body2.begin();
+  rx_state = the_request_receiver.receive(iter, chunk_body2.end());
+  BOOST_CHECK(iter == chunk_body2.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  std::string chunk_ext("chunk extension");
+  std::string chunk_trailer("chunk: trailer");
+  last_chunk  last_header(chunk_ext, chunk_trailer);
+  std::string http_chunk_3(last_header.to_string());
+  http_chunk_3 += CRLF;
+
+  iter = http_chunk_3.begin();
+  rx_state = the_request_receiver.receive(iter, http_chunk_3.end());
+  BOOST_CHECK(iter == http_chunk_3.end());
+//  std::cout << "rx_state; " << rx_state << std::endl;
+  BOOST_CHECK(rx_state == RX_CHUNK);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackPost2)
+{
+  // A POST requests with two bodies in chunked buffers.
+  tx_request client_request(request_method::id::POST, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  std::string request_data1(client_request.message());
+
+  std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+  chunk_header chunk_header1(chunk_body1.size());
+  std::string  http_chunk_1(chunk_header1.to_string());
+  chunk_body1 += CRLF;
+
+  std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
+  chunk_header chunk_header2(chunk_body2.size());
+  std::string  http_chunk_2(chunk_header2.to_string());
+  chunk_body2 += CRLF;
+
+  std::string chunk_ext("chunk extension");
+  std::string chunk_trailer("chunk: trailer");
+  last_chunk  last_header(chunk_ext, chunk_trailer);
+  std::string http_chunk_3(last_header.to_string());
+  http_chunk_3 += CRLF;
+
+  std::string request_buffer(request_data1 +
+                             http_chunk_1 + chunk_body1 +
+                             http_chunk_2 + chunk_body2 +
+                             http_chunk_3);
+
+  std::string::iterator iter(request_buffer.begin());
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_concatenate_chunks(false);
+  Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
+  BOOST_CHECK(iter != request_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  rx_state = the_request_receiver.receive(iter, request_buffer.end());
+  BOOST_CHECK(iter != request_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  rx_state = the_request_receiver.receive(iter, request_buffer.end());
+  BOOST_CHECK(iter != request_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  rx_state = the_request_receiver.receive(iter, request_buffer.end());
+  BOOST_CHECK(iter == request_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
