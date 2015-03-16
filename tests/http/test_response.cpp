@@ -1004,8 +1004,8 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
   std::string response_buffer(response_data1 +
                               http_chunk_1 + chunk_body1 +
                               http_chunk_2 + chunk_body2 +
-                              http_chunk_3);
-
+                              http_chunk_3 +
+                              response_data1);
 
   std::string::iterator iter(response_buffer.begin());
   response_receiver<std::string> the_response_receiver;
@@ -1022,8 +1022,13 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
   BOOST_CHECK(rx_state == RX_CHUNK);
 
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
-  BOOST_CHECK(iter == response_buffer.end());
+  BOOST_CHECK(iter != response_buffer.end());
   BOOST_CHECK(rx_state == RX_CHUNK);
+
+  the_response_receiver.clear();
+  rx_state = the_response_receiver.receive(iter, response_buffer.end());
+  BOOST_CHECK(iter == response_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
