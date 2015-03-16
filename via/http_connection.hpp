@@ -320,36 +320,6 @@ namespace via
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // send_body functions
-
-    /// Send an HTTP response body.
-    /// @pre the response must have been sent beforehand.
-    /// @param body the body to send
-    /// @return true if sent, false otherwise.
-    bool send_body(Container body)
-    {
-      if (rx_.is_head())
-        return false;
-
-      tx_body_.swap(body);
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_body_)));
-    }
-
-    /// Send an HTTP response body.
-    /// @pre the response must have been sent beforehand.
-    /// @pre The contents of the buffers are NOT buffered.
-    /// Their lifetime MUST exceed that of the write
-    /// @param buffers the body to send
-    /// @return true if sent, false otherwise.
-    bool send_body(comms::ConstBuffers buffers)
-    {
-      if (rx_.is_head())
-        return false;
-
-      return send(buffers);
-    }
-
-    ////////////////////////////////////////////////////////////////////////
     // send_chunk functions
 
     /// Send an HTTP body chunk.

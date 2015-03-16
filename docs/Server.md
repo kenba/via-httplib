@@ -201,12 +201,10 @@ The server has an number of different `send` functions that the application may 
 
 | Function                     | Data         | Description                          |
 |------------------------------|--------------|--------------------------------------|
-| send()                       |              | Send the standard response to an invalid request.<br>Only to be used in the invalid request handler. |
+| send_response()              |              | Send the standard response to an invalid request.<br>Only to be used in the invalid request handler. |
 | send(response)               |              | Send an HTTP `response` without a body. |
 | send(response, body)         | Container    | Send a `response` with `body`, data **buffered** by `http_connection`. |
 | send(response, buffers)      | ConstBuffers | Send a `response` with `body`, data **unbuffered**. |
-| send_body(body)              | Container    | Send response `body` data, **buffered** by `http_connection`. |
-| send_body(body, buffers)     | ConstBuffers | Send response `body` data, **unbuffered**. |
 | send_chunk(data)             | Container    | Send response `chunk` data, **buffered** by `http_connection`. |
 | send_chunk(buffers, buffers) | ConstBuffers | Send response `chunk` data, **unbuffered**. |
 | last_chunk()                 |              | Send response HTTP `last chunk`.  |
