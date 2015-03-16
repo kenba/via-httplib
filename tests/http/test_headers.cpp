@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE(ValidContentLength1)
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
-  BOOST_CHECK_EQUAL(4U, the_headers.content_length());
+  BOOST_CHECK_EQUAL(4, the_headers.content_length());
   BOOST_CHECK(!the_headers.close_connection());
   BOOST_CHECK(!the_headers.expect_continue());
 }
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength1)
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
-  BOOST_CHECK_EQUAL(ULONG_MAX, the_headers.content_length());
+  BOOST_CHECK_EQUAL(-1, the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(InValidContentLength2)
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength2)
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
-  BOOST_CHECK_EQUAL(ULONG_MAX, the_headers.content_length());
+  BOOST_CHECK_EQUAL(-1, the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(InValidContentLength3)
@@ -379,7 +379,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength3)
   BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
   BOOST_CHECK(header_data.end() == header_next);
 
-  BOOST_CHECK_EQUAL(ULONG_MAX, the_headers.content_length());
+  BOOST_CHECK_EQUAL(-1, the_headers.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(ValidCloseConnection1)

@@ -289,9 +289,9 @@ namespace via
 
       /// If there is a Content-Length field return its size.
       /// @return the value of the Content-Length field or
-      /// CONTENT_LENGTH_INVALID if it was invalid.
+      /// -1 if it was invalid.
       /// May also return zero if it was not found.
-      size_t content_length() const NOEXCEPT;
+      std::ptrdiff_t content_length() const NOEXCEPT;
 
       /// Whether Chunked Transfer Coding is applied to the message.
       /// @return true if there is a transfer-encoding header and it does

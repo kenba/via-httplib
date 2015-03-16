@@ -17,7 +17,6 @@
 #include "via/no_except.hpp"
 #include <cctype>
 #include <string>
-#include <climits>
 
 namespace via
 {
@@ -101,9 +100,8 @@ namespace via
 
     /// Convert a string representing a hexadecimal number to an unsigned int.
     /// @param hex_string the string containing a vald hexadecimal number
-    /// @return the number represented by the string,
-    /// std::numeric_limits<size_t>::max() if invalid.
-    size_t from_hex_string(std::string const& hex_string) NOEXCEPT;
+    /// @return the number represented by the string, -1 if invalid.
+    std::ptrdiff_t from_hex_string(std::string const& hex_string) NOEXCEPT;
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
@@ -112,9 +110,8 @@ namespace via
 
     /// Convert a string representing a decimal number to an unsigned int.
     /// @param dec_string the string containing a vald decimal number
-    /// @return the number represented by the string,
-    /// std::numeric_limits<size_t>::max() if invalid.
-    size_t from_dec_string(std::string const& dec_string) NOEXCEPT;
+    /// @return the number represented by the string, -1 if invalid.
+    std::ptrdiff_t from_dec_string(std::string const& dec_string) NOEXCEPT;
 
     /// Convert an int into a decimal string.
     /// @param number to be represented

@@ -1073,7 +1073,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
 
 BOOST_AUTO_TEST_CASE(LoopbackPut2)
 {
-  // Two PUT requests with bodies all in separate buffers
+  // Two PUT requests with bodies all in one buffer
   std::string request_body1("abcdefghijklmnopqrstuvwxyz0123456789");
 
   tx_request client_request(request_method::id::POST, "/hello");
@@ -1168,7 +1168,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
 
 BOOST_AUTO_TEST_CASE(LoopbackPost2)
 {
-  // A POST requests with two bodies in chunked buffers.
+  // A POST requests with two bodies in chunked bodies all in one buffer
   tx_request client_request(request_method::id::POST, "/hello");
   client_request.add_header(header_field::id::HOST, "localhost");
   client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");

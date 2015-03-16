@@ -9,6 +9,7 @@
 #include "character.hpp"
 #include <sstream>
 #include <cstdlib>
+#include <cerrno>
 
 namespace via
 {
@@ -94,42 +95,44 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_hex_string(std::string const& hex_string) NOEXCEPT
+    std::ptrdiff_t from_hex_string(std::string const& hex_string) NOEXCEPT
     {
       // Ensure that the string only contains hexadecimal characters
       std::string::const_iterator iter(hex_string.begin());
       for (; iter != hex_string.end(); ++iter)
         if (!std::isxdigit(*iter))
-          return ULONG_MAX;
+          return -1;
 
       // Get the length from the hex_string.
-      // Note: strtoul may return zero for a string containing zero or if
-      // no valid conversion could be performed. It may also return
-      // ULONG_MAX if the number is to big...
-      size_t length(std::strtoul(hex_string.c_str(), 0, 16));
-      if ((length == 0) && (hex_string[0] != '0'))
-        return ULONG_MAX;
+      // Note: strtol may return zero for a string containing zero or if
+      // no valid conversion could be performed. It may also set errno
+      // if the number is out of range...
+      errno = 0;
+      std::ptrdiff_t length(std::strtol(hex_string.c_str(), 0, 16));
+      if (errno || ((length == 0) && (hex_string[0] != '0')))
+        return -1;
       else
         return length;
     }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t from_dec_string(std::string const& dec_string) NOEXCEPT
+    std::ptrdiff_t from_dec_string(std::string const& dec_string) NOEXCEPT
     {
       // Ensure that the string only contains decimal characters
       std::string::const_iterator iter(dec_string.begin());
       for (; iter != dec_string.end(); ++iter)
         if (!std::isdigit(*iter))
-          return ULONG_MAX;
+          return -1;
 
       // Get the length from the dec_string.
-      // Note: strtoul may return zero for a string containing zero or if
-      // no valid conversion could be performed. It may also return
-      // ULONG_MAX if the number is to big...
-      size_t length(std::strtoul(dec_string.c_str(), 0, 10));
-      if ((length == 0) && (dec_string[0] != '0'))
-        return ULONG_MAX;
+      // Note: strtol may return zero for a string containing zero or if
+      // no valid conversion could be performed. It may also set errno
+      // if the number is out of range...
+      errno = 0;
+      std::ptrdiff_t length(std::strtol(dec_string.c_str(), 0, 10));
+      if (errno || ((length == 0) && (dec_string[0] != '0')))
+        return -1;
       else
         return length;
     }

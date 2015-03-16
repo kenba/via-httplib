@@ -118,7 +118,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    size_t message_headers::content_length() const NOEXCEPT
+    std::ptrdiff_t message_headers::content_length() const NOEXCEPT
     {
       // Find whether there is a content length field.
       const std::string& content_length(find(header_field::id::CONTENT_LENGTH));

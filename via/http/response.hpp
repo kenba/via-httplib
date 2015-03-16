@@ -553,13 +553,13 @@ namespace via
       static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 65534;
 
       /// The default maximum number of characters allowed in the response headers.
-      static const size_t         DEFAULT_MAX_HEADER_LENGTH    = ULONG_MAX;
+      static const size_t         DEFAULT_MAX_HEADER_LENGTH    = LONG_MAX;
 
       /// The default maximum size of a response body.
-      static const size_t         DEFAULT_MAX_BODY_SIZE        = ULONG_MAX;
+      static const size_t         DEFAULT_MAX_BODY_SIZE        = LONG_MAX;
 
       /// The default maximum size of a response chunk.
-      static const size_t         DEFAULT_MAX_CHUNK_SIZE       = ULONG_MAX;
+      static const size_t         DEFAULT_MAX_CHUNK_SIZE       = LONG_MAX;
 
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
@@ -631,11 +631,6 @@ namespace via
       {
         // building a response
         bool response_parsed(!response_.valid());
-
-        // reset a valid non-chunked response
-        if (response_.valid() && !response_.is_chunked())
-          clear();
-
         if (response_parsed)
         {
           // failed to parse response
@@ -657,21 +652,19 @@ namespace via
         {
           // if there is a content length header, ensure it's valid
           size_t content_length(response_.content_length());
-          if ((content_length == ULONG_MAX) ||
-              (content_length > max_body_size_))
+          if ((content_length < 0) || (content_length > max_body_size_))
           {
             clear();
             return RX_INVALID;
           }
 
-          // if there's a message body then insist on a content length header
+          // if there's a message body without on a content length header
+          // then allow upto max_body_size_
+          // The server can disconnect after it's finished sending the body
           std::ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
               response_.headers().find(header_field::id::CONTENT_LENGTH).empty())
-          {
-            clear();
-            return RX_INVALID;
-          }
+            content_length = max_body_size_;
 
           // received buffer contains more than the required data
           std::ptrdiff_t required(static_cast<std::ptrdiff_t>(content_length) -
@@ -680,11 +673,15 @@ namespace via
           {
               ForwardIterator next(iter + required);
               body_.insert(body_.end(), iter, next);
+              iter = next;
           }
           else // received buffer <= required data
           {
             if (end > iter)
+            {
               body_.insert(body_.end(), iter, end);
+              iter = end;
+            }
           }
 
           // return whether the body is complete
@@ -698,7 +695,11 @@ namespace via
           if (chunk_.valid())
             chunk_.clear();
 
-          // failed to parse request
+          // If parsed the response header, pass it to the application
+          if (response_parsed)
+            return RX_VALID;
+
+          // parse the chunk
           if (!chunk_.parse(iter, end))
           {
             // if a parsing error (not run out of data)
@@ -708,10 +709,6 @@ namespace via
               return RX_INVALID;
             }
           }
-
-          // If parsed the response header, pass it to the application
-          if (response_parsed)
-            return RX_VALID;
 
           // A complete chunk has been parsed..
           if (chunk_.valid())

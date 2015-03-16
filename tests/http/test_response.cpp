@@ -730,7 +730,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
   BOOST_CHECK(rx_state == RX_INCOMPLETE);
 
-  std::string response_data("\r\n15");
+  std::string response_data("\r\n");
   next = response_data.begin();
 
   rx_state = the_response_receiver.receive(next, response_data.end());
@@ -742,7 +742,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
   BOOST_CHECK(the_response_receiver.response().is_chunked());
   BOOST_CHECK(the_response_receiver.body().empty());
 
-  std::string body_data("\r\nHTTP chunk number: 1\n\r\n");
+  std::string body_data("15\r\nHTTP chunk number: 1\n\r\n");
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
   bool complete (rx_state == RX_CHUNK);
@@ -787,6 +787,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK2)
 
 BOOST_AUTO_TEST_CASE(InvalidOK3)
 {
+  // Note: a response without a content length is valid...
   std::string response_data("HTTP/1.0 200 OK\r\n");
   response_data += "Server: Via-httplib/1.1.0\r\n";
   response_data += "\r\nabcd";
@@ -794,7 +795,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK3)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_INVALID);
+  bool ok (rx_state == RX_INCOMPLETE);
   BOOST_CHECK(ok);
 }
 
@@ -820,6 +821,209 @@ BOOST_AUTO_TEST_CASE(InValidOKChunked4)
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
   BOOST_CHECK(rx_state == RX_INVALID);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_SUITE(TestResponseLoopback)
+
+BOOST_AUTO_TEST_CASE(LoopbackOk1)
+{
+  tx_response server_response(response_status::code::OK);
+  std::string response_data1(server_response.message());
+  std::string::iterator iter(response_data1.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  rx_response const& the_response(the_response_receiver.response());
+  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
+  BOOST_CHECK_EQUAL(0U, the_response.content_length());
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackOk2)
+{
+  // Two OK responses with bodies all in separate buffers
+  std::string response_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_response server_response1(response_status::code::OK);
+  std::string response_data1(server_response1.message(response_body1.size()));
+  std::string::iterator iter(response_data1.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
+  BOOST_CHECK(iter == response_data1.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  rx_response const& the_response(the_response_receiver.response());
+  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
+  BOOST_CHECK_EQUAL(36U, the_response.content_length());
+
+  iter = response_body1.begin();
+  rx_state = the_response_receiver.receive(iter, response_body1.end());
+  BOOST_CHECK(iter == response_body1.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  // The second response
+  std::string response_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_response server_response2(response_status::code::OK);
+  std::string response_data2(server_response2.message(response_body2.size()));
+  iter = response_data2.begin();
+
+  // reset the receiver
+  the_response_receiver.clear();
+  rx_state = the_response_receiver.receive(iter, response_data2.end());
+  BOOST_CHECK(iter == response_data2.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = response_body2.begin();
+  rx_state = the_response_receiver.receive(iter, response_body2.end());
+  BOOST_CHECK(iter == response_body2.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackOk3)
+{
+  // Two OK responses with bodies all in one buffer
+  std::string response_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_response server_response1(response_status::code::OK);
+  std::string response_data1(server_response1.message(response_body1.size()));
+
+  // The second response
+  std::string response_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
+
+  tx_response server_response2(response_status::code::OK);
+  std::string response_data2(server_response2.message(response_body2.size()));
+
+  std::string response_buffer(response_data1 + response_body1 +
+                              response_data2 + response_body2);
+
+  std::string::iterator iter(response_buffer.begin());
+  response_receiver<std::string> the_response_receiver;
+  Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
+  BOOST_CHECK(iter != response_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  rx_response const& the_response(the_response_receiver.response());
+  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
+  BOOST_CHECK_EQUAL(36U, the_response.content_length());
+
+  // reset the receiver
+  the_response_receiver.clear();
+  rx_state = the_response_receiver.receive(iter, response_buffer.end());
+  BOOST_CHECK(iter == response_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
+{
+  // OK response with two bodies in chunked buffers.
+  tx_response server_response1(response_status::code::OK);
+  server_response1.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  std::string response_data1(server_response1.message());
+  std::string::iterator iter(response_data1.begin());
+
+  response_receiver<std::string> the_response_receiver;
+  Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+  chunk_header chunk_header1(chunk_body1.size());
+  std::string  http_chunk_1(chunk_header1.to_string());
+  chunk_body1 += CRLF;
+
+  iter = http_chunk_1.begin();
+  rx_state = the_response_receiver.receive(iter, http_chunk_1.end());
+  BOOST_CHECK(iter == http_chunk_1.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = chunk_body1.begin();
+  rx_state = the_response_receiver.receive(iter, chunk_body1.end());
+  BOOST_CHECK(iter == chunk_body1.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
+  chunk_header chunk_header2(chunk_body2.size());
+  std::string  http_chunk_2(chunk_header2.to_string());
+  chunk_body2 += CRLF;
+
+  iter = http_chunk_2.begin();
+  rx_state = the_response_receiver.receive(iter, http_chunk_2.end());
+  BOOST_CHECK(iter == http_chunk_2.end());
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  iter = chunk_body2.begin();
+  rx_state = the_response_receiver.receive(iter, chunk_body2.end());
+  BOOST_CHECK(iter == chunk_body2.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  std::string chunk_ext("chunk extension");
+  std::string chunk_trailer("chunk: trailer");
+  last_chunk  last_header(chunk_ext, chunk_trailer);
+  std::string http_chunk_3(last_header.to_string());
+  http_chunk_3 += CRLF;
+
+  iter = http_chunk_3.begin();
+  rx_state = the_response_receiver.receive(iter, http_chunk_3.end());
+  BOOST_CHECK(iter == http_chunk_3.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+}
+
+BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
+{
+  // OK response with two bodies in chunked bodies all in one buffer
+  tx_response server_response1(response_status::code::OK);
+  server_response1.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  std::string response_data1(server_response1.message());
+
+  std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+  chunk_header chunk_header1(chunk_body1.size());
+  std::string  http_chunk_1(chunk_header1.to_string());
+  chunk_body1 += CRLF;
+
+  std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
+  chunk_header chunk_header2(chunk_body2.size());
+  std::string  http_chunk_2(chunk_header2.to_string());
+  chunk_body2 += CRLF;
+
+  std::string chunk_ext("chunk extension");
+  std::string chunk_trailer("chunk: trailer");
+  last_chunk  last_header(chunk_ext, chunk_trailer);
+  std::string http_chunk_3(last_header.to_string());
+  http_chunk_3 += CRLF;
+
+  std::string response_buffer(response_data1 +
+                              http_chunk_1 + chunk_body1 +
+                              http_chunk_2 + chunk_body2 +
+                              http_chunk_3);
+
+
+  std::string::iterator iter(response_buffer.begin());
+  response_receiver<std::string> the_response_receiver;
+  Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
+  BOOST_CHECK(iter != response_buffer.end());
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  rx_state = the_response_receiver.receive(iter, response_buffer.end());
+  BOOST_CHECK(iter != response_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  rx_state = the_response_receiver.receive(iter, response_buffer.end());
+  BOOST_CHECK(iter != response_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
+
+  rx_state = the_response_receiver.receive(iter, response_buffer.end());
+  BOOST_CHECK(iter == response_buffer.end());
+  BOOST_CHECK(rx_state == RX_CHUNK);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

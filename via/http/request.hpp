@@ -718,10 +718,9 @@ namespace via
         {
           // if there is a content length header, ensure it's valid
           size_t content_length(request_.content_length());
-          if ((content_length == ULONG_MAX) ||
-              (content_length > max_body_size_))
+          if ((content_length < 0) || (content_length > max_body_size_))
           {
-            if (content_length == ULONG_MAX)
+            if (content_length < 0)
               response_code_ = response_status::code::BAD_REQUEST;
             else
               response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
