@@ -292,43 +292,42 @@ namespace via
           if (!trailers_.parse(iter, end))
             return false;
         }
-        else // get the data
+
+        // get the data and the CRLF after it
+        std::ptrdiff_t data_required(static_cast<std::ptrdiff_t>(size()) -
+                                     static_cast<std::ptrdiff_t>(data_.size()));
+        std::ptrdiff_t rx_size(std::distance(iter, end));
+
+        // received buffer contains more than just the required data
+        if (rx_size > data_required)
         {
-          std::ptrdiff_t data_required(static_cast<std::ptrdiff_t>(size()) -
-                                       static_cast<std::ptrdiff_t>(data_.size()));
-          std::ptrdiff_t rx_size(std::distance(iter, end));
-
-          // received buffer contains more than just the required data
-          if (rx_size > data_required)
+          if (data_required > 0)
           {
-            if (data_required > 0)
-            {
-              ForwardIterator next(iter + data_required);
-              data_.insert(data_.end(), iter, next);
-              iter = next;
-            }
+            ForwardIterator next(iter + data_required);
+            data_.insert(data_.end(), iter, next);
+            iter = next;
+          }
 
-            // Chunk should end in CRLF
-            if ('\r' == *iter)
-              ++iter;
-            else
-            { // enforce if strict
-              if (strict_crlf())
-                return false;
-            }
-
-            // But it must end with an LF
-            if ((iter == end) || ('\n' != *iter))
+          // Chunk should end in CRLF
+          if ('\r' == *iter)
+            ++iter;
+          else
+          { // enforce if strict
+            if (strict_crlf())
               return false;
-            else // ('\n' == *iter)
-              ++iter;
           }
-          else // not enough received data, just add it to data
-          {
-            data_.insert(data_.end(), iter, end);
-            iter = end;
+
+          // But it must end with an LF
+          if ((iter == end) || ('\n' != *iter))
             return false;
-          }
+          else // ('\n' == *iter)
+            ++iter;
+        }
+        else // not enough received data, just add it to data
+        {
+          data_.insert(data_.end(), iter, end);
+          iter = end;
+          return false;
         }
 
         valid_ = true;
