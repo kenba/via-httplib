@@ -28,8 +28,8 @@ namespace
   int count(0);
 
   /// The stop callback function.
-  /// Cancels the timer, closes the server and all it's connections leaving
-  /// io_service.run with no more work to do...
+  /// Closes the server and all it's connections leaving io_service.run
+  /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(boost::system::error_code const&, // error,
                    int, // signal_number,
@@ -65,7 +65,7 @@ namespace
   }
 
   /// A handler for the signal sent when an HTTP message is sent.
-  void msg_sent_handler(http_connection::weak_pointer weak_ptr)
+  void message_sent_handler(http_connection::weak_pointer weak_ptr)
   {
     if (count > 0)
     {
@@ -73,6 +73,8 @@ namespace
       if (connection)
         send_a_chunk(connection);
     }
+    else
+      std::cout << "response sent" << std::endl;
   }
 
   /// A function to send a response to a request.
@@ -81,19 +83,20 @@ namespace
     http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
     {
-      // Get the last request sent on this connection.
+      // Get the last request on this connection.
       via::http::rx_request const& request(connection->request());
 
       // The default response is 404 Not Found
       via::http::tx_response response(via::http::response_status::code::NOT_FOUND);
+      // add the server and date headers
       response.add_server_header();
       response.add_date_header();
+
       if (request.uri() == "/hello")
       {
-        if (request.method() == "GET")
+        if ((request.method() == "GET") ||
+            (request.method() == "POST") || (request.method() == "PUT"))
           response.set_status(via::http::response_status::code::OK);
-        else if ((request.method() == "POST") || (request.method() == "PUT"))
-          response.set_status(via::http::response_status::code::NO_CONTENT);
         else
         {
           response.set_status(via::http::response_status::code::METHOD_NOT_ALLOWED);
@@ -102,12 +105,14 @@ namespace
         }
       }
 
-      // If sending an OK response to a GET, send the response in "chunks"
-      if ((request.method() == "GET") &&
-          (response.status() == static_cast<int>(via::http::response_status::code::OK)))
+      // If sending an OK response to a GET (not a HEAD)
+      // send the response in "chunks"
+      if ((response.status() == via::http::response_status::code::OK) &&
+          (request.method() == "GET") && !request.is_head())
       {
         response.add_header(via::http::header_field::id::TRANSFER_ENCODING,
                             "Chunked");
+        count = CHUNKS_TO_SEND;
       }
 
       connection->send(response);
@@ -215,13 +220,14 @@ int main(int argc, char *argv[])
     boost::asio::io_service io_service;
 
     // create an http_server
-    http_server_type http_server(io_service, request_handler);
+    http_server_type http_server(io_service);
 
     // connect the handler callback functions
+    http_server.request_received_event(request_handler);
     http_server.socket_connected_event(connected_handler);
     http_server.chunk_received_event(chunk_handler);
     http_server.request_expect_continue_event(expect_continue_handler);
-    http_server.message_sent_event(msg_sent_handler);
+    http_server.message_sent_event(message_sent_handler);
     http_server.socket_disconnected_event(disconnected_handler);
 
     http_server.set_auto_disconnect(true);
@@ -251,7 +257,7 @@ int main(int argc, char *argv[])
     // run the io_service to start communications
     io_service.run();
 
-    std::cout << "io_service.run, all work has finished" << std::endl;
+    std::cout << "io_service.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {

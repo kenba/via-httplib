@@ -7,7 +7,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file example_http_client.cpp
-/// @brief An example HTTP client with chunk and disconnected handlers.
+/// @brief An example HTTP client with optional handlers.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
@@ -35,6 +35,8 @@ namespace
   void connected_handler()
   {
     // Create an http request and send it to the host.
+    // Note: via-httplib will add a host header with the host name
+    // given in the call to connect
     via::http::tx_request request(method, uri);
     http_client->send(request);
   }
@@ -67,10 +69,26 @@ namespace
                 << " data: " << data << std::endl;
   }
 
+  /// The handler for invalid HTTP requests.
+  /// Outputs the last receive buffer contents
+  void invalid_response_handler(via::http::rx_response const&, // response,
+                                std::string const&) // body)
+  {
+    std::cout << "Invalid response: "
+              << http_client->rx_buffer() << std::endl;
+    http_client->disconnect();
+  }
+
   /// The handler for the HTTP socket disconnecting.
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
+  }
+
+  /// A handler for the signal when a message is sent.
+  void message_sent_handler()
+  {
+    std::cout << "request sent" << std::endl;
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -105,8 +123,18 @@ int main(int argc, char *argv[])
         http_client_type::create(io_service, response_handler, chunk_handler);
 
     // attach the optional handlers
+    http_client->invalid_response_event(invalid_response_handler);
     http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
+    http_client->message_sent_event(message_sent_handler);
+
+    // set tcp keep alive
+    http_client->connection()->set_keep_alive(true);
+
+    // set the connection buffer sizes
+    http_client->connection()->set_rx_buffer_size(16384);
+    http_client->connection()->set_receive_buffer_size(16384);
+    http_client->connection()->set_send_buffer_size(16384);
 
     // attempt to connect to the host on the standard http port (80)
     if (!http_client->connect(host_name))
@@ -117,6 +145,8 @@ int main(int argc, char *argv[])
 
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {

@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     // run the io_service to start communications
     io_service.run();
 
-    std::cout << "io_service.run, all work has finished" << std::endl;
+    std::cout << "io_service.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {

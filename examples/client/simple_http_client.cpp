@@ -30,7 +30,9 @@ namespace
   /// A handler for the signal sent when an HTTP socket is connected.
   void connected_handler()
   {
-    // Create an http request and send it to the host.
+    // Create an http GET request and send it to the host.
+    // Note: via-httplib will add a host header with the host name
+    // given in the call to connect
     via::http::tx_request request(via::http::request_method::id::GET, uri);
     http_client->send(request);
   }
@@ -76,7 +78,7 @@ int main(int argc, char *argv[])
   if (argc != 3)
   {
     std::cout << "Usage: " << app_name << " [host] [uri]\n"
-              << "E.g. "   << app_name << " www.boost.org /LICENSE_1_0.txt"
+              << "E.g. "   << app_name << " localhost /hello"
               << std::endl;
     return 1;
   }
@@ -94,7 +96,7 @@ int main(int argc, char *argv[])
     http_client =
         http_client_type::create(io_service, response_handler, chunk_handler);
 
-    // attach the optional handlers
+    // attach optional handlers
     http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
 
@@ -108,7 +110,7 @@ int main(int argc, char *argv[])
     // run the io_service to start communications
     io_service.run();
 
-    std::cout << "io_service.run, all work has finished" << std::endl;
+    std::cout << "io_service.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {
