@@ -122,16 +122,23 @@ namespace via
         {
         case http::RX_VALID:
           http_response_handler_(rx_.response(), rx_.body());
+          if (!rx_.response().is_chunked())
+            rx_.clear();
           break;
 
         case http::RX_CHUNK:
           if (http_chunk_handler_)
             http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
+
+          if (rx_.chunk().is_last())
+            rx_.clear();
           break;
 
         case http::RX_INVALID:
           if (http_invalid_handler_)
             http_invalid_handler_(rx_.response(), rx_.body());
+
+          rx_.clear();
           break;
 
         default:
@@ -401,7 +408,8 @@ namespace via
                     std::string trailer_string = "")
     {
       http::last_chunk last_chunk(extension, trailer_string);
-      tx_header_ = last_chunk.message();
+      tx_header_ = last_chunk.to_string();
+      tx_header_ += http::CRLF;
 
       return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }

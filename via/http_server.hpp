@@ -231,6 +231,8 @@ namespace via
             http_request_handler_(http_connection,
                                   http_connection->request(),
                                   http_connection->body());
+            if (!http_connection->request().is_chunked())
+              http_connection->rx().clear();
             break;
           }
           else if (trace_enabled_) // the server reflects the message back.
@@ -241,6 +243,7 @@ namespace via
             ok_response.add_content_http_header();
             http_connection->send(ok_response,
                                   http_connection->rx().trace_body());
+            http_connection->rx().clear();
             break;
           }
           // intentional fall through
@@ -256,6 +259,7 @@ namespace via
             if (auto_disconnect_)
               http_connection->disconnect();
           }
+          http_connection->rx().clear();
           break;
 
         case http::RX_EXPECT_CONTINUE:
@@ -272,6 +276,8 @@ namespace via
             http_chunk_handler_(http_connection,
                                 http_connection->chunk(),
                                 http_connection->chunk().data());
+          if (http_connection->chunk().is_last())
+            http_connection->rx().clear();
           break;
 
         default:

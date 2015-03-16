@@ -572,6 +572,10 @@ namespace via
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
 
+      /// Set the connection's rx_buffer_size_.
+      void set_rx_buffer_size(size_t rx_buffer_size)
+      { rx_buffer_size_ = rx_buffer_size; }
+
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
       /// port.
