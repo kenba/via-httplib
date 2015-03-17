@@ -142,6 +142,9 @@ BOOST_AUTO_TEST_CASE(InValidMethod2)
 
   request_line the_request(true, 1, 2, 1024); // set max_method_length to 2
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
+
+  BOOST_CHECK(via::http::request_line::REQ_ERROR_METHOD_LENGTH ==
+              the_request.state());
 }
 
 // An http request line with an invalid uri (contains whitespace)
@@ -183,8 +186,22 @@ BOOST_AUTO_TEST_CASE(InValidUri3)
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
 }
 
-// An http request line with an invalid uri (whitespace after too long)
+// An http request line with an invalid uri (uri too long)
 BOOST_AUTO_TEST_CASE(InValidUri4)
+{
+  std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n ");
+  std::string::iterator next(request_data.begin());
+
+  request_line the_request(false, 8, 8, 24);
+  BOOST_CHECK(!the_request.parse(next, request_data.end()));
+  BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
+
+  BOOST_CHECK(via::http::request_line::REQ_ERROR_URI_LENGTH ==
+              the_request.state());
+}
+
+// An http request line with an invalid uri (whitespace after too long)
+BOOST_AUTO_TEST_CASE(InValidUri5)
 {
   std::string request_data("GET abcdefghi              HTTP/1.0\r\n ");
   std::string::iterator next(request_data.begin());
@@ -364,7 +381,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorChar1)
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
-  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+  BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
 }
 
@@ -383,7 +400,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorUnsignedChar1)
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
-  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+  BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
   BOOST_CHECK(!the_request.missing_host_header());
   BOOST_CHECK(!the_request.keep_alive());
@@ -407,7 +424,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   BOOST_CHECK_EQUAL('1', the_request.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
-  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+  BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
   BOOST_CHECK(!the_request.is_trace());
   BOOST_CHECK(the_request.keep_alive());
@@ -425,7 +442,7 @@ BOOST_AUTO_TEST_CASE(ValidPost1)
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
 
-  BOOST_CHECK_EQUAL(4U, the_request.content_length());
+  BOOST_CHECK_EQUAL(4, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
 }
 
@@ -443,7 +460,7 @@ BOOST_AUTO_TEST_CASE(ValidChunked1)
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('1', the_request.minor_version());
 
-  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+  BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(the_request.is_chunked());
   BOOST_CHECK_EQUAL(9, request_data.end() - next);
 
@@ -487,7 +504,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
   BOOST_CHECK_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
-  BOOST_CHECK_EQUAL(82U, the_request.content_length());
+  BOOST_CHECK_EQUAL(82, the_request.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(ValidPostMultiLine1)
@@ -508,7 +525,7 @@ BOOST_AUTO_TEST_CASE(ValidPostMultiLine1)
   BOOST_CHECK_EQUAL("abcde", the_request.uri().c_str());
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
-  BOOST_CHECK_EQUAL(4U, the_request.content_length());
+  BOOST_CHECK_EQUAL(4, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
 }
 
@@ -529,7 +546,7 @@ BOOST_AUTO_TEST_CASE(ValidPostMultiLine2)
   BOOST_CHECK(the_request.parse(next, request_data2.end()));
   BOOST_CHECK(request_data2.end() == next);
 
-  BOOST_CHECK_EQUAL(4U, the_request.content_length());
+  BOOST_CHECK_EQUAL(4, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
 }
 
@@ -699,7 +716,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   rx_request const& the_request(the_request_receiver.request());
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
   BOOST_CHECK_EQUAL("/dhcp/blocked_addresses", the_request.uri().c_str());
-  BOOST_CHECK_EQUAL(26U, the_request.content_length());
+  BOOST_CHECK_EQUAL(26, the_request.content_length());
   BOOST_CHECK_EQUAL(body_data.c_str(), the_request_receiver.body().c_str());
 }
 
@@ -923,8 +940,8 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   ok = (rx_state == RX_VALID);
   BOOST_CHECK(ok);
 
-  BOOST_CHECK(the_request_receiver.body().size() ==
-              the_request_receiver.request().content_length());
+  BOOST_CHECK_EQUAL(the_request_receiver.body().size(),
+         static_cast<size_t>(the_request_receiver.request().content_length()));
 
   // std::cout << "Body size: " << the_request_receiver.body().size();
 
@@ -938,6 +955,32 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
 }
 
 BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
+{
+  std::string request_data1("P");
+  std::string::iterator next(request_data1.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
+  bool ok (rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(ok);
+
+  // invalid character in Content-Length
+  std::string request_data
+      ("OST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Content-Type: application/json\r\n";
+  request_data += "Content-Length: 2z6\r\n";
+  request_data += "Connection: Keep-Alive\r\n";
+  request_data += "Accept-Encoding: gzip";
+  request_data += "Accept-Language: en-GB,*\r\n";
+  request_data += "User-Agent: Mozilla/5.0\r\n";
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  next = request_data.begin();
+  rx_state = the_request_receiver.receive(next, request_data.end());
+  BOOST_CHECK(rx_state == RX_INVALID);
+}
+
+BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
 {
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
@@ -1000,6 +1043,162 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   BOOST_CHECK(rx_state == RX_INVALID);
 }
 
+BOOST_AUTO_TEST_CASE(InValidPostChunk2)
+{
+  // A POST requests with two bodies in chunked bodies all in one buffer
+  tx_request client_request(request_method::id::POST, "/hello");
+  client_request.add_header(header_field::id::HOST, "localhost");
+  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  std::string request_data1(client_request.message());
+
+  std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
+  chunk_header chunk_header1(chunk_body1.size());
+  std::string  http_chunk_1(chunk_header1.to_string());
+  chunk_body1 += CRLF;
+
+  std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
+  chunk_header chunk_header2(chunk_body2.size());
+  std::string  http_chunk_2(chunk_header2.to_string());
+  chunk_body2 += CRLF;
+
+  std::string chunk_ext("chunk extension");
+  std::string chunk_trailer("chunk: trailer");
+  last_chunk  last_header(chunk_ext, chunk_trailer);
+  std::string http_chunk_3(last_header.to_string());
+  http_chunk_3 += CRLF;
+
+  std::string request_buffer(request_data1 +
+                             http_chunk_1 + chunk_body1 +
+                             http_chunk_2 + chunk_body2 +
+                             http_chunk_3 +
+                             request_data1);
+  std::string::iterator iter(request_buffer.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 40, 1048576);
+  the_request_receiver.set_concatenate_chunks(true);
+  Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
+  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+
+  rx_state = the_request_receiver.receive(iter, request_buffer.end());
+  BOOST_CHECK(iter != request_buffer.end());
+  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE);
+}
+
+BOOST_AUTO_TEST_CASE(ValidHeadRequest1)
+{
+  std::string request_data("HEAD /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n";
+  request_data += "Content-Length: 0\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  BOOST_CHECK_EQUAL("GET", the_request_receiver.request().method());
+  BOOST_CHECK(the_request_receiver.is_head());
+}
+
+BOOST_AUTO_TEST_CASE(ValidHeadRequest2)
+{
+  std::string request_data("HEAD /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n";
+  request_data += "Content-Length: 0\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  the_request_receiver.set_translate_head(false);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  BOOST_CHECK_EQUAL("HEAD", the_request_receiver.request().method());
+  BOOST_CHECK(the_request_receiver.is_head());
+}
+
+BOOST_AUTO_TEST_CASE(InValidUriLength1)
+{
+  std::string request_data("POST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n";
+  request_data += "Content-Length: 0\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 16, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_INVALID);
+
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::REQUEST_URI_TOO_LONG);
+}
+
+BOOST_AUTO_TEST_CASE(InValidContentLength1)
+{
+  std::string request_data("POST /dhcp/blocked_addresses HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  request_data += "Body without a Content-Length header";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_INVALID);
+
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::LENGTH_REQUIRED);
+}
+
+BOOST_AUTO_TEST_CASE(ValidTrace1)
+{
+  std::string request_data("TRACE / HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n";
+  request_data += "Content-Length: 0\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::METHOD_NOT_ALLOWED);
+}
+
+BOOST_AUTO_TEST_CASE(ValidTrace2)
+{
+  std::string request_data("TRACE / HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_VALID);
+
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::METHOD_NOT_ALLOWED);
+}
+
+BOOST_AUTO_TEST_CASE(InValidTrace1)
+{
+  std::string request_data("TRACE / HTTP/1.1\r\n");
+  request_data += "Host: 172.16.0.126:3456\r\n";
+  request_data += "Content-Length: 1\r\n\r\n";
+  std::string::iterator next(request_data.begin());
+
+  request_receiver<std::string> the_request_receiver
+      (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
+  Rx rx_state(the_request_receiver.receive(next, request_data.end()));
+  BOOST_CHECK(rx_state == RX_INVALID);
+
+  BOOST_CHECK(the_request_receiver.response_code() ==
+              via::http::response_status::code::BAD_REQUEST);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1026,7 +1225,7 @@ BOOST_AUTO_TEST_CASE(LoopbackGet1)
   rx_request const& the_request(the_request_receiver.request());
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
   BOOST_CHECK_EQUAL("/hello", the_request.uri().c_str());
-  BOOST_CHECK_EQUAL(0U, the_request.content_length());
+  BOOST_CHECK_EQUAL(0, the_request.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackPut1)

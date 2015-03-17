@@ -182,10 +182,11 @@ namespace via
 
       case RESP_LF:
         if ('\n' == c)
+        {
           state_ = RESP_VALID;
-        else
-          return false;
-        break;
+          break;
+        }
+        // intentional fall-through (for code coverage)
 
       default:
         return false;

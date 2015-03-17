@@ -309,9 +309,6 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
   BOOST_CHECK_EQUAL("Chunked",
                     the_headers.find
                     (header_field::id::TRANSFER_ENCODING).c_str());
-
-  std::string output(the_headers.to_string());
-//  BOOST_CHECK_EQUAL(output, HEADER_LINE);
 }
 
 BOOST_AUTO_TEST_CASE(InValidSingleHeaderString1)
@@ -323,6 +320,28 @@ BOOST_AUTO_TEST_CASE(InValidSingleHeaderString1)
   BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
 }
 
+BOOST_AUTO_TEST_CASE(InValidMultipleHeaderString2)
+{
+  // Two headers in message but parser only accepts one
+
+  std::string header_data("Host: localhost\r\n");
+  header_data += ("Transfer-Encoding: Chunked\r\n");
+  std::string::iterator header_next(header_data.begin());
+
+  message_headers the_headers(false, 1, 1024, 1, 8190);
+  BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
+}
+
+BOOST_AUTO_TEST_CASE(InValidMultipleHeaderString3)
+{
+  // Parser set to only parse 32 bytes of header.
+  std::string header_data("Host: localhost\r\n");
+  header_data += ("Transfer-Encoding: Chunked\r\n");
+  std::string::iterator header_next(header_data.begin());
+
+  message_headers the_headers(false, 1, 1024, 100, 32);
+  BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
+}
 BOOST_AUTO_TEST_CASE(ValidContentLength1)
 {
   // Simple number

@@ -378,7 +378,7 @@ namespace via
 
       /// The size in the content_length header (if there is one)
       /// @return the content_length header value.
-      size_t content_length() const NOEXCEPT
+      std::ptrdiff_t content_length() const NOEXCEPT
       { return headers_.content_length(); }
 
       /// Whether chunked transfer encoding is enabled.
@@ -716,43 +716,55 @@ namespace via
         // build a response body or receive a chunk
         if (!request_.is_chunked())
         {
-          // if there is a content length header, ensure it's valid
-          size_t content_length(request_.content_length());
-          if ((content_length < 0) || (content_length > max_body_size_))
-          {
-            if (content_length < 0)
-              response_code_ = response_status::code::BAD_REQUEST;
-            else
-              response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
-            clear();
-            return RX_INVALID;
-          }
+          // the size of the body received in this message
+          std::ptrdiff_t rx_size(std::distance(iter, end));
+          std::ptrdiff_t content_length(request_.content_length());
 
-          // trace requests aren't allowed a body may be not be allowed period.
+          // TRACE requests may not be allowed
           if (request_.is_trace())
           {
             if (content_length == 0)
               response_code_ = response_status::code::METHOD_NOT_ALLOWED;
             else
             {
+              // TRACE requests are not permitted without a body
               response_code_ = response_status::code::BAD_REQUEST;
               clear();
               return RX_INVALID;
             }
           }
 
-          // if there's a message body then insist on a content length header
-          std::ptrdiff_t rx_size(std::distance(iter, end));
-          if ((rx_size > 0) && (content_length == 0) &&
-              request_.headers().find(header_field::id::CONTENT_LENGTH).empty())
+          // test whether the content length header is valid
+          if (content_length < 0)
           {
-            response_code_ = response_status::code::LENGTH_REQUIRED;
+            response_code_ = response_status::code::BAD_REQUEST;
             clear();
             return RX_INVALID;
           }
+          else
+          {
+            // if theres a valid non-zero content length header
+            if (content_length > 0)
+            {
+              // test the size
+              if (content_length > static_cast<std::ptrdiff_t>(max_body_size_))
+              {
+                response_code_ = response_status::code::REQUEST_ENTITY_TOO_LARGE;
+                clear();
+                return RX_INVALID;
+              }
+            } // if there's a body without a  content length header
+            else if ((rx_size > 0) && request_.headers().
+                                find(header_field::id::CONTENT_LENGTH).empty())
+            {
+              response_code_ = response_status::code::LENGTH_REQUIRED;
+              clear();
+              return RX_INVALID;
+            }
+          }
 
           // received buffer contains more than the required data
-          std::ptrdiff_t required(static_cast<std::ptrdiff_t>(content_length) -
+          std::ptrdiff_t required(content_length -
                                   static_cast<std::ptrdiff_t>(body_.size()));
           if (rx_size > required)
           {
@@ -770,7 +782,7 @@ namespace via
           }
 
           // determine whether the body is complete
-          if (body_.size() == request_.content_length())
+          if (body_.size() == static_cast<size_t>(request_.content_length()))
           {
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request

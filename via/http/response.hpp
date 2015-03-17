@@ -18,6 +18,7 @@
 #include "headers.hpp"
 #include "chunk.hpp"
 #include <algorithm>
+#include <climits>
 
 namespace via
 {
@@ -391,7 +392,7 @@ namespace via
 
       /// The size in the content_length header (if there is one)
       /// @return the content_length header value.
-      size_t content_length() const NOEXCEPT
+      std::ptrdiff_t content_length() const NOEXCEPT
       { return headers_.content_length(); }
 
       /// Whether chunked transfer encoding is enabled.
@@ -576,11 +577,11 @@ namespace via
       /// @param max_header_number the maximum number of HTTP header field lines:
       /// default 65534, max 65534.
       /// @param max_header_length the maximum cumulative length the HTTP header
-      /// fields: default 4 billion, max 4 billion.
+      /// fields: default LONG_MAX, max LONG_MAX.
       /// @param max_body_size the maximum size of a response body:
-      /// default 4 billion, max 4 billion.
+      /// default LONG_MAX, max LONG_MAX.
       /// @param max_chunk_size the maximum size of a response chunk:
-      /// default 4 billion, max 4 billion.
+      /// default LONG_MAX, max LONG_MAX.
       explicit response_receiver(
           bool           strict_crlf       = false,
           unsigned char  max_whitespace    = DEFAULT_MAX_WHITESPACE_CHARS,
@@ -651,8 +652,8 @@ namespace via
         if (!response_.is_chunked())
         {
           // if there is a content length header, ensure it's valid
-          size_t content_length(response_.content_length());
-          if ((content_length < 0) || (content_length > max_body_size_))
+          std::ptrdiff_t content_length(response_.content_length());
+          if (content_length < 0)
           {
             clear();
             return RX_INVALID;
@@ -667,7 +668,7 @@ namespace via
             content_length = max_body_size_;
 
           // received buffer contains more than the required data
-          std::ptrdiff_t required(static_cast<std::ptrdiff_t>(content_length) -
+          std::ptrdiff_t required(content_length -
                                   static_cast<std::ptrdiff_t>(body_.size()));
           if (rx_size > required)
           {
@@ -685,7 +686,7 @@ namespace via
           }
 
           // return whether the body is complete
-          if (body_.size() == response_.content_length())
+          if (body_.size() == static_cast<size_t>(response_.content_length()))
             return RX_VALID;
         }
         else // response_.is_chunked()

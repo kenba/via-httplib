@@ -447,7 +447,7 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   BOOST_CHECK_EQUAL('0', the_response.minor_version());
 
   BOOST_CHECK_EQUAL("text", the_response.headers().find("content").c_str());
-  BOOST_CHECK_EQUAL(0U, the_response.content_length());
+  BOOST_CHECK_EQUAL(0, the_response.content_length());
   BOOST_CHECK(!the_response.is_continue());
   BOOST_CHECK(!the_response.is_chunked());
   BOOST_CHECK(!the_response.keep_alive());
@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE(ValidOK2)
   BOOST_CHECK(!the_response.is_chunked());
   BOOST_CHECK(the_response.keep_alive());
   BOOST_CHECK(!the_response.is_continue());
-  BOOST_CHECK_EQUAL(4U, the_response.content_length());
+  BOOST_CHECK_EQUAL(4, the_response.content_length());
   std::string body(next, next + the_response.content_length());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -530,7 +530,7 @@ BOOST_AUTO_TEST_CASE(ValidUnauthorised1)
 
   BOOST_CHECK_EQUAL("Challenge",
     the_response.headers().find(header_field::id::WWW_AUTHENTICATE).c_str());
-  BOOST_CHECK_EQUAL(0U, the_response.content_length());
+  BOOST_CHECK_EQUAL(0, the_response.content_length());
   BOOST_CHECK(!the_response.is_chunked());
 }
 
@@ -552,7 +552,7 @@ BOOST_AUTO_TEST_CASE(ValidOKMultiLine1)
   BOOST_CHECK(the_response.parse(next, response_data2.end()));
 
   BOOST_CHECK(!the_response.is_chunked());
-  BOOST_CHECK_EQUAL(4U, the_response.content_length());
+  BOOST_CHECK_EQUAL(4, the_response.content_length());
   std::string body(next, next + the_response.content_length());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   BOOST_CHECK_EQUAL('1', the_response_receiver.response().major_version());
   BOOST_CHECK_EQUAL('0', the_response_receiver.response().minor_version());
   BOOST_CHECK(!the_response_receiver.response().is_chunked());
-  BOOST_CHECK_EQUAL(4U, the_response_receiver.response().content_length());
+  BOOST_CHECK_EQUAL(4, the_response_receiver.response().content_length());
   std::string body(the_response_receiver.body());
   BOOST_CHECK_EQUAL("abcd", body.c_str());
 }
@@ -843,7 +843,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk1)
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
-  BOOST_CHECK_EQUAL(0U, the_response.content_length());
+  BOOST_CHECK_EQUAL(0, the_response.content_length());
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackOk2)
@@ -863,7 +863,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
-  BOOST_CHECK_EQUAL(36U, the_response.content_length());
+  BOOST_CHECK_EQUAL(36, the_response.content_length());
 
   iter = response_body1.begin();
   rx_state = the_response_receiver.receive(iter, response_body1.end());
@@ -915,7 +915,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk3)
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
-  BOOST_CHECK_EQUAL(36U, the_response.content_length());
+  BOOST_CHECK_EQUAL(36, the_response.content_length());
 
   // reset the receiver
   the_response_receiver.clear();

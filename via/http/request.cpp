@@ -165,12 +165,13 @@ namespace via
 
       case REQ_LF:
         if ('\n' == c)
+        {
           state_ = REQ_VALID;
-        else
-          return false;
-        break;
+          break;
+        }
+        // intentional fall-through (for code coverage)
 
-      default:
+       default:
         return false;
       }
 
