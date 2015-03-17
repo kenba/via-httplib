@@ -363,7 +363,6 @@ namespace via
     {
       http::last_chunk last_chunk(extension, trailer_string);
       tx_header_ = last_chunk.to_string();
-      tx_header_ += http::CRLF;
 
       return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }

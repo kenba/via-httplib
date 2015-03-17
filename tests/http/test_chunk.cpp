@@ -28,6 +28,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk1)
   BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
   BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.is_last());
+  BOOST_CHECK(next == chunk_data.end());
 }
 
 BOOST_AUTO_TEST_CASE(EmptyChunk2)
@@ -42,6 +43,7 @@ BOOST_AUTO_TEST_CASE(EmptyChunk2)
   BOOST_CHECK_EQUAL("", the_chunk.extension().c_str());
   BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.is_last());
+  BOOST_CHECK(next == chunk_data.end());
 }
 
 BOOST_AUTO_TEST_CASE(ValidString1)
@@ -423,6 +425,36 @@ BOOST_AUTO_TEST_CASE(ValidLastChunk1)
   BOOST_CHECK_EQUAL(0U, the_chunk.size());
   BOOST_CHECK(the_chunk.valid());
   BOOST_CHECK(the_chunk.is_last());
+  BOOST_CHECK(next == chunk_data.end());
+}
+
+BOOST_AUTO_TEST_CASE(ValidLastChunk2)
+{
+  std::string chunk_data("0;\r\n\r\n");
+  std::string::iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk(false, 8, 1024, 1048576, 100, 8190);
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
+  BOOST_CHECK(the_chunk.valid());
+  BOOST_CHECK(the_chunk.is_last());
+  BOOST_CHECK(next == chunk_data.end());
+}
+
+BOOST_AUTO_TEST_CASE(ValidLastChunk3)
+{
+  std::string extension("");
+  std::string trailer_string("");
+  last_chunk last_chunk1(extension, trailer_string);
+  std::string chunk_data(last_chunk1.to_string());
+  std::string::iterator next(chunk_data.begin());
+
+  rx_chunk<std::string> the_chunk(false, 8, 1024, 1048576, 100, 8190);
+  BOOST_CHECK(the_chunk.parse(next, chunk_data.end()));
+  BOOST_CHECK_EQUAL(0U, the_chunk.size());
+  BOOST_CHECK(the_chunk.valid());
+  BOOST_CHECK(the_chunk.is_last());
+  BOOST_CHECK(next == chunk_data.end());
 }
 
 BOOST_AUTO_TEST_CASE(ValidChunkTrailer1)
