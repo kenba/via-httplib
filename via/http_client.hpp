@@ -18,8 +18,9 @@
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
 #include <boost/shared_ptr.hpp>
-#include <iostream>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/bind.hpp>
+#include <iostream>
 
 namespace via
 {
@@ -39,16 +40,25 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
             bool use_strand = false>
-  class http_client
+  class http_client : public boost::enable_shared_from_this
+                          <http_client<SocketAdaptor, Container, use_strand> >
   {
   public:
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container, use_strand>
                                                               connection_type;
 
+    /// A weak pointer to this type.
+    typedef typename boost::weak_ptr<http_client<SocketAdaptor, Container,
+                                                   use_strand> > weak_pointer;
+
     /// A shared pointer to this type.
     typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
                                                    use_strand> > shared_pointer;
+
+    /// The enable_shared_from_this type of this class.
+    typedef typename boost::enable_shared_from_this
+                <http_client<SocketAdaptor, Container, use_strand> > enable;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -77,8 +87,11 @@ namespace via
     // Variables
 
     boost::shared_ptr<connection_type> connection_; ///< the comms connection
+    boost::asio::deadline_timer timer_;             ///< a deadline timer
     http::response_receiver<Container> rx_;         ///< the response receiver
     std::string host_name_;                         ///< the name of the host
+    std::string port_name_;                         ///< the port name / number
+    unsigned long period_;                          ///< the reconnection period
 
     std::string tx_header_; /// A buffer for the HTTP request header.
     Container   tx_body_;   /// A buffer for the HTTP request body.
@@ -93,6 +106,27 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
+
+    /// @fn weak_from_this
+    /// Get a weak_pointer to this instance.
+    /// @return a weak_pointer to this http_client.
+    weak_pointer weak_from_this()
+    { return weak_pointer(enable::shared_from_this()); }
+
+    /// Attempt to connect to the host.
+    bool connect()
+    { return connection_->connect(host_name_.c_str(), port_name_.c_str()); }
+
+    /// The callback function for the timer_.
+    /// @param ptr a weak pointer to this http_client.
+    /// @param error the asio error code.
+    static void timeout_handler(weak_pointer ptr,
+                                boost::system::error_code const& error)
+    {
+      shared_pointer pointer(ptr.lock());
+      if (pointer && (boost::asio::error::operation_aborted != error))
+        pointer->connect();
+    }
 
     /// Send buffers on the connection.
     /// @param buffers the data to write.
@@ -147,6 +181,41 @@ namespace via
       } // end while
     }
 
+    /// Handle a diconnect on the underlying connection.
+    void disconnected_handler()
+    {
+      if (connection_->connected())
+      {
+        connection_->set_connected(false);
+
+        if (disconnected_handler_)
+          disconnected_handler_();
+
+        connection_->close();
+      }
+
+      // attempt to reconnect in period_ miliseconds
+      if (period_ > 0)
+      {
+        timer_.expires_from_now(boost::posix_time::milliseconds(period_));
+        timer_.async_wait(boost::bind(&http_client::timeout_handler,
+                                      weak_from_this(),
+                                      boost::asio::placeholders::error));
+      }
+    }
+
+    /// Callback function for a comms::connection event.
+    /// @param ptr a weak pointer to this http_client.
+    /// @param event the type of event.
+    /// @param weak_ptr a weak ponter to the underlying comms connection.
+    static void event_callback(weak_pointer ptr, int event,
+                               typename connection_type::weak_pointer weak_ptr)
+    {
+      shared_pointer pointer(ptr.lock());
+      if (pointer)
+        pointer->event_handler(event, weak_ptr);
+    }
+
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param weak_ptr a weak ponter to the underlying comms connection.
@@ -161,6 +230,9 @@ namespace via
       switch(event)
       {
       case via::comms::CONNECTED:
+        timer_.cancel();
+        rx_buffer_.clear();
+        rx_.clear();
         if (connected_handler_)
           connected_handler_();
         break;
@@ -172,9 +244,7 @@ namespace via
           message_sent_handler_();
         break;
       case via::comms::DISCONNECTED:
-        if (disconnected_handler_)
-          disconnected_handler_();
-        connection_->close();
+        disconnected_handler();
         break;
       default:
         break;
@@ -183,9 +253,9 @@ namespace via
 
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
-    // @param weak_ptr a weak ponter to the underlying comms connection.
-    void error_handler(const boost::system::error_code &error,
-                       typename connection_type::weak_pointer) // weak_ptr)
+    // @param weak_ptr a weak pointer to the underlying comms connection.
+    static void error_handler(const boost::system::error_code &error,
+                          typename connection_type::weak_pointer) // weak_ptr)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
@@ -202,6 +272,7 @@ namespace via
                          ChunkHandler    chunk_handler,
                          size_t          rx_buffer_size) :
       connection_(connection_type::create(io_service, rx_buffer_size)),
+      timer_(io_service),
       rx_(),
       host_name_(),
       tx_header_(),
@@ -214,11 +285,6 @@ namespace via
       disconnected_handler_(),
       message_sent_handler_()
     {
-      connection_->set_event_callback
-          (boost::bind(&http_client::event_handler, this, _1, _2));
-      connection_->set_error_callback
-          (boost::bind(&http_client::error_handler, this,
-                       boost::asio::placeholders::error, _2));
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_client will want to send messages immediately
       connection_->set_no_delay(true);
@@ -240,24 +306,42 @@ namespace via
                                  ResponseHandler response_handler,
                                  ChunkHandler    chunk_handler,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
-    { return shared_pointer(new http_client(io_service, response_handler,
-                                            chunk_handler, rx_buffer_size)); }
+    {
+      shared_pointer client_ptr(new http_client(io_service, response_handler,
+                                            chunk_handler, rx_buffer_size));
+      client_ptr->connection_->set_error_callback
+          (boost::bind(&http_client::error_handler,
+                       boost::asio::placeholders::error, _2));
+      client_ptr->connection_->set_event_callback
+          (boost::bind(&http_client::event_callback, weak_pointer(client_ptr),
+                       _1, _2));
+      return client_ptr;
+    }
+
+    /// Destructor
+    /// Close the socket and cancel the timer.
+    virtual ~http_client()
+    { close(); }
 
     /// Connect to the given host name and port.
     /// @param host_name the host to connect to.
     /// @param port_name the port to connect to.
+    /// @param reconnection_period the time to wait after a disconnect before
+    /// attempting to re-connect.
     /// @return true if resolved, false otherwise.
-    bool connect(const std::string& host_name, std::string port_name = "http")
+    bool connect(const std::string& host_name, std::string port_name = "http",
+                 unsigned long period = 0)
     {
       host_name_ = host_name;
-      if ((port_name != "http") && (port_name != "https"))
-      {
-        host_name_ += ":";
-        host_name_ += port_name;
-      }
+      port_name_ = port_name;
+      period_    = period;
 
-      return connection_->connect(host_name.c_str(), port_name.c_str());
+      return connect();
     }
+
+    /// Accessor for whether the underlying socket is connected.
+    bool is_connected() const NOEXCEPT
+    { return connection_->connected(); }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
@@ -303,6 +387,16 @@ namespace via
     Container const& body() const NOEXCEPT
     { return rx_.body(); }
 
+    /// Get the host name to send in the http "Host:" header.
+    /// @return http host name.
+    std::string http_host_name() const
+    {
+      if ((port_name_ == "http") || (port_name_ == "https"))
+        return host_name_;
+      else
+        return host_name_ + ":" + port_name_;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // send (request) functions
 
@@ -310,7 +404,10 @@ namespace via
     /// @param request the request to send.
     bool send(http::tx_request request)
     {
-      request.add_header(http::header_field::id::HOST, host_name_);
+      if (!is_connected())
+        return false;
+
+      request.add_header(http::header_field::id::HOST, http_host_name());
       tx_header_ = request.message();
       return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
     }
@@ -320,7 +417,10 @@ namespace via
     /// @param body the body to send
     bool send(http::tx_request request, Container body)
     {
-      request.add_header(http::header_field::id::HOST, host_name_);
+      if (!is_connected())
+        return false;
+
+      request.add_header(http::header_field::id::HOST, http_host_name());
       tx_header_ = request.message(body.size());
       comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
 
@@ -336,7 +436,10 @@ namespace via
     /// @param buffers the body to send
     bool send(http::tx_request request, comms::ConstBuffers buffers)
     {
-      request.add_header(http::header_field::id::HOST, host_name_);
+      if (!is_connected())
+        return false;
+
+      request.add_header(http::header_field::id::HOST, http_host_name());
       tx_header_ = request.message(boost::asio::buffer_size(buffers));
 
       buffers.push_front(boost::asio::buffer(tx_header_));
@@ -352,6 +455,9 @@ namespace via
     /// @return true if sent, false otherwise.
     bool send_body(Container body)
     {
+      if (!is_connected())
+        return false;
+
       tx_body_.swap(body);
       return send(comms::ConstBuffers(1, boost::asio::buffer(tx_body_)));
     }
@@ -363,7 +469,12 @@ namespace via
     /// @param buffers the body to send
     /// @return true if sent, false otherwise.
     bool send_body(comms::ConstBuffers buffers)
-    { return send(buffers); }
+    {
+      if (!is_connected())
+        return false;
+
+      return send(buffers);
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // send_chunk functions
@@ -373,6 +484,9 @@ namespace via
     /// @param extension the (optional) chunk extension.
     bool send_chunk(Container chunk, std::string extension = "")
     {
+      if (!is_connected())
+        return false;
+
       size_t size(chunk.size());
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
@@ -391,6 +505,9 @@ namespace via
     /// @param extension the (optional) chunk extension.
     bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
     {
+      if (!is_connected())
+        return false;
+
       // Calculate the overall size of the data in the buffers
       size_t size(boost::asio::buffer_size(buffers));
 
@@ -407,6 +524,9 @@ namespace via
     bool last_chunk(std::string extension = "",
                     std::string trailer_string = "")
     {
+      if (!is_connected())
+        return false;
+
       http::last_chunk last_chunk(extension, trailer_string);
       tx_header_ = last_chunk.to_string();
 
@@ -419,6 +539,13 @@ namespace via
     /// Disconnect the underlying connection.
     void disconnect()
     { connection_->shutdown(); }
+
+    /// Close the socket and cancel the timer.
+    void close()
+    {
+      connection_->close();
+      timer_.cancel();
+    }
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
