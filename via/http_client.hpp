@@ -115,7 +115,11 @@ namespace via
 
     /// Attempt to connect to the host.
     bool connect()
-    { return connection_->connect(host_name_.c_str(), port_name_.c_str()); }
+    {
+      if (connection_->connected())
+        return true;
+      return connection_->connect(host_name_.c_str(), port_name_.c_str());
+    }
 
     /// The callback function for the timer_.
     /// @param ptr a weak pointer to this http_client.
@@ -543,8 +547,9 @@ namespace via
     /// Close the socket and cancel the timer.
     void close()
     {
-      connection_->close();
+      period_ = 0;
       timer_.cancel();
+      connection_->close();
     }
 
     /// Accessor function for the comms connection.
