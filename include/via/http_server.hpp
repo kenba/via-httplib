@@ -54,6 +54,7 @@
 #include <boost/asio/ssl/context.hpp>
 #endif
 #include <map>
+#include <stdexcept>
 #include <iostream>
 
 namespace via
@@ -393,25 +394,11 @@ namespace via
       server_->set_no_delay(true);
     }
 
-    /// Default request_received handler
-    /// @param weak_ptr a weak_ptr to the http_connection.
-    // @param request the received HTTP request.
-    // @param body the body (if any) of the HTTP request.
-    virtual void request_handler(boost::weak_ptr<http_connection_type> weak_ptr,
-                                 via::http::rx_request const&, // request,
-                                 Container const&) // body)
-    {
-      boost::shared_ptr<http_connection_type> connection(weak_ptr.lock());
-      if (connection)
-      {
-        via::http::tx_response response(via::http::response_status::code::NOT_IMPLEMENTED);
-        response.add_server_header();
-        response.add_date_header();
-        connection->send(response);
-      }
-    }
-
     /// Start accepting connections on the given port and protocol.
+    /// @pre http_server::request_received_event must have been called to register
+    /// the request received callback function before this function.
+    /// @throw logic_error if request_received_event has NOT been called
+    /// before this function.
     /// @param port the port number to serve:
     /// default 80 for HTTP or 443 for HTTPS.
     /// @param ipv4_only whether an IPV4 only server is required, default false.
@@ -421,8 +408,8 @@ namespace via
                        bool ipv4_only = false)
     {
       if (!http_request_handler_)
-        http_request_handler_ = boost::bind(&http_server::request_handler,
-                                            this, _1, _2, _3);
+        throw std::logic_error
+          ("via::http_server, a request_received_event is not registered");
 
       return server_->accept_connections(port, ipv4_only);
     }
@@ -430,8 +417,8 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
 
-    /// Connect a request received callback function.
-    /// @post the server will call handler instead of request_handler.
+    /// Connect the request received callback function.
+    /// @post the application may call http_server::accept_connections.
     /// @param handler the handler for a received HTTP request.
     void request_received_event(RequestHandler handler) NOEXCEPT
     { http_request_handler_ = handler; }

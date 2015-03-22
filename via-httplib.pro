@@ -15,9 +15,6 @@ isEmpty(VIAHTTPLIB) {
 }
 
 win32 {
-  # Set the minimum target Windows version to Windows 7
-  DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
-
   # Ensure that the BOOST_ROOT environment variable has been set
   BOOST_ROOT = $$(BOOST_ROOT)
   isEmpty(BOOST_ROOT) {
@@ -25,52 +22,75 @@ win32 {
   } else {
     message(Using Boost from: $$BOOST_ROOT)
   }
+}
 
-  INCLUDEPATH += $$BOOST_ROOT
+TEMPLATE = lib
+CONFIG -= app_bundle
+CONFIG -= qt
+CONFIG += c++14
+CONFIG += thread
+CONFIG += shared
+CONFIG += separate_debug_info
 
-  # Set debug options for MinGw
-  *-g++* {
+# Compiler options
+*-g++* {
+  message(Setting flags for GCC or MinGw)
+
+  QMAKE_CXXFLAGS += -Wall
+  QMAKE_CXXFLAGS += -Wextra
+  QMAKE_CXXFLAGS += -Wpedantic
+
+  win32 {
+    # Set debug options for MinGw in QtCreator
     QMAKE_CXXFLAGS_DEBUG = -O0
     QMAKE_CXXFLAGS_DEBUG += -gdwarf-3
   }
 }
 
-# Compiler options
-*-g++* {
-  message(Setting flags for GCC or MinGw)
-  QMAKE_CXXFLAGS += -std=c++11
-
-  QMAKE_CXXFLAGS += -Wall
-  QMAKE_CXXFLAGS += -Wextra
-  QMAKE_CXXFLAGS += -Wpedantic
-}
-
 *-clang* {
   message(Setting flags for clang)
-  QMAKE_CXXFLAGS += -std=c++11
-  QMAKE_CXXFLAGS += -Wno-c++11-extensions
   QMAKE_CXXFLAGS += -stdlib=libc++
 }
 
-TEMPLATE = lib
-CONFIG += console
-CONFIG -= app_bundle
-CONFIG -= qt
-CONFIG += create_prl
+include (via-httplib.pri)
 
-INCLUDEPATH += $$VIAHTTPLIB
+SRC_DIR = $$VIAHTTPLIB/src
 
-HEADERS += $${VIAHTTPLIB}/via/http/*.hpp
-HEADERS += $${VIAHTTPLIB}/via/comms/*.hpp
-HEADERS += $${VIAHTTPLIB}/via/comms/ssl/*.hpp
-HEADERS += $${VIAHTTPLIB}/via/*.hpp
+SOURCES += $${SRC_DIR}/via/http/character.cpp
+SOURCES += $${SRC_DIR}/via/http/chunk.cpp
+SOURCES += $${SRC_DIR}/via/http/header_field.cpp
+SOURCES += $${SRC_DIR}/via/http/headers.cpp
+SOURCES += $${SRC_DIR}/via/http/request_method.cpp
+SOURCES += $${SRC_DIR}/via/http/request.cpp
+SOURCES += $${SRC_DIR}/via/http/response_status.cpp
+SOURCES += $${SRC_DIR}/via/http/response.cpp
 
-SOURCES += $${VIAHTTPLIB}/via/http/character.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/chunk.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/header_field.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/headers.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/request_method.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/request.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/response_status.cpp
-SOURCES += $${VIAHTTPLIB}/via/http/response.cpp
+CONFIG(release, debug|release) {
+  DESTDIR = $${OUT_PWD}/release
+} else {
+  DESTDIR = $${OUT_PWD}/debug
+}
 
+OBJECTS_DIR = $${DESTDIR}/obj
+
+# To run install after a build:
+windows {
+  contains(QMAKE_TARGET.arch, x86_64) {
+    DLL_DIR = /Windows/system
+  } else {
+    DLL_DIR = /Windows/system32
+  }
+} else {
+  macx {
+    DLL_DIR = /usr/local/lib
+  } else {
+    contains(QMAKE_TARGET.arch, x86_64) {
+      DLL_DIR = /usr/lib64
+    } else {
+      DLL_DIR = /usr/lib
+    }
+  }
+}
+
+target.path = $$DLL_DIR
+INSTALLS += target

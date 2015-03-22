@@ -6,8 +6,8 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "header_field.hpp"
-#include "character.hpp"
+#include "via/http/header_field.hpp"
+#include "via/http/character.hpp"
 
 #ifdef _MSC_VER // MSVC doesn't like gmtime...
 #pragma warning( disable : 4996 )

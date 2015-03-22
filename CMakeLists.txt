@@ -46,19 +46,19 @@ if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
 
   add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
-    via/http/character.cpp
-    via/http/chunk.cpp
-    via/http/header_field.cpp
-    via/http/headers.cpp
-    via/http/request.cpp
-    via/http/request_method.cpp
-    via/http/response.cpp
-    via/http/response_status.cpp
+    src/via/http/character.cpp
+    src/via/http/chunk.cpp
+    src/via/http/header_field.cpp
+    src/via/http/headers.cpp
+    src/via/http/request.cpp
+    src/via/http/request_method.cpp
+    src/via/http/response.cpp
+    src/via/http/response_status.cpp
   )
-    
+
   install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME}
     DESTINATION lib)
 
-  install(DIRECTORY via
+  install(DIRECTORY include/via
     DESTINATION include)
 endif()

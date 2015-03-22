@@ -6,8 +6,8 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "response_status.hpp"
-#include "character.hpp"
+#include "via/http/response_status.hpp"
+#include "via/http/character.hpp"
 
 namespace
 {
