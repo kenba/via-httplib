@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Louis Henry Nayegon.
+# Copyright (c) 2013-2015 Louis Henry Nayegon.
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -37,23 +37,28 @@ endif()
 if(Boost_FOUND)
   if (MSVC)
     add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(MSVC)
   if (WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-D_WIN32_WINNT=0x0600)
   endif(WIN32)
   include_directories(${Boost_INCLUDE_DIRS})
 
   add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
-    via/http/character.cpp
-    via/http/chunk.cpp
-    via/http/header_field.cpp
-    via/http/headers.cpp
-    via/http/request.cpp
-    via/http/request_method.cpp
-    via/http/response.cpp
-    via/http/response_status.cpp
+    src/via/http/character.cpp
+    src/via/http/chunk.cpp
+    src/via/http/header_field.cpp
+    src/via/http/headers.cpp
+    src/via/http/request.cpp
+    src/via/http/request_method.cpp
+    src/via/http/response.cpp
+    src/via/http/response_status.cpp
   )
 
-  install(PROGRAMS ${VIA_HTTPLIB_LIBRARY_NAME}
-    DESTINATION bin)
+  install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME}
+    DESTINATION lib)
+
+  install(DIRECTORY include/via
+    DESTINATION include)
 endif()

@@ -1,0 +1,17 @@
+@startuml
+
+'Copyright (c) 2015 Ken Barker
+
+'title HTTP Expect 100 Continue Sequence 
+
+actor client
+client -> http_server : HTTP request with header,\n expects: 100-Continue
+opt default
+  http_server -> http_server : response status = 100 Continue
+else expect continue handler
+  http_server -> application : expect continue
+  http_server <- application : response
+end
+client <- http_server : HTTP response 
+
+@enduml

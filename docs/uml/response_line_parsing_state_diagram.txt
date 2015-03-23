@@ -1,0 +1,32 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title HTTP Response Line Parsing States
+
+[*] --> HTTP
+
+HTTP : Check HTTP 
+HTTP : text & version
+HTTP --> STATUS : Ok
+HTTP --> Error : Failure
+
+STATUS : Check whitespace length,
+STATUS : status length & numeric
+STATUS --> REASON : Ok
+STATUS --> Error : Failure
+
+REASON : Check whitespace length
+REASON : & reason length
+REASON --> CRLF : Ok
+REASON --> Error : Failure
+
+CRLF : Check CR & LF chars
+CRLF --> [*] : Ok
+CRLF --> Error : Failure
+
+Error : Reason for error
+Error : can be determined
+Error : from parsing state
+
+@enduml

@@ -1,0 +1,61 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title via-httplib server classes
+
+class via.http_server<extends socket_adaptor, container> {
+Constructor()
++http_server(boost::asio::io_service& io_service)
+
+Callbacks()
++void request_received_event(http_request_callback_type)
++void request_expect_continue_event(http_request_callback_type)
++void request_invalid_event(http_request_callback_type)
++void chunk_received_event(http_chunk_callback_type)
++void socket_connected_event(http_connection_callback_type)
++void socket_disconnected_event(http_connection_callback_type)
++void message_sent_event(http_connection_callback_type)
+
+Starting & Stopping()
++error_code accept_connections(port_number, ipv6)
++close()
+
+Configuration()
++void set_keep_alive(enable)
++void set_strict_cr_lf_parsing(enable)
++void set_max_whitespace_length(length)
++void set_max_method_length(length)
++void set_max_uri_length(length)
++void set_max_headers_length(length)
++void set_max_body_size(length)
++void set_max_chunk_size(length)
+
+SSL Configuration()
++void set_password(password)
++error_code set_ssl_files(certificate_file, key_file, dh_file)
+}
+
+via.http_server *-- "*" via.http_connection
+
+class via.http_connection<extends socket_adaptor, container> {
+Accessors()
++http::rx_request request()
++http::rx_chunk const& chunk()
++container body()
++string remote_address()
+
+Send Responses()
++send_response()
++send(response)
++send(response, body)
+
+Send Chunks()
++send_chunk(chunk, extension)
++last_chunk(extension, trailer_string)
+
+Connection()
++disconnect()
+}
+
+@enduml

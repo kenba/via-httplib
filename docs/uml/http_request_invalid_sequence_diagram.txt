@@ -1,0 +1,28 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+'title HTTP request invalid sequence 
+
+actor client
+client -> http_server : HTTP request\n(invalid)
+
+opt default
+  http_server -> http_server : response status
+  client <- http_server : HTTP response\n(error status)
+  
+  opt auto disconnect
+    client <- http_server : disconnect
+  end
+
+else invalid request callback
+
+  http_server -> application : invalid request
+  http_server <- application : response status
+  client <- http_server : HTTP response\n(error status)
+  
+  http_server <- application : disconnect
+  client <- http_server : disconnect
+end
+
+@enduml

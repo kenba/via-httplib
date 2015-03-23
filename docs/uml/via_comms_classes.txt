@@ -1,0 +1,28 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title Via Comms Classes
+
+class server<extends socket_adaptor, container, use_strand>
+server *-- "*" connection
+
+'class http_connection<extends socket_adaptor, container, use_strand>
+'http_connection o--connection
+
+class connection<extends socket_adaptor, container, use_strand>
+connection *--socket_adaptor
+connection *-- container
+connection <|-- std.make_shared_from_this
+
+abstract class socket_adaptor
+'socket_adaptor <|-- udp_adaptor
+socket_adaptor <|-- tcp_adaptor
+socket_adaptor <|-- ssl.ssl_tcp_adaptor
+
+abstract class container
+container <|-- std.vector
+container <|-- std.string
+
+
+@enduml

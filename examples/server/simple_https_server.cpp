@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2015 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -17,20 +17,32 @@ typedef https_server_type::http_connection_type http_connection;
 
 namespace
 {
-  /// The handler for incoming HTTP requests.
-  /// Prints the request and responds with 200 OK.
+  /// The handler for HTTP requests.
+  /// Outputs the request.
+  /// Responds with 200 OK with the client address in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
                        via::http::rx_request const& request,
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
-    std::cout << "Rx headers: " << request.headers().to_string();
+    std::cout << request.headers().to_string();
     std::cout << "Rx body: "    << body << std::endl;
 
-    via::http::tx_response response(via::http::response_status::code::OK);
-    response.add_server_header();
-    response.add_date_header();
-    weak_ptr.lock()->send(response);
+    http_connection::shared_pointer connection(weak_ptr.lock());
+    if (connection)
+    {
+      // output the request
+      via::http::tx_response response(via::http::response_status::code::OK);
+      response.add_server_header();
+      response.add_date_header();
+
+      // respond with the client's address
+      std::string response_body("Hello, ");
+      response_body += connection->remote_address();
+      connection->send(response, response_body);
+    }
+    else
+      std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
   }
 }
 
@@ -50,8 +62,9 @@ int main(int /* argc */, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create the HTTP server
+    // Create the HTTP server and attach the request handler
     https_server_type https_server(io_service);
+    https_server.request_received_event(request_handler);
 
     // Set up SSL
     https_server.set_password(password);
@@ -62,9 +75,6 @@ int main(int /* argc */, char *argv[])
       std::cerr << "Error, set_ssl_files: "  << error.message() << std::endl;
       return 1;
     }
-
-    // attach the request handler
-    https_server.request_received_event(request_handler);
 
     // and accept IPV4 connections on the default port (443)
     error = https_server.accept_connections();
