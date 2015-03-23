@@ -330,8 +330,8 @@ namespace via
     /// Connect to the given host name and port.
     /// @param host_name the host to connect to.
     /// @param port_name the port to connect to.
-    /// @param reconnection_period the time to wait after a disconnect before
-    /// attempting to re-connect.
+    /// @param period the time to wait after a disconnect before attempting to
+    /// re-connect, default zero. I.e. don't attempt to re-connect.
     /// @return true if resolved, false otherwise.
     bool connect(const std::string& host_name, std::string port_name = "http",
                  unsigned long period = 0)
@@ -373,6 +373,8 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Accessors
 
+    /// Accessor for the receive buffer..
+    /// @return a constant reference to rx_buffer_.
     Container const& rx_buffer() const
     { return rx_buffer_; }
 
