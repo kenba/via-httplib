@@ -6,8 +6,8 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = via-httplib
-PROJECT_NUMBER         = 1.1.2
-PROJECT_BRIEF          = "A library for embedding an HTTP(S) server in C++ applications."
+PROJECT_NUMBER         = 1.0.5
+PROJECT_BRIEF          = "A C++ HTTP library."
 PROJECT_LOGO           = "images/Via Logo100x70.gif"
 OUTPUT_DIRECTORY       = .
 CREATE_SUBDIRS         = NO
@@ -165,7 +165,7 @@ INPUT_FILTER           =
 FILTER_PATTERNS        = 
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS = 
-USE_MDFILE_AS_MAINPAGE = 
+USE_MDFILE_AS_MAINPAGE =
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing

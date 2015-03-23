@@ -7,51 +7,88 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 /// @file example_http_client.cpp
-/// @brief An example HTTP client with chunk and disconnected handlers.
+/// @brief An example HTTP client with optional handlers.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
-using http_client_type = via::http_client<via::comms::tcp_adaptor, std::string>;
-using http_chunk_type  = http_client_type::chunk_type;
+typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
+  // An http_client.
+  // Declared here so that it can be used in the connected_handler,
+  // response_handler and chunk_handler.
+  http_client_type::shared_pointer http_client;
+
+  // The method from the user
+  std::string method;
+
+  // The uri from the user
+  std::string uri;
+
+  /// A handler for the signal sent when an HTTP socket is connected.
+  void connected_handler()
+  {
+    // Create an http request and send it to the host.
+    // Note: via-httplib will add a host header with the host name
+    // given in the call to connect
+    via::http::tx_request request(method, uri);
+    http_client->send(request);
+  }
+
   /// The handler for incoming HTTP requests.
   /// Prints the response.
   void response_handler(via::http::rx_response const& response,
                         std::string const& body)
   {
-    std::cout << "Rx response: " << response.to_string();
-    std::cout << "Rx headers: "  << response.headers().to_string();
+    std::cout << "Rx response: " << response.to_string()
+              << response.headers().to_string();
     std::cout << "Rx body: "     << body << std::endl;
 
     if (!response.is_chunked())
-      exit(0);
+      http_client->disconnect();
   }
 
   /// The handler for incoming HTTP chunks.
   /// Prints the chunk header and data to std::cout.
   void chunk_handler(http_chunk_type const& chunk, std::string const& data)
   {
-    std::cout << "Rx chunk: " << chunk.to_string();
-    std::cout << "Chunk data: " << data << std::endl;
-
     if (chunk.is_last())
     {
-      std::cout << "Rx last chunk" << std::endl;
-      exit(0);
+      std::cout << "Rx chunk is last, extension: " << chunk.extension()
+                << " trailers: " << chunk.trailers().to_string() << std::endl;
+      http_client->disconnect();
     }
+    else
+      std::cout << "Rx chunk, size: " << chunk.size()
+                << " data: " << data << std::endl;
+  }
+
+  /// The handler for invalid HTTP requests.
+  /// Outputs the last receive buffer contents
+  void invalid_response_handler(via::http::rx_response const&, // response,
+                                std::string const&) // body)
+  {
+    std::cout << "Invalid response: "
+              << http_client->rx_buffer() << std::endl;
+    http_client->disconnect();
   }
 
   /// The handler for the HTTP socket disconnecting.
   void disconnected_handler()
   {
     std::cout << "Socket disconnected" << std::endl;
-    exit(0);
+  }
+
+  /// A handler for the signal when a message is sent.
+  void message_sent_handler()
+  {
+    std::cout << "request sent" << std::endl;
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -71,8 +108,8 @@ int main(int argc, char *argv[])
   }
 
   std::string host_name(argv[1]);
-  std::string method(argv[2]);
-  std::string uri(argv[3]);
+  method = argv[2];
+  uri    = argv[3];
   std::cout << app_name << " host: " << host_name
             << " method: " << method
             << " uri: " << uri << std::endl;
@@ -81,27 +118,35 @@ int main(int argc, char *argv[])
     // The asio io_service.
     boost::asio::io_service io_service;
 
-    // Create an http_client
-    http_client_type::shared_pointer http_client
-        (http_client_type::create(io_service));
+    // Create an http_client and attach the response & chunk handlers
+    http_client =
+        http_client_type::create(io_service, response_handler, chunk_handler);
 
-    // Attach the callback handlers
-    // and attempt to connect to the host on the standard http port (80)
-    http_client->response_received_event(response_handler);
-    http_client->chunk_received_event(chunk_handler);
+    // attach the optional handlers
+    http_client->invalid_response_event(invalid_response_handler);
+    http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
+    http_client->message_sent_event(message_sent_handler);
+
+    // set tcp keep alive
+    http_client->connection()->set_keep_alive(true);
+
+    // set the connection buffer sizes
+    http_client->connection()->set_rx_buffer_size(16384);
+    http_client->connection()->set_receive_buffer_size(16384);
+    http_client->connection()->set_send_buffer_size(16384);
+
+    // attempt to connect to the host on the standard http port (80)
     if (!http_client->connect(host_name))
     {
-      std::cout << "Could not resolve host: " << host_name << std::endl;
+      std::cout << "Error, could not resolve host: " << host_name << std::endl;
       return 1;
     }
 
-    // Create an http request and send it to the host.
-    via::http::tx_request request(method, uri);
-    http_client->send(request);
-
     // run the io_service to start communications
     io_service.run();
+
+    std::cout << "io_service.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {

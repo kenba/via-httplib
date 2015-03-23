@@ -1,0 +1,20 @@
+@startuml
+
+'Copyright (c) 2015 Ken Barker
+
+'title Response chunks sequence
+
+actor server
+http_client <- application : request
+server <- http_client : HTTP request
+server -> http_client : HTTP response with header,\nTransfer-encoding: Chunked
+http_client -> application : response received
+loop
+  server -> http_client : HTTP chunk received
+  http_client -> application : chunk received
+end
+
+server -> http_client : HTTP chunk received
+http_client -> application : chunk received\n(is last)
+
+@enduml

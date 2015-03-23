@@ -1,0 +1,13 @@
+@startuml
+
+'Copyright (c) 2015 Ken Barker
+
+'title HTTP Request Sequence 
+
+actor client
+client -> http_server : HTTP request
+http_server -> application : request received
+http_server <- application : response
+client <- http_server : HTTP response 
+
+@enduml
