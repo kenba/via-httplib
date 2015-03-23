@@ -84,6 +84,12 @@ windows {
   macx {
     DLL_DIR = /usr/local/lib
   } else {
+    # Qt doesn't set QMAKE_TARGET.arch on linux
+    # see: http://qt-project.org/faq/answer/how_can_i_detect_in_the_.pro_file_if_i_am_compiling_for_a_32_bit_or_a_64_bi
+    *g++:QMAKE_TARGET.arch = $$QMAKE_HOST.arch
+    *g++-32:QMAKE_TARGET.arch = x86
+    *g++-64:QMAKE_TARGET.arch = x86_64
+
     contains(QMAKE_TARGET.arch, x86_64) {
       DLL_DIR = /usr/lib64
     } else {
@@ -91,6 +97,7 @@ windows {
     }
   }
 }
+message (Install DLL_DIR is: $$DLL_DIR)
 
 target.path = $$DLL_DIR
 INSTALLS += target
