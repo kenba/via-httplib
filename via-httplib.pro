@@ -25,7 +25,7 @@ win32 {
 }
 
 TEMPLATE = lib
-CONFIG -= app_bundle
+CONFIG -= lib_bundle
 CONFIG -= qt
 CONFIG += c++14
 CONFIG += thread
