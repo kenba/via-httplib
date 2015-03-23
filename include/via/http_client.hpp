@@ -70,15 +70,15 @@ namespace via
     typedef typename http::rx_chunk<Container> chunk_type;
 
     /// The ResponseHandler type.
-    typedef TR1::function <void (http::rx_response const&, Container const&)>
+    typedef std::function <void (http::rx_response const&, Container const&)>
       ResponseHandler;
 
     /// The ChunkHandler type.
-    typedef TR1::function <void (chunk_type const&, Container const&)>
+    typedef std::function <void (chunk_type const&, Container const&)>
       ChunkHandler;
 
     /// The ConnectionHandler type.
-    typedef TR1::function <void (void)>
+    typedef std::function <void (void)>
       ConnectionHandler;
 
   private:

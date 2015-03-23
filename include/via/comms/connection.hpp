@@ -70,10 +70,10 @@ namespace via
       typedef typename boost::asio::ip::tcp::resolver::iterator resolver_iterator;
 
       /// Event callback function type.
-      typedef TR1::function<void (int, weak_pointer)> event_callback_type;
+      typedef std::function<void (int, weak_pointer)> event_callback_type;
 
       /// Error callback function type.
-      typedef TR1::function<void (boost::system::error_code const&,
+      typedef std::function<void (boost::system::error_code const&,
                                   weak_pointer)> error_callback_type;
 
     private:

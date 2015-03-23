@@ -19,17 +19,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <deque>
-
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
 #include <functional>
-/// C++03/C++11 compatibility, tr1 namespace removed in C++11 (and MSVC >= 2010).
-#define TR1 std
-#else
-#include <tr1/functional>
-/// C++03 C++11 compatibility, std::tr1 namespace required by C++03 with TR1.
-#define TR1 std::tr1
-#endif
 
 namespace via
 {
@@ -47,21 +37,21 @@ namespace via
     /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
-    typedef TR1::function<void (boost::system::error_code const&)>
+    typedef std::function<void (boost::system::error_code const&)>
       ErrorHandler;
 
     /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-    typedef TR1::function<void (boost::system::error_code const&, size_t)>
+    typedef std::function<void (boost::system::error_code const&, size_t)>
       CommsHandler;
 
     /// @typedef ConnectHandler
     /// A connect hander callback function type.
     /// @param error the (boost) error code.
     /// @param host_iterator the resolver_iterator
-    typedef TR1::function<void (boost::system::error_code const&,
+    typedef std::function<void (boost::system::error_code const&,
                                 boost::asio::ip::tcp::resolver::iterator)>
       ConnectHandler;
 

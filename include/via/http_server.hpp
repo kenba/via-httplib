@@ -112,17 +112,17 @@ namespace via
     typedef typename http::rx_chunk<Container> chunk_type;
 
     /// The RequestHandler type.
-    typedef TR1::function <void (boost::weak_ptr<http_connection_type>,
+    typedef std::function <void (boost::weak_ptr<http_connection_type>,
                                  http::rx_request const&, Container const&)>
       RequestHandler;
 
     /// The ChunkHandler type.
-    typedef TR1::function <void (boost::weak_ptr<http_connection_type>,
+    typedef std::function <void (boost::weak_ptr<http_connection_type>,
                                  chunk_type const&, Container const&)>
       ChunkHandler;
 
     /// The ConnectionHandler type.
-    typedef TR1::function <void (boost::weak_ptr<http_connection_type>)>
+    typedef std::function <void (boost::weak_ptr<http_connection_type>)>
       ConnectionHandler;
 
   private:
