@@ -21,9 +21,9 @@ set( VIA_HTTPLIB_LIBRARY_NAME via-httplib )
 
 set(Boost_USE_MULTITHREADED ON)
 if(VIA_HTTPLIB_BUILD_TESTS)
-  set(Boost_COMPONENTS system thread regex )
+  set(Boost_COMPONENTS system thread)
 else()
-  set(Boost_COMPONENTS system thread regex )
+  set(Boost_COMPONENTS system thread)
 endif()
 
 find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )

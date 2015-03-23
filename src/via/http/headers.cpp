@@ -9,30 +9,15 @@
 #include "via/http/headers.hpp"
 #include <cstdlib>
 #include <algorithm>
-
-// if C++11 or Visual Studio 2010 or newer
-#if ((__cplusplus >= 201103L) || (_MSC_VER >= 1600))
-  #include <regex>
-  /// C++03/C++11 compatibility, use std::regex in C++11
-  #define REGEX_STD std::regex
-  /// C++03/C++11 compatibility, use std::regex_match in C++11
-  #define REGEX_MATCH std::regex_match
-
-#else
-  #include <boost/regex.hpp>
-  /// C++03/C++11 compatibility, use boost::regex in C++03
-  #define REGEX_STD boost::regex
-  /// C++03/C++11 compatibility, use boost::regex_match in C++03
-  #define REGEX_MATCH boost::regex_match
-#endif
+#include <regex>
 
 namespace
 {
   const std::string EMPTY_STRING("");
 
-  const REGEX_STD REGEX_IDENTITY(".*identity.*",     REGEX_STD::icase);
-  const REGEX_STD REGEX_CLOSE   (".*close.*",        REGEX_STD::icase);
-  const REGEX_STD REGEX_CONTINUE(".*100-continue.*", REGEX_STD::icase);
+  const std::regex REGEX_IDENTITY(".*identity.*",     std::regex::icase);
+  const std::regex REGEX_CLOSE   (".*close.*",        std::regex::icase);
+  const std::regex REGEX_CONTINUE(".*100-continue.*", std::regex::icase);
 }
 
 namespace via
@@ -138,7 +123,7 @@ namespace via
       if (xfer_encoding.empty())
         return false;
 
-      return (!REGEX_MATCH(xfer_encoding, REGEX_IDENTITY));
+      return (!std::regex_match(xfer_encoding, REGEX_IDENTITY));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -150,7 +135,7 @@ namespace via
       if (connection.empty())
         return false;
 
-      return (REGEX_MATCH(connection, REGEX_CLOSE));
+      return (std::regex_match(connection, REGEX_CLOSE));
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -162,7 +147,7 @@ namespace via
       if (connection.empty())
         return false;
 
-      return (REGEX_MATCH(connection, REGEX_CONTINUE));
+      return (std::regex_match(connection, REGEX_CONTINUE));
     }
     //////////////////////////////////////////////////////////////////////////
 
