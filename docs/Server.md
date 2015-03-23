@@ -179,7 +179,7 @@ HTTP headers, e.g.:
     via::http::tx_response response(via::http::response_status::code::OK, header_string); 
                                      
 However, the application must ensure that the header_string does not contain
-any "split headers" (see: [Security Guide](docs/Server_Security.md)) before sending it.
+any "split headers" (see: [Security Guide](Server_Security.md)) before sending it.
 Since the server will not send an HTTP response containing "split headers".  
 The `tx_response::is_valid()` can be used to test for split headers, e.g.:
 

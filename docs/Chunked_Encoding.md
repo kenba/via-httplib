@@ -10,7 +10,7 @@ it as a series of chunks. This allows dynamically produced content to be transfe
 
 `via-httplib` Server and Client applications may receive HTTP chunks by registering
 a handler for the `chunk_received_event` from `http_connection` and `http_client`
-respectively, see [User Guide](USE.md) and [Clients](CLIENT.md).
+respectively, see [Servers](Server.md) and [Clients](CLIENT.md).
 
 If a server application doesn't register a handler for this event then `http_server`
 will concatenate the received chunks into the body of the request and send a

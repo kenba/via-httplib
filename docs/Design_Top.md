@@ -1,9 +1,9 @@
-# Design #
+# Design
 
 The via-httplib library consists of three parts:  
 
- 1. [Tcp and Ssl communications software in namespace `via::comms`](Design_comms.md)
- 2. [The HTTP parser/encoder in namespace `via::http`](Design_HTTP.md)
+ 1. Tcp and Ssl communications software in namespace [via::comms](Design_comms.md)
+ 2. The HTTP parser/encoder in namespace [via::http](Design_HTTP.md)
  3. HTTP server, connection and client API in namespace `via`  
  
 ![Via Namespaces](images/via_namespaces.png)
@@ -15,9 +15,9 @@ that’s required.
 
 Detailed design on `via::http` and `via::comms` can be found by following the links above.
 
-## The HTTP server library `via` ##
+## The HTTP server library `via`
 
-### Requirements ###
+### Requirements
 
 By default, the HTTP server shall implement the HTTP 1.1 protocol as defined
 in [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html).
@@ -44,8 +44,10 @@ would to a request message with a “GET” method for the same resource. Howeve
 although the response message may contain a “Content-Length” message header,
 it MUST NOT contain any data, i.e. a message body.
 
-### Design ###
-      
+### Design
+     
+#### HTTP Server
+     
 The HTTP server consists of:
 
 + `http_connections` i.e. connections with an HTTP request parser and an HTTP
@@ -59,9 +61,18 @@ implemented as template classes instantiated with a `SocketAdaptor` for the type
 of comms socket required and a `Container` for the type of buffer to use
 (default `std::vector` of `char`).
 
-TODO add client description
+#### HTTP Client
 
-#### Use of `shared_ptr` and `weak_ptr` ####
+The HTTP client just consists of `http_clients`, i.e. connections with an HTTP request encoder
+and an HTTP response parser.  
+
+![HTTP Client Classes](images/http_client_classes.png)
+
+As above, the HTTP clients are implemented as template classes instantiated with
+a `SocketAdaptor` for the type of comms socket required and a `Container` for the
+type of buffer to use.
+
+## Use of `shared_ptr` and `weak_ptr`
 
 A key feature of the connections is that they can only be created as shared
 pointers. This is to manage the ownership of the connections. The
