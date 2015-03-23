@@ -161,19 +161,20 @@ namespace via
       void start_accept()
       {
         next_connection_ = connection_type::create(io_service_,
-                                boost::bind(&server::event_handler, this, _1, _2),
-                                boost::bind(&server::error_handler, this,
-                                            boost::asio::placeholders::error, _2),
-                                                   rx_buffer_size_);
+          [this](int event, boost::weak_ptr<connection_type> ptr)
+            { event_handler(event, ptr); },
+          [this](boost::system::error_code const& error,
+                 boost::weak_ptr<connection_type> ptr)
+            { error_handler(error, ptr); });
+
         if (acceptor_v6_.is_open())
           acceptor_v6_.async_accept(next_connection_->socket(),
-                                 boost::bind(&server::accept_handler, this,
-                                             boost::asio::placeholders::error));
-
+            [this](boost::system::error_code const& error)
+              { accept_handler(error); });
         if (acceptor_v4_.is_open())
           acceptor_v4_.async_accept(next_connection_->socket(),
-                                 boost::bind(&server::accept_handler, this,
-                                             boost::asio::placeholders::error));
+            [this](boost::system::error_code const& error)
+              { accept_handler(error); });
       }
 
     public:
@@ -311,7 +312,7 @@ namespace via
       {
         password_ = password;
         connection_type::ssl_context().set_password_callback
-            (boost::bind(&server::password, this));
+            ([this](){ return server::password(); });
       }
 
       /// Set the size of the receive buffer.

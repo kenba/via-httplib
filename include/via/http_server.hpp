@@ -384,11 +384,13 @@ namespace via
       disconnected_handler_ (),
       message_sent_handler_ ()
     {
-      server_->set_event_callback
-          (boost::bind(&http_server::event_handler, this, _1, _2));
-      server_->set_error_callback
-          (boost::bind(&http_server::error_handler, this,
-                        boost::asio::placeholders::error, _2));
+      server_->set_event_callback([this]
+        (int event, boost::weak_ptr<connection_type> connection)
+          { event_handler(event, connection); });
+      server_->set_error_callback([this]
+        (boost::system::error_code const& error,
+         boost::weak_ptr<connection_type> connection)
+          { error_handler(error, connection); });
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_server will want to send messages immediately
       server_->set_no_delay(true);

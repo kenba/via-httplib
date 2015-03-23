@@ -202,9 +202,9 @@ namespace via
       if (period_ > 0)
       {
         timer_.expires_from_now(boost::posix_time::milliseconds(period_));
-        timer_.async_wait(boost::bind(&http_client::timeout_handler,
-                                      weak_from_this(),
-                                      boost::asio::placeholders::error));
+        weak_pointer weak_ptr(weak_from_this());
+        timer_.async_wait([weak_ptr](boost::system::error_code const& error)
+                           { timeout_handler(weak_ptr, error); });
       }
     }
 
@@ -313,12 +313,14 @@ namespace via
     {
       shared_pointer client_ptr(new http_client(io_service, response_handler,
                                             chunk_handler, rx_buffer_size));
-      client_ptr->connection_->set_error_callback
-          (boost::bind(&http_client::error_handler,
-                       boost::asio::placeholders::error, _2));
-      client_ptr->connection_->set_event_callback
-          (boost::bind(&http_client::event_callback, weak_pointer(client_ptr),
-                       _1, _2));
+      weak_pointer ptr(client_ptr);
+      client_ptr->connection_->set_error_callback([]
+        (const boost::system::error_code &error,
+         typename connection_type::weak_pointer weak_ptr)
+           { error_handler(error, weak_ptr); });
+      client_ptr->connection_->set_event_callback([ptr]
+        (int event, typename connection_type::weak_pointer weak_ptr)
+           { event_callback(ptr, event, weak_ptr); });
       return client_ptr;
     }
 

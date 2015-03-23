@@ -17,7 +17,6 @@
 /// @see ssl_tcp_adaptor
 //////////////////////////////////////////////////////////////////////////////
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include <deque>
 #include <functional>
 

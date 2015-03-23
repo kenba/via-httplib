@@ -144,8 +144,9 @@ namespace via
                      ConnectHandler connect_handler)
         {
           ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
-          socket_.set_verify_callback
-              (boost::bind(&ssl_tcp_adaptor::verify_certificate, _1, _2));
+          socket_.set_verify_callback([]
+            (bool preverified, boost::asio::ssl::verify_context& ctx)
+              { return verify_certificate(preverified, ctx); });
 
           host_iterator_ = resolve_host(host_name, port_name);
           if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())

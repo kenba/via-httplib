@@ -112,21 +112,20 @@ namespace via
 
         if (connected_)
         {
+          // local copies for lambdas
+          weak_pointer weak_ptr(weak_from_this());
+          boost::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
           if (use_strand)
             SocketAdaptor::write(tx_buffers_,
-               strand_.wrap(
-               boost::bind(&connection::write_callback,
-                           weak_from_this(),
-                           boost::asio::placeholders::error,
-                           boost::asio::placeholders::bytes_transferred,
-                           tx_queue_)));
+               strand_.wrap([weak_ptr, tx_queue]
+                            (boost::system::error_code const& error,
+                             size_t bytes_transferred)
+            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
           else
             SocketAdaptor::write(tx_buffers_,
-               boost::bind(&connection::write_callback,
-                           weak_from_this(),
-                           boost::asio::placeholders::error,
-                           boost::asio::placeholders::bytes_transferred,
-                           tx_queue_));
+              [weak_ptr, tx_queue](boost::system::error_code const& error,
+                                   size_t bytes_transferred)
+            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
         }
 
         return connected_;
@@ -137,21 +136,21 @@ namespace via
       /// Read data via the socket adaptor.
       void read_data()
       {
+        // local copies for lambdas
+        weak_pointer weak_ptr(weak_from_this());
+        boost::shared_ptr<Container> rx_buffer(rx_buffer_);
+
         if (use_strand)
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-              strand_.wrap(
-              boost::bind(&connection::read_callback,
-                          weak_from_this(),
-                          boost::asio::placeholders::error,
-                          boost::asio::placeholders::bytes_transferred,
-                          rx_buffer_)));
+              strand_.wrap([weak_ptr, rx_buffer]
+                           (boost::system::error_code const& error,
+                            size_t bytes_transferred)
+           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
         else
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-              boost::bind(&connection::read_callback,
-                          weak_from_this(),
-                          boost::asio::placeholders::error,
-                          boost::asio::placeholders::bytes_transferred,
-                          rx_buffer_));
+            [weak_ptr, rx_buffer](boost::system::error_code const& error,
+                                  size_t bytes_transferred)
+           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
       }
 
       /// This function determines whether the error is a socket disconnect.
@@ -335,17 +334,16 @@ namespace via
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake(boost::bind(&connection::handshake_callback, ptr,
-                               boost::asio::placeholders::error), false);
+            pointer->handshake([ptr](boost::system::error_code const& error)
+              { handshake_callback(ptr, error); }, false);
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
-              pointer->connect_socket
-                  (boost::bind(&connection::connect_callback, ptr,
-                               boost::asio::placeholders::error,
-                               boost::asio::placeholders::iterator),
-                   ++host_iterator);
+              pointer->connect_socket([ptr]
+                  (boost::system::error_code const& error,
+                   resolver_iterator host_iterator)
+              { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
             else
             {
               pointer->close();
@@ -586,10 +584,10 @@ namespace via
       /// @param port_name the port to connect to.
       bool connect(const char *host_name, const char *port_name)
       {
+        weak_pointer ptr(weak_from_this());
         return SocketAdaptor::connect(host_name, port_name,
-          boost::bind(&connection::connect_callback, weak_from_this(),
-                      boost::asio::placeholders::error,
-                      boost::asio::placeholders::iterator));
+          [ptr](boost::system::error_code const& error, resolver_iterator itr)
+            { connect_callback(ptr, error, itr); });
       }
 
       /// @fn start
@@ -610,9 +608,10 @@ namespace via
         timeout_             = timeout;
         receive_buffer_size_ = receive_buffer_size;
         send_buffer_size_    = send_buffer_size;
-        SocketAdaptor::start(boost::bind(&connection::handshake_callback,
-                                         weak_from_this(),
-                                         boost::asio::placeholders::error));
+
+        weak_pointer weak_ptr(weak_from_this());
+        SocketAdaptor::start([weak_ptr](boost::system::error_code const& error)
+          { handshake_callback(weak_ptr, error); });
       }
 
       /// @fn shutdown
@@ -620,13 +619,12 @@ namespace via
       void shutdown()
       {
         // Call shutdown with the callbacks
-        SocketAdaptor::shutdown(boost::bind(&connection::shutdown_callback,
-                                            weak_from_this(),
-                                            boost::asio::placeholders::error),
-                                boost::bind(&connection::close_callback,
-                                            weak_from_this(),
-                                            boost::asio::placeholders::error,
-                                            boost::asio::placeholders::bytes_transferred));
+        weak_pointer weak_ptr(weak_from_this());
+        SocketAdaptor::shutdown([weak_ptr](boost::system::error_code const& error)
+                                { shutdown_callback(weak_ptr, error); },
+                                [weak_ptr](boost::system::error_code const& error,
+                                           int bytes)
+                                { close_callback(weak_ptr, error, bytes); });
       }
 
       /// @fn close
