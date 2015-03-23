@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(NamesEqual)
   for (int i(static_cast<int>(header_field::id::CACHE_CONTROL));
        i <= static_cast<int>(header_field::id::EXTENSION_HEADER); ++i)
   {
-    header_field::id::field field_id(static_cast<header_field::id::field>(i));
+    header_field::id field_id(static_cast<header_field::id>(i));
     std::string lowerName(boost::algorithm::to_lower_copy(header_field::standard_name(field_id)));
 
     BOOST_CHECK_EQUAL(header_field::lowercase_name(field_id), lowerName);
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(ToHeaderDate)
 
 BOOST_AUTO_TEST_CASE(ServerHeader)
 {
-  std::string line("Server: Via-httplib/1.0.5\r\n");
+  std::string line("Server: Via-httplib\r\n");
 
   std::string result(header_field::server_header());
   BOOST_CHECK_EQUAL(line, result);

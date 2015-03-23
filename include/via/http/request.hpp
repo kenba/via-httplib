@@ -218,7 +218,7 @@ namespace via
       /// @param uri the HTTP uri, default blank
       /// @param major_version default '1'
       /// @param minor_version default '1'
-      explicit request_line(request_method::id::method method_id,
+      explicit request_line(request_method::id method_id,
                             std::string uri,
                             char major_version = '1',
                             char minor_version = '1') :
@@ -451,7 +451,7 @@ namespace via
       /// @param header_string default blank
       /// @param major_version default 1
       /// @param minor_version default 1
-      explicit tx_request(request_method::id::method method_id,
+      explicit tx_request(request_method::id method_id,
                           std::string uri,
                           std::string header_string = "",
                           char major_version = '1',
@@ -488,7 +488,7 @@ namespace via
       /// @see http::header_field::field_id
       /// @param field_id the header field id
       /// @param value the header field value
-      void add_header(header_field::id::field field_id, const std::string& value)
+      void add_header(header_field::id field_id, const std::string& value)
       { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the request.
@@ -546,7 +546,7 @@ namespace via
       Container  body_;    ///< the request body or data for the last chunk
       /// the appropriate response to the request:
       /// either an error code or 100 Continue.
-      response_status::code::status response_code_;
+      response_status::code response_code_;
       bool       continue_sent_;   ///< a 100 Continue response has been sent
       bool       is_head_;         ///< whether it's a HEAD request
 
@@ -666,7 +666,7 @@ namespace via
       { return body_; }
 
       /// Accessor for the response code.
-      response_status::code::status response_code() const NOEXCEPT
+      response_status::code response_code() const NOEXCEPT
       { return response_code_; }
 
       /// Create the body of the TRACE response in the request body.

@@ -841,7 +841,8 @@ BOOST_AUTO_TEST_CASE(LoopbackOk1)
   BOOST_CHECK(rx_state == RX_VALID);
 
   rx_response const& the_response(the_response_receiver.response());
-  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
+                    the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(0, the_response.content_length());
 }
@@ -861,7 +862,8 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   BOOST_CHECK(rx_state == RX_INCOMPLETE);
 
   rx_response const& the_response(the_response_receiver.response());
-  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
+                    the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(36, the_response.content_length());
 
@@ -913,7 +915,8 @@ BOOST_AUTO_TEST_CASE(LoopbackOk3)
   BOOST_CHECK(rx_state == RX_VALID);
 
   rx_response const& the_response(the_response_receiver.response());
-  BOOST_CHECK_EQUAL(response_status::code::OK, the_response.status());
+  BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
+                    the_response.status());
   BOOST_CHECK_EQUAL("OK", the_response.reason_phrase().c_str());
   BOOST_CHECK_EQUAL(36, the_response.content_length());
 

@@ -27,13 +27,10 @@ namespace via
   {
     namespace request_method
     {
-      /// A namespace to mimic C++11 enum class naming.
-      namespace id
-      {
       /// Ids for the standard methods defined in RFC2616.
       /// They are intended to be used in conjunction with the function
       /// method_name to encode and decode the method from a request.
-      enum method
+      enum id
       {
         OPTIONS,
         GET,
@@ -44,11 +41,10 @@ namespace via
         TRACE,
         CONNECT
       };
-      }
 
       /// The standard method name associated with ids above.
       /// @return the standard method name.
-      const std::string& name(id::method method_id) NOEXCEPT;
+      const std::string& name(id method_id) NOEXCEPT;
     }
   }
 }

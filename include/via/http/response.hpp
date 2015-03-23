@@ -222,7 +222,7 @@ namespace via
       /// @param status_code the response status code
       /// @param major_version default '1'
       /// @param minor_version default '1'
-      explicit response_line(response_status::code::status status_code,
+      explicit response_line(response_status::code status_code,
                              char major_version = '1',
                              char minor_version = '1') :
         strict_crlf_(false),
@@ -259,7 +259,7 @@ namespace via
         status_(status),
         reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
-                    (static_cast<response_status::code::status>(status))),
+                    (static_cast<response_status::code>(status))),
         major_version_(major_version),
         minor_version_(minor_version),
 
@@ -272,7 +272,7 @@ namespace via
 
       /// Set the response status for standard responses.
       /// @param status_code the response status.
-      void set_status(response_status::code::status status_code)
+      void set_status(response_status::code status_code)
       {
         status_ = static_cast<int>(status_code);
         reason_phrase_ = response_status::reason_phrase(status_code);
@@ -431,7 +431,7 @@ namespace via
       /// @see http::response_status::code
       /// @param status_code the response status code
       /// @param header_string default blank
-      explicit tx_response(response_status::code::status status_code,
+      explicit tx_response(response_status::code status_code,
                            std::string header_string = "") :
         response_line(status_code),
         header_string_(header_string)
@@ -466,7 +466,7 @@ namespace via
       /// @see http::header_field::field_id
       /// @param field_id the header field id
       /// @param value the header field value
-      void add_header(header_field::id::field field_id, const std::string& value)
+      void add_header(header_field::id field_id, const std::string& value)
       { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the response.

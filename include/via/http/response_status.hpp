@@ -23,11 +23,8 @@ namespace via
   {
     namespace response_status
     {
-      /// A namespace to mimic C++11 enum class naming.
-      namespace code
-      {
       /// The standard HTTP 1.1 response status codes.
-      enum status
+      enum class code
       {
         // Informational 1xx
         CONTINUE                      = 100,
@@ -79,20 +76,19 @@ namespace via
         GATEWAY_TIMEOUT               = 504,
         HTTP_VERSION_NOT_SUPPORTED    = 505
       };
-      }
 
       /// The standard reason phrase associated with the response status code.
       /// See RFC2616 Section 6.1.1.
       /// @param status the reason status code
       /// @return the standard reason phrase associated with the status code.
-      const std::string& reason_phrase(code::status status_code) NOEXCEPT;
+      const std::string& reason_phrase(code status_code) NOEXCEPT;
 
       /// Find whether there's a standard reason phrase for the status_code.
       /// See RFC2616 Section 6.1.1.
       /// @param status the reason status code
       /// @return the standard reason phrase associated with the status code.
       inline const std::string& reason_phrase(int status_code)
-      { return reason_phrase(static_cast<code::status>(status_code)); }
+      { return reason_phrase(static_cast<code>(status_code)); }
     }
   }
 }
