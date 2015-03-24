@@ -153,7 +153,7 @@ namespace via
     RequestHandler    http_request_handler_; ///< the request callback function
     ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
     RequestHandler    http_continue_handler_;///< the continue callback function
-    RequestHandler    http_invalid_handler;  ///< the invalid callback function
+    RequestHandler    http_invalid_handler_; ///< the invalid callback function
     ConnectionHandler connected_handler_;    ///< the connected callback function
     ConnectionHandler disconnected_handler_; ///< the disconncted callback function
     ConnectionHandler message_sent_handler_; ///< the packet sent callback function
@@ -248,10 +248,10 @@ namespace via
           // intentional fall through
 
         case http::RX_INVALID:
-          if (http_invalid_handler)
-            http_invalid_handler(http_connection,
-                                 http_connection->request(),
-                                 http_connection->body());
+          if (http_invalid_handler_)
+            http_invalid_handler_(http_connection,
+                                  http_connection->request(),
+                                  http_connection->body());
           else
           {
             http_connection->send_response();
@@ -384,7 +384,7 @@ namespace via
       http_request_handler_ (),
       http_chunk_handler_   (),
       http_continue_handler_(),
-      http_invalid_handler  (),
+      http_invalid_handler_ (),
       connected_handler_    (),
       disconnected_handler_ (),
       message_sent_handler_ ()
@@ -456,7 +456,7 @@ namespace via
     /// @post disables auto_disconnect_ (if enabled).
     /// @param handler the handler for a invalid request received.
     void invalid_request_event(RequestHandler handler) NOEXCEPT
-    { http_invalid_handler = handler; }
+    { http_invalid_handler_ = handler; }
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected event.
