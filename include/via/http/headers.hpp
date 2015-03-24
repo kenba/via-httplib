@@ -16,7 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
 #include "character.hpp"
-#include <map>
+#include <unordered_map>
 
 namespace via
 {
@@ -176,7 +176,7 @@ namespace via
       size_t         max_header_length_; ///< the max cumulative length
 
       /// The HTTP message header fields.
-      std::map<std::string, std::string> fields_;
+      std::unordered_map<std::string, std::string> fields_;
       field_line field_; ///< the current field being parsed
       bool       valid_; ///< true if the headers are valid
       size_t     length_; ///< the length of the message headers
@@ -272,7 +272,7 @@ namespace via
       /// @param name the field name (in lower case)
       /// @param value the field value.
       void add(const std::string& name, const std::string& value)
-      { fields_.insert(std::map<std::string, std::string>::value_type
+      { fields_.insert(std::unordered_map<std::string, std::string>::value_type
                      (name, value)); }
 
       /// Find the value for a given header name.

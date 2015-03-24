@@ -92,7 +92,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     const std::string& message_headers::find(const std::string& name) const
     {
-      std::map<std::string, std::string>::const_iterator iter
+      std::unordered_map<std::string, std::string>::const_iterator iter
         (fields_.find(name));
 
       if (iter != fields_.end())
@@ -155,7 +155,7 @@ namespace via
     std::string message_headers::to_string() const
     {
       std::string output;
-      for (std::map<std::string, std::string>::const_iterator
+      for (std::unordered_map<std::string, std::string>::const_iterator
            iter(fields_.begin()); iter != fields_.end(); ++iter)
         output += header_field::to_header(iter->first, iter->second);
 
