@@ -353,6 +353,12 @@ namespace via
 
   public:
 
+    /// Copy constructor deleted to disable copying.
+    http_server(http_server const&) = delete;
+
+    /// Assignment operator deleted to disable copying.
+    http_server& operator=(http_server) = delete;
+
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     explicit http_server(boost::asio::io_service& io_service) :

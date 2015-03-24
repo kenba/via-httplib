@@ -15,7 +15,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
 #include "via/no_except.hpp"
-#include <boost/noncopyable.hpp>
 #include <set>
 #include <string>
 #include <sstream>
@@ -44,7 +43,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     template <typename SocketAdaptor, typename Container = std::vector<char>,
               bool use_strand = false>
-    class server : boost::noncopyable
+    class server
     {
     public:
 
@@ -177,6 +176,12 @@ namespace via
       }
 
     public:
+
+      /// Copy constructor deleted to disable copying.
+      server(server const&) = delete;
+
+      /// Assignment operator deleted to disable copying.
+      server& operator=(server) = delete;
 
       /// The server constructor.
       /// @post the event_callback and error_callback functions MUST be set
