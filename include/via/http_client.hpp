@@ -17,9 +17,6 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/bind.hpp>
 #include <iostream>
 
 namespace via
@@ -40,7 +37,7 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container = std::vector<char>,
             bool use_strand = false>
-  class http_client : public boost::enable_shared_from_this
+  class http_client : public std::enable_shared_from_this
                           <http_client<SocketAdaptor, Container, use_strand> >
   {
   public:
@@ -49,15 +46,15 @@ namespace via
                                                               connection_type;
 
     /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_client<SocketAdaptor, Container,
+    typedef typename std::weak_ptr<http_client<SocketAdaptor, Container,
                                                    use_strand> > weak_pointer;
 
     /// A shared pointer to this type.
-    typedef typename boost::shared_ptr<http_client<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container,
                                                    use_strand> > shared_pointer;
 
     /// The enable_shared_from_this type of this class.
-    typedef typename boost::enable_shared_from_this
+    typedef typename std::enable_shared_from_this
                 <http_client<SocketAdaptor, Container, use_strand> > enable;
 
     /// The template requires a typename to access the iterator.
@@ -86,7 +83,7 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Variables
 
-    boost::shared_ptr<connection_type> connection_; ///< the comms connection
+    std::shared_ptr<connection_type> connection_; ///< the comms connection
     boost::asio::deadline_timer timer_;             ///< a deadline timer
     http::response_receiver<Container> rx_;         ///< the response receiver
     std::string host_name_;                         ///< the name of the host
@@ -558,7 +555,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
-    boost::shared_ptr<connection_type> connection() NOEXCEPT
+    std::shared_ptr<connection_type> connection() NOEXCEPT
     { return connection_; }
   };
 }

@@ -49,7 +49,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
-#include <boost/bind.hpp>
 #ifdef HTTP_SSL
 #include <boost/asio/ssl/context.hpp>
 #endif
@@ -91,7 +90,7 @@ namespace via
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
-    typedef std::map<void*, boost::shared_ptr<http_connection_type> >
+    typedef std::map<void*, std::shared_ptr<http_connection_type> >
       connection_collection;
 
     /// The template requires a typename to access the iterator.
@@ -112,17 +111,17 @@ namespace via
     typedef typename http::rx_chunk<Container> chunk_type;
 
     /// The RequestHandler type.
-    typedef std::function <void (boost::weak_ptr<http_connection_type>,
+    typedef std::function <void (std::weak_ptr<http_connection_type>,
                                  http::rx_request const&, Container const&)>
       RequestHandler;
 
     /// The ChunkHandler type.
-    typedef std::function <void (boost::weak_ptr<http_connection_type>,
+    typedef std::function <void (std::weak_ptr<http_connection_type>,
                                  chunk_type const&, Container const&)>
       ChunkHandler;
 
     /// The ConnectionHandler type.
-    typedef std::function <void (boost::weak_ptr<http_connection_type>)>
+    typedef std::function <void (std::weak_ptr<http_connection_type>)>
       ConnectionHandler;
 
   private:
@@ -130,7 +129,7 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Variables
 
-    boost::shared_ptr<server_type> server_;   ///< the communications server
+    std::shared_ptr<server_type> server_;   ///< the communications server
     connection_collection http_connections_;  ///< the communications channels
 
     // Request parser parameters
@@ -164,7 +163,7 @@ namespace via
 
     /// Handle a connected signal from an underlying comms connection.
     /// @param connection a weak ponter to the underlying comms connection.
-    void connected_handler(boost::weak_ptr<connection_type> connection)
+    void connected_handler(std::weak_ptr<connection_type> connection)
     {
       // Use the raw pointer of the connection as the map key.
       void* pointer(connection.lock().get());
@@ -176,7 +175,7 @@ namespace via
       if (iter == http_connections_.end())
       {
         // Create and configure a new http_connection_type.
-        boost::shared_ptr<http_connection_type> http_connection
+        std::shared_ptr<http_connection_type> http_connection
             (new http_connection_type(connection,
                                       strict_crlf_,
                                       max_whitespace_,
@@ -207,7 +206,7 @@ namespace via
     void receive_handler(connection_collection_iterator conn)
     {
       // Get the connection
-      boost::shared_ptr<http_connection_type> http_connection(conn->second);
+      std::shared_ptr<http_connection_type> http_connection(conn->second);
 
       // Get the receive buffer
       Container const& rx_buffer(http_connection->read_rx_buffer());
@@ -301,7 +300,7 @@ namespace via
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
-    void event_handler(int event, boost::weak_ptr<connection_type> connection)
+    void event_handler(int event, std::weak_ptr<connection_type> connection)
     {
       if (via::comms::CONNECTED == event)
         connected_handler(connection);
@@ -344,7 +343,7 @@ namespace via
     /// @param error the boost error_code.
     // @param connection a weak ponter to the underlying comms connection.
     void error_handler(const boost::system::error_code &error,
-                       boost::weak_ptr<connection_type>) // connection)
+                       std::weak_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
@@ -385,11 +384,11 @@ namespace via
       message_sent_handler_ ()
     {
       server_->set_event_callback([this]
-        (int event, boost::weak_ptr<connection_type> connection)
+        (int event, std::weak_ptr<connection_type> connection)
           { event_handler(event, connection); });
       server_->set_error_callback([this]
         (boost::system::error_code const& error,
-         boost::weak_ptr<connection_type> connection)
+         std::weak_ptr<connection_type> connection)
           { error_handler(error, connection); });
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_server will want to send messages immediately
@@ -637,7 +636,7 @@ namespace via
 
     /// Accessor function for the comms server.
     /// @return a shared pointer to the server
-    boost::shared_ptr<server_type> tcp_server() NOEXCEPT
+    std::shared_ptr<server_type> tcp_server() NOEXCEPT
     { return server_; }
   };
 

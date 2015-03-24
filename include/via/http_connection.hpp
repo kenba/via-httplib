@@ -18,8 +18,6 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <deque>
 #include <iostream>
 
@@ -44,7 +42,7 @@ namespace via
   /// default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor, typename Container, bool use_strand>
-  class http_connection : public boost::enable_shared_from_this
+  class http_connection : public std::enable_shared_from_this
                       <http_connection<SocketAdaptor, Container, use_strand> >
   {
   public:
@@ -53,11 +51,11 @@ namespace via
                                                               connection_type;
 
     /// A weak pointer to this type.
-    typedef typename boost::weak_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container,
                                      use_strand> > weak_pointer;
 
     /// A strong pointer to this type.
-    typedef typename boost::shared_ptr<http_connection<SocketAdaptor, Container,
+    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container,
                                        use_strand> > shared_pointer;
 
     /// The template requires a typename to access the iterator.
@@ -93,7 +91,7 @@ namespace via
     /// @param buffers the data to write.
     bool send(comms::ConstBuffers const& buffers)
     {
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      std::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(buffers);
@@ -114,7 +112,7 @@ namespace via
       else
         rx_.clear();
 
-      boost::shared_ptr<connection_type> tcp_pointer(connection_.lock());
+      std::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
         tcp_pointer->send_data(buffers);

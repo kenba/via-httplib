@@ -17,8 +17,7 @@
 #include "socket_adaptor.hpp"
 #include "via/no_except.hpp"
 #include <boost/system/error_code.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <memory>
 #include <vector>
 
 namespace via
@@ -46,24 +45,24 @@ namespace via
     template <typename SocketAdaptor, typename Container = std::vector<char>,
               bool use_strand = false>
     class connection : public SocketAdaptor,
-        public boost::enable_shared_from_this
+        public std::enable_shared_from_this
             <connection<SocketAdaptor, Container, use_strand> >
     {
     public:
 
 
       /// A weak pointer to a connection.
-      typedef typename boost::weak_ptr<connection<SocketAdaptor, Container,
+      typedef typename std::weak_ptr<connection<SocketAdaptor, Container,
                                                   use_strand> >
          weak_pointer;
 
       /// A shared pointer to a connection.
-      typedef typename boost::shared_ptr<connection<SocketAdaptor, Container,
+      typedef typename std::shared_ptr<connection<SocketAdaptor, Container,
                                                     use_strand> >
          shared_pointer;
 
       /// The enable_shared_from_this type of this class.
-      typedef typename boost::enable_shared_from_this
+      typedef typename std::enable_shared_from_this
                   <connection<SocketAdaptor, Container, use_strand> > enable;
 
       /// The resolver_iterator type of the SocketAdaptor
@@ -81,8 +80,8 @@ namespace via
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
       size_t rx_buffer_size_;              ///< The recieve buffer size.
-      boost::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
-      boost::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
+      std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
+      std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
       ConstBuffers tx_buffers_;            ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
@@ -114,7 +113,7 @@ namespace via
         {
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
-          boost::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
+          std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
           if (use_strand)
             SocketAdaptor::write(tx_buffers_,
                strand_.wrap([weak_ptr, tx_queue]
@@ -138,7 +137,7 @@ namespace via
       {
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
-        boost::shared_ptr<Container> rx_buffer(rx_buffer_);
+        std::shared_ptr<Container> rx_buffer(rx_buffer_);
 
         if (use_strand)
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
@@ -209,7 +208,7 @@ namespace via
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
                                 size_t bytes_transferred,
-                                boost::shared_ptr<Container>) // rx_buffer)
+                                std::shared_ptr<Container>) // rx_buffer)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
@@ -248,7 +247,7 @@ namespace via
       static void write_callback(weak_pointer ptr,
                                  boost::system::error_code const& error,
                                  size_t bytes_transferred,
-                                 boost::shared_ptr<std::deque<Container> >) // tx_queue)
+                                 std::shared_ptr<std::deque<Container> >) // tx_queue)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))

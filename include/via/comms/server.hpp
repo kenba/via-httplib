@@ -16,7 +16,6 @@
 #include "connection.hpp"
 #include "via/no_except.hpp"
 #include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
 #include <set>
 #include <string>
 #include <sstream>
@@ -53,7 +52,7 @@ namespace via
       typedef connection<SocketAdaptor, Container, use_strand> connection_type;
 
       /// A set of connections.
-      typedef std::set<boost::shared_ptr<connection_type> > connections;
+      typedef std::set<std::shared_ptr<connection_type> > connections;
 
       /// An iterator to the connections;
       typedef typename connections::iterator connections_iterator;
@@ -75,7 +74,7 @@ namespace via
       boost::asio::ip::tcp::acceptor acceptor_v4_;
 
       /// The next connection to be accepted.
-      boost::shared_ptr<connection_type> next_connection_;
+      std::shared_ptr<connection_type> next_connection_;
 
       /// The connections established with this server.
       connections connections_;
@@ -132,12 +131,12 @@ namespace via
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, boost::weak_ptr<connection_type> ptr)
+      void event_handler(int event, std::weak_ptr<connection_type> ptr)
       {
         event_callback_(event, ptr);
         if (event == DISCONNECTED)
         {
-          if (boost::shared_ptr<connection_type> connection = ptr.lock())
+          if (std::shared_ptr<connection_type> connection = ptr.lock())
           {
             // search for the connection to delete
             connections_iterator iter(connections_.find(connection));
@@ -153,7 +152,7 @@ namespace via
       /// @param connection a weak_pointer to the connection that sent the
       /// error.
       void error_handler(const boost::system::error_code& error,
-                         boost::weak_ptr<connection_type> connection)
+                         std::weak_ptr<connection_type> connection)
       { error_callback_(error, connection); }
 
       /// @fn start_accept
@@ -161,10 +160,10 @@ namespace via
       void start_accept()
       {
         next_connection_ = connection_type::create(io_service_,
-          [this](int event, boost::weak_ptr<connection_type> ptr)
+          [this](int event, std::weak_ptr<connection_type> ptr)
             { event_handler(event, ptr); },
           [this](boost::system::error_code const& error,
-                 boost::weak_ptr<connection_type> ptr)
+                 std::weak_ptr<connection_type> ptr)
             { error_handler(error, ptr); });
 
         if (acceptor_v6_.is_open())
