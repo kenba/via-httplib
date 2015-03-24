@@ -8,6 +8,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/header_field.hpp"
 #include "via/http/character.hpp"
+#include <ctime>
 
 #ifdef _MSC_VER // MSVC doesn't like gmtime...
 #pragma warning( disable : 4996 )
