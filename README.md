@@ -47,10 +47,9 @@ Requirements
 
 + The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
 
-+ A C++ compiler. This is the C++03 version.  
-It's currently tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1` so backwards
-compatibility cannot be guaranteed. Also please be aware of this warning from `boost`:
-[old compilers](http://www.boost.org/users/news/old_compilers.html)  
++ A C++ compiler. This is the C++11 version.  
+It's currently tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
+Please be aware of this warning from `boost`: [old compilers](http://www.boost.org/users/news/old_compilers.html)  
 
 + For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
