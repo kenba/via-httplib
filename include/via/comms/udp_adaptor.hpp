@@ -84,7 +84,7 @@ namespace via
       /// The udp socket write function.
       /// @param buffers the buffer(s) containing the message.
       /// @param write_handler the handler called after a message is sent.
-      void write(ConstBuffers const& buffers, CommsHandler write_handler)
+      void write(ConstBuffers& buffers, CommsHandler write_handler)
       {
         if (is_connected_)
           socket_.async_send(buffers, write_handler);

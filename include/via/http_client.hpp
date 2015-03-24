@@ -134,7 +134,7 @@ namespace via
     bool send(comms::ConstBuffers buffers)
     {
       rx_.clear();
-      return connection_->send_data(buffers);
+      return connection_->send_data(std::move(buffers));
     }
 
     /// Receive data on the underlying connection.
@@ -431,7 +431,7 @@ namespace via
 
       tx_body_.swap(body);
       buffers.push_back(boost::asio::buffer(tx_body_));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send an HTTP request with a body.
@@ -448,7 +448,7 @@ namespace via
       tx_header_ = request.message(boost::asio::buffer_size(buffers));
 
       buffers.push_front(boost::asio::buffer(tx_header_));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -478,7 +478,7 @@ namespace via
       if (!is_connected())
         return false;
 
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -500,7 +500,7 @@ namespace via
       comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
       buffers.push_back(boost::asio::buffer(tx_body_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send an HTTP body chunk.
@@ -520,7 +520,7 @@ namespace via
       tx_header_ = chunk_header.to_string();
       buffers.push_front(boost::asio::buffer(tx_header_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send the last HTTP chunk for a request.

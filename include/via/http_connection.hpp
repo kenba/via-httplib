@@ -89,12 +89,12 @@ namespace via
 
     /// Send buffers on the connection.
     /// @param buffers the data to write.
-    bool send(comms::ConstBuffers const& buffers)
+    bool send(comms::ConstBuffers buffers)
     {
       std::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(buffers);
+        tcp_pointer->send_data(std::move(buffers));
         return true;
       }
       else
@@ -104,7 +104,7 @@ namespace via
     /// Send buffers on the connection.
     /// @param buffers the data to write.
     /// @param is_continue whether this is a 100 Continue response
-    bool send(comms::ConstBuffers const& buffers, bool is_continue)
+    bool send(comms::ConstBuffers buffers, bool is_continue)
     {
       bool keep_alive(rx_.request().keep_alive());
       if (is_continue)
@@ -115,7 +115,7 @@ namespace via
       std::shared_ptr<connection_type> tcp_pointer(connection_.lock());
       if (tcp_pointer)
       {
-        tcp_pointer->send_data(buffers);
+        tcp_pointer->send_data(std::move(buffers));
 
         if (keep_alive)
           return true;
@@ -288,7 +288,7 @@ namespace via
         buffers.push_back(boost::asio::buffer(tx_body_));
       }
 
-      return send(buffers, response.is_continue());
+      return send(std::move(buffers), response.is_continue());
     }
 
     /// Send an HTTP response with a body.
@@ -314,7 +314,7 @@ namespace via
       tx_header_ = response.message(size);
       buffers.push_front(boost::asio::buffer(tx_header_));
 
-      return send(buffers, response.is_continue());
+      return send(std::move(buffers), response.is_continue());
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -333,7 +333,7 @@ namespace via
       comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
       buffers.push_back(boost::asio::buffer(tx_body_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send an HTTP body chunk.
@@ -350,7 +350,7 @@ namespace via
       tx_header_ = chunk_header.to_string();
       buffers.push_front(boost::asio::buffer(tx_header_));
       buffers.push_back(boost::asio::buffer(http::CRLF));
-      return send(buffers);
+      return send(std::move(buffers));
     }
 
     /// Send the last HTTP chunk for a response.

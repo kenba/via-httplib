@@ -171,7 +171,7 @@ namespace via
         /// The ssl tcp socket write function.
         /// @param buffers the buffer(s) containing the message.
         /// @param write_handler the handler called after a message is sent.
-        void write(ConstBuffers const& buffers, CommsHandler write_handler)
+        void write(ConstBuffers& buffers, CommsHandler write_handler)
         {
           boost::asio::async_write(socket_, buffers, write_handler);
         }

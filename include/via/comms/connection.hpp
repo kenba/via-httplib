@@ -130,7 +130,6 @@ namespace via
         return connected_;
       }
 
-
       /// @fn read_data
       /// Read data via the socket adaptor.
       void read_data()
@@ -673,10 +672,10 @@ namespace via
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.
       /// @param packet the data packet to write.
-      void send_data(Container const& packet)
+      void send_data(Container packet)
       {
         bool was_empty(tx_queue_->empty());
-        tx_queue_->push_back(packet);
+        tx_queue_->push_back(std::move(packet));
 
         if (!transmitting_ && was_empty)
           write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
@@ -685,30 +684,15 @@ namespace via
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.
-      bool send_data(ConstBuffers const& buffers)
+      bool send_data(ConstBuffers buffers)
       {
         if (!transmitting_ && tx_queue_->empty())
         {
-          transmitting_ = write_data(buffers);
+          transmitting_ = write_data(std::move(buffers));
           return transmitting_;
         }
         else
           return false;
-      }
-
-      /// @fn send_data(ForwardIterator1 begin, ForwardIterator2 end)
-      /// The packet is added to the back of the transmit queue and sent if
-      /// the queue was empty.
-      /// This function takes a pair of iterators, so the data doesn't have
-      /// to be held in the same type of container as the connection has been
-      /// instantiated with.
-      /// @param begin iterator to the beginning of the data to write.
-      /// @param end iterator to the end of the data to write.
-      template<typename ForwardIterator1, typename ForwardIterator2>
-      void send_data(ForwardIterator1 begin, ForwardIterator2 end)
-      {
-        Container buffer(begin, end);
-        send_data(buffer);
       }
 
       /// @fn set_no_delay
