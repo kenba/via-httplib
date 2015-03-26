@@ -23,3 +23,13 @@ HEADERS += $${INC_DIR}/via/comms/ssl/*.hpp
 
 release: LIBS += -L$${VIAHTTPLIB}/release
 debug:   LIBS += -L$${VIAHTTPLIB}/debug
+
+# Ensure that the dubug library has a different name
+VIA_HTTPLIB_NAME = via-httplib
+CONFIG(debug, debug|release) {
+  win32 {
+   VIA_HTTPLIB_NAME = $$join(VIA_HTTPLIB_NAME,,,d)
+  } else {
+   VIA_HTTPLIB_NAME = $$join(VIA_HTTPLIB_NAME,,,_debug)
+  }
+}
