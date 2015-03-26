@@ -107,5 +107,8 @@ win32 {
 }
 message (Install DLL_DIR is: $$DLL_DIR)
 
+# Use the name from via-httplib.pri
+TARGET = $$VIA_HTTPLIB_NAME
+
 target.path = $$DLL_DIR
 INSTALLS += target
