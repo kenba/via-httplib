@@ -21,14 +21,12 @@ set( VIA_HTTPLIB_LIBRARY_NAME via-httplib )
 
 set(Boost_USE_MULTITHREADED ON)
 if(VIA_HTTPLIB_BUILD_TESTS)
-  set(Boost_COMPONENTS system thread)
 else()
-  set(Boost_COMPONENTS system thread)
+  set(Boost_COMPONENTS system)
 endif()
 
 find_package( Boost 1.51.0 REQUIRED ${Boost_COMPONENTS} )
 find_package( OpenSSL )
-find_package( Threads )
 
 if (OPENSSL_FOUND)
     add_definitions(-DBOOST_NETWORK_ENABLE_HTTPS)
@@ -41,9 +39,11 @@ if(Boost_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(MSVC)
   if (WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0600)
+    add_definitions(-D_WIN32_WINNT=_WIN32_WINNT_WIN7)
   endif(WIN32)
-  include_directories(${Boost_INCLUDE_DIRS})
+  include_directories(
+    ${Boost_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
   add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
     src/via/http/character.cpp

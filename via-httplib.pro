@@ -15,6 +15,9 @@ isEmpty(VIAHTTPLIB) {
 }
 
 win32 {
+  # Min version is Windows 7
+  DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
+
   # Ensure that the BOOST_ROOT environment variable has been set
   BOOST_ROOT = $$(BOOST_ROOT)
   isEmpty(BOOST_ROOT) {
@@ -22,6 +25,11 @@ win32 {
   } else {
     message(Using Boost from: $$BOOST_ROOT)
   }
+} else {
+  # Library version numbers
+  VER_MAJ = 1
+  VER_MIN = 1
+  VER_PAT = 2a
 }
 
 TEMPLATE = lib
@@ -74,7 +82,7 @@ CONFIG(release, debug|release) {
 OBJECTS_DIR = $${DESTDIR}/obj
 
 # To run install after a build:
-windows {
+win32 {
   contains(QMAKE_TARGET.arch, x86_64) {
     DLL_DIR = /Windows/system
   } else {
