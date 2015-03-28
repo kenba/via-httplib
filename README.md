@@ -45,11 +45,12 @@ The unbuffered methods use "scatter-gather" writes to avoid copying data.
 Requirements
 ------------
 
-+ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/). Tested with version 1.57.
++ A C++11 compiler.   
+This version requires a complier that supports:  lambdas, enum classes, member function delete,
+std::functional and std::regex. It's been tested with `MSVC 2015`, `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
+Note: versions of `GCC`/`MinGw` prior to `4.9` had an issue with `std::regex`, see: [Bug 53631](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53631)
 
-+ A C++ compiler. This is the C++11 version.  
-It's currently tested with `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
-Please be aware of this warning from `boost`: [old compilers](http://www.boost.org/users/news/old_compilers.html)  
++ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/).
 
 + For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 

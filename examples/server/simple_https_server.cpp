@@ -39,7 +39,7 @@ namespace
       // respond with the client's address
       std::string response_body("Hello, ");
       response_body += connection->remote_address();
-      connection->send(response, response_body);
+      connection->send(std::move(response), std::move(response_body));
     }
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;

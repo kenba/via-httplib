@@ -35,7 +35,7 @@ namespace
     // Note: via-httplib will add a host header with the host name
     // given in the call to connect
     via::http::tx_request request(via::http::request_method::id::GET, uri);
-    http_client->send(request);
+    http_client->send(std::move(request));
   }
 
   /// The handler for incoming HTTP requests.

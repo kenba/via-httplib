@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
-#include <boost/thread.hpp>
+#include <thread>
 #include <iostream>
 
 /// Define an HTTP server using std::string to store message bodies and an
@@ -50,8 +50,8 @@ namespace
     http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
     {
-        // Get the last request on this connection.
-        via::http::rx_request const& request(connection->request());
+      // Get the last request on this connection.
+      via::http::rx_request const& request(connection->request());
 
       // Set the default response to 404 Not Found
       via::http::tx_response response(via::http::response_status::code::NOT_FOUND);
@@ -72,11 +72,12 @@ namespace
         }
       }
 
-      if (response.status() == via::http::response_status::code::OK)
+      if (response.status() ==
+          static_cast<int>(via::http::response_status::code::OK))
       {
         // send the body in an unbuffered response i.e. in ConstBuffers
         // ok because the response_body is persistent data
-        connection->send(response,
+        connection->send(std::move(response),
              via::comms::ConstBuffers(1, boost::asio::buffer(response_body)));
       }
       else
@@ -131,7 +132,7 @@ namespace
                                via::http::rx_request const& request,
                                std::string const& /* body */)
   {
-    static const int MAX_LENGTH(1024);
+    static const auto MAX_LENGTH(1024);
 
     std::cout << "expect_continue_handler\n";
     std::cout << "Rx request: " << request.to_string();
@@ -144,7 +145,7 @@ namespace
 
     http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
-      connection->send(response);
+      connection->send(std::move(response));
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
   }
@@ -244,24 +245,27 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
 
     // register the handle_stop callback
-    signals_.async_wait(boost::bind(&handle_stop,
-                                    boost::asio::placeholders::error,
-                                    boost::asio::placeholders::signal_number,
-                                    &http_server));
+    // local pointer for the lambda capture
+    http_server_type* http_server_ptr(&http_server);
+    signals_.async_wait([http_server_ptr]
+      (boost::system::error_code const& error, int signal_number)
+    { handle_stop(error, signal_number, http_server_ptr); });
 
     // Determine the number of concurrent threads supported
-    size_t no_of_threads(boost::thread::hardware_concurrency());
+    size_t no_of_threads(std::thread::hardware_concurrency());
     std::cout << "No of threads: " << no_of_threads << std::endl;
 
     if (no_of_threads > 0)
     {
       // Create a thread pool for the threads and run the asio io_service
       // in each of the threads.
-      std::vector<boost::shared_ptr<boost::thread> > threads;
+      // local pointer for the lambda capture
+      boost::asio::io_service* io_service_ptr(&io_service);
+      std::vector<std::shared_ptr<std::thread> > threads;
       for (std::size_t i = 0; i < no_of_threads; ++i)
       {
-        boost::shared_ptr<boost::thread> thread(new boost::thread(
-              boost::bind(&boost::asio::io_service::run, &io_service)));
+        std::shared_ptr<std::thread> thread(std::make_shared<std::thread>
+                             ([io_service_ptr](){ io_service_ptr->run(); }));
         threads.push_back(thread);
       }
 
@@ -282,4 +286,3 @@ int main(int argc, char *argv[])
   return 0;
 }
 //////////////////////////////////////////////////////////////////////////////
-

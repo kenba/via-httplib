@@ -55,7 +55,7 @@ namespace
 
       std::cout << "send_chunk: " << chunk_to_send << std::endl;
 
-      connection->send_chunk(chunk_to_send);
+      connection->send_chunk(std::move(chunk_to_send));
     }
     else if (count >= 0)
     {
@@ -107,7 +107,7 @@ namespace
 
       // If sending an OK response to a GET (not a HEAD)
       // send the response in "chunks"
-      if ((response.status() == via::http::response_status::code::OK) &&
+      if ((response.status() == static_cast<int>(via::http::response_status::code::OK)) &&
           (request.method() == "GET") && !request.is_head())
       {
         response.add_header(via::http::header_field::id::TRANSFER_ENCODING,
@@ -115,7 +115,7 @@ namespace
         count = CHUNKS_TO_SEND;
       }
 
-      connection->send(response);
+      connection->send(std::move(response));
     }
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
@@ -171,7 +171,7 @@ namespace
                                via::http::rx_request const& request,
                                std::string const& /* body */)
   {
-    static const size_t MAX_LENGTH(1024);
+    static const auto MAX_LENGTH(1024);
 
     std::cout << "expect_continue_handler\n";
     std::cout << "Rx request: " << request.to_string();
@@ -181,7 +181,7 @@ namespace
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
                        via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
                        via::http::response_status::code::CONTINUE);
-    weak_ptr.lock()->send(response);
+    weak_ptr.lock()->send(std::move(response));
   }
 
   /// A handler for the signal sent when an HTTP socket is disconnected.
@@ -249,10 +249,11 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
 
     // register the handle_stop callback
-    signals_.async_wait(boost::bind(&handle_stop,
-                                    boost::asio::placeholders::error,
-                                    boost::asio::placeholders::signal_number,
-                                    &http_server));
+    // local pointer for the lambda capture
+    http_server_type* http_server_ptr(&http_server);
+    signals_.async_wait([http_server_ptr]
+      (boost::system::error_code const& error, int signal_number)
+    { handle_stop(error, signal_number, http_server_ptr); });
 
     // run the io_service to start communications
     io_service.run();

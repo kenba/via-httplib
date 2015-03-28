@@ -29,7 +29,7 @@ win32 {
   # Library version numbers
   VER_MAJ = 1
   VER_MIN = 1
-  VER_PAT = 2a
+  VER_PAT = 2
 }
 
 TEMPLATE = lib

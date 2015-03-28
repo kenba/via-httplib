@@ -69,7 +69,8 @@ namespace
         }
       }
 
-      if (response.status() == via::http::response_status::code::OK)
+      if (response.status() ==
+          static_cast<int>(via::http::response_status::code::OK))
       {
         // send the body in an unbuffered response i.e. in ConstBuffers
         // ok because the response_body is persistent data
@@ -78,7 +79,7 @@ namespace
       }
       else
         // Send the response without a body.
-        connection->send(response);
+        connection->send(std::move(response));
     }
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
@@ -125,7 +126,7 @@ namespace
                                via::http::rx_request const& request,
                                std::string const& /* body */)
   {
-    static const size_t MAX_LENGTH(1024);
+    static const auto MAX_LENGTH(1024);
 
     std::cout << "expect_continue_handler\n";
     std::cout << "Rx request: " << request.to_string();
@@ -138,15 +139,15 @@ namespace
 
     http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
-      connection->send(response);
+      connection->send(std::move(response));
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
   }
 
   /// A handler for the signal sent when an invalid HTTP mesasge is received.
   void invalid_request_handler(http_connection::weak_pointer weak_ptr,
-                               via::http::rx_request const& request,
-                               std::string const& /* body */)
+                               via::http::rx_request const&, // request,
+                               std::string const&) // body)
   {
     std::cout << "Invalid request from: ";
     http_connection::shared_pointer connection(weak_ptr.lock());
@@ -175,7 +176,7 @@ namespace
   }
 
   /// A handler for the signal when a message is sent.
-  void message_sent_handler(http_connection::weak_pointer weak_ptr)
+  void message_sent_handler(http_connection::weak_pointer) // weak_ptr)
   {
     std::cout << "response sent" << std::endl;
   }
@@ -265,10 +266,11 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
 
     // register the handle_stop callback
-    signals_.async_wait(boost::bind(&handle_stop,
-                                    boost::asio::placeholders::error,
-                                    boost::asio::placeholders::signal_number,
-                                    &https_server));
+    // local pointer for the lambda capture
+    https_server_type* https_server_ptr(&https_server);
+    signals_.async_wait([https_server_ptr]
+      (boost::system::error_code const& error, int signal_number)
+    { handle_stop(error, signal_number, https_server_ptr); });
 
     // run the io_service to start communications
     io_service.run();
