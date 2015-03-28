@@ -15,6 +15,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
 #include "via/no_except.hpp"
+#ifdef HTTP_SSL
+  #include <boost/asio/ssl/context.hpp>
+#endif
 #include <set>
 #include <string>
 #include <sstream>
@@ -301,11 +304,14 @@ namespace via
         return ec;
       }
 
+#ifdef HTTP_SSL
       /// @fn password
       /// Get the password.
       /// @pre It must be an SSL server.
       /// @return The password.
-      const std::string password() const NOEXCEPT
+      const std::string password(std::size_t, // max_length,
+                       boost::asio::ssl::context::password_purpose)// purpose)
+        const NOEXCEPT
       { return password_; }
 
       /// @fn set_password
@@ -316,8 +322,11 @@ namespace via
       {
         password_ = password;
         connection_type::ssl_context().set_password_callback
-            ([this](){ return server::password(); });
+            ([this](std::size_t max_length,
+                    boost::asio::ssl::context::password_purpose purpose)
+        { return server::password(max_length, purpose); });
       }
+#endif
 
       /// Set the size of the receive buffer.
       /// @param size the new size of the receive buffer.
