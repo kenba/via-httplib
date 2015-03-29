@@ -31,10 +31,10 @@ namespace
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(boost::system::error_code const&, // error,
                    int, // signal_number,
-                   http_server_type* http_server)
+                   http_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    http_server->close();
+    http_server.close();
   }
 
   /// A string to send in responses.
@@ -245,11 +245,9 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
 
     // register the handle_stop callback
-    // local pointer for the lambda capture
-    http_server_type* http_server_ptr(&http_server);
-    signals_.async_wait([http_server_ptr]
+    signals_.async_wait([&http_server]
       (boost::system::error_code const& error, int signal_number)
-    { handle_stop(error, signal_number, http_server_ptr); });
+    { handle_stop(error, signal_number, http_server); });
 
     // Determine the number of concurrent threads supported
     size_t no_of_threads(std::thread::hardware_concurrency());
@@ -259,18 +257,16 @@ int main(int argc, char *argv[])
     {
       // Create a thread pool for the threads and run the asio io_service
       // in each of the threads.
-      // local pointer for the lambda capture
-      boost::asio::io_service* io_service_ptr(&io_service);
       std::vector<std::shared_ptr<std::thread> > threads;
       for (std::size_t i = 0; i < no_of_threads; ++i)
       {
         std::shared_ptr<std::thread> thread(std::make_shared<std::thread>
-                             ([io_service_ptr](){ io_service_ptr->run(); }));
+                             ([&io_service](){ io_service.run(); }));
         threads.push_back(thread);
       }
 
       // Wait for all threads in the pool to exit.
-      for (std::size_t i = 0; i < threads.size(); ++i)
+      for (std::size_t i(0); i < threads.size(); ++i)
         threads[i]->join();
     }
     else
