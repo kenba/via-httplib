@@ -31,20 +31,20 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
-      boost::asio::io_service& io_service_; ///< The asio io_service.
-      boost::asio::ip::tcp::socket socket_; ///< The asio TCP socket.
+      ASIO::io_service& io_service_; ///< The asio io_service.
+      ASIO::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.
-      boost::asio::ip::tcp::resolver::iterator host_iterator_;
+      ASIO::ip::tcp::resolver::iterator host_iterator_;
 
       /// @fn resolve_host
       /// resolves the host name and port.
       /// @param host_name the host name.
       /// @param port_name the host port.
-      boost::asio::ip::tcp::resolver::iterator resolve_host
+      ASIO::ip::tcp::resolver::iterator resolve_host
           (char const* host_name, char const* port_name) const
       {
-        boost::asio::ip::tcp::resolver resolver(io_service_);
-        boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+        ASIO::ip::tcp::resolver resolver(io_service_);
+        ASIO::ip::tcp::resolver::query query(host_name, port_name);
         return resolver.resolve(query);
       }
 
@@ -58,7 +58,7 @@ namespace via
       // not used by un-encrypted sockets.
       void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
-        boost::system::error_code ec; // Default is success
+        ASIO_ERROR_CODE ec; // Default is success
         handshake_handler(ec);
       }
 
@@ -67,12 +67,12 @@ namespace via
       /// @param connect_handler the connect callback function.
       /// @param host_iterator the resolver iterator.
       void connect_socket(ConnectHandler connect_handler,
-                          boost::asio::ip::tcp::resolver::iterator host_iterator)
-      { boost::asio::async_connect(socket_, host_iterator, connect_handler); }
+                          ASIO::ip::tcp::resolver::iterator host_iterator)
+      { ASIO::async_connect(socket_, host_iterator, connect_handler); }
 
       /// The tcp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
-      explicit tcp_adaptor(boost::asio::io_service& io_service) :
+      explicit tcp_adaptor(ASIO::io_service& io_service) :
         io_service_(io_service),
         socket_(io_service_),
         host_iterator_()
@@ -101,7 +101,7 @@ namespace via
                    ConnectHandler connectHandler)
       {
         host_iterator_ = resolve_host(host_name, port_name);
-        if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
+        if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
           return false;
 
         connect_socket(connectHandler, host_iterator_);
@@ -116,7 +116,7 @@ namespace via
       void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         socket_.async_read_some
-            (boost::asio::buffer(ptr, size), read_handler);
+            (ASIO::buffer(ptr, size), read_handler);
       }
 
       /// @fn write
@@ -125,7 +125,7 @@ namespace via
       /// @param write_handler the handler called after a message is sent.
       void write(ConstBuffers& buffers, CommsHandler write_handler)
       {
-        boost::asio::async_write(socket_, buffers, write_handler);
+        ASIO::async_write(socket_, buffers, write_handler);
       }
 
       /// @fn shutdown
@@ -137,8 +137,8 @@ namespace via
       void shutdown(ErrorHandler, // shutdown_handler,
                     CommsHandler) // close_handler)
       {
-        boost::system::error_code ignoredEc;
-        socket_.shutdown (boost::asio::ip::tcp::socket::shutdown_both,
+        ASIO_ERROR_CODE ignoredEc;
+        socket_.shutdown (ASIO::ip::tcp::socket::shutdown_both,
                           ignoredEc);
         close();
       }
@@ -148,7 +148,7 @@ namespace via
       /// Cancels any send, receive or connect operations and closes the socket.
       void close()
       {
-        boost::system::error_code ignoredEc;
+        ASIO_ERROR_CODE ignoredEc;
         if (socket_.is_open())
           socket_.close (ignoredEc);
       }
@@ -165,13 +165,13 @@ namespace via
       // @param error the error_code
       // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(boost::system::error_code const&, bool&) NOEXCEPT
+      bool is_disconnect(ASIO_ERROR_CODE const&, bool&) NOEXCEPT
       { return false; }
 
       /// @fn socket
       /// Accessor for the underlying tcp socket.
       /// @return a reference to the tcp socket.
-      boost::asio::ip::tcp::socket& socket() NOEXCEPT
+      ASIO::ip::tcp::socket& socket() NOEXCEPT
       { return socket_; }
     };
 

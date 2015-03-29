@@ -17,6 +17,7 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
+#include <chrono>
 #include <iostream>
 
 namespace via
@@ -84,7 +85,7 @@ namespace via
     // Variables
 
     std::shared_ptr<connection_type> connection_; ///< the comms connection
-    boost::asio::deadline_timer timer_;             ///< a deadline timer
+//    ASIO::deadline_timer timer_;             ///< a deadline timer
     http::response_receiver<Container> rx_;         ///< the response receiver
     std::string host_name_;                         ///< the name of the host
     std::string port_name_;                         ///< the port name / number
@@ -122,10 +123,10 @@ namespace via
     /// @param ptr a weak pointer to this http_client.
     /// @param error the asio error code.
     static void timeout_handler(weak_pointer ptr,
-                                boost::system::error_code const& error)
+                                ASIO_ERROR_CODE const& error)
     {
       shared_pointer pointer(ptr.lock());
-      if (pointer && (boost::asio::error::operation_aborted != error))
+      if (pointer && (ASIO::error::operation_aborted != error))
         pointer->connect();
     }
 
@@ -198,10 +199,14 @@ namespace via
       // attempt to reconnect in period_ miliseconds
       if (period_ > 0)
       {
+#ifdef ASIO_STANDALONE
+//        timer_.expires_from_now(std::chrono::milliseconds(period_));
+#else
         timer_.expires_from_now(boost::posix_time::milliseconds(period_));
-        weak_pointer weak_ptr(weak_from_this());
-        timer_.async_wait([weak_ptr](boost::system::error_code const& error)
-                           { timeout_handler(weak_ptr, error); });
+#endif
+//        weak_pointer weak_ptr(weak_from_this());
+//        timer_.async_wait([weak_ptr](ASIO_ERROR_CODE const& error)
+//                           { timeout_handler(weak_ptr, error); });
       }
     }
 
@@ -231,7 +236,7 @@ namespace via
       switch(event)
       {
       case via::comms::CONNECTED:
-        timer_.cancel();
+//        timer_.cancel();
         rx_buffer_.clear();
         rx_.clear();
         if (connected_handler_)
@@ -255,7 +260,7 @@ namespace via
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
     // @param weak_ptr a weak pointer to the underlying comms connection.
-    static void error_handler(const boost::system::error_code &error,
+    static void error_handler(const ASIO_ERROR_CODE &error,
                           typename connection_type::weak_pointer) // weak_ptr)
     {
       std::cerr << "error_handler" << std::endl;
@@ -268,12 +273,12 @@ namespace via
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    explicit http_client(boost::asio::io_service& io_service,
+    explicit http_client(ASIO::io_service& io_service,
                          ResponseHandler response_handler,
                          ChunkHandler    chunk_handler,
                          size_t          rx_buffer_size) :
       connection_(connection_type::create(io_service, rx_buffer_size)),
-      timer_(io_service),
+//      timer_(io_service),
       rx_(),
       host_name_(),
       tx_header_(),
@@ -303,7 +308,7 @@ namespace via
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    static shared_pointer create(boost::asio::io_service& io_service,
+    static shared_pointer create(ASIO::io_service& io_service,
                                  ResponseHandler response_handler,
                                  ChunkHandler    chunk_handler,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
@@ -312,7 +317,7 @@ namespace via
                                             chunk_handler, rx_buffer_size));
       weak_pointer ptr(client_ptr);
       client_ptr->connection_->set_error_callback([]
-        (const boost::system::error_code &error,
+        (const ASIO_ERROR_CODE &error,
          typename connection_type::weak_pointer weak_ptr)
            { error_handler(error, weak_ptr); });
       client_ptr->connection_->set_event_callback([ptr]
@@ -414,7 +419,7 @@ namespace via
 
       request.add_header(http::header_field::id::HOST, http_host_name());
       tx_header_ = request.message();
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_header_)));
     }
 
     /// Send an HTTP request with a body.
@@ -427,10 +432,10 @@ namespace via
 
       request.add_header(http::header_field::id::HOST, http_host_name());
       tx_header_ = request.message(body.size());
-      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
+      comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
 
       tx_body_.swap(body);
-      buffers.push_back(boost::asio::buffer(tx_body_));
+      buffers.push_back(ASIO::buffer(tx_body_));
       return send(std::move(buffers));
     }
 
@@ -445,9 +450,9 @@ namespace via
         return false;
 
       request.add_header(http::header_field::id::HOST, http_host_name());
-      tx_header_ = request.message(boost::asio::buffer_size(buffers));
+      tx_header_ = request.message(ASIO::buffer_size(buffers));
 
-      buffers.push_front(boost::asio::buffer(tx_header_));
+      buffers.push_front(ASIO::buffer(tx_header_));
       return send(std::move(buffers));
     }
 
@@ -464,7 +469,7 @@ namespace via
         return false;
 
       tx_body_.swap(body);
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_body_)));
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_body_)));
     }
 
     /// Send an HTTP request body.
@@ -497,9 +502,9 @@ namespace via
       tx_header_ = chunk_header.to_string();
       tx_body_.swap(chunk);
 
-      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
-      buffers.push_back(boost::asio::buffer(tx_body_));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
+      comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
+      buffers.push_back(ASIO::buffer(tx_body_));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
@@ -514,12 +519,12 @@ namespace via
         return false;
 
       // Calculate the overall size of the data in the buffers
-      size_t size(boost::asio::buffer_size(buffers));
+      size_t size(ASIO::buffer_size(buffers));
 
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
-      buffers.push_front(boost::asio::buffer(tx_header_));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
+      buffers.push_front(ASIO::buffer(tx_header_));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
@@ -535,7 +540,7 @@ namespace via
       http::last_chunk last_chunk(extension, trailer_string);
       tx_header_ = last_chunk.to_string();
 
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_header_)));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -549,7 +554,7 @@ namespace via
     void close()
     {
       period_ = 0;
-      timer_.cancel();
+//      timer_.cancel();
       connection_->close();
     }
 

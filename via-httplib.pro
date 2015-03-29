@@ -18,18 +18,23 @@ win32 {
   # Min version is Windows 7
   DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
 
-  # Ensure that the BOOST_ROOT environment variable has been set
-  BOOST_ROOT = $$(BOOST_ROOT)
-  isEmpty(BOOST_ROOT) {
-    error("Please set BOOST_ROOT to the location of the Boost libraries")
+  ASIO_ROOT = $$(ASIO_ROOT)
+  isEmpty(ASIO_ROOT) {
+    # Ensure that the BOOST_ROOT environment variable has been set
+    BOOST_ROOT = $$(BOOST_ROOT)
+    isEmpty(BOOST_ROOT) {
+      error("Please set BOOST_ROOT to the location of the Boost libraries")
+    } else {
+      message(Using Boost from: $$BOOST_ROOT)
+    }
   } else {
-    message(Using Boost from: $$BOOST_ROOT)
+    message(Using Asio from: $$ASIO_ROOT)
   }
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 1
-  VER_PAT = 2
+  VER_MIN = 2
+  VER_PAT = 0
 }
 
 TEMPLATE = lib

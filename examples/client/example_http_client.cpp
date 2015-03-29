@@ -116,7 +116,11 @@ int main(int argc, char *argv[])
   try
   {
     // The asio io_service.
+#ifdef ASIO_STANDALONE
+    asio::io_service io_service;
+#else
     boost::asio::io_service io_service;
+#endif
 
     // Create an http_client and attach the response & chunk handlers
     http_client =

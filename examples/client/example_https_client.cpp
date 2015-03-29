@@ -70,8 +70,8 @@ namespace
 
   /// The handler for invalid HTTP requests.
   /// Outputs the buffer.
-  void invalid_response_handler(via::http::rx_response const& response,
-                                std::string const& body)
+  void invalid_response_handler(via::http::rx_response const&, // response,
+                                std::string const&) // body)
   {
     std::cout << "Invalid response: "
               << http_client->rx_buffer() << std::endl;
@@ -115,7 +115,11 @@ int main(int argc, char *argv[])
   try
   {
     // The asio io_service.
+#ifdef ASIO_STANDALONE
+    asio::io_service io_service;
+#else
     boost::asio::io_service io_service;
+#endif
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
@@ -137,11 +141,11 @@ int main(int argc, char *argv[])
 
     // Set up SSL
     std::string certificate_file = "cacert.pem";
-    boost::asio::ssl::context& ssl_context
+    ASIO::ssl::context& ssl_context
        (https_client_type::connection_type::ssl_context());
     ssl_context.load_verify_file(certificate_file);
 
-    ssl_context.set_options(boost::asio::ssl::context_base::default_workarounds);
+    ssl_context.set_options(ASIO::ssl::context_base::default_workarounds);
 
     // attempt to connect to the host on the standard https port (443)
     if (!http_client->connect(host_name, "https"))

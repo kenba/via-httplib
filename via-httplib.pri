@@ -12,6 +12,16 @@ win32 {
   INCLUDEPATH *= $$BOOST_ROOT
 }
 
+# Determine if using the non-boost asio library
+!isEmpty(ASIO_ROOT) {
+  DEFINES += ASIO_STANDALONE
+
+  ASIO_INC_DIR = $$ASIO_ROOT/include
+
+  INCLUDEPATH *= $$ASIO_INC_DIR
+  HEADERS += $${ASIO_INC_DIR}/asio.hpp
+}
+
 INC_DIR = $$VIAHTTPLIB/include
 
 INCLUDEPATH *= $${INC_DIR}

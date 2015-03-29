@@ -16,7 +16,9 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
 #include "via/no_except.hpp"
-#include <boost/system/error_code.hpp>
+#ifndef ASIO_STANDALONE
+  #include <boost/system/error_code.hpp>
+#endif
 #include <memory>
 #include <vector>
 
@@ -66,19 +68,19 @@ namespace via
                   <connection<SocketAdaptor, Container, use_strand> > enable;
 
       /// The resolver_iterator type of the SocketAdaptor
-      typedef typename boost::asio::ip::tcp::resolver::iterator resolver_iterator;
+      typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
 
       /// Event callback function type.
       typedef std::function<void (int, weak_pointer)> event_callback_type;
 
       /// Error callback function type.
-      typedef std::function<void (boost::system::error_code const&,
+      typedef std::function<void (ASIO_ERROR_CODE const&,
                                   weak_pointer)> error_callback_type;
 
     private:
 
       /// Strand to ensure the connection's handlers are not called concurrently.
-      boost::asio::io_service::strand strand_;
+      ASIO::io_service::strand strand_;
       size_t rx_buffer_size_;              ///< The recieve buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
       std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
@@ -117,12 +119,12 @@ namespace via
           if (use_strand)
             SocketAdaptor::write(tx_buffers_,
                strand_.wrap([weak_ptr, tx_queue]
-                            (boost::system::error_code const& error,
+                            (ASIO_ERROR_CODE const& error,
                              size_t bytes_transferred)
             { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
           else
             SocketAdaptor::write(tx_buffers_,
-              [weak_ptr, tx_queue](boost::system::error_code const& error,
+              [weak_ptr, tx_queue](ASIO_ERROR_CODE const& error,
                                    size_t bytes_transferred)
             { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
         }
@@ -141,12 +143,12 @@ namespace via
         if (use_strand)
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
               strand_.wrap([weak_ptr, rx_buffer]
-                           (boost::system::error_code const& error,
+                           (ASIO_ERROR_CODE const& error,
                             size_t bytes_transferred)
            { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
         else
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-            [weak_ptr, rx_buffer](boost::system::error_code const& error,
+            [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                   size_t bytes_transferred)
            { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
       }
@@ -159,15 +161,15 @@ namespace via
       ///  + bad_descriptor - socket is in the process of closing, see:
       /// http://sourceforge.net/p/asio/mailman/message/6493983/
       /// @return true if a disconnect error, false otherwise.
-      bool is_error_a_disconnect(boost::system::error_code const& error)
+      bool is_error_a_disconnect(ASIO_ERROR_CODE const& error)
       {
         switch(error.value())
         {
-        case boost::asio::error::eof:
-        case boost::asio::error::connection_refused:
-        case boost::asio::error::connection_reset:
-        case boost::asio::error::connection_aborted:
-        case boost::asio::error::bad_descriptor:
+        case ASIO::error::eof:
+        case ASIO::error::connection_refused:
+        case ASIO::error::connection_reset:
+        case ASIO::error::connection_aborted:
+        case ASIO::error::bad_descriptor:
           return true;
         default:
           {
@@ -186,7 +188,7 @@ namespace via
       /// It determines whether the error code is for a disconnect in which
       /// case it sends a DISCONNECTED signal otherwise it sends the
       /// error signal.
-      void signal_error(boost::system::error_code const& error)
+      void signal_error(ASIO_ERROR_CODE const& error)
       {
         if (is_error_a_disconnect(error))
           event_callback_(DISCONNECTED, weak_from_this());
@@ -205,12 +207,12 @@ namespace via
       /// @param rx_buffer a shared pointer to the receive buffer to control
       /// object lifetime.
       static void read_callback(weak_pointer ptr,
-                                boost::system::error_code const& error,
+                                ASIO_ERROR_CODE const& error,
                                 size_t bytes_transferred,
                                 std::shared_ptr<Container>) // rx_buffer)
       {
         shared_pointer pointer(ptr.lock());
-        if (pointer && (boost::asio::error::operation_aborted != error))
+        if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (error)
             pointer->signal_error(error);
@@ -244,12 +246,12 @@ namespace via
       /// @param tx_queue a shared pointer to the transmit buffers to control
       /// object lifetime.
       static void write_callback(weak_pointer ptr,
-                                 boost::system::error_code const& error,
+                                 ASIO_ERROR_CODE const& error,
                                  size_t bytes_transferred,
                                  std::shared_ptr<std::deque<Container> >) // tx_queue)
       {
         shared_pointer pointer(ptr.lock());
-        if (pointer && (boost::asio::error::operation_aborted != error))
+        if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (error)
           {
@@ -275,7 +277,7 @@ namespace via
         transmitting_ = false;
 
         if (!tx_queue_->empty())
-          write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
+          write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
 
         event_callback_(SENT, weak_from_this());
       }
@@ -290,10 +292,10 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       static void handshake_callback(weak_pointer ptr,
-                                     boost::system::error_code const& error)
+                                     ASIO_ERROR_CODE const& error)
       {
         shared_pointer pointer(ptr.lock());
-        if (pointer && (boost::asio::error::operation_aborted != error))
+        if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (!error)
           {
@@ -301,7 +303,7 @@ namespace via
             pointer->set_socket_options();
             if (!pointer->tx_queue_->empty())
               pointer->write_data
-          (ConstBuffers(1, boost::asio::buffer(pointer->tx_queue_->front())));
+          (ConstBuffers(1, ASIO::buffer(pointer->tx_queue_->front())));
             pointer->enable_reception();
             pointer->event_callback_(CONNECTED, ptr);
           }
@@ -325,21 +327,21 @@ namespace via
       /// @param error the boost asio error (if any).
       /// @param host_iterator an iterator to the host to connect to.
       static void connect_callback(weak_pointer ptr,
-                                   boost::system::error_code const& error,
+                                   ASIO_ERROR_CODE const& error,
                                    resolver_iterator host_iterator)
       {
         shared_pointer pointer(ptr.lock());
-        if (pointer && (boost::asio::error::operation_aborted != error))
+        if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake([ptr](boost::system::error_code const& error)
+            pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }, false);
           else
           {
-            if ((boost::asio::error::host_not_found == error) &&
+            if ((ASIO::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
               pointer->connect_socket([ptr]
-                  (boost::system::error_code const& error,
+                  (ASIO_ERROR_CODE const& error,
                    resolver_iterator host_iterator)
               { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
             else
@@ -356,7 +358,7 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       static void shutdown_callback(weak_pointer ptr,
-                                    boost::system::error_code const&) // error
+                                    ASIO_ERROR_CODE const&) // error
       {
         shared_pointer pointer(ptr.lock());
         if (pointer)
@@ -369,7 +371,7 @@ namespace via
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the number of bytess(it's a write callback).
       static void close_callback(weak_pointer ptr,
-                                 boost::system::error_code const&, // error,
+                                 ASIO_ERROR_CODE const&, // error,
                                  size_t)  // bytes_transferred)
       {
         shared_pointer pointer(ptr.lock());
@@ -386,7 +388,7 @@ namespace via
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
       /// @param rx_buffer_size the size of the receive_buffer.
-      explicit connection(boost::asio::io_service& io_service,
+      explicit connection(ASIO::io_service& io_service,
                           event_callback_type event_callback,
                           error_callback_type error_callback,
                           size_t rx_buffer_size) :
@@ -415,7 +417,7 @@ namespace via
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
       /// @param rx_buffer_size the size of the receive_buffer.
-      explicit connection(boost::asio::io_service& io_service,
+      explicit connection(ASIO::io_service& io_service,
                           size_t rx_buffer_size) :
         SocketAdaptor(io_service),
         strand_(io_service),
@@ -440,14 +442,14 @@ namespace via
       void no_delay()
       {
           SocketAdaptor::socket().set_option
-              (boost::asio::ip::tcp::no_delay(no_delay_));
+              (ASIO::ip::tcp::no_delay(no_delay_));
       }
 
       /// Set the socket's tcp keep alive status.
       void keep_alive()
       {
           SocketAdaptor::socket().set_option
-              (boost::asio::socket_base::keep_alive(keep_alive_));
+              (ASIO::socket_base::keep_alive(keep_alive_));
       }
 
       /// Set the socket's tcp send and receive timeouts.
@@ -461,9 +463,9 @@ namespace via
 #if defined _WIN32 || defined WIN32 || defined _WIN64 || defined WIN64 \
   || defined  WINNT || defined OS_WIN64
         // use windows-specific time
-        SocketAdaptor::socket().set_option(boost::asio::detail::
+        SocketAdaptor::socket().set_option(ASIO::detail::
                    socket_option::integer<SOL_SOCKET, SO_RCVTIMEO>(timeout_));
-        SocketAdaptor::socket().set_option(boost::asio::detail::
+        SocketAdaptor::socket().set_option(ASIO::detail::
                    socket_option::integer<SOL_SOCKET, SO_SNDTIMEO>(timeout_));
 #else
         // assume everything else is posix
@@ -481,14 +483,14 @@ namespace via
       void resize_receive_buffer()
       {
         SocketAdaptor::socket().set_option
-            (boost::asio::socket_base::receive_buffer_size(receive_buffer_size_));
+            (ASIO::socket_base::receive_buffer_size(receive_buffer_size_));
       }
 
       /// Set the socket's send buffer size.
       void resize_send_buffer()
       {
         SocketAdaptor::socket().set_option
-            (boost::asio::socket_base::send_buffer_size(send_buffer_size_));
+            (ASIO::socket_base::send_buffer_size(send_buffer_size_));
       }
 
       /// @fn set_socket_options
@@ -535,7 +537,7 @@ namespace via
       /// @param error_callback the error callback function.
       /// @param rx_buffer_size the size of the receive_buffer,
       /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
-      static shared_pointer create(boost::asio::io_service& io_service,
+      static shared_pointer create(ASIO::io_service& io_service,
                                    event_callback_type event_callback,
                                    error_callback_type error_callback,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
@@ -548,7 +550,7 @@ namespace via
       /// @param io_service the boost asio io_service for the socket adaptor.
       /// @param rx_buffer_size the size of the receive_buffer,
       /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
-      static shared_pointer create(boost::asio::io_service& io_service,
+      static shared_pointer create(ASIO::io_service& io_service,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
       { return shared_pointer(new connection(io_service, rx_buffer_size)); }
 
@@ -584,7 +586,7 @@ namespace via
       {
         weak_pointer ptr(weak_from_this());
         return SocketAdaptor::connect(host_name, port_name,
-          [ptr](boost::system::error_code const& error, resolver_iterator itr)
+          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
             { connect_callback(ptr, error, itr); });
       }
 
@@ -608,7 +610,7 @@ namespace via
         send_buffer_size_    = send_buffer_size;
 
         weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::start([weak_ptr](boost::system::error_code const& error)
+        SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
           { handshake_callback(weak_ptr, error); });
       }
 
@@ -618,9 +620,9 @@ namespace via
       {
         // Call shutdown with the callbacks
         weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::shutdown([weak_ptr](boost::system::error_code const& error)
+        SocketAdaptor::shutdown([weak_ptr](ASIO_ERROR_CODE const& error)
                                 { shutdown_callback(weak_ptr, error); },
-                                [weak_ptr](boost::system::error_code const& error,
+                                [weak_ptr](ASIO_ERROR_CODE const& error,
                                            int bytes)
                                 { close_callback(weak_ptr, error, bytes); });
       }
@@ -678,7 +680,7 @@ namespace via
         tx_queue_->push_back(std::move(packet));
 
         if (!transmitting_ && was_empty)
-          write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
+          write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
       }
 
       /// Send the data in the buffers.
@@ -731,7 +733,7 @@ namespace via
       {
         if (connected_)
         {
-          boost::asio::socket_base::receive_buffer_size option;
+          ASIO::socket_base::receive_buffer_size option;
           SocketAdaptor::socket().get_option(option);
           return option.value();
         }
@@ -755,7 +757,7 @@ namespace via
       {
         if (connected_)
         {
-          boost::asio::socket_base::send_buffer_size option;
+          ASIO::socket_base::send_buffer_size option;
           SocketAdaptor::socket().get_option(option);
           return option.value();
         }

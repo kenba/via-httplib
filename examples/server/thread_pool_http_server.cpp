@@ -29,7 +29,11 @@ namespace
   /// Ccloses the server and all it's connections leaving io_service.run
   /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
+#ifdef ASIO_STANDALONE
+  void handle_stop(asio::error_code const&, // error,
+#else
   void handle_stop(boost::system::error_code const&, // error,
+#endif
                    int, // signal_number,
                    http_server_type& http_server)
   {
@@ -78,7 +82,7 @@ namespace
         // send the body in an unbuffered response i.e. in ConstBuffers
         // ok because the response_body is persistent data
         connection->send(std::move(response),
-             via::comms::ConstBuffers(1, boost::asio::buffer(response_body)));
+             via::comms::ConstBuffers(1, ASIO::buffer(response_body)));
       }
       else
         // Send the response without a body.
@@ -214,7 +218,11 @@ int main(int argc, char *argv[])
   try
   {
     // create an io_service for the server
+#ifdef ASIO_STANDALONE
+    asio::io_service io_service;
+#else
     boost::asio::io_service io_service;
+#endif
 
     // create an http_server and connect the request handler
     http_server_type http_server(io_service);
@@ -229,7 +237,7 @@ int main(int argc, char *argv[])
     http_server.message_sent_event(message_sent_handler);
 
     // start accepting http connections on the given port
-    boost::system::error_code error(http_server.accept_connections(port_number));
+    ASIO_ERROR_CODE error(http_server.accept_connections(port_number));
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
@@ -237,7 +245,7 @@ int main(int argc, char *argv[])
     }
 
     // The signal set is used to register for termination notifications
-    boost::asio::signal_set signals_(io_service);
+    ASIO::signal_set signals_(io_service);
     signals_.add(SIGINT);
     signals_.add(SIGTERM);
 #if defined(SIGQUIT)
@@ -246,7 +254,7 @@ int main(int argc, char *argv[])
 
     // register the handle_stop callback
     signals_.async_wait([&http_server]
-      (boost::system::error_code const& error, int signal_number)
+      (ASIO_ERROR_CODE const& error, int signal_number)
     { handle_stop(error, signal_number, http_server); });
 
     // Determine the number of concurrent threads supported
