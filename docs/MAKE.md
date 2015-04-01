@@ -46,3 +46,14 @@ Run the command
 Run the command
 
 	msbuild VIA-HTTPLIB.sln /p:Configuration="Release"
+
+## Building for Android (Experimental) ##
+Currently will build only under linux (maybe osx)
+From the via-httplib folder create a directory, say mak-android.
+
+    cmake -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=../cmake/android.toolchain.cmake \
+    -DANDROID_ABI="armeabi-v7a" \
+    -DANDROID_NDK=~/android-ndk-r10d ..
+
+    cmake --build .
