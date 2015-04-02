@@ -218,7 +218,7 @@ namespace via
     template <typename Container>
     class rx_chunk : public chunk_header
     {
-      Container data_;           ///< the data contained in the chunk
+      Container data_;         ///< the data contained in the chunk
       message_headers trailers_; ///< the HTTP field headers for the last chunk
       bool valid_;               ///< true if the chunk is valid
 
@@ -322,7 +322,7 @@ namespace via
             if ((iter == end) || ('\n' != *iter))
               return false;
             else // ('\n' == *iter)
-              ++iter;
+            ++iter;
           }
           else // not enough received data, just add it to data
           {

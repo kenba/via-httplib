@@ -17,6 +17,7 @@
 #include "via/no_except.hpp"
 #include <cctype>
 #include <string>
+#include <ctime>
 
 namespace via
 {
@@ -117,8 +118,17 @@ namespace via
     /// @param number to be represented
     /// @return the string containing the number in decimal.
     std::string to_dec_string(size_t number);
+
+    /// Convert an string to time
+    /// @param s, the encoded time
+    /// @return the unix time
+    std::time_t time_from_string(const std::string& s, const std::string& fmt="%a, %d-%b-%Y %T");
+
+    /// Convert an time to the string
+    /// @param t, the unix time
+    /// @return the encoded time
+    std::string time_to_string(const std::time_t& t, const std::string& fmt="%a, %d-%b-%Y %T");
   }
 }
 
 #endif
-

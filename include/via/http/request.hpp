@@ -34,16 +34,16 @@ namespace via
       /// @enum Request the state of the request line parser.
       enum Request
       {
-        REQ_METHOD,              ///< request method
-        REQ_URI,                 ///< request uri
+        REQ_METHOD,     ///< request method
+        REQ_URI,        ///< request uri
         REQ_HTTP_H,              ///< HTTP/ H
-        REQ_HTTP_T1,             ///< HTTP/ first T
-        REQ_HTTP_T2,             ///< HTTP/ second T
-        REQ_HTTP_P,              ///< HTTP/ P
-        REQ_HTTP_SLASH,          ///< HTTP/ slash
-        REQ_HTTP_MAJOR,          ///< HTTP major version number
+        REQ_HTTP_T1,    ///< HTTP/ first T
+        REQ_HTTP_T2,    ///< HTTP/ second T
+        REQ_HTTP_P,     ///< HTTP/ P
+        REQ_HTTP_SLASH, ///< HTTP/ slash
+        REQ_HTTP_MAJOR, ///< HTTP major version number
         REQ_HTTP_DOT,            ///< HTTP . between major and minor versions
-        REQ_HTTP_MINOR,          ///< HTTP minor version number
+        REQ_HTTP_MINOR, ///< HTTP minor version number
         REQ_CR,                  ///< the carriage return (if any)
         REQ_LF,                  ///< the line feed
         REQ_VALID,               ///< the request line is valid
@@ -62,16 +62,16 @@ namespace via
       size_t        max_uri_length_;    ///< the maximum length of a uri.
 
       // Request information
-      std::string method_;   ///< the request method
-      std::string uri_;      ///< the request uri
+      std::string method_;  ///< the request method
+      std::string uri_;     ///< the request uri
       char major_version_;   ///< the HTTP major version character
       char minor_version_;   ///< the HTTP minor version character
 
       // Parser state
       Request state_;           ///< the current parsing state
       unsigned short ws_count_; ///< the current whitespace count
-      bool valid_;              ///< true if the request line is valid
-      bool fail_;               ///< true if the request line failed validation
+      bool valid_;          ///< true if the request line is valid
+      bool fail_;           ///< true if the request line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -121,7 +121,6 @@ namespace via
         uri_.clear();
         major_version_ = 0;
         minor_version_ = 0;
-
         state_ = REQ_METHOD;
         ws_count_ = 0;
         valid_ =  false;
@@ -136,7 +135,6 @@ namespace via
         uri_.swap(other.uri_);
         std::swap(major_version_, other.major_version_);
         std::swap(minor_version_, other.minor_version_);
-
         std::swap(state_, other.state_);
         std::swap(ws_count_, other.ws_count_);
         std::swap(valid_, other.valid_);
@@ -145,7 +143,8 @@ namespace via
 
       /// Virtual destructor.
       /// Since the class is inherited...
-      virtual ~request_line() {}
+      virtual ~request_line()
+      {}
 
       /// Parse the line as an HTTP request.
       /// @retval iter reference to an iterator to the start of the data.
@@ -440,6 +439,7 @@ namespace via
     class tx_request : public request_line
     {
       std::string header_string_; ///< The headers as a string.
+      std::string cookies_string_; ///< The cookies as a string.
 
     public:
 
@@ -497,6 +497,17 @@ namespace via
       void add_header(std::string const& field, const std::string& value)
       { header_string_ += header_field::to_header(field, value);  }
 
+      /// Add a cookie
+      /// @see http::cookie
+      /// @param name, the cookie name
+      /// @param value the cookie value
+      void add_cookie(const cookie& value)
+      {
+        if (!cookies_string_.empty())
+          cookies_string_.append("; ");
+        cookies_string_ += value.to_string();
+      }
+
       /// Add an http content length header line for the given size.
       /// @param size the size of the message body.
       void add_content_length_header(size_t size)
@@ -510,6 +521,8 @@ namespace via
       {
         std::string output(request_line::to_string());
         output += header_string_;
+        if (cookies_string_.empty())
+          output += header_field::to_header(header_field::id::COOKIE, cookies_string_);
 
         // Ensure that it's got a content length header unless
         // a tranfer encoding is being applied.
@@ -541,8 +554,8 @@ namespace via
       bool   concatenate_chunks_;  ///< concatenate chunk data into the body
 
       /// Request information
-      rx_request request_;         ///< the received request
-      rx_chunk<Container> chunk_;  ///< the received chunk
+      rx_request request_; ///< the received request
+      rx_chunk<Container> chunk_;   ///< the received chunk
       Container  body_;    ///< the request body or data for the last chunk
       /// the appropriate response to the request:
       /// either an error code or 100 Continue.
@@ -729,9 +742,9 @@ namespace via
             {
               // TRACE requests are not permitted without a body
               response_code_ = response_status::code::BAD_REQUEST;
-              clear();
-              return RX_INVALID;
-            }
+            clear();
+            return RX_INVALID;
+          }
           }
 
           // test whether the content length header is valid
@@ -788,6 +801,7 @@ namespace via
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head_)
               request_.set_method(request_method::name(request_method::id::GET));
+
             return RX_VALID;
           }
         }
@@ -843,9 +857,9 @@ namespace via
                   return RX_INVALID;
                 }
                 else // concatenate the chunk into the message body
-                  body_.insert(body_.end(),
-                               chunk_.data().begin(), chunk_.data().end());
-              }
+                body_.insert(body_.end(),
+                             chunk_.data().begin(), chunk_.data().end());
+            }
             }
             else
               return RX_CHUNK;

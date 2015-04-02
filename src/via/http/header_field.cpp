@@ -20,11 +20,11 @@ namespace
   const std::string	SERVER_NAME             ("Via-httplib");
 
   /// The message/http content for a TRACE response
-  const std::string	MESSAGE_HTTP            ("message/http");
+  const std::string MESSAGE_HTTP ("message/http");
 
   // The following strings are for the standard header field names.
 
-  // General Header Fields, RFC2616 sec 4.5 pg 33
+    // General Header Fields, RFC2616 sec 4.5 pg 33
   const std::string	HEADER_CACHE_CONTROL    ("Cache-Control");
   const std::string	HEADER_CONNECTION       ("Connection");
   const std::string	HEADER_DATE             ("Date");
@@ -35,7 +35,7 @@ namespace
   const std::string	HEADER_VIA              ("Via");
   const std::string	HEADER_WARNING          ("Warning");
 
-  // Request Header Fields, RFC2616 sec 5.3, pg 38
+    // Request Header Fields, RFC2616 sec 5.3, pg 38
   const std::string	HEADER_ACCEPT           ("Accept");
   const std::string	HEADER_ACCEPT_CHARSET   ("Accept-Charset");
   const std::string	HEADER_ACCEPT_ENCODING  ("Accept-Encoding");
@@ -58,7 +58,7 @@ namespace
   const std::string	HEADER_TE               ("TE");
   const std::string	HEADER_USER_AGENT       ("User-Agent");
 
-  // Response Header Fields, RFC2616 sec 6.2, pg 40
+    // Response Header Fields, RFC2616 sec 6.2, pg 40
   const std::string	HEADER_ACCEPT_RANGES    ("Accept-Ranges");
   const std::string	HEADER_AGE              ("Age");
   const std::string	HEADER_ETAG             ("ETag");
@@ -69,7 +69,7 @@ namespace
   const std::string	HEADER_VARY             ("Vary");
   const std::string	HEADER_WWW_AUTHENTICATE ("WWW-Authenticate");
 
-  // Entity Header Fields, RFC2616 sec 7.1, pg 41
+    // Entity Header Fields, RFC2616 sec 7.1, pg 41
   const std::string	HEADER_ALLOW            ("Allow");
   const std::string	HEADER_CONTENT_ENCODING ("Content-Encoding");
   const std::string	HEADER_CONTENT_LANGUAGE ("Content-Language");
@@ -82,9 +82,13 @@ namespace
   const std::string	HEADER_LAST_MODIFIED    ("Last-Modified");
   const std::string	HEADER_EXTENSION_HEADER ("extension-header");
 
-  // The following strings are for the lower case header field names.
+  // cookie
+  const std::string	HEADER_SET_COOKIE       ("Set-Cookie");
+  const std::string	HEADER_COOKIE           ("Cookie");
 
-  // General Header Fields, RFC2616 sec 4.5 pg 33
+// The following strings are for the lower case header field names.
+
+    // General Header Fields, RFC2616 sec 4.5 pg 33
   const std::string	LC_CACHE_CONTROL        ("cache-control");
   const std::string	LC_CONNECTION           ("connection");
   const std::string	LC_DATE                 ("date");
@@ -95,7 +99,7 @@ namespace
   const std::string	LC_VIA                  ("via");
   const std::string	LC_WARNING              ("warning");
 
-  // Request Header Fields, RFC2616 sec 5.3, pg 38
+    // Request Header Fields, RFC2616 sec 5.3, pg 38
   const std::string	LC_ACCEPT               ("accept");
   const std::string	LC_ACCEPT_CHARSET       ("accept-charset");
   const std::string	LC_ACCEPT_ENCODING      ("accept-encoding");
@@ -116,7 +120,7 @@ namespace
   const std::string	LC_TE                   ("te");
   const std::string	LC_USER_AGENT           ("user-agent");
 
-  // Response Header Fields, RFC2616 sec 6.2, pg 40
+    // Response Header Fields, RFC2616 sec 6.2, pg 40
   const std::string	LC_ACCEPT_RANGES        ("accept-ranges");
   const std::string	LC_AGE                  ("age");
   const std::string	LC_ETAG                 ("etag");
@@ -127,7 +131,7 @@ namespace
   const std::string	LC_VARY                 ("vary");
   const std::string	LC_WWW_AUTHENTICATE     ("www-authenticate");
 
-  // Entity Header Fields, RFC2616 sec 7.1, pg 41
+    // Entity Header Fields, RFC2616 sec 7.1, pg 41
   const std::string	LC_ALLOW                ("allow");
   const std::string	LC_CONTENT_ENCODING     ("content-encoding");
   const std::string	LC_CONTENT_LANGUAGE     ("content-language");
@@ -139,6 +143,10 @@ namespace
   const std::string	LC_EXPIRES              ("expires");
   const std::string	LC_LAST_MODIFIED        ("last-modified");
   const std::string	LC_EXTENSION_HEADER     ("extension-header");
+
+  // cookie
+  const std::string	LC_HEADER_SET_COOKIE       ("set-cookie");
+  const std::string	LC_HEADER_COOKIE           ("cookie");
 
   const std::string EMPTY_STRING("");
 
@@ -219,10 +227,13 @@ namespace via
         case id::LAST_MODIFIED:                 return HEADER_LAST_MODIFIED;
         case id::EXTENSION_HEADER:              return HEADER_EXTENSION_HEADER;
 
+        case id::SET_COOKIE:                    return HEADER_SET_COOKIE;
+        case id::COOKIE:                        return HEADER_COOKIE;
+
         default:                                return EMPTY_STRING;
         }
       }
-      ////////////////////////////////////////////////////////////////////////
+       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
       const std::string& lowercase_name(id field_id) NOEXCEPT
@@ -284,6 +295,9 @@ namespace via
         case id::EXPIRES:                       return LC_EXPIRES;
         case id::LAST_MODIFIED:                 return LC_LAST_MODIFIED;
         case id::EXTENSION_HEADER:              return LC_EXTENSION_HEADER;
+
+        case id::SET_COOKIE:                    return LC_HEADER_SET_COOKIE;
+        case id::COOKIE:                        return LC_HEADER_COOKIE;
 
         default:                                return EMPTY_STRING;
         }

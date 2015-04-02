@@ -18,6 +18,7 @@ namespace via
     bool request_line::parse_char(char c)
     {
 
+
       switch (state_)
       {
       case REQ_METHOD:
@@ -131,9 +132,9 @@ namespace via
 
       case REQ_HTTP_DOT:
         if ('.' == c)
-          state_ = REQ_HTTP_MINOR;
-        else
-          return false;
+            state_ = REQ_HTTP_MINOR;
+          else
+            return false;
         break;
 
       case REQ_HTTP_MINOR:
@@ -148,9 +149,9 @@ namespace via
 
       case REQ_CR:
         // The HTTP line should end with a \r\n...
-        if ('\r' == c)
+            if ('\r' == c)
           state_ = REQ_LF;
-        else
+          else
         {
           // but (if not being strict) permit just \n
           if (!strict_crlf_ && ('\n' == c))
@@ -159,7 +160,7 @@ namespace via
           {
             state_ = REQ_ERROR_CRLF;
             return false;
-          }
+        }
         }
         break;
 
@@ -167,11 +168,11 @@ namespace via
         if ('\n' == c)
         {
           state_ = REQ_VALID;
-          break;
+        break;
         }
         // intentional fall-through (for code coverage)
 
-       default:
+      default:
         return false;
       }
 
