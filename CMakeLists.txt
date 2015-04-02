@@ -20,6 +20,7 @@ endif()
 set( VIA_HTTPLIB_LIBRARY_NAME via-httplib )
 
 set(Boost_USE_MULTITHREADED ON)
+
 if(VIA_HTTPLIB_BUILD_TESTS)
 else()
   set(Boost_COMPONENTS system)
@@ -47,6 +48,7 @@ if(Boost_FOUND)
 
   add_library( ${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
     src/via/http/character.cpp
+    src/via/http/cookie.cpp
     src/via/http/chunk.cpp
     src/via/http/header_field.cpp
     src/via/http/headers.cpp
