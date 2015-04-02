@@ -96,8 +96,8 @@ namespace via
 
       /// The connection timeouts, in milliseconds, zero is disabled.
       int timeout_;
-      bool no_delay_;         ///< The tcp no delay status.
-      bool keep_alive_;       ///< The tcp keep alive status.
+      bool no_delay_;                        ///< The tcp no delay status.
+      bool keep_alive_;                      ///< The tcp keep alive status.
 
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
@@ -278,7 +278,7 @@ namespace via
             acceptor_v6_.set_option(ipv6_only, ec);
             acceptor_v6_.get_option(ipv6_only);
             acceptor_v6_.set_option
-              (boost::asio::ip::tcp::acceptor::reuse_address(true));
+          (boost::asio::ip::tcp::acceptor::reuse_address(true));
             acceptor_v6_.bind
               (boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
             acceptor_v6_.listen();

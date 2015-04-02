@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,58 +15,66 @@
 /// @brief The connection template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
-#include "via/no_except.hpp"
 #include <boost/system/error_code.hpp>
 #include <memory>
 #include <vector>
+#include <deque>
+#include <array>
 
 namespace via
 {
   namespace comms
   {
+    /// The default size of the receive buffer.
+    enum { DEFAULT_BUFFER_SIZE = 8192 };
+
     //////////////////////////////////////////////////////////////////////////
     /// @class connection
     /// A template class that buffers tcp or ssl comms sockets.
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor respectively.
-
+    /// The other template parameters configure the type of container to use
+    /// for the transmit buffers, the size of the receive buffer and
+    /// whether to use asio::strand for an io_service running in multiple
+    /// treads.
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @param Container the container to use for the rx & tx buffers, default
-    /// std::vector<char> or std::string.
+    /// @param Container the container to use for the tx buffer, default
+    /// std::vector<char>.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
+    /// @param buffer_size the size of the receive buffer, default 8192 bytes.
     /// @param use_strand if true use an asio::strand to wrap the handlers,
     /// default false.
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char>,
+    template <typename Container = std::vector<char>,
+              size_t buffer_size = comms::DEFAULT_BUFFER_SIZE,
               bool use_strand = false>
-    class connection : public SocketAdaptor,
-        public std::enable_shared_from_this
-            <connection<SocketAdaptor, Container, use_strand> >
+    class connection : public std::enable_shared_from_this<connection<Container, buffer_size, use_strand> >
     {
     public:
 
-
       /// A weak pointer to a connection.
-      typedef typename std::weak_ptr<connection<SocketAdaptor, Container,
-                                                  use_strand> >
+      typedef typename std::weak_ptr<connection<Container, buffer_size, use_strand> >
          weak_pointer;
 
       /// A shared pointer to a connection.
-      typedef typename std::shared_ptr<connection<SocketAdaptor, Container,
-                                                    use_strand> >
+      typedef typename std::shared_ptr<connection<Container, buffer_size, use_strand> >
          shared_pointer;
 
       /// The enable_shared_from_this type of this class.
       typedef typename std::enable_shared_from_this
-                  <connection<SocketAdaptor, Container, use_strand> > enable;
+                  <connection<Container,
+                              buffer_size, use_strand> > enable;
+
+      /// The type of the receive buffer
+      typedef typename std::array<char, buffer_size> RxBuffer;
 
       /// The resolver_iterator type of the SocketAdaptor
-      typedef typename boost::asio::ip::tcp::resolver::iterator resolver_iterator;
+      typedef typename socket_adaptor::resolver_iterator resolver_iterator;
 
       /// Event callback function type.
       typedef std::function<void (int, weak_pointer)> event_callback_type;
@@ -79,21 +87,17 @@ namespace via
 
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
-      size_t rx_buffer_size_;              ///< The recieve buffer size.
-      std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
-      std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
-      ConstBuffers tx_buffers_;            ///< The transmit buffers.
+      std::shared_ptr<socket_adaptor> socket_; // the underlayer socket
+      std::shared_ptr<RxBuffer > rx_buffer_; ///< The receive buffer.
+      std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
+      size_t rx_size_;                     ///< The size of the received msg.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
       int timeout_;
-      int receive_buffer_size_; ///< The socket receive buffer size.
-      int send_buffer_size_;    ///< The socket send buffer size.
-      bool receiving_;          ///< Whether a read's in progress
-      bool transmitting_;       ///< Whether a write's in progress
-      bool no_delay_;           ///< The tcp no delay status.
-      bool keep_alive_;         ///< The tcp keep alive status.
-      bool connected_;          ///< If the socket is connected.
+      bool no_delay_;                      ///< The tcp no delay status.
+      bool keep_alive_;                    ///< The tcp keep alive status.
+      bool connected_;                     ///< If the socket is connected.
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -103,92 +107,61 @@ namespace via
 
       /// @fn write_data
       /// Write data via the socket adaptor.
-      /// @param buffers the buffer(s) containing the message.
-      /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers buffers)
+      void write_data()
       {
-        tx_buffers_.swap(buffers);
-
-        if (connected_)
+        if (connected_ && !tx_queue_->empty())
         {
-          // local copies for lambdas
-          weak_pointer weak_ptr(weak_from_this());
-          std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
           if (use_strand)
-            SocketAdaptor::write(tx_buffers_,
-               strand_.wrap([weak_ptr, tx_queue]
-                            (boost::system::error_code const& error,
-                             size_t bytes_transferred)
-            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
+            socket_->write(&tx_queue_->front()[0],
+                                  tx_queue_->front().size(),
+               strand_.wrap(
+               std::bind(&connection::write_callback,
+                         weak_from_this(),
+                         std::placeholders::_1,
+                         std::placeholders::_2,
+                         tx_queue_)));
           else
-            SocketAdaptor::write(tx_buffers_,
-              [weak_ptr, tx_queue](boost::system::error_code const& error,
-                                   size_t bytes_transferred)
-            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
+            socket_->write(&tx_queue_->front()[0],
+                                  tx_queue_->front().size(),
+               std::bind(&connection::write_callback,
+                         weak_from_this(),
+                         std::placeholders::_1,
+                         std::placeholders::_2,
+                         tx_queue_));
         }
-
-        return connected_;
       }
 
       /// @fn read_data
       /// Read data via the socket adaptor.
       void read_data()
       {
-        // local copies for lambdas
-        weak_pointer weak_ptr(weak_from_this());
-        std::shared_ptr<Container> rx_buffer(rx_buffer_);
-
         if (use_strand)
-          SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-              strand_.wrap([weak_ptr, rx_buffer]
-                           (boost::system::error_code const& error,
-                            size_t bytes_transferred)
-           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
+          socket_->read(&(*rx_buffer_)[0], buffer_size,
+              strand_.wrap(
+              std::bind(&connection::read_callback,
+                        weak_from_this(),
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        rx_buffer_)));
         else
-          SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-            [weak_ptr, rx_buffer](boost::system::error_code const& error,
-                                  size_t bytes_transferred)
-           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
-      }
-
-      /// This function determines whether the error is a socket disconnect.
-      /// Common disconnection error codes are:
-      ///  + connection_refused - server not available for a client connection.
-      ///  + connection_reset - the other side closed the connection.
-      ///  + connection_aborted - routing / firewall issue.
-      ///  + bad_descriptor - socket is in the process of closing, see:
-      /// http://sourceforge.net/p/asio/mailman/message/6493983/
-      /// @return true if a disconnect error, false otherwise.
-      bool is_error_a_disconnect(boost::system::error_code const& error)
-      {
-        switch(error.value())
-        {
-        case boost::asio::error::eof:
-        case boost::asio::error::connection_refused:
-        case boost::asio::error::connection_reset:
-        case boost::asio::error::connection_aborted:
-        case boost::asio::error::bad_descriptor:
-          return true;
-        default:
-          {
-          bool ssl_shutdown(false);
-          bool is_a_disconnect(SocketAdaptor::is_disconnect(error, ssl_shutdown));
-          if (ssl_shutdown)
-            shutdown();
-
-          return is_a_disconnect;
-          }
-        }
+          socket_->read(&(*rx_buffer_)[0], buffer_size,
+              std::bind(&connection::read_callback,
+                        weak_from_this(),
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        rx_buffer_));
       }
 
       /// @fn signal_error
       /// This function is called whenever an error event occurs.
-      /// It determines whether the error code is for a disconnect in which
-      /// case it sends a DISCONNECTED signal otherwise it sends the
-      /// error signal.
+      /// It sends the error signal, unless the socket adaptor determines
+      /// that the error is a disconnect, in which case it sends a
+      /// DISCONNECTED event instead.
+      /// @param error the boost asio error.
       void signal_error(boost::system::error_code const& error)
       {
-        if (is_error_a_disconnect(error))
+          if ((error == boost::asio::error::eof) ||
+                SocketAdaptor::is_disconnect(error))
           event_callback_(DISCONNECTED, weak_from_this());
         else
           error_callback_(error, weak_from_this());
@@ -207,9 +180,9 @@ namespace via
       static void read_callback(weak_pointer ptr,
                                 boost::system::error_code const& error,
                                 size_t bytes_transferred,
-                                std::shared_ptr<Container>) // rx_buffer)
+                                std::shared_ptr<RxBuffer >) // rx_buffer)
       {
-        shared_pointer pointer(ptr.lock());
+        auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (error)
@@ -227,8 +200,7 @@ namespace via
       /// @param bytes_transferred the size of the received data packet.
       void read_handler(size_t bytes_transferred)
       {
-        receiving_ = false;
-        rx_buffer_->resize(bytes_transferred);
+        rx_size_ = bytes_transferred;
         event_callback_(RECEIVED, weak_from_this());
         enable_reception();
       }
@@ -248,7 +220,7 @@ namespace via
                                  size_t bytes_transferred,
                                  std::shared_ptr<std::deque<Container> >) // tx_queue)
       {
-        shared_pointer pointer(ptr.lock());
+        auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (error)
@@ -269,13 +241,10 @@ namespace via
       /// @param bytes_transferred the size of the sent data packet.
       void write_handler(size_t) // bytes_transferred
       {
-        if (!transmitting_ && !tx_queue_->empty())
-          tx_queue_->pop_front();
-
-        transmitting_ = false;
+        tx_queue_->pop_front();
 
         if (!tx_queue_->empty())
-          write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
+          write_data();
 
         event_callback_(SENT, weak_from_this());
       }
@@ -292,7 +261,7 @@ namespace via
       static void handshake_callback(weak_pointer ptr,
                                      boost::system::error_code const& error)
       {
-        shared_pointer pointer(ptr.lock());
+        auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
@@ -300,14 +269,13 @@ namespace via
             pointer->connected_ = true;
             pointer->set_socket_options();
             if (!pointer->tx_queue_->empty())
-              pointer->write_data
-          (ConstBuffers(1, boost::asio::buffer(pointer->tx_queue_->front())));
+              pointer->write_data();
             pointer->enable_reception();
             pointer->event_callback_(CONNECTED, ptr);
           }
           else
           {
-            pointer->close();
+            pointer->shutdown();
             pointer->signal_error(error);
           }
         }
@@ -328,53 +296,27 @@ namespace via
                                    boost::system::error_code const& error,
                                    resolver_iterator host_iterator)
       {
-        shared_pointer pointer(ptr.lock());
+        auto pointer(ptr.lock());
         if (pointer && (boost::asio::error::operation_aborted != error))
         {
           if (!error)
-            pointer->handshake([ptr](boost::system::error_code const& error)
-              { handshake_callback(ptr, error); }, false);
+            pointer->handshake(std::bind(&connection::handshake_callback, ptr,
+                                         std::placeholders::_1), false);
           else
           {
             if ((boost::asio::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
-              pointer->connect_socket([ptr]
-                  (boost::system::error_code const& error,
-                   resolver_iterator host_iterator)
-              { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
+              pointer->connect_socket
+                  (std::bind(&connection::connect_callback, ptr,
+                             std::placeholders::_1, std::placeholders::_2),
+                   ++host_iterator);
             else
             {
-              pointer->close();
+              pointer->shutdown();
               pointer->signal_error(error);
             }
           }
         }
-      }
-
-      /// @fn shutdown_callback
-      /// A function called when an SSL socket adaptor attempts to disconnect.
-      /// @param ptr a weak pointer to the connection
-      /// @param error the boost asio error (if any).
-      static void shutdown_callback(weak_pointer ptr,
-                                    boost::system::error_code const&) // error
-      {
-        shared_pointer pointer(ptr.lock());
-        if (pointer)
-          pointer->event_callback_(DISCONNECTED, ptr);
-      }
-
-      /// @fn close_callback
-      /// A function called when an SSL socket adaptor attempts to disconnect.
-      /// @param ptr a weak pointer to the connection
-      /// @param error the boost asio error (if any).
-      /// @param bytes_transferred the number of bytess(it's a write callback).
-      static void close_callback(weak_pointer ptr,
-                                 boost::system::error_code const&, // error,
-                                 size_t)  // bytes_transferred)
-      {
-        shared_pointer pointer(ptr.lock());
-        if (pointer)
-          pointer->close();
       }
 
       /// Constructor for server connections.
@@ -385,27 +327,20 @@ namespace via
       /// socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      /// @param rx_buffer_size the size of the receive_buffer.
       explicit connection(boost::asio::io_service& io_service,
                           event_callback_type event_callback,
-                          error_callback_type error_callback,
-                          size_t rx_buffer_size) :
-        SocketAdaptor(io_service),
-        strand_(io_service),
-        rx_buffer_size_(rx_buffer_size),
-        rx_buffer_(new Container(rx_buffer_size_, 0)),
-        tx_queue_(new std::deque<Container>()),
-        tx_buffers_(),
-        event_callback_(event_callback),
-        error_callback_(error_callback),
-        timeout_(0),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        receiving_(false),
-        transmitting_(false),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false)
+                          error_callback_type error_callback) :
+        SocketAdaptor{io_service},
+        strand_{io_service},
+        rx_buffer_{new RxBuffer()},
+        tx_queue_{new std::deque<Container>{}},
+        event_callback_{event_callback},
+        error_callback_{error_callback},
+        rx_size_{0},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false},
+        connected_{false}
       {}
 
       /// Constructor for client connections.
@@ -414,26 +349,25 @@ namespace via
       /// function below.
       /// @param io_service the boost asio io_service used by the underlying
       /// socket adaptor.
-      /// @param rx_buffer_size the size of the receive_buffer.
-      explicit connection(boost::asio::io_service& io_service,
-                          size_t rx_buffer_size) :
-        SocketAdaptor(io_service),
-        strand_(io_service),
-        rx_buffer_size_(rx_buffer_size),
-        rx_buffer_(new Container(rx_buffer_size_, 0)),
-        tx_queue_(new std::deque<Container>()),
-        tx_buffers_(),
-        event_callback_(),
-        error_callback_(),
-        timeout_(0),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        receiving_(false),
-        transmitting_(false),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false)
+      explicit connection(boost::asio::io_service& io_service) :
+        SocketAdaptor{io_service},
+        strand_{io_service},
+        rx_buffer_{new RxBuffer()},
+        tx_queue_{new std::deque<Container>{}},
+        event_callback_{},
+        error_callback_{},
+        rx_size_{0},
+        timeout_{0},
+        no_delay_{false},
+        keep_alive_{false},
+        connected_{false}
       {}
+
+      /// Copy constructor deleted.
+      connection(connection const&)=delete;
+
+      /// Assignment operator deleted.
+      connection& operator=(connection const&)=delete;
 
       /// Set the socket's tcp no delay status.
       /// If no_delay_ is set it disables the Nagle algorithm on the socket.
@@ -477,20 +411,6 @@ namespace via
 #endif
       }
 
-      /// Set the socket's receive buffer size.
-      void resize_receive_buffer()
-      {
-        SocketAdaptor::socket().set_option
-            (boost::asio::socket_base::receive_buffer_size(receive_buffer_size_));
-      }
-
-      /// Set the socket's send buffer size.
-      void resize_send_buffer()
-      {
-        SocketAdaptor::socket().set_option
-            (boost::asio::socket_base::send_buffer_size(send_buffer_size_));
-      }
-
       /// @fn set_socket_options
       /// Disable the nagle algorithm (no delay) on the socket and
       /// (optionally) enable keep alive on the socket and set the tcp
@@ -505,12 +425,6 @@ namespace via
 
         if (timeout_ > 0)
           tcp_timeouts();
-
-        if (receive_buffer_size_ > 0)
-          resize_receive_buffer();
-
-        if (send_buffer_size_ > 0)
-          resize_send_buffer();
       }
 
     public:
@@ -533,24 +447,18 @@ namespace via
       /// @param io_service the boost asio io_service for the socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      /// @param rx_buffer_size the size of the receive_buffer,
-      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
       static shared_pointer create(boost::asio::io_service& io_service,
                                    event_callback_type event_callback,
-                                   error_callback_type error_callback,
-               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+                                   error_callback_type error_callback)
       {
-        return shared_pointer(new connection(io_service, event_callback,
-                                             error_callback, rx_buffer_size));
+        return shared_pointer{new connection{io_service, event_callback,
+                                             error_callback}};
       }
 
       /// The factory function to create client connections.
       /// @param io_service the boost asio io_service for the socket adaptor.
-      /// @param rx_buffer_size the size of the receive_buffer,
-      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
-      static shared_pointer create(boost::asio::io_service& io_service,
-               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
-      { return shared_pointer(new connection(io_service, rx_buffer_size)); }
+      static shared_pointer create(boost::asio::io_service& io_service)
+      { return shared_pointer{new connection{io_service}}; }
 
       /// @fn set_event_callback
       /// Function to set the event callback function.
@@ -568,10 +476,6 @@ namespace via
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
 
-      /// Set the connection's rx_buffer_size_.
-      void set_rx_buffer_size(size_t rx_buffer_size)
-      { rx_buffer_size_ = rx_buffer_size; }
-
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
       /// port.
@@ -582,10 +486,9 @@ namespace via
       /// @param port_name the port to connect to.
       bool connect(const char *host_name, const char *port_name)
       {
-        weak_pointer ptr(weak_from_this());
         return SocketAdaptor::connect(host_name, port_name,
-          [ptr](boost::system::error_code const& error, resolver_iterator itr)
-            { connect_callback(ptr, error, itr); });
+          std::bind(&connection::connect_callback, weak_from_this(),
+                      std::placeholders::_1, std::placeholders::_2));
       }
 
       /// @fn start
@@ -594,36 +497,22 @@ namespace via
       /// the connection.
       /// @param no_delay whether to enable tcp no delay
       /// @param keep_alive whether to enable tcp keep alive
-      /// @param timeout the send and receive timeouts, in milliseconds
-      /// @param receive_buffer_size the size of the socket's receive buffer
-      /// @param send_buffer_size the size of the socket's send buffer
+      /// @param timeout the send and receive timeouts, in milliseconds,
       /// zero is disabled
-      void start(bool no_delay, bool keep_alive, int timeout,
-                 int receive_buffer_size, int send_buffer_size)
+      void start(bool no_delay, bool keep_alive, int timeout)
       {
-        no_delay_            = no_delay;
-        keep_alive_          = keep_alive;
-        timeout_             = timeout;
-        receive_buffer_size_ = receive_buffer_size;
-        send_buffer_size_    = send_buffer_size;
-
-        weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::start([weak_ptr](boost::system::error_code const& error)
-          { handshake_callback(weak_ptr, error); });
+        no_delay_   = no_delay;
+        keep_alive_ = keep_alive;
+        timeout_    = timeout;
+        SocketAdaptor::start(std::bind(&connection::handshake_callback,
+                                       weak_from_this(),
+                                       std::placeholders::_1));
       }
 
-      /// @fn shutdown
+      /// @fn disconnect
       /// Shutdown the underlying socket adaptor.
-      void shutdown()
-      {
-        // Call shutdown with the callbacks
-        weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::shutdown([weak_ptr](boost::system::error_code const& error)
-                                { shutdown_callback(weak_ptr, error); },
-                                [weak_ptr](boost::system::error_code const& error,
-                                           int bytes)
-                                { close_callback(weak_ptr, error, bytes); });
-      }
+      void disconnect()
+      { SocketAdaptor::shutdown(); }
 
       /// @fn close
       /// Close the underlying socket adaptor.
@@ -636,63 +525,65 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        if (!receiving_)
-        {
-          receiving_ = true;
-          rx_buffer_->resize(rx_buffer_size_);
-          read_data();
-        }
+        rx_size_ = 0,
+        read_data();
       }
 
+      /// @fn rx_buffer
       /// Accessor for the receive buffer.
-      /// Swaps the contents of the receive buffer with the rx_buffer parameter
-      /// and re-enables the receiver.
-      /// This effectively double buffer's rx_buffer_, permitting the
-      /// receiver to be re-enabled without corrupting the data.
       /// @pre Only valid within the receive event callback function.
-      /// @post receive buffer is invalid to read again.
-      /// @retval the receive buffer.
-      void read_rx_buffer(Container& rx_buffer)
-      {
-        rx_buffer_->swap(rx_buffer);
-        enable_reception();
-      }
+      /// @return the receive buffer.
+      RxBuffer const& rx_buffer() const
+      { return *rx_buffer_; }
 
-      /// @fn connected
-      /// Accessor for the connected_ flag.
-      bool connected() const NOEXCEPT
-      { return connected_; }
-
-      /// Accessor to set the connected_ flag.
-      void set_connected(bool enable) NOEXCEPT
-      { connected_ = enable; }
+      /// @fn size
+      /// Accessor for receive buffer packet size.
+      /// @pre Only valid within the receive event callback function.
+      /// @return the size of the received packet.
+      size_t size() const
+      { return rx_size_; }
 
       /// @fn send_data(Container const& packet)
       /// Send a packet of data.
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.
       /// @param packet the data packet to write.
-      void send_data(Container packet)
+      void send_data(Container const& packet)
       {
-        bool was_empty(tx_queue_->empty());
-        tx_queue_->push_back(std::move(packet));
+        bool notWriting(tx_queue_->empty());
+        tx_queue_->push_back(packet);
 
-        if (!transmitting_ && was_empty)
-          write_data(ConstBuffers(1, boost::asio::buffer(tx_queue_->front())));
+        if (notWriting)
+          write_data();
       }
 
-      /// Send the data in the buffers.
-      /// @param buffers the data to write.
-      /// @return true if the buffers are being sent, false otherwise.
-      bool send_data(ConstBuffers buffers)
+      /// @fn send_data(Container&& packet)
+      /// Send a packet of data, move version for C++11.
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
+      /// @param packet the data packet to write.
+      void send_data(Container&& packet)
       {
-        if (!transmitting_ && tx_queue_->empty())
-        {
-          transmitting_ = write_data(std::move(buffers));
-          return transmitting_;
-        }
-        else
-          return false;
+        bool notWriting(tx_queue_.empty());
+        tx_queue_.push_back(packet);
+
+        if (notWriting)
+          write_data();
+      }
+
+      /// @fn send_data(ForwardIterator begin, ForwardIterator end)
+      /// The packet is added to the back of the transmit queue and sent if
+      /// the queue was empty.
+      /// This function takes a pair of iterators, so the data doesn't have
+      /// to be held in the same type of container as the connection has been
+      /// instantiated with.
+      /// @param begin iterator to the beginning of the data to write.
+      /// @param end iterator to the end of the data to write.
+      template<typename ForwardIterator>
+      void send_data(ForwardIterator begin, ForwardIterator end)
+      {
+        Container buffer(begin, end);
+        send_data(buffer);
       }
 
       /// @fn set_no_delay
@@ -723,54 +614,6 @@ namespace via
         timeout_ = timeout;
         if (connected_)
           tcp_timeouts();
-      }
-
-      /// Get the socket's receive buffer size.
-      /// @return the size of the socket's receive buffer if connected, otherwise 0.
-      int receive_buffer_size()
-      {
-        if (connected_)
-        {
-          boost::asio::socket_base::receive_buffer_size option;
-          SocketAdaptor::socket().get_option(option);
-          return option.value();
-        }
-        else
-          return 0;
-      }
-
-      /// @fn set_receive_buffer_size
-      /// Set the size of the tcp receive buffer.
-      /// @param receive_buffer_size the size of the receive buffer in bytes.
-      void set_receive_buffer_size(int receive_buffer_size)
-      {
-        receive_buffer_size_ = receive_buffer_size;
-        if (connected_)
-          resize_receive_buffer();
-      }
-
-      /// Get the socket's send buffer size.
-      /// @return the size of the socket's send buffer if connected, otherwise 0.
-      int send_buffer_size()
-      {
-        if (connected_)
-        {
-          boost::asio::socket_base::send_buffer_size option;
-          SocketAdaptor::socket().get_option(option);
-          return option.value();
-        }
-        else
-          return 0;
-      }
-
-      /// @fn set_send_buffer_size
-      /// Set the size of the tcp send buffer.
-      /// @param send_buffer_size the size of the send buffer in bytes.
-      void set_send_buffer_size(int send_buffer_size)
-      {
-        send_buffer_size_ = send_buffer_size;
-        if (connected_)
-          resize_send_buffer();
       }
     };
 
