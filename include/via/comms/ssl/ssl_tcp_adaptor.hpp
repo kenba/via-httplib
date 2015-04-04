@@ -41,9 +41,19 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor : public socket_adaptor
       {
-        /// The asio SSL TCP socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
 
+        /// The value of an SSL short read.
+        /// Received when an SSL socket disconnects.
+        static const int SSL_SHORT_READ = 335544539;
+
+      protected:
+        /// @fn tcp_socket
+        /// @returns the raw tcp socket
+        virtual boost::asio::ip::tcp::socket& socket()
+        {
+          return socket_.lowest_layer();
+        }
         /// @fn verify_certificate
         /// The verify callback function.
         /// The verify callback can be used to check whether the certificate
@@ -52,16 +62,19 @@ namespace via
         /// Consult the OpenSSL documentation for more details.
         /// Note that the callback is called once for each certificate in the
         /// certificate chain, starting from the root certificate authority.
-        static bool verify_certificate(bool preverified,
+        virtual bool verify_certificate(bool preverified,
                                        boost::asio::ssl::verify_context& ctx)
         {
-          // char subject_name[256];
+          char subject_name[256];
           // X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
           // X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
           return preverified;
         }
 
-      protected:
+        virtual boost::asio::ssl::verify_mode certificate_verify_mode() const
+        {
+          return boost::asio::ssl::verify_peer;
+        }
 
         /// @fn handshake
         /// Asynchorously performs the ssl handshake.
@@ -82,7 +95,6 @@ namespace via
         {}
 
       public:
-
         /// A virtual destructor because connection inherits from this class.
         virtual ~ssl_tcp_adaptor()
         {}
@@ -97,7 +109,7 @@ namespace via
         static boost::asio::ssl::context& ssl_context()
         {
           static boost::asio::ssl::context context_
-            (boost::asio::ssl::context::tlsv12);
+              (boost::asio::ssl::context::tlsv12);
           return context_;
         }
 
@@ -111,10 +123,9 @@ namespace via
         virtual bool connect(const char* host_name, const char* port_name,
                      ConnectHandler connect_handler)
         {
-          ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
-          socket_.set_verify_callback([]
-                                        (bool preverified, boost::asio::ssl::verify_context& ctx)
-                                      { return verify_certificate(preverified, ctx); });
+          ssl_context().set_verify_mode(certificate_verify_mode());
+          socket_.set_verify_callback([this] (bool preverified, boost::asio::ssl::verify_context& ctx)
+                                { return this->verify_certificate(preverified, ctx); });
 
           return socket_adaptor::connect(host_name, port_name, connect_handler);
         }
@@ -127,7 +138,7 @@ namespace via
         void read(void* ptr, size_t size, CommsHandler read_handler)
         {
           socket_.async_read_some
-            (boost::asio::buffer(ptr, size), read_handler);
+              (boost::asio::buffer(ptr, size), read_handler);
         }
 
         /// @fn write
@@ -185,7 +196,7 @@ namespace via
         /// @fn socket
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
-        virtual boost::asio::ip::tcp::socket& socket() NOEXCEPT
+        boost::asio::ip::tcp::socket& socket() NOEXCEPT
         { return socket_.lowest_layer(); }
       };
 

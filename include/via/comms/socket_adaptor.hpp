@@ -77,6 +77,14 @@ namespace via
         return resolver.resolve(query);
       }
 
+      /// @fn handshake
+      /// Performs the SSL handshake. Since this isn't an SSL socket, it just
+      /// calls the handshake_handler with a success error code.
+      /// @param handshake_handler the handshake callback function.
+      // @param is_server whether performing client or server handshaking,
+      // not used by un-encrypted sockets.
+      virtual void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false) = 0;
+
       /// @fn connect_socket
       /// Attempts to connect to the given resolver iterator.
       /// @param connect_handler the connect callback function.
@@ -92,13 +100,6 @@ namespace via
       host_iterator_{}
       {}
 
-      /// @fn handshake
-      /// Performs the SSL handshake. Since this isn't an SSL socket, it just
-      /// calls the handshake_handler with a success error code.
-      /// @param handshake_handler the handshake callback function.
-      // @param is_server whether performing client or server handshaking,
-      // not used by un-encrypted sockets.
-      virtual void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false) = 0;
     public:
 
       /// The default size of the receive buffer.
