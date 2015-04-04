@@ -31,8 +31,9 @@ namespace via
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     //////////////////////////////////////////////////////////////////////////
-    class udp_adaptor : public socket_adaptor
+    class udp_adaptor
     {
+      boost::asio::io_service& io_service_;        ///< The asio io_service.
       boost::asio::ip::udp::socket socket_;        ///< The asio UDP socket.
       boost::asio::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
       boost::asio::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
@@ -46,7 +47,7 @@ namespace via
       /// @param handshake_handler the handshake callback function.
       // @param is_server whether performing client or server handshaking,
       // not used by un-encrypted sockets.
-      virtual void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
+      void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
         boost::system::error_code ec; // Default is success
         handshake_handler(ec);
@@ -58,7 +59,7 @@ namespace via
       /// with a success error code.
       /// @param connect_handler the connect callback function.
       /// @param host_iterator the tcp resolver iterator.
-      virtual void connect_socket(ConnectHandler connect_handler,
+      void connect_socket(ConnectHandler connect_handler,
                           boost::asio::ip::tcp::resolver::iterator host_iterator)
       {
         boost::system::error_code ec; // Default is success
@@ -70,7 +71,7 @@ namespace via
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
       /// @param read_handler the handler for received messages.
-      virtual void read(void* ptr, size_t size, CommsHandler read_handler)
+      void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         if (is_connected_)
           socket_.async_receive(boost::asio::buffer(ptr, size), read_handler);
@@ -83,7 +84,7 @@ namespace via
       /// The udp socket write function.
       /// @param buffers the buffer(s) containing the message.
       /// @param write_handler the handler called after a message is sent.
-      virtual void write(ConstBuffers& buffers, CommsHandler write_handler)
+      void write(ConstBuffers& buffers, CommsHandler write_handler)
       {
         if (is_connected_)
           socket_.async_send(buffers, write_handler);
@@ -94,8 +95,8 @@ namespace via
       /// The udp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
       explicit udp_adaptor(boost::asio::io_service& io_service)
-        : socket_adaptor(io_service)
-        , socket_(io_service)
+        : io_service_(io_service)
+        , socket_(io_service_)
         , rx_endpoint_(boost::asio::ip::address_v4::any(), 0)
         , tx_endpoint_(boost::asio::ip::address_v4::broadcast(), 0)
         , is_connected_(false)
@@ -106,6 +107,9 @@ namespace via
       /// A virtual destructor because connection inherits from this class.
       virtual ~udp_adaptor()
       {}
+
+      /// The default size of the receive buffer.
+      static const size_t DEFAULT_RX_BUFFER_SIZE = 2048;
 
       /// Enable multicast reception on the given port_number and address.
       /// @param port_number the UDP port
@@ -257,7 +261,7 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port the port to connect to.
       /// @param connectHandler the handler to call when connected.
-      virtual bool connect(const char* host_name, const char* port ,
+      bool connect(const char* host_name, const char* port ,
                    ConnectHandler connectHandler)
       {
         // resolve the port on the local host
@@ -283,6 +287,41 @@ namespace via
         connectHandler(error, boost::asio::ip::tcp::resolver::iterator());
 
         return true;
+      }
+
+      /// @fn shutdown
+      /// The udp socket shutdown function.
+      /// Disconnects the socket.
+      /// Note: the handlers are required to shutdown SSL gracefully.
+      // @param shutdown_handler the handler for async_shutdown
+      // @param close_handler the handler for async_write
+      void shutdown(ErrorHandler, // shutdown_handler,
+                    CommsHandler) // close_handler)
+      {
+        boost::system::error_code ignoredEc;
+        socket_.shutdown (boost::asio::ip::udp::socket::shutdown_both,
+                          ignoredEc);
+        close();
+      }
+
+      /// @fn close
+      /// The udp socket close function.
+      /// Cancels any send, receive or connect operations and closes the socket.
+      void close()
+      {
+        boost::system::error_code ignoredEc;
+        if (socket_.is_open())
+          socket_.close (ignoredEc);
+      }
+
+      /// @fn start
+      /// The tcp socket start function.
+      /// Signals that the socket is connected.
+      /// @param handshake_handler the handshake callback function.
+      void start(ErrorHandler handshake_handler)
+      {
+        boost::system::error_code ec; // Default is success
+        handshake_handler(ec);
       }
 
       /// @fn is_disconnect

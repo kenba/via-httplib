@@ -39,21 +39,27 @@ namespace via
       /// @see connection
       /// @see tcp_adaptor
       ////////////////////////////////////////////////////////////////////////
-      class ssl_tcp_adaptor : public socket_adaptor
+      class ssl_tcp_adaptor
       {
+        /// The asio io_service.
+        boost::asio::io_service& io_service_;
+        /// The asio SSL TCP socket.
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
+        /// The host iterator used by the resolver.
+        boost::asio::ip::tcp::resolver::iterator host_iterator_;
 
-        /// The value of an SSL short read.
-        /// Received when an SSL socket disconnects.
-        static const int SSL_SHORT_READ = 335544539;
-
-      protected:
-        /// @fn tcp_socket
-        /// @returns the raw tcp socket
-        virtual boost::asio::ip::tcp::socket& socket()
+        /// @fn resolve_host
+        /// Resolves the host name and port.
+        /// @param host_name the host name.
+        /// @param port_name the host port.
+        boost::asio::ip::tcp::resolver::iterator resolve_host
+          (char const* host_name, char const* port_name) const
         {
-          return socket_.lowest_layer();
+          boost::asio::ip::tcp::resolver resolver(io_service_);
+          boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+          return resolver.resolve(query);
         }
+
         /// @fn verify_certificate
         /// The verify callback function.
         /// The verify callback can be used to check whether the certificate
@@ -62,45 +68,59 @@ namespace via
         /// Consult the OpenSSL documentation for more details.
         /// Note that the callback is called once for each certificate in the
         /// certificate chain, starting from the root certificate authority.
-        virtual bool verify_certificate(bool preverified,
+        static bool verify_certificate(bool preverified,
                                        boost::asio::ssl::verify_context& ctx)
         {
           char subject_name[256];
-          // X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
-          // X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+          X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+          X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
           return preverified;
         }
 
-        virtual boost::asio::ssl::verify_mode certificate_verify_mode() const
-        {
-          return boost::asio::ssl::verify_peer;
-        }
+      protected:
 
         /// @fn handshake
         /// Asynchorously performs the ssl handshake.
         /// @param handshake_handler the handshake callback function.
         /// @param is_server whether performing client or server handshaking
-        virtual void handshake(ErrorHandler handshake_handler, bool is_server)
+        void handshake(ErrorHandler handshake_handler, bool is_server)
         {
           socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
                                             : boost::asio::ssl::stream_base::client,
                                   handshake_handler);
         }
 
+        /// @fn connect_socket
+        /// Attempts to connect to the given resolver iterator.
+        /// @param connect_handler the connect callback function.
+        /// @param host_iterator the resolver iterator.
+        void connect_socket(ConnectHandler connect_handler,
+                            boost::asio::ip::tcp::resolver::iterator host_iterator)
+        {
+          // Attempt to connect to the host
+          boost::asio::async_connect(socket_.lowest_layer(), host_iterator,
+                                     connect_handler);
+        }
+
         /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
         explicit ssl_tcp_adaptor(boost::asio::io_service& io_service) :
-          socket_adaptor(io_service),
-          socket_{io_service_, ssl_context()}
+          io_service_(io_service),
+          socket_(io_service_, ssl_context()),
+          host_iterator_()
         {}
 
       public:
+
         /// A virtual destructor because connection inherits from this class.
         virtual ~ssl_tcp_adaptor()
         {}
 
         /// The default HTTPS port.
         static const unsigned short DEFAULT_HTTP_PORT = 443;
+
+        /// The default size of the receive buffer.
+        static const size_t DEFAULT_RX_BUFFER_SIZE = 8192;
 
         /// @fn ssl_context
         /// A static function to manage the ssl context for the ssl
@@ -120,14 +140,20 @@ namespace via
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
         /// @param connect_handler the handler to call when connected.
-        virtual bool connect(const char* host_name, const char* port_name,
+        bool connect(const char* host_name, const char* port_name,
                      ConnectHandler connect_handler)
         {
-          ssl_context().set_verify_mode(certificate_verify_mode());
-          socket_.set_verify_callback([this] (bool preverified, boost::asio::ssl::verify_context& ctx)
-                                { return this->verify_certificate(preverified, ctx); });
+          ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
+          socket_.set_verify_callback([]
+            (bool preverified, boost::asio::ssl::verify_context& ctx)
+              { return verify_certificate(preverified, ctx); });
 
-          return socket_adaptor::connect(host_name, port_name, connect_handler);
+          host_iterator_ = resolve_host(host_name, port_name);
+          if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
+            return false;
+
+          connect_socket(connect_handler, host_iterator_);
+          return true;
         }
 
         /// @fn read
@@ -176,6 +202,14 @@ namespace via
             socket().close (ignoredEc);
         }
 
+        /// @fn start
+        /// The ssl tcp socket start function.
+        /// Signals that the socket is connected.
+        void start(ErrorHandler handshake_handler)
+        {
+          handshake(handshake_handler, true);
+        }
+
         /// @fn is_disconnect
         /// This function determines whether the error is a socket disconnect,
         /// it also determines whether the caller should perfrom an SSL
@@ -196,7 +230,8 @@ namespace via
         /// @fn socket
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
-        boost::asio::ip::tcp::socket& socket() NOEXCEPT
+        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>
+        ::lowest_layer_type& socket() NOEXCEPT
         { return socket_.lowest_layer(); }
       };
 
