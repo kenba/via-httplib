@@ -74,6 +74,10 @@ namespace via
     typedef std::function <void (chunk_type const&, Container const&)>
       ChunkHandler;
 
+    /// The ChunkHandler type.
+    typedef std::function <void (boost::system::error_code const& e)>
+      ErrorHandler;
+
     /// The ConnectionHandler type.
     typedef std::function <void (void)>
       ConnectionHandler;
@@ -348,6 +352,15 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
+    /// connect the chunk hundler
+    /// @param handler  the handler for a http response
+    void response_handler(ResponseHandler handler) NOEXCEPT
+    { http_response_handler_ = handler; }
+
+    /// connect the chunk hundler
+    /// @param handler  the handler for a chunk
+    void chunk_handler(ChunkHandler handler) NOEXCEPT
+    { http_chunk_handler_ = handler; }
 
     /// Connect the invalid response received callback function.
     /// @param handler the handler for an invalid response received.
@@ -368,6 +381,15 @@ namespace via
     /// @param handler the handler for the message sent signal.
     void message_sent_event(ConnectionHandler handler) NOEXCEPT
     { message_sent_handler_ = handler; }
+
+
+    void error_event(ErrorHandler handler) NOEXCEPT
+    {
+      connection()->set_error_callback(
+        [handler](const boost::system::error_code& error,
+                  typename connection_type::weak_pointer weak_ptr)
+        { handler(error); });
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
