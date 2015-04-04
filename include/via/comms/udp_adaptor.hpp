@@ -40,6 +40,16 @@ namespace via
 
     protected:
 
+      /// The udp_adaptor constructor.
+      /// @param io_service the asio io_service associted with this connection
+      explicit udp_adaptor(boost::asio::io_service& io_service)
+        : socket_adaptor(io_service)
+        , socket_(io_service)
+        , rx_endpoint_(boost::asio::ip::address_v4::any(), 0)
+        , tx_endpoint_(boost::asio::ip::address_v4::broadcast(), 0)
+        , is_connected_(false)
+      {}
+
       /// @fn handshake
       /// Performs the SSL handshake. Since this isn't an SSL socket, it just
       /// calls the handshake_handler with a success error code.
@@ -65,6 +75,7 @@ namespace via
         connect_handler(ec, host_iterator);
       }
 
+    public:
       /// @fn read
       /// The udp socket read function.
       /// @param ptr pointer to the receive buffer.
@@ -90,18 +101,6 @@ namespace via
         else
           socket_.async_send_to(buffers, tx_endpoint_, write_handler);
       }
-
-      /// The udp_adaptor constructor.
-      /// @param io_service the asio io_service associted with this connection
-      explicit udp_adaptor(boost::asio::io_service& io_service)
-        : socket_adaptor(io_service)
-        , socket_(io_service)
-        , rx_endpoint_(boost::asio::ip::address_v4::any(), 0)
-        , tx_endpoint_(boost::asio::ip::address_v4::broadcast(), 0)
-        , is_connected_(false)
-      {}
-
-    public:
 
       /// A virtual destructor because connection inherits from this class.
       virtual ~udp_adaptor()
@@ -296,7 +295,7 @@ namespace via
       /// @fn socket
       /// Accessor for the underlying udp socket.
       /// @return a reference to the udp socket.
-      boost::asio::ip::udp::socket& socket() NOEXCEPT
+      virtual boost::asio::ip::udp::socket& socket() NOEXCEPT
       { return socket_; }
     };
   }

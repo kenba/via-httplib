@@ -33,6 +33,13 @@ namespace via
     {
       boost::asio::ip::tcp::socket socket_; ///< The asio TCP socket.
     protected:
+      /// The tcp_adaptor constructor.
+      /// @param io_service the asio io_service associted with this connection
+      explicit tcp_adaptor(boost::asio::io_service& io_service) :
+        socket_adaptor(io_service),
+        socket_{io_service_}
+      {}
+
       /// @fn handshake
       /// Performs the SSL handshake. Since this isn't an SSL socket, it just
       /// calls the handshake_handler with a success error code.
@@ -44,14 +51,6 @@ namespace via
         boost::system::error_code ec; // Default is success
         handshake_handler(ec);
       }
-
-      /// The tcp_adaptor constructor.
-      /// @param io_service the asio io_service associted with this connection
-      explicit tcp_adaptor(boost::asio::io_service& io_service) :
-        socket_adaptor(io_service),
-        socket_{io_service_}
-      {}
-
     public:
       /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()
@@ -67,8 +66,7 @@ namespace via
       /// @param read_handler the handler for received messages.
       void read(void* ptr, size_t size, CommsHandler read_handler)
       {
-        socket_.async_read_some
-            (boost::asio::buffer(ptr, size), read_handler);
+        socket_.async_read_some(boost::asio::buffer(ptr, size), read_handler);
       }
 
       /// @fn write
@@ -91,7 +89,7 @@ namespace via
       /// @fn socket
       /// Accessor for the underlying tcp socket.
       /// @return a reference to the tcp socket.
-      boost::asio::ip::tcp::socket& socket() NOEXCEPT
+      virtual boost::asio::ip::tcp::socket& socket() NOEXCEPT
       { return socket_; }
     };
   }
