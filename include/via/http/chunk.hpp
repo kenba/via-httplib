@@ -56,7 +56,6 @@ namespace via
       size_t size_;           ///< the size of the chunk in bytes
       size_t length_;         ///< the length of the chunk header in bytes
       size_t ws_count_;       ///< the current whitespace count
-      size_t size_count_;     ///< the size character count
       std::string hex_size_;  ///< the chunk size hex string
       std::string extension_; ///< the chunk extesion (if any)
       Chunk state_;           ///< the current parsing state
