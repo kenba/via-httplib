@@ -160,7 +160,9 @@ namespace via
         switch (rx_state)
         {
         case http::RX_VALID:
-          http_response_handler_(rx_.response(), rx_.body());
+          if (http_response_handler_)
+            http_response_handler_(rx_.response(), rx_.body());
+
           if (!rx_.response().is_chunked())
             rx_.clear();
           break;
