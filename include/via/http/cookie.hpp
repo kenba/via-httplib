@@ -17,6 +17,7 @@
 
 #include "via/no_except.hpp"
 #include <string>
+#include <functional>
 #include <ctime>
 
 namespace via
@@ -177,5 +178,37 @@ namespace via
     }; // class cookie
   }
 }
+
+namespace std
+{
+  template <>
+  struct hash<via::http::cookie> : private hash<std::string>
+  {
+    std::size_t operator()(const via::http::cookie& k) const
+    {
+      return hash<std::string>::operator()(k.name());
+    }
+  };
+
+  template<>
+  struct equal_to<via::http::cookie> : private equal_to<std::string>
+  {
+    bool operator()(const via::http::cookie& l, const via::http::cookie& r)
+    {
+      return equal_to<std::string>::operator()(l.name(), r.name());
+    }
+  };
+
+  template<>
+  struct less<via::http::cookie> : private less<std::string>
+  {
+    bool operator()(const via::http::cookie& l, const via::http::cookie& r) const
+    {
+      return less<std::string>::operator()(l.name(), r.name());
+    }
+  };
+}
+
+
 
 #endif
