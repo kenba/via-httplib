@@ -17,8 +17,8 @@
 
 #include "via/no_except.hpp"
 #include <string>
+#include <chrono>
 #include <functional>
-#include <ctime>
 
 namespace via
 {
@@ -27,6 +27,7 @@ namespace via
     class cookie
     {
     public:
+      typedef std::chrono::time_point<std::chrono::system_clock> time_point;
       /// @enum parsing_state the state of the cookie line parser
       enum parsing_state
       {
@@ -42,7 +43,7 @@ namespace via
       std::string   value_; ///< the cookie value
       std::string   domain_; ///< the cookie domain
       std::string   path_; ///< the cookie path
-      std::time_t   expires_; ///< the cookie expiration time
+      time_point    expires_; ///< the cookie expiration time
       bool          secure_; ///< the cookie is secure
       bool          http_only_; ///< the cookie is http only
       parsing_state state_; ///< the current parsing state
@@ -63,7 +64,7 @@ namespace via
       /// Sets all member variables to their initial state.
       explicit cookie() :
         path_("/"),
-        expires_(-1),
+        expires_(time_point::max()),
         secure_(false),
         http_only_(false),
         state_{ COOKIE_NAME }
@@ -73,7 +74,7 @@ namespace via
              const std::string& value,
              const std::string& domain="",
              const std::string& path="/",
-             std::time_t expires=-1,
+             time_point expires=time_point::max(),
              bool secure=false,
              bool httponly=false) :
         name_(name),
@@ -94,7 +95,7 @@ namespace via
         value_.clear();
         domain_.clear();
         path_.clear();
-        expires_ = -1;
+        expires_ = time_point::max();
         secure_ = false;
         http_only_ = false;
         state_ = COOKIE_NAME;
@@ -154,8 +155,8 @@ namespace via
 
       /// Accessor for the cookie expiration time.
       /// @return the true if cookie is expired otherwise false
-      bool expired() const NOEXCEPT
-      { return expires_ != -1 && expires_ < time(0); }
+      const time_point& expires() const NOEXCEPT
+      { return expires_; }
 
       /// Accessor for the cookie secure attribute.
       /// @return the true if cookie is secure otherwise false
@@ -208,7 +209,5 @@ namespace std
     }
   };
 }
-
-
 
 #endif

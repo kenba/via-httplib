@@ -40,14 +40,18 @@ namespace via
       }
       else if (name_hash == expires_hash)
       {
-        if (expires_ == -1)
-          expires_ = time_from_string(value, "%a, %d-%b-%Y %T");
-        if (expires_ == -1)
-          return false;
+        if (expires_ == time_point::max())
+        {
+          auto utime = time_from_string(value, "%a, %d-%b-%Y %T");
+          if (utime == -1)
+            return false;
+
+          expires_ = time_point::clock::from_time_t(utime);
+        }
       }
       else if (name_hash == max_age_hash)
       {
-        expires_ = time(0) + from_dec_string(value);
+        expires_ = time_point::clock::now() + std::chrono::seconds(from_dec_string(value));
       }
       else if (name_hash == secure_hash)
       {
@@ -99,8 +103,9 @@ namespace via
     std::string cookie::dump() const
     {
       std::string result = to_string();
-      if (expires_ != -1)
-        result.append("; expires=").append(time_to_string(expires_, "%a, %d-%b-%Y %T"));
+      if (expires_ != time_point::max())
+        result.append("; expires=")
+          .append(time_to_string(time_point::clock::to_time_t(expires_), "%a, %d-%b-%Y %T"));
       if (!path_.empty())
         result.append("; path=").append(path_);
       if (!domain_.empty())
