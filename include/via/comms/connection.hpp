@@ -183,15 +183,9 @@ namespace via
 
       /// @fn signal_error
       /// This function is called whenever an error event occurs.
-      /// It determines whether the error code is for a disconnect in which
-      /// case it sends a DISCONNECTED signal otherwise it sends the
-      /// error signal.
       void signal_error(boost::system::error_code const& error)
       {
-        if (is_error_a_disconnect(error))
-          event_callback_(DISCONNECTED, weak_from_this());
-        else
-          error_callback_(error, weak_from_this());
+        error_callback_(error, weak_from_this());
       }
 
       /// @fn read_callback
