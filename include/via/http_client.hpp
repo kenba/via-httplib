@@ -17,6 +17,7 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
+#include <iostream>
 
 namespace via
 {
@@ -103,7 +104,6 @@ namespace via
     ConnectionHandler connected_handler_;     ///< the connected callback function
     ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
     ConnectionHandler message_sent_handler_;  ///< the message sent callback function
-    ErrorHandler      error_handler_;         ///< the error occured callback function
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -259,14 +259,13 @@ namespace via
     }
 
     /// Receive an error from the underlying comms connection.
-    static void error_callback(weak_pointer ptr, const boost::system::error_code &error,
-                               typename connection_type::weak_pointer /*conn*/)
+    /// @param error the boost error_code.
+    // @param weak_ptr a weak pointer to the underlying comms connection.
+    static void error_handler(const boost::system::error_code &error,
+                          typename connection_type::weak_pointer) // weak_ptr)
     {
-      shared_pointer pointer(ptr.lock());
-      if (pointer && pointer->error_handler_)
-      {
-        pointer->error_handler_(error);
-      }
+      std::cerr << "error_handler" << std::endl;
+      std::cerr << error <<  std::endl;
     }
 
     /// Constructor.
@@ -318,10 +317,10 @@ namespace via
       shared_pointer client_ptr(new http_client(io_service, response_handler,
                                             chunk_handler, rx_buffer_size));
       weak_pointer ptr(client_ptr);
-      client_ptr->connection_->set_error_callback([ptr]
+      client_ptr->connection_->set_error_callback([]
         (const boost::system::error_code &error,
          typename connection_type::weak_pointer weak_ptr)
-           { error_callback(ptr, error, weak_ptr); });
+           { error_handler(error, weak_ptr); });
       client_ptr->connection_->set_event_callback([ptr]
         (int event, typename connection_type::weak_pointer weak_ptr)
            { event_callback(ptr, event, weak_ptr); });
@@ -386,8 +385,13 @@ namespace via
     { message_sent_handler_ = handler; }
 
 
-    void error_handler(ErrorHandler handler) NOEXCEPT
-    { error_handler_ = handler; }
+    void error_event(ErrorHandler handler) NOEXCEPT
+    {
+      connection()->set_error_callback(
+        [handler](const boost::system::error_code& error,
+                  typename connection_type::weak_pointer weak_ptr)
+        { handler(error); });
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
