@@ -479,10 +479,17 @@ namespace via
 
       /// Set the header_string_ to the value given.
       /// Note: will overwrite any other headers, so must be called before
-      /// the following add_header fucntions.
+      /// the following add_header functions.
       /// @param header_string the new header string
       void set_header_string(std::string const& header_string)
       { header_string_ = header_string; }
+
+      /// Set the cookie_string to the value given.
+      /// Note: will overwrite any other cookies, so must be called before
+      /// the following add_cookie functions.
+      /// @param header_string the new header string
+      void set_cookie_string(std::string const& cookie_string)
+      { cookies_string_ = cookie_string; }
 
       /// Add a standard header to the request.
       /// @see http::header_field::field_id
@@ -501,11 +508,11 @@ namespace via
       /// @see http::cookie
       /// @param name, the cookie name
       /// @param value the cookie value
-      void add_cookie(const cookie& value)
+      void add_cookie(const std::string& name, const std::string& value)
       {
         if (!cookies_string_.empty())
           cookies_string_.append("; ");
-        cookies_string_ += value.to_string();
+        cookies_string_.append(name).append("=").append(value);
       }
 
       /// Add an http content length header line for the given size.

@@ -168,11 +168,6 @@ namespace via
       bool is_http_only() const NOEXCEPT
       { return http_only_; }
 
-      /// Output the cookie as a string.
-      /// @return a serialized cookie.
-      std::string to_string() const NOEXCEPT
-      { return name_ + "=" + value_; }
-
       /// Dump cookie
       /// @return a serialized cookie.
       std::string dump() const;
