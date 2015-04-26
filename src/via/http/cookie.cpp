@@ -102,7 +102,8 @@ namespace via
 
     std::string cookie::dump() const
     {
-      std::string result = to_string();
+      std::string result;
+      result.append(name_).append("=").append(value_);
       if (expires_ != time_point::max())
         result.append("; expires=")
           .append(time_to_string(time_point::clock::to_time_t(expires_), "%a, %d-%b-%Y %T"));
