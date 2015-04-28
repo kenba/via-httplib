@@ -161,14 +161,14 @@ namespace via
       if (!strptime(s.c_str(), fmt.c_str(), &timeinfo))
         return std::time_t(-1);
 
-      return timegm(&timeinfo);
+      return timelocal(&timeinfo);
     }
 
     std::string time_to_string(const std::time_t& t, const std::string& fmt)
     {
       char buf[255];
 
-      std::size_t s = strftime(buf, sizeof(buf), fmt.c_str(), gmtime(&t));
+      std::size_t s = strftime(buf, sizeof(buf), fmt.c_str(), localtime(&t));
       return std::string(buf, s);
     }
   }
