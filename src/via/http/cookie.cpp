@@ -8,6 +8,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/cookie.hpp"
 #include "via/http/character.hpp"
+#include <algorithm>
 #include <functional>
 
 namespace via
@@ -32,7 +33,8 @@ namespace via
       if (name_hash == domain_hash)
       {
         domain_.resize(name.size());
-        std::transform(name.cbegin(), name.cend(), domain_.begin(), &std::tolower);
+        // lambda is required to build under gcc
+        std::transform(name.cbegin(), name.cend(), domain_.begin(), [](int c){ return std::tolower(c); });
       }
       else if (name_hash == path_hash)
       {

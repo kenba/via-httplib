@@ -19,6 +19,7 @@
 #include "via/comms/socket_adaptor.hpp"
 #include "via/no_except.hpp"
 #include <boost/asio/ssl.hpp>
+#include <boost/version.hpp>
 
 // Enable SSL support.
 #ifndef HTTP_SSL
@@ -129,7 +130,7 @@ namespace via
         static boost::asio::ssl::context& ssl_context()
         {
           static boost::asio::ssl::context context_(
-#ifdef SSL_TXT_TLSV1_2
+#if BOOST_VERSION >= 105400 && defined(SSL_TXT_TLSV1_2)
               boost::asio::ssl::context::tlsv12
 #else
               boost::asio::ssl::context::sslv23
