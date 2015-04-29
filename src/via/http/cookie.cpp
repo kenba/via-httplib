@@ -25,10 +25,6 @@ namespace via
       const std::size_t max_age_hash = hash_("max-age");
       const std::size_t secure_hash = hash_("secure");
       const std::size_t http_only_hash = hash_("httponly");
-
-      int tolower(int ch) {
-        return std::tolower(ch);
-      }
     }
 
     bool cookie::parse_attr(std::string& name, std::string& value)
@@ -37,7 +33,8 @@ namespace via
       if (name_hash == domain_hash)
       {
         domain_.resize(name.size());
-        std::transform(name.cbegin(), name.cend(), domain_.begin(), tolower);
+        // lambda is required to build under gcc
+        std::transform(name.cbegin(), name.cend(), domain_.begin(), [](int c){ return std::tolower(c); });
       }
       else if (name_hash == path_hash)
       {
