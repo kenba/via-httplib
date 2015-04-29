@@ -14,11 +14,11 @@ namespace
   // The following strings are for the standard response reason phrases
   // associated with the given response status code.
 
-  // Informational 1xx
+    // Informational 1xx
   const std::string	REASON_CONTINUE         ("Continue");
   const std::string	REASON_SWITCHING_PROTOCOLS
                                             ("Switching Protocols");
-  // Successful 2xx
+    // Successful 2xx
   const std::string	REASON_OK               ("OK");
   const std::string	REASON_CREATED          ("Created");
   const std::string	REASON_ACCEPTED         ("Accepted");
@@ -27,7 +27,7 @@ namespace
   const std::string	REASON_RESET_CONTENT    ("Reset Content");
   const std::string	REASON_PARTIAL_CONTENT  ("Partial Content");
 
-  // Redirection 3xx
+    // Redirection 3xx
   const std::string	REASON_MULTIPLE_CHOICES ("Multiple Choices");
   const std::string	REASON_MOVED_PERMANENTLY("Moved Permanently");
   const std::string	REASON_FOUND            ("Found");
@@ -36,7 +36,7 @@ namespace
   const std::string	REASON_USE_PROXY        ("Use Proxy");
   const std::string	REASON_TEMPORARY_REDIRECT
                                             ("Temporary Redirect");
-  // Client Error 4xx
+    // Client Error 4xx
   const std::string	REASON_BAD_REQUEST      ("Bad Request");
   const std::string	REASON_UNAUTHORISED     ("Unauthorized");
   const std::string	REASON_PAYMENT_REQUIRED ("Payment Required");
@@ -64,7 +64,7 @@ namespace
                                           ("Requested range not satisfiable");
   const std::string	REASON_EXPECTATION_FAILED
                                             ("Expectation Failed");
-  // Server Error 5xx
+    // Server Error 5xx
   const std::string	REASON_INTERNAL_SERVER_ERROR
                                             ("Internal Server Error");
   const std::string	REASON_NOT_IMPLEMENTED  ("Not Implemented");

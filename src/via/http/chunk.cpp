@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -24,7 +24,7 @@ namespace via
       switch (state_)
       {
       case CHUNK_SIZE_LS:
-        // Ignore leading whitespace
+        // Ignore leading whitespace 
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
@@ -34,7 +34,7 @@ namespace via
             return false;
           }
           else
-            break;
+          break;
         }
         else
           state_ = CHUNK_SIZE;
@@ -70,12 +70,12 @@ namespace via
             else
             {
               if ('\r' == c)
-                state_ = CHUNK_LF;
-              else // ('\n' == c)
+              state_ = CHUNK_LF;
+            else // ('\n' == c)
               {
                 if (strict_crlf_)
                   return false;
-                else
+          else
                   state_ = CHUNK_VALID;
               }
             }
@@ -86,14 +86,14 @@ namespace via
         break;
 
       case CHUNK_EXTENSION_LS:
-        // Ignore leading whitespace
+        // Ignore leading whitespace 
         if (is_space_or_tab(c))
         {
           // but only upto to a limit!
           if (++ws_count_ > max_whitespace_)
             return false;
           else
-            break;
+          break;
         }
         else
           state_ = CHUNK_EXTENSION;
@@ -118,7 +118,7 @@ namespace via
       case CHUNK_LF:
         if ('\n' == c)
           state_ = CHUNK_VALID;
-        else
+        else 
           return false;
         break;
 
@@ -126,7 +126,7 @@ namespace via
         return false;
       }
 
-      return true;
+      return true; 
     }
     //////////////////////////////////////////////////////////////////////////
 

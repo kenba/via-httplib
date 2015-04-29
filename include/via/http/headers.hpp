@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
 #include "character.hpp"
+#include "cookie.hpp"
 #include <unordered_map>
 
 namespace via
@@ -43,10 +44,10 @@ namespace via
       /// @enum Header the state of the header field line parser
       enum Header
       {
-        HEADER_NAME,         ///< the header name field
-        HEADER_VALUE_LS,     ///< the header value leading white space
-        HEADER_VALUE,        ///< the header value
-        HEADER_LF,           ///< the line feed (if any)
+        HEADER_NAME,     ///< the header name field
+        HEADER_VALUE_LS, ///< the header value leading white space
+        HEADER_VALUE,    ///< the header value
+        HEADER_LF,       ///< the line feed (if any)
         HEADER_VALID,        ///< the header line is valid
         HEADER_ERROR_LENGTH, ///< the header line is longer than max_line_length_
         HEADER_ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
@@ -61,8 +62,8 @@ namespace via
       unsigned short max_line_length_; ///< the max length of a field line
 
       /// Field information
-      std::string   name_;     ///< the field name (lower case)
-      std::string   value_;    ///< the field value
+      std::string   name_;  ///< the field name (lower case)
+      std::string   value_; ///< the field value
       size_t        length_;   ///< the length of the header line in bytes
       size_t        ws_count_; ///< the current whitespace count
       Header        state_;    ///< the current parsing state
@@ -177,6 +178,7 @@ namespace via
 
       /// The HTTP message header fields.
       std::unordered_map<std::string, std::string> fields_;
+      std::unordered_map<std::string, cookie> cookies_;
       field_line field_; ///< the current field being parsed
       bool       valid_; ///< true if the headers are valid
       size_t     length_; ///< the length of the message headers
@@ -214,6 +216,7 @@ namespace via
       {
         fields_.clear();
         field_.clear();
+        cookies_.clear();
         valid_ = false;
         length_ = 0;
       }
@@ -224,6 +227,7 @@ namespace via
       {
         fields_.swap(other.fields_);
         field_.swap(other.field_);
+        cookies_.swap(other.cookies_);
         std::swap(valid_, other.valid_);
         std::swap(length_, other.length_);
       }
@@ -236,6 +240,7 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
+        cookie cookie_;
         while (iter != end && !is_end_of_line(*iter))
         {
          // field_line field;
@@ -243,11 +248,21 @@ namespace via
             return false;
 
           length_ += field_.length();
-          add(field_.name(), field_.value());
+          if (field_.name() == header_field::lowercase_name(header_field::id::SET_COOKIE))
+          {
+            if (!cookie_.parse(field_.value()))
+              return false;
+            add_cookie(cookie_);
+            cookie_.clear();
+          }
+          else
+          {
+            add(field_.name(), field_.value());
+          }
           field_.clear();
 
           if ((length_ > max_header_length_)
-           || (fields_.size() > max_header_number_))
+              || (fields_.size() > max_header_number_))
             return false;
         }
 
@@ -275,6 +290,14 @@ namespace via
       { fields_.insert(std::unordered_map<std::string, std::string>::value_type
                      (name, value)); }
 
+      /// Add a cookie to the collection.
+      /// @param name the field name (in lower case)
+      /// @param value the cookie value.
+      void add_cookie(const cookie& value)
+      { cookies_.insert(std::unordered_map<std::string, cookie>::value_type
+                         (value.name(), value)); }
+
+
       /// Find the value for a given header name.
       /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
@@ -286,6 +309,16 @@ namespace via
       /// @return the value, blank if not found
       const std::string& find(header_field::id field_id) const
       { return find(header_field::lowercase_name(field_id)); }
+
+      /// Find the cookie by name.
+      /// @param name the name of the cookie.
+      /// @return the value, blank if not found
+      const cookie& find_cookie(const std::string& name) const;
+
+      /// Get a collections of whole cookies
+      /// @return the cookies
+      const std::unordered_map<std::string, cookie>& cookies() const
+      { return cookies_; }
 
       /// If there is a Content-Length field return its size.
       /// @return the value of the Content-Length field or
