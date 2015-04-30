@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -52,7 +52,7 @@ namespace via
             return false;
           }
           else
-            break;
+          break;
         else
           state_ = HEADER_VALUE;
         // intentional fall-through

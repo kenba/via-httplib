@@ -80,7 +80,9 @@ namespace via
         CONTENT_TYPE,
         EXPIRES,
         LAST_MODIFIED,
-        EXTENSION_HEADER
+        EXTENSION_HEADER,
+        SET_COOKIE,
+        COOKIE
       };
 
       /// Lookup the RFC2616 standard name for the given header field.

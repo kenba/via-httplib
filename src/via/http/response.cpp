@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2014 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -13,7 +13,6 @@ namespace via
 {
   namespace http
   {
-
     //////////////////////////////////////////////////////////////////////////
     bool response_line::parse_char(char c)
     {
@@ -79,9 +78,9 @@ namespace via
 
       case RESP_HTTP_DOT:
         if ('.' == c)
-          state_ = RESP_HTTP_MINOR;
-        else
-          return false;
+            state_ = RESP_HTTP_MINOR;
+          else
+            return false;
         break;
 
       case RESP_HTTP_MINOR:
@@ -141,7 +140,7 @@ namespace via
       case RESP_REASON:
         if (!is_end_of_line(c))
         {
-          // Ignore leading whitespace
+        // Ignore leading whitespace
           if (reason_phrase_.empty() && is_space_or_tab(c))
           {
             // but only upto to a limit!
@@ -153,21 +152,21 @@ namespace via
           }
           else
           {
-            reason_phrase_.push_back(c);
+          reason_phrase_.push_back(c);
             if (reason_phrase_.size() > max_reason_length_)
             {
               state_ = RESP_ERROR_REASON_LENGTH;
               return false;
             }
           }
-          break;
+        break;
         }
         // intentional fall-through
       case RESP_CR:
         // The HTTP line should end with a \r\n...
         if ('\r' == c)
           state_ = RESP_LF;
-        else
+        else 
         {
           // but (if not being strict) permit just \n
           if (!strict_crlf_ && ('\n' == c))
@@ -175,7 +174,7 @@ namespace via
           else
           {
             state_ = RESP_ERROR_CRLF;
-            return false;
+          return false;
           }
         }
         break;
@@ -195,7 +194,7 @@ namespace via
       return true;
     }
     //////////////////////////////////////////////////////////////////////////
-
+    
     //////////////////////////////////////////////////////////////////////////
     std::string response_line::to_string() const
     {

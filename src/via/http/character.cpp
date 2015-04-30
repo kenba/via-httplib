@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -155,5 +155,21 @@ namespace via
       return number_stream.str();
     }
     //////////////////////////////////////////////////////////////////////////
+    std::time_t time_from_string(const std::string& s, const std::string& fmt)
+    {
+      std::tm timeinfo;
+      if (!strptime(s.c_str(), fmt.c_str(), &timeinfo))
+        return std::time_t(-1);
+
+      return timelocal(&timeinfo);
+    }
+
+    std::string time_to_string(const std::time_t& t, const std::string& fmt)
+    {
+      char buf[255];
+
+      std::size_t s = strftime(buf, sizeof(buf), fmt.c_str(), localtime(&t));
+      return std::string(buf, s);
+    }
   }
 }
