@@ -55,9 +55,10 @@ namespace via
         boost::asio::ip::tcp::resolver::iterator resolve_host
           (char const* host_name, char const* port_name) const
         {
+          boost::system::error_code ignoredEc;
           boost::asio::ip::tcp::resolver resolver(io_service_);
           boost::asio::ip::tcp::resolver::query query(host_name, port_name);
-          return resolver.resolve(query);
+          return resolver.resolve(query, ignoredEc);
         }
 
         /// @fn verify_certificate
