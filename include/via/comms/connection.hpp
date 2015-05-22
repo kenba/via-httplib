@@ -302,6 +302,7 @@ namespace via
             if (!pointer->tx_queue_->empty())
               pointer->write_data
           (ConstBuffers(1, boost::asio::buffer(pointer->tx_queue_->front())));
+            pointer->receiving_ = false;
             pointer->enable_reception();
             pointer->event_callback_(CONNECTED, ptr);
           }
