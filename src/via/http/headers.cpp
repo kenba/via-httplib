@@ -14,6 +14,7 @@ namespace
 {
   const std::string EMPTY_STRING("");
 
+  const std::string COOKIE("cookie");
   const std::string IDENTITY("identity");
   const std::string CLOSE("close");
   const std::string CONTINUE("100-continue");
@@ -85,6 +86,25 @@ namespace via
       }
 
       return true;
+    }
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    void message_headers::add(const std::string& name, const std::string& value)
+    {
+      std::unordered_map<std::string, std::string>::iterator iter
+        (fields_.find(name));
+      // if the field name was found previously
+      if (iter != fields_.end())
+      {
+        if (name.find(COOKIE) != std::string::npos)
+          iter->second += SC + value;
+        else
+          iter->second += COMMA + value;
+      }
+      else
+        fields_.insert(std::unordered_map<std::string, std::string>::value_type
+                             (name, value));
     }
     //////////////////////////////////////////////////////////////////////////
 

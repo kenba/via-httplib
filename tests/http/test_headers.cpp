@@ -476,3 +476,62 @@ BOOST_AUTO_TEST_CASE(InValidMultipleHeader2)
 
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+BOOST_AUTO_TEST_SUITE(TestRepeatedHeaders)
+
+BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
+{
+  // Single cookie
+  std::string HEADER_LINE("Set-Cookie: abcdefg hijkl\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n\r\n";
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::iterator header_next(header_data.begin());
+
+  message_headers the_headers(false, 8, 1024, 100, 8190);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
+  BOOST_CHECK(header_data.end() == header_next);
+
+  std::string COOKIE_STR("abcdefg hijkl");
+  const std::string& cookies(the_headers.find("set-cookie"));
+  BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
+}
+
+BOOST_AUTO_TEST_CASE(ValidCookieHeader2)
+{
+  // Two cookies
+  std::string HEADER_LINE("Set-Cookie: abcdefg hijkl\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n";
+  HEADER_LINE += "Set-Cookie: ijklm nopq\r\n\r\n";
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::iterator header_next(header_data.begin());
+
+  message_headers the_headers(false, 8, 1024, 100, 8190);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
+  BOOST_CHECK(header_data.end() == header_next);
+
+  std::string COOKIE_STR("abcdefg hijkl;ijklm nopq");
+  const std::string& cookies(the_headers.find("set-cookie"));
+  BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
+}
+
+BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
+{
+  // Two Content-Languages
+  std::string HEADER_LINE("Content-Language: abcdefg hijkl\r\n");
+  HEADER_LINE += "Transfer-Encoding: \t Chunked\r\n";
+  HEADER_LINE += "Content-Language: ijklm nopq\r\n\r\n";
+  std::vector<char> header_data(HEADER_LINE.begin(), HEADER_LINE.end());
+  std::vector<char>::iterator header_next(header_data.begin());
+
+  message_headers the_headers(false, 8, 1024, 100, 8190);
+  BOOST_CHECK(the_headers.parse(header_next, header_data.end()));
+  BOOST_CHECK(header_data.end() == header_next);
+
+  std::string CONTENT_STR("abcdefg hijkl,ijklm nopq");
+  const std::string& content(the_headers.find("content-language"));
+  BOOST_CHECK_EQUAL(CONTENT_STR, content);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+//////////////////////////////////////////////////////////////////////////////

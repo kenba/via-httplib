@@ -271,9 +271,7 @@ namespace via
       /// Add a header to the collection.
       /// @param name the field name (in lower case)
       /// @param value the field value.
-      void add(const std::string& name, const std::string& value)
-      { fields_.insert(std::unordered_map<std::string, std::string>::value_type
-                     (name, value)); }
+      void add(const std::string& name, const std::string& value);
 
       /// Find the value for a given header name.
       /// Note: the name must be in lowercase for received message_headers.

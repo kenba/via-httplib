@@ -17,6 +17,10 @@ namespace via
   {
     const std::string CRLF("\r\n");
 
+    const std::string COMMA(",");
+
+    const std::string SC(";");
+
     //////////////////////////////////////////////////////////////////////////
     bool is_separator(char c) NOEXCEPT
     {
