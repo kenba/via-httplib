@@ -49,6 +49,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
+#include "via/http/request_router.hpp"
 #ifdef HTTP_SSL
 #include <boost/asio/ssl/context.hpp>
 #endif
@@ -124,13 +125,20 @@ namespace via
     typedef std::function <void (std::weak_ptr<http_connection_type>)>
       ConnectionHandler;
 
+    /// The built-in request_router type.
+    typedef typename http::request_router<Container> request_router_type;
+
+    /// The built-in request_router Handler type.
+    typedef typename request_router_type::Handler request_router_handler_type;
+
   private:
 
     ////////////////////////////////////////////////////////////////////////
     // Variables
 
-    std::shared_ptr<server_type> server_;   ///< the communications server
-    connection_collection http_connections_;  ///< the communications channels
+    std::shared_ptr<server_type> server_;    ///< the communications server
+    connection_collection http_connections_; ///< the communications channels
+    request_router_type   request_router_;   ///< the built-in request_router
 
     // Request parser parameters
     bool           strict_crlf_;       ///< enforce strict parsing of CRLF
@@ -199,6 +207,26 @@ namespace via
       else
         std::cerr << "http_server, error: duplicate connection for "
                   << iter->second->remote_address() << std::endl;
+    }
+
+    /// Route the request using the request_router_.
+    /// @param weak_ptr a weak pointer to the comms connection.
+    /// @param request the received request.
+    /// @param body the received request body.
+    void route_request(std::weak_ptr<http_connection_type> weak_ptr,
+                       http::rx_request const& request,
+                       Container const& body)
+    {
+      std::shared_ptr<http_connection_type> connection(weak_ptr.lock());
+      if (connection)
+      {
+        Container response_body;
+        http::tx_response response
+            (request_router_.handle_request(request, body, response_body));
+        response.add_date_header();
+        response.add_server_header();
+        connection->send(std::move(response), std::move(response_body));
+      }
     }
 
     /// Receive data packets on an underlying communications connection.
@@ -361,9 +389,13 @@ namespace via
 
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
-    explicit http_server(boost::asio::io_service& io_service) :
+    /// @param auth_ptr a shared pointer to an authentication.
+    explicit http_server(boost::asio::io_service& io_service,
+                         std::shared_ptr<http::authentication::authentication>
+              auth_ptr = std::shared_ptr<http::authentication::authentication>()) :
       server_(new server_type(io_service)),
       http_connections_(),
+      request_router_(auth_ptr),
 
       // Set request parser parameters to default values
       strict_crlf_        (false),
@@ -414,12 +446,40 @@ namespace via
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                        bool ipv4_only = false)
     {
+      // If a request handler's not been registered, use the request_router
       if (!http_request_handler_)
-        throw std::logic_error
-          ("via::http_server, a request_received_event is not registered");
+        http_request_handler_ =
+            [this](std::weak_ptr<http_connection_type> weak_ptr,
+                   http::rx_request const& request, Container const& body)
+        { route_request(weak_ptr, request, body); };
 
       return server_->accept_connections(port, ipv4_only);
     }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Method Handlers
+
+    /// Add a method and it's handler to the given path.
+    /// @see request_router::add_method
+    /// @param method the method name (an uppercase string).
+    /// @param path the uri path. Note: it may contain ':' characters to
+    /// capture paramters from the uri path like Node.js.
+    /// @param handler the request handler to be called.
+    /// @return true if the path is new, false otherwise.
+    bool add_method(std::string const& method, std::string const& path,
+                    request_router_handler_type handler)
+    { return request_router_.add_method(method, path, handler); }
+
+    /// Add a method and it's handler to the given path.
+    /// @see request_router::add_method
+    /// @param method_id the method id, e.g. request_method::id::GET.
+    /// @param path the uri path. Note: it may contain ':' characters to
+    /// capture paramters from the uri path like Node.js.
+    /// @param handler the request handler to be called.
+    /// @return true if the path is new, false otherwise.
+    bool add_method(http::request_method::id method_id, std::string const& path,
+                    request_router_handler_type handler)
+    { return request_router_.add_method(method_id, path, handler); }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers

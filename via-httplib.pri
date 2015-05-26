@@ -18,6 +18,7 @@ INCLUDEPATH *= $${INC_DIR}
 
 HEADERS += $${INC_DIR}/via/*.hpp
 HEADERS += $${INC_DIR}/via/http/*.hpp
+HEADERS += $${INC_DIR}/via/http/authentication/*.hpp
 HEADERS += $${INC_DIR}/via/comms/*.hpp
 HEADERS += $${INC_DIR}/via/comms/ssl/*.hpp
 

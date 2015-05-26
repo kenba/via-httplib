@@ -28,8 +28,8 @@ win32 {
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 1
-  VER_PAT = 2
+  VER_MIN = 2
+  VER_PAT = 0
 }
 
 TEMPLATE = lib
@@ -72,6 +72,9 @@ SOURCES += $${SRC_DIR}/via/http/request_method.cpp
 SOURCES += $${SRC_DIR}/via/http/request.cpp
 SOURCES += $${SRC_DIR}/via/http/response_status.cpp
 SOURCES += $${SRC_DIR}/via/http/response.cpp
+SOURCES += $${SRC_DIR}/via/http/request_router.cpp
+SOURCES += $${SRC_DIR}/via/http/authentication/base64.cpp
+SOURCES += $${SRC_DIR}/via/http/authentication/basic.cpp
 
 CONFIG(release, debug|release) {
   DESTDIR = $${OUT_PWD}/release

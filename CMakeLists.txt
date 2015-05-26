@@ -54,6 +54,9 @@ if(Boost_FOUND)
     src/via/http/request_method.cpp
     src/via/http/response.cpp
     src/via/http/response_status.cpp
+	src/via/http/request_router.cpp
+	src/via/http/authentication/base64.cpp
+	src/via/http/authentication/basic.cpp
   )
 
   install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME}
