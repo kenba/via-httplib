@@ -187,10 +187,16 @@ namespace via
         void shutdown(ErrorHandler shutdown_handler, CommsHandler close_handler)
         {
           static const char buffer[] = "";
-          socket_.async_shutdown(shutdown_handler);
+
+          // Shutdown the SSL layer
+          boost::system::error_code  ec;
+          socket_.shutdown(ec);
+
+          // Ensure that the client receives an SSL close notify
           boost::asio::async_write(socket_,
                                    boost::asio::const_buffers_1(&buffer[0], 1),
                                    close_handler);
+          shutdown_handler(ec);
         }
 
         /// @fn close
