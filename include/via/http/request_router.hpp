@@ -46,8 +46,15 @@ namespace via
                                          Container const& data,
                                          Container& response_body)> Handler;
 
+      /// A request handler with an (optional) authentication object pointer.
+      struct AuthenticatedHandler
+      {
+        Handler handler;
+        authentication::authentication const* auth_ptr;
+      };
+
       /// A map of handlers
-      typedef std::map<std::string, Handler> MethodHandlers;
+      typedef std::map<std::string, AuthenticatedHandler> MethodHandlers;
 
       /// The value_type stored in the map of handlers
       typedef typename MethodHandlers::value_type MethodHandlers_value_type;
@@ -110,9 +117,6 @@ namespace via
       /// The routes to search for an HTTP request.
       Routes routes_;
 
-      /// An (optional) authentication object.
-      std::shared_ptr<authentication::authentication> authentication_;
-
       /// Searches for the request in the routes collection.
       /// @param uri_path the http request uri path
       /// @retval parameters the route paramters (if any)
@@ -144,11 +148,9 @@ namespace via
 
       /// Constructor
       /// @param auth_ptr a shared pointer to an authentication.
-      explicit request_router(std::shared_ptr<authentication::authentication>
-                   auth_ptr = std::shared_ptr<authentication::authentication>())
+      explicit request_router()
         : request_handler<Container>()
         , routes_()
-        , authentication_(auth)
       {}
 
       /// Destructor
@@ -163,17 +165,18 @@ namespace via
       /// @param handler the request handler to be called.
       /// @return true if the path is new, false otherwise.
       bool add_method(std::string const& method, std::string const& path,
-                      Handler handler)
+                      Handler handler,
+                      authentication::authentication const* auth_ptr = nullptr)
       {
         // Serach for the path in the existing routes
         auto iter(std::find(routes_.begin(), routes_.end(), path));
         bool is_new_path(iter == routes_.end());
         if (is_new_path)
           routes_.push_back(Route(path,
-                                  MethodHandlers_value_type(method, handler)));
+                    MethodHandlers_value_type(method, { handler, auth_ptr })));
         else
           iter->method_handlers.insert
-              (MethodHandlers_value_type(method, handler));
+              (MethodHandlers_value_type(method, { handler, auth_ptr }));
 
         return is_new_path;
       }
@@ -186,8 +189,9 @@ namespace via
       /// @param handler the request handler to be called.
       /// @return true if the path is new, false otherwise.
       bool add_method(request_method::id method_id, std::string const& path,
-                      Handler handler)
-      { return add_method(request_method::name(method_id), path, handler); }
+                      Handler handler,
+                      authentication::authentication const* auth_ptr = nullptr)
+      { return add_method(request_method::name(method_id), path, handler, auth_ptr); }
 
       /// The function handle HTTP requests.
       /// It validates the request and routes it to the
@@ -208,19 +212,6 @@ namespace via
         if (route_itr == routes_.cend())
           return tx_response(response_status::code::NOT_FOUND);
 
-        // If this router has authentication
-        if (authentication_)
-        {
-          std::string challenge(authentication_->authenticate(request));
-          if (!challenge.empty())
-          {
-            // authentication failed, send an UNAUTHORISED response
-            tx_response response(response_status::code::UNAUTHORISED);
-            response.add_header(header_field::id::WWW_AUTHENTICATE, challenge);
-            return response;
-          }
-        }
-
         // Search for the method
         auto methods_iter(route_itr->method_handlers.find(request.method()));
         if (methods_iter == route_itr->method_handlers.cend())
@@ -231,8 +222,26 @@ namespace via
           return response;
         }
         else
-          return methods_iter->second(request, parameters,
-                                      request_body, response_body);
+        {
+          // If this method has authentication
+          if (methods_iter->second.auth_ptr)
+          {
+            // authenticate the request
+            std::string challenge
+                (methods_iter->second.auth_ptr->authenticate(request));
+            if (!challenge.empty())
+            {
+              // authentication failed, send an UNAUTHORISED response
+              tx_response response(response_status::code::UNAUTHORISED);
+              response.add_header(header_field::id::WWW_AUTHENTICATE, challenge);
+              return response;
+            }
+          }
+
+          // call the registered handler
+          return methods_iter->second.handler(request, parameters,
+                                              request_body, response_body);
+        }
       }
 
       /// Accessor for the stored routes

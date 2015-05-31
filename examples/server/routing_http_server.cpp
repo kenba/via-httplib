@@ -56,8 +56,9 @@ int main(int /* argc */, char *argv[])
     // Create the HTTP server, attach the request method handlers
     http_server_type http_server(io_service);
 
-    http_server.add_method("GET", "/hello", get_hello_handler);
-    http_server.add_method(via::http::request_method::GET, "/hello/:name",
+    http_server.request_router().add_method("GET", "/hello", get_hello_handler);
+    http_server.request_router().add_method
+                          (via::http::request_method::GET, "/hello/:name",
                            get_hello_name_handler);
 
     // Accept IPV4 connections on the default port (80)

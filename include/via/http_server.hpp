@@ -390,12 +390,10 @@ namespace via
     /// Constructor.
     /// @param io_service a reference to the boost::asio::io_service.
     /// @param auth_ptr a shared pointer to an authentication.
-    explicit http_server(boost::asio::io_service& io_service,
-                         std::shared_ptr<http::authentication::authentication>
-              auth_ptr = std::shared_ptr<http::authentication::authentication>()) :
+    explicit http_server(boost::asio::io_service& io_service) :
       server_(new server_type(io_service)),
       http_connections_(),
-      request_router_(auth_ptr),
+      request_router_(),
 
       // Set request parser parameters to default values
       strict_crlf_        (false),
@@ -456,36 +454,19 @@ namespace via
       return server_->accept_connections(port, ipv4_only);
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // Method Handlers
-
-    /// Add a method and it's handler to the given path.
-    /// @see request_router::add_method
-    /// @param method the method name (an uppercase string).
-    /// @param path the uri path. Note: it may contain ':' characters to
-    /// capture paramters from the uri path like Node.js.
-    /// @param handler the request handler to be called.
-    /// @return true if the path is new, false otherwise.
-    bool add_method(std::string const& method, std::string const& path,
-                    request_router_handler_type handler)
-    { return request_router_.add_method(method, path, handler); }
-
-    /// Add a method and it's handler to the given path.
-    /// @see request_router::add_method
-    /// @param method_id the method id, e.g. request_method::id::GET.
-    /// @param path the uri path. Note: it may contain ':' characters to
-    /// capture paramters from the uri path like Node.js.
-    /// @param handler the request handler to be called.
-    /// @return true if the path is new, false otherwise.
-    bool add_method(http::request_method::id method_id, std::string const& path,
-                    request_router_handler_type handler)
-    { return request_router_.add_method(method_id, path, handler); }
+    /// Accessor for the request_router_
+    request_router_type& request_router()
+    { return request_router_; }
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
 
     /// Connect the request received callback function.
-    /// @post the application may call http_server::accept_connections.
+    ///
+    /// If the application registers a handler for this event, then the
+    /// application must determine how to respond to requests.
+    /// Otherwise, the server will handle request with request_router_.
+    /// @post disables the built-in request_router.
     /// @param handler the handler for a received HTTP request.
     void request_received_event(RequestHandler handler) NOEXCEPT
     { http_request_handler_ = handler; }
