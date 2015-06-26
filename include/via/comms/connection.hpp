@@ -472,9 +472,11 @@ namespace via
         struct timeval tv;
         tv.tv_sec  = timeout_ / 1000;
         tv.tv_usec = 1000 * (timeout_ % 1000);
-        setsockopt(SocketAdaptor::socket().native(), SOL_SOCKET, SO_RCVTIMEO,
+        setsockopt(SocketAdaptor::socket().native_handle(),
+                   SOL_SOCKET, SO_RCVTIMEO,
                    reinterpret_cast<const char*>(&tv), sizeof(tv));
-        setsockopt(SocketAdaptor::socket().native(), SOL_SOCKET, SO_SNDTIMEO,
+        setsockopt(SocketAdaptor::socket().native_handle(),
+                   SOL_SOCKET, SO_SNDTIMEO,
                    reinterpret_cast<const char*>(&tv), sizeof(tv));
 #endif
       }
