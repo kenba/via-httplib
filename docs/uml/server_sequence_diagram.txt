@@ -36,7 +36,4 @@ end loop
 
 ... connection open for transmission and reception ...
 
-server <- connection : disconnect
-user  <- server : disconnect
-
 @enduml

@@ -142,3 +142,28 @@ the connection and starts the server handshake.
  always accept the handshake.
 
 ![TCP/SSL Server Connection Sequence Diagram](images/server_sequence_diagram.png)
+
+## Socket Disconnection ##
+
+Sooner or later either end of the connection will want to close it. If the
+server or client wants to close the connection it shall call the connections
+`shutdown` function. The other end of the connection can also disconnect, this
+will be detected by the read/write handlers as disconnect error.
+
+`asio` provides `close` functions however, to gracefully (and in the SSL case,
+correctly) close the connection it should be `shutdown` before being closed. 
+
+The `asio` SSL shutdown sends an SSL `close notify` message to the other end
+of the connection. This is the secure method of closing the connection.
+Unfortunately, an `asio` SSL shutdown also waits for an SSL `close notify`
+from the  other end of the connection, which may not be forthcoming...
+
+One solution is to call async_shutdown with a handler to ignore the response.
+This sends an async SSL close_notify message and shuts down the write side
+of the SSL stream. If some data is then written to the SSL socket, the write
+will fail with the SSL error code: SSL_R_PROTOCOL_IS_SHUTDOWN.
+
+The asio TCP shutdown function is synchronous, so the TCP shutdown just waits
+for the function to return before signalling that socket is disconnected.
+
+![TCP/SSL Socket Disconnection Sequence Diagram](images/socket_disconnection_sequence_diagram.png)

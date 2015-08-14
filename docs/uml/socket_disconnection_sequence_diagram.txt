@@ -1,0 +1,49 @@
+@startuml
+
+'Copyright (c) 2013-2015 Ken Barker
+
+title Socket Disonnection Sequence
+
+'autonumber
+actor "server or client"
+
+... connection open for transmission and reception ...
+
+alt 
+"server or client" -> connection : shutdown
+else
+connection <- socket_adaptor: disconnect
+end alt
+
+alt ssl
+connection -> socket_adaptor : shutdown
+socket_adaptor -> asio.socket : async_shutdown
+socket_adaptor <- asio.socket : ssl shutdown response
+note left
+The ssl socket_adaptor ignores
+the ssl shutdown response
+end note
+socket_adaptor -> asio.socket : async_write
+note left
+The write will fail with error
+SSL_R_PROTOCOL_IS_SHUTDOWN
+end note
+connection <- asio.socket : write_callback
+else tcp
+connection -> socket_adaptor : shutdown
+socket_adaptor -> asio.socket : shutdown
+socket_adaptor <- asio.socket : disconnected
+note left
+The tcp socket_adaptor waits
+for the tcp socket to disconnect
+end note
+connection <- socket_adaptor : write_callback
+note right
+The tcp socket_adaptor sends
+eof to signal disconnected
+end note
+end alt
+
+"server or client" <- connection : disconnected
+
+@enduml
