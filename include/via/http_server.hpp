@@ -431,6 +431,10 @@ namespace via
       server_->set_no_delay(true);
     }
 
+    /// Destructor, close the connections.
+    ~http_server()
+    { close(); }
+
     /// Start accepting connections on the given port and protocol.
     /// @pre http_server::request_received_event must have been called to register
     /// the request received callback function before this function.
@@ -673,6 +677,14 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // other functions
+
+    /// Disconnect all of the outstanding http server connections to prepare
+    /// for closing the server.
+    void shutdown()
+    {
+      for (auto& elem : http_connections_)
+        elem.second->disconnect();
+    }
 
     /// Close the http server and all of the connections associated with it.
     void close()
