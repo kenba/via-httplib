@@ -173,6 +173,11 @@ namespace via
       rx_buffer_()
     {}
 
+    /// The destructor calls close to ensure that all of the socket's
+    /// callback functions are cancelled.
+    ~http_connection()
+    { close(); }
+
     ////////////////////////////////////////////////////////////////////////
     // Request Parser Parameters
 

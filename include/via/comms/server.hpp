@@ -374,7 +374,6 @@ namespace via
         if (acceptor_v4_.is_open())
           acceptor_v4_.close();
 
-        next_connection_.reset();
         connections_.clear();
       }
     };
