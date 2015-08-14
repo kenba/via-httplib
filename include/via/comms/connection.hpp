@@ -352,32 +352,6 @@ namespace via
         }
       }
 
-      /// @fn shutdown_callback
-      /// A function called when an SSL socket adaptor attempts to disconnect.
-      /// @param ptr a weak pointer to the connection
-      /// @param error the boost asio error (if any).
-      static void shutdown_callback(weak_pointer ptr,
-                                    boost::system::error_code const&) // error
-      {
-        shared_pointer pointer(ptr.lock());
-        if (pointer)
-          pointer->event_callback_(DISCONNECTED, ptr);
-      }
-
-      /// @fn close_callback
-      /// A function called when an SSL socket adaptor attempts to disconnect.
-      /// @param ptr a weak pointer to the connection
-      /// @param error the boost asio error (if any).
-      /// @param bytes_transferred the number of bytess(it's a write callback).
-      static void close_callback(weak_pointer ptr,
-                                 boost::system::error_code const&, // error,
-                                 size_t)  // bytes_transferred)
-      {
-        shared_pointer pointer(ptr.lock());
-        if (pointer)
-          pointer->close();
-      }
-
       /// Constructor for server connections.
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
@@ -619,13 +593,14 @@ namespace via
       /// Shutdown the underlying socket adaptor.
       void shutdown()
       {
-        // Call shutdown with the callbacks
+        // local copies for the lambda
         weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::shutdown([weak_ptr](boost::system::error_code const& error)
-                                { shutdown_callback(weak_ptr, error); },
-                                [weak_ptr](boost::system::error_code const& error,
-                                           int bytes)
-                                { close_callback(weak_ptr, error, bytes); });
+        std::shared_ptr<std::deque<Container>> tx_queue(tx_queue_);
+
+        // Call shutdown with the callback
+        SocketAdaptor::shutdown([weak_ptr, tx_queue]
+                        (boost::system::error_code const& error, int bytes)
+                        { write_callback(weak_ptr, error, bytes, tx_queue); });
       }
 
       /// @fn close

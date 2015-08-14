@@ -292,16 +292,15 @@ namespace via
       /// @fn shutdown
       /// The udp socket shutdown function.
       /// Disconnects the socket.
-      /// Note: the handlers are required to shutdown SSL gracefully.
-      // @param shutdown_handler the handler for async_shutdown
-      // @param close_handler the handler for async_write
-      void shutdown(ErrorHandler, // shutdown_handler,
-                    CommsHandler) // close_handler)
+      /// @param write_handler the handler to notify that the socket is
+      /// disconnected.
+      void shutdown(CommsHandler write_handler)
       {
-        boost::system::error_code ignoredEc;
-        socket_.shutdown (boost::asio::ip::udp::socket::shutdown_both,
-                          ignoredEc);
-        close();
+        boost::system::error_code ec;
+        socket_.shutdown(boost::asio::ip::udp::socket::shutdown_both, ec);
+
+        ec = boost::system::error_code(boost::asio::error::eof);
+        write_handler(ec, 0);
       }
 
       /// @fn close

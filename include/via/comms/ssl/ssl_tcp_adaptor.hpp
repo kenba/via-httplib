@@ -182,21 +182,32 @@ namespace via
         /// Disconnects the socket.
         /// Note: the handlers are required to shutdown SSL gracefully, see:
         /// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699
-        /// @param shutdown_handler the handler for async_shutdown
-        /// @param close_handler the handler for async_write
-        void shutdown(ErrorHandler shutdown_handler, CommsHandler close_handler)
+        /// This function sends an SSL close_notify message to the other side
+        /// but does not wait for the response so it can be used in all cases
+        /// to shutdown an SSL socket gracefully.
+        /// @param write_handler the handler for the call to async_write.
+        void shutdown(CommsHandler write_handler)
         {
+          // Something to send in the call to write
           static const char buffer[] = "";
 
-          // Shutdown the SSL layer
-          boost::system::error_code  ec;
-          socket_.shutdown(ec);
+          // Call async_shutdown with a handler to ignore the response.
+          // This sends an async SSL close_notify message, shuts down the
+          // write side of the SSL stream and then waits (asynchronously) for
+          // the SSL close_notify response from the other side.
+          socket_.async_shutdown([](boost::system::error_code const&){});
 
-          // Ensure that the client receives an SSL close notify
+          // Write some data to the SSL socket
+          // This will fail because the async_shutdown above shutdown the write
+          // side of the SSL stream. The failed write will close the underlying
+          // socket causing the async_shutdown operation to call it's callback
+          // with boost::asio::error::operation_aborted (which is ignored).
+          // The failed write will call write_handler with the SSL error code:
+          // SSL_R_PROTOCOL_IS_SHUTDOWN this indicates that the socket is now
+          // disconnected.
           boost::asio::async_write(socket_,
                                    boost::asio::const_buffers_1(&buffer[0], 1),
-                                   close_handler);
-          shutdown_handler(ec);
+                                   write_handler);
         }
 
         /// @fn close
@@ -222,16 +233,17 @@ namespace via
         /// it also determines whether the caller should perfrom an SSL
         /// shutdown.
         /// @param error the error_code
-        /// @retval ssl_shutdown - an ssl_disconnect should be performed
-        /// @return true if a disconnect error, false otherwise.
+        /// @retval ssl_shutdown - an SSL shutdown should be performed
+        /// @return true if the socket is disconnected, false otherwise.
         bool is_disconnect(boost::system::error_code const& error,
                            bool& ssl_shutdown) NOEXCEPT
         {
           bool ssl_error(boost::asio::error::get_ssl_category() == error.category());
           ssl_shutdown = ssl_error &&
-                         (SSL_R_SHORT_READ == ERR_GET_REASON(error.value()));
+               (SSL_R_SHORT_READ != ERR_GET_REASON(error.value())) &&
+               (SSL_R_PROTOCOL_IS_SHUTDOWN != ERR_GET_REASON(error.value()));
 
-          return ssl_error;
+          return ssl_error && !ssl_shutdown;
         }
 
         /// @fn socket
