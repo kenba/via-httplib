@@ -605,7 +605,6 @@ BOOST_AUTO_TEST_CASE(ResponseEncode3)
 
 BOOST_AUTO_TEST_CASE(ResponseEncode4)
 {
-  const std::string text("123456789abcdef");
   std::string correct_response ("HTTP/1.1 200 OK\r\n");
 //  correct_response += via::http::header_field::server_header();
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
