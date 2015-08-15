@@ -375,7 +375,7 @@ namespace via
 
     /// Disconnect the underlying connection.
     void disconnect()
-    { connection_.lock()->shutdown(); }
+    { connection_.lock()->disconnect(); }
 
     /// Close the underlying connection.
     void close()

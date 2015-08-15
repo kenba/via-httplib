@@ -79,7 +79,7 @@ namespace via
 
       /// Strand to ensure the connection's handlers are not called concurrently.
       boost::asio::io_service::strand strand_;
-      size_t rx_buffer_size_;              ///< The recieve buffer size.
+      size_t rx_buffer_size_;              ///< The receive buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
       std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
       ConstBuffers tx_buffers_;            ///< The transmit buffers.
@@ -94,6 +94,7 @@ namespace via
       bool no_delay_;           ///< The tcp no delay status.
       bool keep_alive_;         ///< The tcp keep alive status.
       bool connected_;          ///< If the socket is connected.
+      bool disconnect_pending_; ///< Shutdown the socket after the next write.
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -257,7 +258,12 @@ namespace via
             pointer->signal_error(error);
           }
           else
-            pointer->write_handler(bytes_transferred);
+          {
+            if (pointer->disconnect_pending_)
+              pointer->shutdown();
+            else
+              pointer->write_handler(bytes_transferred);
+          }
         }
       }
 
@@ -380,7 +386,8 @@ namespace via
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
-        connected_(false)
+        connected_(false),
+        disconnect_pending_(false)
       {}
 
       /// Constructor for client connections.
@@ -407,7 +414,8 @@ namespace via
         transmitting_(false),
         no_delay_(false),
         keep_alive_(false),
-        connected_(false)
+        connected_(false),
+        disconnect_pending_(false)
       {}
 
       /// Set the socket's tcp no delay status.
@@ -589,8 +597,19 @@ namespace via
           { handshake_callback(weak_ptr, error); });
       }
 
+      /// @fn disconnect
+      /// Shutdown the socket after the last message has been sent.
+      void disconnect()
+      {
+        // If nothing is currently being sent
+        if (!transmitting_ && tx_queue_->empty())
+          shutdown();
+        else // shutdown the socekt in the write callback
+          disconnect_pending_ = true;
+      }
+
       /// @fn shutdown
-      /// Shutdown the underlying socket adaptor.
+      /// Shutdown the socket now.
       void shutdown()
       {
         // local copies for the lambda
