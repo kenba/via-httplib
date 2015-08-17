@@ -30,7 +30,7 @@ namespace
                    http_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    http_server.close();
+    http_server.shutdown();
   }
 
   /// A string to send in responses.

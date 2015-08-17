@@ -139,6 +139,7 @@ namespace via
     std::shared_ptr<server_type> server_;    ///< the communications server
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
+    bool                  shutting_down_;    ///< the server is shutting down
 
     // Request parser parameters
     bool           strict_crlf_;       ///< enforce strict parsing of CRLF
@@ -323,6 +324,10 @@ namespace via
         disconnected_handler_(iter->second);
 
       http_connections_.erase(iter);
+
+      // If the http_server is being shutdown and this was the last connection
+      if (shutting_down_ && http_connections_.empty())
+        server_->close();
     }
 
     /// Receive an event from the underlying comms connection.
@@ -394,6 +399,7 @@ namespace via
       server_(new server_type(io_service)),
       http_connections_(),
       request_router_(),
+      shutting_down_(false),
 
       // Set request parser parameters to default values
       strict_crlf_        (false),
@@ -682,8 +688,14 @@ namespace via
     /// for closing the server.
     void shutdown()
     {
-      for (auto& elem : http_connections_)
-        elem.second->disconnect();
+      if (!http_connections_.empty())
+      {
+        shutting_down_ = true;
+        for (auto& elem : http_connections_)
+          elem.second->disconnect();
+      }
+      else
+        close();
     }
 
     /// Close the http server and all of the connections associated with it.

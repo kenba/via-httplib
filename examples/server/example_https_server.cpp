@@ -31,7 +31,7 @@ namespace
                    https_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    http_server.close();
+    http_server.shutdown();
   }
 
   /// A string to send in responses.
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
     // run the io_service to start communications
     io_service.run();
 
-    std::cout << "io_service.run compeleted, shutdown successful." << std::endl;
+    std::cout << "io_service.run complete, shutdown successful." << std::endl;
   }
   catch (std::exception& e)
   {
