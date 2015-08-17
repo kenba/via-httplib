@@ -179,35 +179,20 @@ namespace via
 
         /// @fn shutdown
         /// The ssl tcp socket shutdown function.
-        /// Disconnects the socket.
-        /// Note: the handlers are required to shutdown SSL gracefully, see:
-        /// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error/25703699#25703699
-        /// This function sends an SSL close_notify message to the other side
-        /// but does not wait for the response so it can be used in all cases
-        /// to shutdown an SSL socket gracefully.
-        /// @param write_handler the handler for the call to async_write.
+        /// Disconnects the socket an notifies the write handler.
+        /// @param write_handler the handler for the call to async_shutdown.
         void shutdown(CommsHandler write_handler)
         {
-          // Something to send in the call to write
-          static const char buffer[] = "";
+          // Cancel any pending operations
+          boost::system::error_code ignoredEc;
+          socket().cancel(ignoredEc);
 
-          // Call async_shutdown with a handler to ignore the response.
+          // Call async_shutdown with the write_handler as a shutdown handler.
           // This sends an async SSL close_notify message, shuts down the
           // write side of the SSL stream and then waits (asynchronously) for
           // the SSL close_notify response from the other side.
-          socket_.async_shutdown([](boost::system::error_code const&){});
-
-          // Write some data to the SSL socket
-          // This will fail because the async_shutdown above shutdown the write
-          // side of the SSL stream. The failed write will close the underlying
-          // socket causing the async_shutdown operation to call it's callback
-          // with boost::asio::error::operation_aborted (which is ignored).
-          // The failed write will call write_handler with the SSL error code:
-          // SSL_R_PROTOCOL_IS_SHUTDOWN this indicates that the socket is now
-          // disconnected.
-          boost::asio::async_write(socket_,
-                                   boost::asio::const_buffers_1(&buffer[0], 1),
-                                   write_handler);
+          socket_.async_shutdown([write_handler]
+             (boost::system::error_code const& ec){ write_handler(ec, 0); });
         }
 
         /// @fn close
