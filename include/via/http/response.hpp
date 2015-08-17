@@ -506,12 +506,13 @@ namespace via
         output += header_string_;
 
         // Ensure that it's got a content length header unless
-        // a tranfer encoding is being applied.
+        // a tranfer encoding is being applied or content is not permitted
         bool no_content_length(std::string::npos == header_string_.find
               (header_field::standard_name(header_field::id::CONTENT_LENGTH)));
         bool no_transfer_encoding(std::string::npos == header_string_.find
               (header_field::standard_name(header_field::id::TRANSFER_ENCODING)));
-        if (no_content_length && no_transfer_encoding)
+        if (no_content_length && no_transfer_encoding &&
+            response_status::content_permitted(status()))
           output += header_field::content_length(content_length);
         output += CRLF;
 

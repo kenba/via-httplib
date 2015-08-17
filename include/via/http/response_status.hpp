@@ -79,16 +79,28 @@ namespace via
 
       /// The standard reason phrase associated with the response status code.
       /// See RFC2616 Section 6.1.1.
-      /// @param status the reason status code
+      /// @param status_code the reason status code
       /// @return the standard reason phrase associated with the status code.
       const std::string& reason_phrase(code status_code) NOEXCEPT;
 
       /// Find whether there's a standard reason phrase for the status_code.
       /// See RFC2616 Section 6.1.1.
-      /// @param status the reason status code
+      /// @param status_code the reason status code
       /// @return the standard reason phrase associated with the status code.
       inline const std::string& reason_phrase(int status_code)
       { return reason_phrase(static_cast<code>(status_code)); }
+
+      /// Whether the response may contain a message body.
+      /// See RFC7230 Section 3.3.
+      /// @param status_code the reason status code.
+      /// @return true if the response may contain a message body,
+      /// false otherwise.
+      inline bool content_permitted(int status_code) NOEXCEPT
+      {
+        return (status_code >= static_cast<int>(code::OK))
+            && (status_code != static_cast<int>(code::NO_CONTENT))
+            && (status_code != static_cast<int>(code::NOT_MODIFIED));
+      }
     }
   }
 }

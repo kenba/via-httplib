@@ -112,6 +112,36 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
     response_status::reason_phrase(response_status::code::HTTP_VERSION_NOT_SUPPORTED).c_str());
 }
 
+BOOST_AUTO_TEST_CASE(ResponseStatus2)
+{
+  using namespace via::http::response_status;
+
+  // Informational 1xx
+  BOOST_CHECK(!content_permitted(static_cast<int>(code::CONTINUE)));
+  BOOST_CHECK(!content_permitted(static_cast<int>(code::SWITCHING_PROTOCOLS)));
+
+  // Successful 2xx
+  BOOST_CHECK(content_permitted(static_cast<int>(code::OK)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::CREATED)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::ACCEPTED)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::NON_AUTHORITATIVE)));
+  BOOST_CHECK(!content_permitted(static_cast<int>(code::NO_CONTENT)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::RESET_CONTENT)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::PARTIAL_CONTENT)));
+
+  // Redirection 3xx
+  BOOST_CHECK(content_permitted(static_cast<int>(code::MULTIPLE_CHOICES)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::MOVED_PERMANENTLY)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::FOUND)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::SEE_OTHER)));
+  BOOST_CHECK(!content_permitted(static_cast<int>(code::NOT_MODIFIED)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::USE_PROXY)));
+  BOOST_CHECK(content_permitted(static_cast<int>(code::TEMPORARY_REDIRECT)));
+
+  // Client Error 4xx
+  BOOST_CHECK(content_permitted(static_cast<int>(code::BAD_REQUEST)));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 //////////////////////////////////////////////////////////////////////////////
 
@@ -613,6 +643,16 @@ BOOST_AUTO_TEST_CASE(ResponseEncode4)
   the_response.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
   std::string resp_text(the_response.message());
 //  std::string resp_text(resp_data.begin(), resp_data.end());
+  BOOST_CHECK_EQUAL(correct_response.c_str(), resp_text.c_str());
+}
+
+BOOST_AUTO_TEST_CASE(ResponseEncode5)
+{
+  std::string correct_response ("HTTP/1.1 204 No Content\r\n\r\n");
+
+  tx_response the_response(response_status::code::NO_CONTENT);
+  std::string resp_text(the_response.message());
+//  std::cout << resp_text << std::endl;
   BOOST_CHECK_EQUAL(correct_response.c_str(), resp_text.c_str());
 }
 
