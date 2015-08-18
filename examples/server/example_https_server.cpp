@@ -134,7 +134,7 @@ namespace
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                       via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
+                       via::http::response_status::code::PAYLOAD_TOO_LARGE :
                        via::http::response_status::code::CONTINUE);
 
     http_connection::shared_pointer connection(weak_ptr.lock());

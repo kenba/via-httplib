@@ -36,7 +36,7 @@ namespace
                    http_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    http_server.close();
+    http_server.shutdown();
   }
 
   /// Something to send in the chunks.
@@ -179,7 +179,7 @@ namespace
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                       via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
+                       via::http::response_status::code::PAYLOAD_TOO_LARGE :
                        via::http::response_status::code::CONTINUE);
     weak_ptr.lock()->send(std::move(response));
   }

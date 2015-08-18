@@ -26,7 +26,7 @@ typedef http_server_type::chunk_type http_chunk_type;
 namespace
 {
   /// The stop callback function.
-  /// Ccloses the server and all it's connections leaving io_service.run
+  /// Closes the server and all it's connections leaving io_service.run
   /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(boost::system::error_code const&, // error,
@@ -34,7 +34,7 @@ namespace
                    http_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
-    http_server.close();
+    http_server.shutdown();
   }
 
   /// A string to send in responses.
@@ -140,7 +140,7 @@ namespace
 
     // Reject the message if it's too big, otherwise continue
     via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                       via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE :
+                       via::http::response_status::code::PAYLOAD_TOO_LARGE :
                        via::http::response_status::code::CONTINUE);
 
     http_connection::shared_pointer connection(weak_ptr.lock());
