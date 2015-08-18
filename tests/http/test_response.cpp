@@ -58,6 +58,8 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
     response_status::reason_phrase(response_status::code::USE_PROXY).c_str());
   BOOST_CHECK_EQUAL("Temporary Redirect",
     response_status::reason_phrase(response_status::code::TEMPORARY_REDIRECT).c_str());
+  BOOST_CHECK_EQUAL("Permanent Redirect",
+    response_status::reason_phrase(response_status::code::PERMANENT_REDIRECT).c_str());
 
   // Client Error 4xx
   BOOST_CHECK_EQUAL("Bad Request",
@@ -86,8 +88,8 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
     response_status::reason_phrase(response_status::code::LENGTH_REQUIRED).c_str());
   BOOST_CHECK_EQUAL("Precondition Failed",
     response_status::reason_phrase(response_status::code::PRECONDITION_FAILED).c_str());
-  BOOST_CHECK_EQUAL("Request Entity Too Large",
-    response_status::reason_phrase(response_status::code::REQUEST_ENTITY_TOO_LARGE).c_str());
+  BOOST_CHECK_EQUAL("Payload Too Large",
+    response_status::reason_phrase(response_status::code::PAYLOAD_TOO_LARGE).c_str());
   BOOST_CHECK_EQUAL("Request-URI Too Long",
     response_status::reason_phrase(response_status::code::REQUEST_URI_TOO_LONG).c_str());
   BOOST_CHECK_EQUAL("Unsupported Media Type",
@@ -96,6 +98,14 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
     response_status::reason_phrase(response_status::code::REQUEST_RANGE_NOT_SATISFIABLE).c_str());
   BOOST_CHECK_EQUAL("Expectation Failed",
     response_status::reason_phrase(response_status::code::EXPECTATION_FAILED).c_str());
+  BOOST_CHECK_EQUAL("Upgrade Required",
+    response_status::reason_phrase(response_status::code::UPGRADE_REQUIRED).c_str());
+  BOOST_CHECK_EQUAL("Precondition Required",
+    response_status::reason_phrase(response_status::code::PRECONDITION_REQUIRED).c_str());
+  BOOST_CHECK_EQUAL("Too Many Requests",
+    response_status::reason_phrase(response_status::code::TOO_MANY_REQUESTS).c_str());
+  BOOST_CHECK_EQUAL("Request Header Fields Too Large",
+    response_status::reason_phrase(response_status::code::REQUEST_HEADER_FIELDS_TOO_LARGE).c_str());
 
   // Server Error 5xx
   BOOST_CHECK_EQUAL("Internal Server Error",
@@ -110,6 +120,8 @@ BOOST_AUTO_TEST_CASE(ResponseStatus1)
     response_status::reason_phrase(response_status::code::GATEWAY_TIMEOUT).c_str());
   BOOST_CHECK_EQUAL("HTTP Version not supported",
     response_status::reason_phrase(response_status::code::HTTP_VERSION_NOT_SUPPORTED).c_str());
+  BOOST_CHECK_EQUAL("Network Authentication Required",
+    response_status::reason_phrase(response_status::code::NETWORK_AUTHENTICATION_REQUIRED).c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ResponseStatus2)

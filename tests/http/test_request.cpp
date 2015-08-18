@@ -1084,7 +1084,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
   BOOST_CHECK(iter != request_buffer.end());
   BOOST_CHECK(rx_state == RX_INVALID);
   BOOST_CHECK(the_request_receiver.response_code() ==
-              via::http::response_status::code::REQUEST_ENTITY_TOO_LARGE);
+              via::http::response_status::code::PAYLOAD_TOO_LARGE);
 }
 
 BOOST_AUTO_TEST_CASE(ValidHeadRequest1)

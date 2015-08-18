@@ -47,6 +47,7 @@ namespace via
         NOT_MODIFIED                  = 304,
         USE_PROXY                     = 305,
         TEMPORARY_REDIRECT            = 307,
+        PERMANENT_REDIRECT            = 308,
 
         // Client Error 4xx
         BAD_REQUEST                   = 400,
@@ -62,11 +63,15 @@ namespace via
         GONE                          = 410,
         LENGTH_REQUIRED               = 411,
         PRECONDITION_FAILED           = 412,
-        REQUEST_ENTITY_TOO_LARGE      = 413,
+        PAYLOAD_TOO_LARGE             = 413,
         REQUEST_URI_TOO_LONG          = 414,
         UNSUPPORTED_MEDIA_TYPE        = 415,
         REQUEST_RANGE_NOT_SATISFIABLE = 416,
         EXPECTATION_FAILED            = 417,
+        UPGRADE_REQUIRED              = 426,
+        PRECONDITION_REQUIRED         = 428,
+        TOO_MANY_REQUESTS             = 429,
+        REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
 
         // Server Error 5xx
         INTERNAL_SERVER_ERROR         = 500,
@@ -74,7 +79,8 @@ namespace via
         BAD_GATEWAY                   = 502,
         SERVICE_UNAVAILABLE           = 503,
         GATEWAY_TIMEOUT               = 504,
-        HTTP_VERSION_NOT_SUPPORTED    = 505
+        HTTP_VERSION_NOT_SUPPORTED    = 505,
+        NETWORK_AUTHENTICATION_REQUIRED = 511
       };
 
       /// The standard reason phrase associated with the response status code.

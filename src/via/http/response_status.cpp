@@ -36,6 +36,9 @@ namespace
   const std::string	REASON_USE_PROXY        ("Use Proxy");
   const std::string	REASON_TEMPORARY_REDIRECT
                                             ("Temporary Redirect");
+  const std::string	REASON_PERMANENT_REDIRECT
+                                            ("Permanent Redirect");
+
   // Client Error 4xx
   const std::string	REASON_BAD_REQUEST      ("Bad Request");
   const std::string	REASON_UNAUTHORISED     ("Unauthorized");
@@ -54,8 +57,8 @@ namespace
   const std::string	REASON_LENGTH_REQUIRED  ("Length Required");
   const std::string	REASON_PRECONDITION_FAILED
                                             ("Precondition Failed");
-  const std::string	REASON_REQUEST_ENTITY_TOO_LARGE
-                                            ("Request Entity Too Large");
+  const std::string	REASON_PAYLOAD_TOO_LARGE
+                                            ("Payload Too Large");
   const std::string	REASON_REQUEST_URI_TOO_LONG
                                             ("Request-URI Too Long");
   const std::string	REASON_UNSUPPORTED_MEDIA_TYPE
@@ -64,6 +67,13 @@ namespace
                                           ("Requested range not satisfiable");
   const std::string	REASON_EXPECTATION_FAILED
                                             ("Expectation Failed");
+  const std::string REASON_UPGRADE_REQUIRED ("Upgrade Required");
+  const std::string REASON_PRECONDITION_REQUIRED
+                                            ("Precondition Required");
+  const std::string REASON_TOO_MANY_REQUESTS("Too Many Requests");
+  const std::string REASON_REQUEST_HEADER_FIELDS_TOO_LARGE
+                                            ("Request Header Fields Too Large");
+
   // Server Error 5xx
   const std::string	REASON_INTERNAL_SERVER_ERROR
                                             ("Internal Server Error");
@@ -74,6 +84,8 @@ namespace
   const std::string	REASON_GATEWAY_TIMEOUT  ("Gateway Time-out");
   const std::string	REASON_HTTP_VERSION_NOT_SUPPORTED
                                             ("HTTP Version not supported");
+  const std::string	REASON_NETWORK_AUTHENTICATION_REQUIRED
+                                            ("Network Authentication Required");
 
   const std::string EMPTY_STRING("");
 }
@@ -111,6 +123,7 @@ namespace via
       case code::NOT_MODIFIED:                  return REASON_NOT_MODIFIED;
       case code::USE_PROXY:                     return REASON_USE_PROXY;
       case code::TEMPORARY_REDIRECT:            return REASON_TEMPORARY_REDIRECT;
+      case code::PERMANENT_REDIRECT:            return REASON_PERMANENT_REDIRECT;
 
       // Client Error 4xx
       case code::BAD_REQUEST:                   return REASON_BAD_REQUEST;
@@ -127,12 +140,17 @@ namespace via
       case code::GONE:                          return REASON_GONE;
       case code::LENGTH_REQUIRED:               return REASON_LENGTH_REQUIRED;
       case code::PRECONDITION_FAILED:           return REASON_PRECONDITION_FAILED;
-      case code::REQUEST_ENTITY_TOO_LARGE:   return REASON_REQUEST_ENTITY_TOO_LARGE;
+      case code::PAYLOAD_TOO_LARGE:             return REASON_PAYLOAD_TOO_LARGE;
       case code::REQUEST_URI_TOO_LONG:          return REASON_REQUEST_URI_TOO_LONG;
       case code::UNSUPPORTED_MEDIA_TYPE:       return REASON_UNSUPPORTED_MEDIA_TYPE;
       case code::REQUEST_RANGE_NOT_SATISFIABLE:
                                   return REASON_REQUEST_RANGE_NOT_SATISFIABLE;
       case code::EXPECTATION_FAILED:            return REASON_EXPECTATION_FAILED;
+      case code::UPGRADE_REQUIRED:              return REASON_UPGRADE_REQUIRED;
+      case code::PRECONDITION_REQUIRED:         return REASON_PRECONDITION_REQUIRED;
+      case code::TOO_MANY_REQUESTS:             return REASON_TOO_MANY_REQUESTS;
+      case code::REQUEST_HEADER_FIELDS_TOO_LARGE:
+                                                return REASON_REQUEST_HEADER_FIELDS_TOO_LARGE;
 
       // Server Error 5xx
       case code::INTERNAL_SERVER_ERROR:         return REASON_INTERNAL_SERVER_ERROR;
@@ -142,6 +160,9 @@ namespace via
       case code::GATEWAY_TIMEOUT:               return REASON_GATEWAY_TIMEOUT;
       case code::HTTP_VERSION_NOT_SUPPORTED:
                                      return REASON_HTTP_VERSION_NOT_SUPPORTED;
+      case code::NETWORK_AUTHENTICATION_REQUIRED:
+                                return REASON_NETWORK_AUTHENTICATION_REQUIRED;
+
       // Unknown Error Status Code
       default:                            return EMPTY_STRING;
       }
