@@ -31,31 +31,25 @@ E.g. an HTTP server using std::string as a Container:
     /// A typedef for http_connection_type to make following code easier to understand.
     typedef http_server_type::http_connection_type http_connection;
 
-## Constructing and Configuring a server ##
+## Constructing a server ##
 
-The server is constructed with an `asio::io_service` and a `RequestHandler`, e.g.:
+The server is constructed with an `asio::io_service`, e.g.:
 
     boost::asio::io_service io_service;
-    http_server_type http_server(io_service, request_handler);
+    http_server_type http_server(io_service);
     
-Where `request_handler` is an instance of a `RequestHandler`, the event handler
-for incoming HTTP requests, e.g.:
+## Configuring the server ##
 
-    /// The handler for incoming HTTP requests.
-    /// Outputs the request and responds with: 204 No Content.
-    void request_handler(http_connection::weak_pointer weak_ptr,
-                         via::http::rx_request const& request,
-                         std::string const& body)
-    {
-      std::cout << "Rx request: " << request.to_string();
-      std::cout << request.headers().to_string();
-      std::cout << "Rx body: "    << body << std::endl;
+The can either be configured with handlers for each specific method/uri
+combination, see [Request Routing](Server_Request_Routing.md), e.g.:
 
-      via::http::tx_response response(via::http::response_status::code::NO_CONTENT);
-      response.add_server_header();
-      response.add_date_header();
-      weak_ptr.lock()->send(response);
-    }
+    http_server.request_router().add_method("GET", "/hello", get_hello_handler);
+
+Or with a `RequestHandler`, see [Server Events](Server_Events.md), e.g.:
+
+    https_server.request_received_event(request_handler);
+    
+In which case the `request_handler` must route the HTTP requests.
     
 ### Server Events and Handlers ###
  
@@ -73,8 +67,8 @@ See [Server Events](Server_Events.md) for more details.
 | Socket Disconnected   | socket_disconnected_event     | A socket has disconnected. |
 | Message Sent          | message_sent_event            | A message has been sent on the connection. |
 
-Note **Request Received** is the only event that the application is required to
-provide an event handler for.
+Note: if an event handler is provided for **Request Received** then the
+internal `request_router()` is disabled.
 
 ### Server Configuration ###
 
@@ -121,7 +115,7 @@ Other SSL/TLS options can be set via the ssl_context, e.g.:
        
     ssl_context.set_options(boost::asio::ssl::context_base::default_workarounds);
     
-See: [asio ssl context base](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/reference/ssl__context_base.html)
+See: [asio ssl context base](http://www.boost.org/doc/libs/1_59_0/doc/html/boost_asio/reference/ssl__context_base.html)
 for options.
 
 ## Accept Connections ##
@@ -223,6 +217,9 @@ whether the data that it is sending is temporary or not:
  event, see [Server Events](Server_Events.md).
 
 ## Examples ##
+
+An HTTP Server that uses the internal request router:
+[`routing_http_server.cpp`](../examples/server/routing_http_server.cpp)
 
 An HTTP Server that incorporates the example code above:
 [`example_http_server.cpp`](../examples/server/example_http_server.cpp)

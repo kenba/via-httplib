@@ -13,15 +13,17 @@ occurs. Events that may be signalled are:
 | Socket Disconnected    | socket_disconnected_event     | A socket has disconnected. |
 | Message Sent           | message_sent_event            | A message has been sent on the connection. |
 
-Note **Request Received** is the only event that the application is required to
-provide an event handler for.
+
+Note: if an event handler is provided for **Request Received** then the
+internal `request_router()` is disabled.  
+The application must route all HTTP requests within the request handler that it provides.
 
 ## Request Received ##
 
 A Request Received event is signalled whenever the server receives a valid
 HTTP request from a client.  
-
-The application is required to provide an event handler for this event.
+If the application provides handler for this event then it must route the
+HTTP requests in the handler.
 
 ![HTTP Request Received](images/http_request_sequence_diagram.png)
 
@@ -52,8 +54,8 @@ E.g.:
     http_server.request_received_event(request_handler);
 
 Note: if an application does **NOT** call request_received_event to register a
-`RequestHandler` prior to calling `accept_connections`, the call to
-`accept_connections` will **throw std::logic_error**.
+`RequestHandler` prior to calling `accept_connections`, the http_server will use
+it's internal `request_router()` to route HTTP requests.
 
 ## Chunk Received ##
 
@@ -146,7 +148,7 @@ Large" response:
 
       // Reject the message if it's too big, otherwise continue
       via::http::tx_response response((request.content_length() > MAX_LENGTH) ?
-                           via::http::response_status::REQUEST_ENTITY_TOO_LARGE :
+                           via::http::response_status::PAYLOAD_TOO_LARGE :
                            via::http::response_status::CONTINUE);
       weak_ptr.lock()->send(response);
     }
