@@ -64,6 +64,7 @@ namespace via
         LENGTH_REQUIRED               = 411,
         PRECONDITION_FAILED           = 412,
         PAYLOAD_TOO_LARGE             = 413,
+        REQUEST_ENTITY_TOO_LARGE      = 413, // PAYLOAD_TOO_LARGE before RFC7232
         REQUEST_URI_TOO_LONG          = 414,
         UNSUPPORTED_MEDIA_TYPE        = 415,
         REQUEST_RANGE_NOT_SATISFIABLE = 416,
