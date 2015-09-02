@@ -17,8 +17,8 @@
 
 
 #ifndef NOEXCEPT
-  // if C++11 and Visual Studio
-  #if ((__cplusplus >= 201103L) && (!_MSC_VER))
+  // if C++11 or Visual Studio 2015 or higher
+  #if ((__cplusplus >= 201103L) || (_MSC_VER >= 1900))
   /// C++03/C++11 compatibility, noexcept available in C++11
   #define NOEXCEPT noexcept
   #else

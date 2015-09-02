@@ -50,14 +50,18 @@ CONFIG += separate_debug_info
 
   win32 {
     # Set debug options for MinGw in QtCreator
-    QMAKE_CXXFLAGS_DEBUG = -O0
-    QMAKE_CXXFLAGS_DEBUG += -gdwarf-3
+    QMAKE_CXXFLAGS_DEBUG = -g -O0
   }
 }
 
 *-clang* {
   message(Setting flags for clang)
   QMAKE_CXXFLAGS += -stdlib=libc++
+}
+
+*-msvc* {
+  message(Setting flags for Visual Studio)
+  CONFIG += static
 }
 
 include (via-httplib.pri)
