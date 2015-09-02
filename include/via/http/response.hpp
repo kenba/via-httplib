@@ -152,6 +152,10 @@ namespace via
       /// Since the class is inherited...
       virtual ~response_line() {}
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4706 ) // assignment within conditional expression
+#endif
       /// Parse the line as an HTTP response.
       /// @retval iter reference to an iterator to the start of the data.
       /// If valid it will refer to the next char of data to be read.
@@ -169,6 +173,9 @@ namespace via
         valid_ = (RESP_VALID == state_);
         return valid_;
       }
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
       /// Accessor for the HTTP major version number.
       /// @return the major version number.

@@ -115,7 +115,14 @@ namespace via
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
           if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
             SocketAdaptor::write(tx_buffers_,
                strand_.wrap([weak_ptr, tx_queue]
                             (boost::system::error_code const& error,
@@ -138,8 +145,14 @@ namespace via
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
         std::shared_ptr<Container> rx_buffer(rx_buffer_);
-
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
         if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
           SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
               strand_.wrap([weak_ptr, rx_buffer]
                            (boost::system::error_code const& error,
