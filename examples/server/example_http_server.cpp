@@ -12,7 +12,13 @@
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <iostream>
-
+namespace via
+{
+	namespace http
+	{
+		const std::string CRLF("\r\n");
+	}
+}
 /// Define an HTTP server using std::string to store message bodies
 typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
