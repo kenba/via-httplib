@@ -1,0 +1,22 @@
+
+EXPORTS 
+	?to_string@message_headers@http@via@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ @1
+	?expect_continue@message_headers@http@via@@QEBA_NXZ @2
+	?close_connection@message_headers@http@via@@QEBA_NXZ @3
+	?is_chunked@message_headers@http@via@@QEBA_NXZ @4
+	?content_length@message_headers@http@via@@QEBA_JXZ @5
+	?find@message_headers@http@via@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV45@@Z @6
+	?content_length@header_field@http@via@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@_K@Z @7
+	?server_header@header_field@http@via@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ @8
+	?content_http_header@header_field@http@via@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ @9
+	?date_header@header_field@http@via@@YA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ @10
+	?standard_name@header_field@http@via@@YAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4id@123@@Z @11
+	?lowercase_name@header_field@http@via@@YAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4id@123@@Z @12
+	?parse_char@field_line@http@via@@AEAA_ND@Z
+	?parse_char@chunk_header@http@via@@AEAA_ND@Z
+	?are_headers_split@http@via@@YA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z
+	?name@request_method@http@via@@YAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4id@123@@Z
+	?reason_phrase@response_status@http@via@@YAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@W4code@123@@Z
+	?to_string@response_line@http@via@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
+	?to_string@request_line@http@via@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
+	?parse_char@request_line@http@via@@AEAA_ND@Z
