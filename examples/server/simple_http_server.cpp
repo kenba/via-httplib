@@ -9,7 +9,13 @@
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <iostream>
-
+namespace via
+{
+	namespace http
+	{
+		const std::string CRLF("\r\n");
+	}
+}
 /// Define an HTTP server using std::string to store message bodies
 typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
@@ -34,11 +40,10 @@ namespace
       via::http::tx_response response(via::http::response_status::code::OK);
       response.add_server_header();
       response.add_date_header();
-
-      // respond with the client's address
+	  // respond with the client's address
       std::string response_body("Hello, ");
       response_body += connection->remote_address();
-      connection->send(std::move(response), std::move(response_body));
+	  connection->send(std::move(response), std::move(response_body));
     }
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;
@@ -54,14 +59,14 @@ int main(int /* argc */, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    asio::io_service io_service;
 
     // Create the HTTP server, attach the request handler
     http_server_type http_server(io_service);
     http_server.request_received_event(request_handler);
 
     // Accept IPV4 connections on the default port (80)
-    boost::system::error_code error(http_server.accept_connections());
+    std::error_code error(http_server.accept_connections());
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
