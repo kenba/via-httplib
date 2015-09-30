@@ -14,7 +14,13 @@
 typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
                                                             https_server_type;
 typedef https_server_type::http_connection_type http_connection;
-
+namespace via
+{
+	namespace http
+	{
+		const std::string CRLF("\r\n");
+	}
+}
 namespace
 {
   /// The handler for HTTP requests.
@@ -60,7 +66,7 @@ int main(int /* argc */, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    asio::io_service io_service;
 
     // Create the HTTP server and attach the request handler
     https_server_type https_server(io_service);
@@ -68,7 +74,7 @@ int main(int /* argc */, char *argv[])
 
     // Set up SSL
     https_server.set_password(password);
-    boost::system::error_code error
+	std::error_code error
         (https_server_type::set_ssl_files(certificate_file, private_key_file));
     if (error)
     {
