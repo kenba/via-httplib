@@ -1,7 +1,6 @@
 # HTTP Server Security
 
-Since RFC2616 was written a number of vulnerabilities in the HTTP protocol have
-been discovered and exploited, see
+A number of vulnerabilities in the HTTP protocol have been discovered and exploited, see
 [WASC Threat Classification](http://projects.webappsec.org/w/page/13246978/Threat%20Classification)
 
 ## Denial of Service Attacks

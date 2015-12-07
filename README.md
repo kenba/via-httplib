@@ -5,7 +5,7 @@ A library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in 
 
 `via-httplib` is an asynchronous C++ HTTP server built upon `boost asio` that
 aims to provide a simple, secure and efficient server that complies with the
-requirements of [rfc2616](www.w3.org/Protocols/rfc2616/rfc2616.html)
+requirements of [rfc7230](https://tools.ietf.org/html/rfc7230)
 wherever possible.
 
 ### SSL / TLS Configuration
@@ -46,9 +46,8 @@ Requirements
 ------------
 
 + A C++11 compiler.   
-This version requires a complier that supports:  lambdas, enum classes, member function delete,
-std::functional and std::regex. It's been tested with `MSVC 2015`, `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
-Note: versions of `GCC`/`MinGw` prior to `4.9` had an issue with `std::regex`, see: [Bug 53631](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53631)
+This version requires a complier that supports:  lambdas, enum classes, member function delete
+and std::functional. It's been tested with `MSVC 2015`, `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
 
 + The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/).
 
@@ -67,7 +66,7 @@ Or simply build the .cpp files into your application (there are 8 of them).
 `via-http` lib depends on the `boost` libraries.
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
-[boost getting started](http://www.boost.org/doc/libs/1_57_0/more/getting_started/index.html).
+[boost getting started](http://www.boost.org/doc/libs/1_59_0/more/getting_started/index.html).
 
 The `boost asio` library (and hence `via-httplib`) depends upon the
 `OpenSSL` library to implement SSL/TLS sockets.
@@ -75,12 +74,10 @@ If you require an **HTTPS** server or client then you'll need to install the
 `OpenSSL` library as well.
 Please note that a plain HTTP server should *not* require `OpenSLL`.
 
-If `OpenSLL` is not installed on your machine then download the latest stable
+If `OpenSLL` is not installed on your machine then you may download the latest stable
 package from [openssl source](http://www.openssl.org/source/) and build it.
 Note: a binary distribution may be available for your machine,
-see: [OpenSSL binaries](http://www.openssl.org/related/binaries.html),
-which could save you a lot of trouble, since building the `OpenSSL` binaries can
-be a long-winded process...
+see: [OpenSSL binaries](https://wiki.openssl.org/index.php/Binaries).
 
 | Document | Description |
 |----------|-------------|
@@ -102,7 +99,7 @@ Directory Structure
 
 | Directory            | Contents                                                                 |
 |----------------------|--------------------------------------------------------------------------|
-| [via](via)           | The `via-httplib` API classes: [http_server](via/http_server.hpp), [http_connection](via/http_connection.hpp) and [http_client](http_client.hpp). |
+| [via](include/via)           | The `via-httplib` API classes: [http_server](include/via/http_server.hpp), [http_connection](include/via/http_connection.hpp) and [http_client](include/via/http_client.hpp). |
 | [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
 | [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
 | `tests`              | A unit tests for the HTTP parsers and encoders.                          |

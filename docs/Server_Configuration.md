@@ -25,27 +25,26 @@ for security.
 
 ### strict_crlf
 
-A strictly valid HTTP line must end with CRLF pair, however RFC2616 recommends
+A strictly valid HTTP line must end with CRLF pair, however rfc7230 recommends
 that servers are tolerant so allow an LF without the CR (the default).
 
 Enabling this value enforces strict CRLF parsing.
 
 ### max_whitespace
 
-RFC2616 recommends that severs should allow "any amount of" whitespace characters,
-however that's a clear security loophole.  
-This value set the maximum number of whitespace characters between HTTP elements: 
+rfc7230 allows "optional" whitespace characters, see: [rfc7230](https://tools.ietf.org/html/rfc7230) section 3.2.3.  
+This value sets the maximum number of optional whitespace characters between HTTP elements: 
 default 8, 1 is the minimum.
 
 ### max_method_length
 
-RFC2616 does not specify the length of the method names, however the longest
-RFC2616 name is 7 characters long (OPTIONS).  
+rfc7230 does not specify the length of the method names, however the longest
+rfc7231 name is 7 characters long (OPTIONS).  
 Change this value if using non-standard names longer than 8 characters.
 
 ### max_uri_length
 
-RFC2616 does not specify the length of the method names, but it does provide a
+rfc7230 does not specify the maximum length of the uri, but it does provide a
 response if it's too long.  
 The default is a compromise value, change it if using uris that are known to be
 much shorter or longer.
@@ -57,7 +56,7 @@ Note: cookie field lines may be longer than this.
 
 ### max_header_number
 
-The maximum number of header fields alloed in a request
+The maximum number of header fields allowed in a request
 
 ### max_header_length
 
@@ -79,7 +78,7 @@ for your application.
 
 | Parameter       | Default | Description                                         |
 |-----------------|---------|-----------------------------------------------------|
-| trace_enabled   | false   | Echo back a TRACE request as per RFC2616.           |
+| trace_enabled   | false   | Echo back a TRACE request as per rfc7231.           |
 | auto_disconnect | false   | Disconnect a connection after sending a response to an invalid request. |
 | translate_head  | true    | Translate a HEAD request into a GET request.        |
 
@@ -87,11 +86,10 @@ for your application.
 
 The standard HTTP response to a TRACE request is that it should echo back the
 TRACE message and all of it's headers in the body of the response, see:
-[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 9.8.  
+[rfc7231](https://tools.ietf.org/html/rfc7231) section 4.3.8.  
 
-However, although required by RFC2616 it's considered a security vulnerability 
-nowadays, so the default behaviour is to send a 405 "Method Not Allowed" response
-instead.
+However, although required by rfc7231 it's considered a security vulnerability,
+so the default behaviour is to send a 405 "Method Not Allowed" response instead.
 
 ### auto_disconnect
 
@@ -102,7 +100,7 @@ Set for slightly improve security.
 
 An HTTP HEAD request is identical to a GET request except that the server
 **MUST NOT** return a message-body in the response, see:
-[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 9.4.  
+[rfc7231](https://tools.ietf.org/html/rfc7231) section 4.3.2.  
 
 If set, then the server passes HEAD requests to the application as GET requests.  
 Note: the server **never** sends a body in a response to a HEAD request.

@@ -61,7 +61,7 @@ it's internal `request_router()` to route HTTP requests.
 
 Normally an application will receive the message body with a request. However, HTTP 1.1
 requests and responses may contain "chunked" bodies, see: [Chunked Transfer Encoding](Chunked_Encoding.md).
-According to RFC2616 an HTTP 1.1 server **MUST** be able to handle chunked requests.  
+According to rfc7230 an HTTP 1.1 server **MUST** be able to handle chunked requests.  
 
 A "chunked" HTTP request is not complete until the last chunk has been received.
 So to enable an application to receive chunks without registering a handler,
@@ -158,17 +158,16 @@ Large" response:
 
 ## Invalid Request ##
 
-RFC2616 defines a set of appropriate responses for an HTTP server to send
-to an invalid HTTP request. Unfortunately, RFC2616 couldn't foresee all of
-the ways in which the protocol would be misused, see: [Security Guide](Server_Security.md).  
+rfc7230 defines a set of appropriate responses for an HTTP server to send
+to an invalid HTTP request.  
 
 An invalid request may be a sign that the HTTP server is subject a
-Denial of Service (DoS) attack.
+Denial of Service (DoS) attack, see: [Security Guide](Server_Security.md).  
 In which case the application may wish to be handle it in a different way
-to the standard RFC2616 response, e.g. by disconnecting the client's connection. 
+to the standard rfc7230 response, e.g. by disconnecting the client's connection. 
 
-To comply with RFC2616 the default server behaviour to an invalid request
-is to send the appropriate response from RFC2616.  
+To comply with rfc7230 the default server behaviour to an invalid request
+is to send the appropriate response from rfc7230.  
 To provide slightly more protection from DoS attacks, the server can be
 configured to disconnect immediately after sending a response to an
 invalid request, see below.

@@ -1,10 +1,10 @@
 # Make #
 ## Tools, and their versions, currently built against##
 - CMake version 2.8
-- OpenSSL version 1.0.1j
-- Boost version 1.57.0
+- OpenSSL version 1.0.2d
+- Boost version 1.59.0
 - MinGW version 4.9.1
-- Visual Studio 2013
+- Visual Studio 2015
 
 # Recommended build steps #
 Set the environment variable OPENSSL\_ROOT\_DIR to the location of where **OpenSSL** has been installed.
@@ -30,11 +30,11 @@ Run the commands
 
 	mingw32-make
 
-## Building for Visual Studio 2013 ##
-From the via-httplib folder create a directory, say mak-msvc2013.
+## Building for Visual Studio 2015 ##
+From the via-httplib folder create a directory, say mak-msvc2015.
 Run the command
 
-	cmake -G "Visual Studio 2013" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl \
+	cmake -G "Visual Studio 2015" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl \
 	-DVIA_HTTPLIB_BUILD_SHARED_LIBS=OFF ...
 
 ### Debug ###

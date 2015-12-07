@@ -20,7 +20,7 @@ Detailed design on `via::http` and `via::comms` can be found by following the li
 ### Requirements
 
 By default, the HTTP server shall implement the HTTP 1.1 protocol as defined
-in [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html).
+in [rfc7230](https://tools.ietf.org/html/rfc7230).
 
 It accepts TCP or SSL connections from HTTP clients and then
 responds to each HTTP request in turn, i.e. it does not close the connection

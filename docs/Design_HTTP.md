@@ -21,7 +21,7 @@ And four types of header:
 4.	A message header, e.g. Content-Length: 336  
 
 Although text based, the protocol is quite strict on what's allowed and what
-isn't (see [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html)).
+isn't (see [rfc7230](https://tools.ietf.org/html/rfc7230)).
 
 ## Design  ##
 

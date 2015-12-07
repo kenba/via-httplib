@@ -47,6 +47,7 @@ CONFIG += separate_debug_info
   QMAKE_CXXFLAGS += -Wall
   QMAKE_CXXFLAGS += -Wextra
   QMAKE_CXXFLAGS += -Wpedantic
+  QMAKE_CXXFLAGS += -Wno-type-limits
 
   win32 {
     # Set debug options for MinGw in QtCreator

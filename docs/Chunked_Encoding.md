@@ -1,8 +1,7 @@
 # Chunked Transfer Encoding #
 
 All HTTP/1.1 applications **MUST** be able to receive and decode "chunked"
-transfer-coding, see [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html)
-section 3.6.1.  
+transfer-coding, see [rfc7230](https://tools.ietf.org/html/rfc7230) section 4.1.  
 Chunked encoding modifies the body of a message in order to transfer
 it as a series of chunks. This allows dynamically produced content to be transferred.
 
@@ -28,8 +27,7 @@ I.e. they should be HTTP/1.0 requests.
 
 An HTTP/1.1 Server or Client may send chunks after the HTTP `response` or `request`
 message. However, the `response` or `request` **must** contain a Transfer-Encoding
-header field containing anything other than "identity`.
-See [rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 4.4 para 2.
+header field. See [rfc7230](https://tools.ietf.org/html/rfc7230) section 3.3.1.
 E.g.: Transfer-Encoding: Chunked
 
 Servers and Clients may send chunks using the `send_chunk` and `last_chunk` methods
@@ -44,7 +42,7 @@ of `http_connection` and `http_client`.
     bool last_chunk(std::string extension = "", std::string trailer_string = "");
 
 The `extension` and `trailer_string` are defined in
-[rfc2616](http://www.w3.org/Protocols/rfc2616/rfc2616.html) section 3.6.1.
+[rfc7230](https://tools.ietf.org/html/rfc7230) section 4.1.1 and 4.1.2.
 
 A server's chunks must be sent via an `http_connection` pointer, like requests.
 So the application must store the `http_connection::weak_pointer` from the
