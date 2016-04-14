@@ -55,6 +55,8 @@ and std::functional. It's been tested with `MSVC 2015`, `MSVC 2013`, `GCC 4.9.1`
 
 + For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
++ Note: there is currently an issue building `boost` `asio` with `Visual Studio 2015 Update 2`, see [Issue 4](https://github.com/kenba/via-httplib/issues/4)
+
 Getting Started
 ---------------
 
