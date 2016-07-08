@@ -12,7 +12,7 @@
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
 #include <iostream>
-
+#include <functional>
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
 typedef http_client_type::chunk_type http_chunk_type;
@@ -20,10 +20,6 @@ typedef http_client_type::chunk_type http_chunk_type;
 //////////////////////////////////////////////////////////////////////////////
 namespace
 {
-  // An http_client.
-  // Declared here so that it can be used in the connected_handler,
-  // response_handler and chunk_handler.
-  http_client_type::shared_pointer http_client;
 
   // The method from the user
   std::string method;
@@ -32,7 +28,7 @@ namespace
   std::string uri;
 
   /// A handler for the signal sent when an HTTP socket is connected.
-  void connected_handler()
+  void connected_handler(http_client_type::shared_pointer http_client)
   {
     // Create an http request and send it to the host.
     // Note: via-httplib will add a host header with the host name
@@ -44,19 +40,23 @@ namespace
   /// The handler for incoming HTTP requests.
   /// Prints the response.
   void response_handler(via::http::rx_response const& response,
-                        std::string const& body)
+                        std::string const& body,
+                          http_client_type::shared_pointer http_client
+    )
   {
     std::cout << "Rx response: " << response.to_string()
               << response.headers().to_string();
     std::cout << "Rx body: "     << body << std::endl;
 
-    if (!response.is_chunked())
-      http_client->disconnect();
+//    if (!response.is_chunked())
+//      http_client->disconnect();
   }
 
   /// The handler for incoming HTTP chunks.
   /// Prints the chunk header and data to std::cout.
-  void chunk_handler(http_chunk_type const& chunk, std::string const& data)
+  void chunk_handler(http_chunk_type const& chunk, 
+                    std::string const& data,
+                    http_client_type::shared_pointer http_client)
   {
     if (chunk.is_last())
     {
@@ -72,7 +72,8 @@ namespace
   /// The handler for invalid HTTP requests.
   /// Outputs the last receive buffer contents
   void invalid_response_handler(via::http::rx_response const&, // response,
-                                std::string const&) // body)
+                                std::string const&, // body
+                                http_client_type::shared_pointer http_client) 
   {
     std::cout << "Invalid response: "
               << http_client->rx_buffer() << std::endl;
@@ -96,6 +97,7 @@ namespace
 //////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
+
   std::string app_name(argv[0]);
 
   // Get a hostname, method and uri from the user (assume default http port)
@@ -121,14 +123,19 @@ int main(int argc, char *argv[])
 #else
     boost::asio::io_service io_service;
 #endif
+    // An http_client.
+    // Declared here so that it can be used in the connected_handler,
+    // response_handler and chunk_handler.
+    http_client_type::shared_pointer http_client;
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
-        http_client_type::create(io_service, response_handler, chunk_handler);
+        http_client_type::create(io_service,  std::bind(response_handler,std::placeholders::_1,std::placeholders::_2,http_client),
+                              std::bind(chunk_handler, std::placeholders::_1, std::placeholders::_2, http_client));
 
     // attach the optional handlers
-    http_client->invalid_response_event(invalid_response_handler);
-    http_client->connected_event(connected_handler);
+    http_client->invalid_response_event(std::bind(invalid_response_handler, std::placeholders::_1, std::placeholders::_2, http_client));
+    http_client->connected_event(bind(connected_handler,  http_client));
     http_client->disconnected_event(disconnected_handler);
     http_client->message_sent_event(message_sent_handler);
 
