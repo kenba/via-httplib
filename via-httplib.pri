@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2015 Ken Barker
+# Copyright (c) 2013-2016 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -10,6 +10,11 @@ win32 {
   DEFINES *= _WIN32_WINNT=_WIN32_WINNT_WIN7
 
   INCLUDEPATH *= $$BOOST_ROOT
+}
+
+macx {
+  # Ensure Boost is in the INCLUDEPATH
+  INCLUDEPATH *= /usr/local/include
 }
 
 INC_DIR = $$VIAHTTPLIB/include
