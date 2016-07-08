@@ -1,4 +1,5 @@
 docs/html/
-via-httplib.pro.user
 debug/
 release/
+via-httplib.pro.user
+*.vcxproj
