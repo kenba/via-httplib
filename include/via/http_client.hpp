@@ -188,12 +188,11 @@ namespace via
       if (connection_->connected())
       {
         connection_->set_connected(false);
-
-        if (disconnected_handler_)
-          disconnected_handler_();
-
         connection_->close();
       }
+
+      if (disconnected_handler_)
+        disconnected_handler_();
 
       // attempt to reconnect in period_ miliseconds
       if (period_ > 0)
