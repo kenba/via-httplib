@@ -310,6 +310,10 @@ namespace via
       bool valid() const NOEXCEPT
       { return valid_; }
 
+      // @return headers as a map
+      const std::unordered_map<std::string, std::string>& fields() const
+      { return fields_; }
+      
       /// Output the message_headers as a string.
       /// Note: it is NOT terminated with an extra CRLF tso that it parses
       /// the are_headers_split function.
