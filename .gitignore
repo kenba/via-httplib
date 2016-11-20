@@ -1,5 +1,5 @@
 docs/html/
 debug/
 release/
-via-httplib.pro.user
+*.pro.user
 *.vcxproj
