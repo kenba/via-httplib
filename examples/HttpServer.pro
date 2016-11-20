@@ -77,6 +77,7 @@ win32 {
   DEFINES += NTDDI_VERSION=NTDDI_WIN7
   DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
 
+  LIBS += -lgdi32
   LIBS += -lwsock32
   LIBS += -lws2_32
 } else {

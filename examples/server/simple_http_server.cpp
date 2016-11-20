@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -54,14 +54,14 @@ int main(int /* argc */, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    ASIO::io_service io_service;
 
     // Create the HTTP server, attach the request handler
     http_server_type http_server(io_service);
     http_server.request_received_event(request_handler);
 
     // Accept IPV4 connections on the default port (80)
-    boost::system::error_code error(http_server.accept_connections());
+    ASIO_ERROR_CODE error(http_server.accept_connections());
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;

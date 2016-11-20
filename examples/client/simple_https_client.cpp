@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2014 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    ASIO::io_service io_service;
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
     // Set up SSL
     std::string certificate_file = "cacert.pem";
-    boost::asio::ssl::context& ssl_context
+    ASIO::ssl::context& ssl_context
        (https_client_type::connection_type::ssl_context());
     ssl_context.load_verify_file(certificate_file);
 

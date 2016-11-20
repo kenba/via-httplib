@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2015 Ken Barker
+// Copyright (c) 2014-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -31,7 +31,7 @@ namespace
   /// Closes the server and all it's connections leaving io_service.run
   /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
-  void handle_stop(boost::system::error_code const&, // error,
+  void handle_stop(ASIO_ERROR_CODE const&, // error,
                    int, // signal_number,
                    http_server_type& http_server)
   {
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
   try
   {
     /// The asio io_service.
-    boost::asio::io_service io_service;
+    ASIO::io_service io_service;
 
     // create an http_server
     http_server_type http_server(io_service);
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
     http_server.set_auto_disconnect(true);
 
     // start accepting http connections on the given port
-    boost::system::error_code error(http_server.accept_connections(port_number));
+    ASIO_ERROR_CODE error(http_server.accept_connections(port_number));
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
     }
 
     // The signal set is used to register for termination notifications
-    boost::asio::signal_set signals_(io_service);
+    ASIO::signal_set signals_(io_service);
     signals_.add(SIGINT);
     signals_.add(SIGTERM);
 #if defined(SIGQUIT)
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
     // register the handle_stop callback
     signals_.async_wait([&http_server]
-      (boost::system::error_code const& error, int signal_number)
+      (ASIO_ERROR_CODE const& error, int signal_number)
     { handle_stop(error, signal_number, http_server); });
 
     // run the io_service to start communications

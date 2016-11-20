@@ -18,7 +18,11 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
 #include "via/no_except.hpp"
-#include <boost/asio/ssl.hpp>
+#ifdef ASIO_STANDALONE
+  #include <asio/ssl.hpp>
+#else
+  #include <boost/asio/ssl.hpp>
+#endif
 
 // Enable SSL support.
 #ifndef HTTP_SSL

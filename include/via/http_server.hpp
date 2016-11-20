@@ -51,7 +51,11 @@
 #include "via/comms/server.hpp"
 #include "via/http/request_router.hpp"
 #ifdef HTTP_SSL
-#include <boost/asio/ssl/context.hpp>
+  #ifdef ASIO_STANDALONE
+    #include <asio/ssl/context.hpp>
+  #else
+    #include <boost/asio/ssl/context.hpp>
+  #endif
 #endif
 #include <map>
 #include <stdexcept>

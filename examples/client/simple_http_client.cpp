@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    ASIO::io_service io_service;
 
     // Create an http_client and attach the response & chunk handlers
     http_client =

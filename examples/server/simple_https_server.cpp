@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -60,7 +60,7 @@ int main(int /* argc */, char *argv[])
   try
   {
     // The asio io_service.
-    boost::asio::io_service io_service;
+    ASIO::io_service io_service;
 
     // Create the HTTP server and attach the request handler
     https_server_type https_server(io_service);
@@ -68,7 +68,7 @@ int main(int /* argc */, char *argv[])
 
     // Set up SSL
     https_server.set_password(password);
-    boost::system::error_code error
+    ASIO_ERROR_CODE error
         (https_server_type::set_ssl_files(certificate_file, private_key_file));
     if (error)
     {
