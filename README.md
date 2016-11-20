@@ -3,8 +3,8 @@ via-httplib: A C++ HTTP Library
 
 A library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
-`via-httplib` is an asynchronous C++ HTTP server built upon `boost asio` that
-aims to provide a simple, secure and efficient server that complies with the
+`via-httplib` is an asynchronous C++ HTTP server built upon `asio` (both `boost` and `standalone`) 
+that aims to provide a simple, secure and efficient server that complies with the
 requirements of [rfc7230](https://tools.ietf.org/html/rfc7230)
 wherever possible.
 
@@ -47,15 +47,17 @@ Requirements
 
 + A C++11 compiler.   
 This version requires a complier that supports:  lambdas, enum classes, member function delete
-and std::functional. It's been tested with `MSVC 2015`, `MSVC 2013`, `GCC 4.9.1` and `MinGw 4.9.1`.  
+and std::functional. It's been tested with `MSVC 2015`, `GCC 6.2` and `MinGw 5.3.0`.  
 
-+ The `boost` C++ library, especially `asio`, see [boost](http://www.boost.org/).
++ The `asio` C++ library, either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
+Note: if `boost` and `standalone asio` libraries are installed together, this library will use
+`standalone asio` for comms.
 
 + For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
 
 + For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
-+ Note: there is currently an issue building `boost` `asio` with `Visual Studio 2015 Update 2`, see [Issue 4](https://github.com/kenba/via-httplib/issues/4)
++ Note: there is an issue building `boost::asio` with `Visual Studio 2015 Update 2`, see [Issue 4](https://github.com/kenba/via-httplib/issues/4)
 
 Getting Started
 ---------------
@@ -65,12 +67,14 @@ Download the latest tagged version of `via-httplib` from
 and follow the instructions here: [Make](docs/MAKE.md).  
 Or simply build the .cpp files into your application (there are 8 of them).
 
-`via-http` lib depends on the `boost` libraries.
+`via-http` lib depends on the `standalone asio` or `boost` libraries.
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
-[boost getting started](http://www.boost.org/doc/libs/1_59_0/more/getting_started/index.html).
+[boost getting started](http://www.boost.org/doc/libs/1_62_0/more/getting_started/index.html).
 
-The `boost asio` library (and hence `via-httplib`) depends upon the
+Otherwise `standalone asio` can be downloaded from: [standalone asio](http://think-async.com/).
+
+The `asio` library (and hence `via-httplib`) depends upon the
 `OpenSSL` library to implement SSL/TLS sockets.
 If you require an **HTTPS** server or client then you'll need to install the
 `OpenSSL` library as well.
