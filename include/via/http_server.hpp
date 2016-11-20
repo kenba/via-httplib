@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -375,7 +375,7 @@ namespace via
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
     // @param connection a weak ponter to the underlying comms connection.
-    void error_handler(const boost::system::error_code &error,
+    void error_handler(const ASIO_ERROR_CODE &error,
                        std::weak_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;
@@ -393,9 +393,9 @@ namespace via
     http_server& operator=(http_server) = delete;
 
     /// Constructor.
-    /// @param io_service a reference to the boost::asio::io_service.
+    /// @param io_service a reference to the ASIO::io_service.
     /// @param auth_ptr a shared pointer to an authentication.
-    explicit http_server(boost::asio::io_service& io_service) :
+    explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
       http_connections_(),
       request_router_(),
@@ -429,7 +429,7 @@ namespace via
         (int event, std::weak_ptr<connection_type> connection)
           { event_handler(event, connection); });
       server_->set_error_callback([this]
-        (boost::system::error_code const& error,
+        (ASIO_ERROR_CODE const& error,
          std::weak_ptr<connection_type> connection)
           { error_handler(error, connection); });
       // Set no delay, i.e. disable the Nagle algorithm
@@ -450,7 +450,7 @@ namespace via
     /// default 80 for HTTP or 443 for HTTPS.
     /// @param ipv4_only whether an IPV4 only server is required, default false.
     /// @return the boost error code, false if no error occured
-    boost::system::error_code accept_connections
+    ASIO_ERROR_CODE accept_connections
                       (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
                        bool ipv4_only = false)
     {
@@ -641,29 +641,29 @@ namespace via
     /// @param certificate_file the server SSL certificate file.
     /// @param key_file the private key file
     /// @param dh_file the dh file.
-    static boost::system::error_code set_ssl_files
+    static ASIO_ERROR_CODE set_ssl_files
                        (const std::string& certificate_file,
                         const std::string& key_file,
                         std::string        dh_file = "")
     {
-      boost::system::error_code error;
+      ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
       server_type::connection_type::ssl_context().
           use_certificate_file(certificate_file,
-                               boost::asio::ssl::context::pem, error);
+                               ASIO::ssl::context::pem, error);
       if (error)
         return error;
 
       server_type::connection_type::ssl_context().
-          use_private_key_file(key_file, boost::asio::ssl::context::pem,
+          use_private_key_file(key_file, ASIO::ssl::context::pem,
                                error);
       if (error)
         return error;
 
       if (dh_file.empty())
         server_type::connection_type::ssl_context().
-           set_options(boost::asio::ssl::context::default_workarounds |
-                       boost::asio::ssl::context::no_sslv2);
+           set_options(ASIO::ssl::context::default_workarounds |
+                       ASIO::ssl::context::no_sslv2);
       else
       {
         server_type::connection_type::ssl_context().use_tmp_dh_file(dh_file,
@@ -672,9 +672,9 @@ namespace via
           return error;
 
         server_type::connection_type::ssl_context().
-           set_options(boost::asio::ssl::context::default_workarounds |
-                       boost::asio::ssl::context::no_sslv2 |
-                       boost::asio::ssl::context::single_dh_use,
+           set_options(ASIO::ssl::context::default_workarounds |
+                       ASIO::ssl::context::no_sslv2 |
+                       ASIO::ssl::context::single_dh_use,
                        error);
       }
 #endif // HTTP_SSL

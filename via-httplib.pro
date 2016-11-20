@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2015 Ken Barker
+# Copyright (c) 2013-2016 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -18,17 +18,26 @@ win32 {
   # Min version is Windows 7
   DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
 
-  # Ensure that the BOOST_ROOT environment variable has been set
+  # Get the BOOST_ROOT environment variable
   BOOST_ROOT = $$(BOOST_ROOT)
-  isEmpty(BOOST_ROOT) {
-    error("Please set BOOST_ROOT to the location of the Boost libraries")
+
+  # Test whether the ASIO_ROOT environment variable has been set
+  ASIO_ROOT = $$(ASIO_ROOT)
+  isEmpty(ASIO_ROOT) {
+    isEmpty(BOOST_ROOT) {
+      error("Please set ASIO_ROOT or BOOST_ROOT to the location of the asio libraries")
+    }
   } else {
+    message(Using Asio from: $$ASIO_ROOT)
+  }
+
+  !isEmpty(BOOST_ROOT) {
     message(Using Boost from: $$BOOST_ROOT)
   }
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 2
+  VER_MIN = 3
   VER_PAT = 0
 }
 
@@ -77,9 +86,13 @@ SOURCES += $${SRC_DIR}/via/http/request_method.cpp
 SOURCES += $${SRC_DIR}/via/http/request.cpp
 SOURCES += $${SRC_DIR}/via/http/response_status.cpp
 SOURCES += $${SRC_DIR}/via/http/response.cpp
-SOURCES += $${SRC_DIR}/via/http/request_router.cpp
-SOURCES += $${SRC_DIR}/via/http/authentication/base64.cpp
-SOURCES += $${SRC_DIR}/via/http/authentication/basic.cpp
+
+# Note: requires boost
+!isEmpty(BOOST_ROOT) {
+  SOURCES += $${SRC_DIR}/via/http/request_router.cpp
+  SOURCES += $${SRC_DIR}/via/http/authentication/base64.cpp
+  SOURCES += $${SRC_DIR}/via/http/authentication/basic.cpp
+}
 
 CONFIG(release, debug|release) {
   DESTDIR = $${OUT_PWD}/release

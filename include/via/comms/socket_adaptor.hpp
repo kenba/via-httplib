@@ -16,7 +16,17 @@
 /// @see tcp_adaptor
 /// @see ssl_tcp_adaptor
 //////////////////////////////////////////////////////////////////////////////
-#include <boost/asio.hpp>
+#ifdef ASIO_STANDALONE
+  #include <asio.hpp>
+  #define ASIO asio
+  #define ASIO_ERROR_CODE asio::error_code
+  #define ASIO_TIMER asio::steady_timer
+#else
+  #include <boost/asio.hpp>
+  #define ASIO boost::asio
+  #define ASIO_ERROR_CODE boost::system::error_code
+  #define ASIO_TIMER boost::asio::deadline_timer
+#endif
 #include <deque>
 #include <functional>
 
@@ -36,27 +46,27 @@ namespace via
     /// @typedef ErrorHandler
     /// An error hander callback function type.
     /// @param error the (boost) error code.
-    typedef std::function<void (boost::system::error_code const&)>
+    typedef std::function<void (ASIO_ERROR_CODE const&)>
       ErrorHandler;
 
     /// @typedef CommsHandler
     /// A (read or write) comms hander callback function type.
     /// @param error the (boost) error code.
     /// @param size the number of bytes read or written.
-    typedef std::function<void (boost::system::error_code const&, size_t)>
+    typedef std::function<void (ASIO_ERROR_CODE const&, size_t)>
       CommsHandler;
 
     /// @typedef ConnectHandler
     /// A connect hander callback function type.
     /// @param error the (boost) error code.
     /// @param host_iterator the resolver_iterator
-    typedef std::function<void (boost::system::error_code const&,
-                                boost::asio::ip::tcp::resolver::iterator)>
+    typedef std::function<void (ASIO_ERROR_CODE const&,
+                                ASIO::ip::tcp::resolver::iterator)>
       ConnectHandler;
 
     /// @typedef ConstBuffers
     /// A deque of asio::const_buffers.
-    typedef std::deque<boost::asio::const_buffer> ConstBuffers;
+    typedef std::deque<ASIO::const_buffer> ConstBuffers;
   }
 }
 

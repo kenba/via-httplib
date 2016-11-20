@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -67,13 +67,13 @@ namespace via
 
     private:
       /// The asio::io_service to use.
-      boost::asio::io_service& io_service_;
+      ASIO::io_service& io_service_;
 
       /// The IPv6 acceptor for this server.
-      boost::asio::ip::tcp::acceptor acceptor_v6_;
+      ASIO::ip::tcp::acceptor acceptor_v6_;
 
       /// The IPv4 acceptor for this server.
-      boost::asio::ip::tcp::acceptor acceptor_v4_;
+      ASIO::ip::tcp::acceptor acceptor_v4_;
 
       /// The next connection to be accepted.
       std::shared_ptr<connection_type> next_connection_;
@@ -108,10 +108,10 @@ namespace via
       /// - add the new connection to the set
       /// - restart the acceptor to look for new connections.
       /// @param error the error, if any.
-      void accept_handler(const boost::system::error_code& error)
+      void accept_handler(const ASIO_ERROR_CODE& error)
       {
         if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
-            (boost::asio::error::operation_aborted != error))
+            (ASIO::error::operation_aborted != error))
         {
           if (error)
             error_callback_(error, next_connection_);
@@ -153,7 +153,7 @@ namespace via
       /// @param error the boost asio error.
       /// @param connection a weak_pointer to the connection that sent the
       /// error.
-      void error_handler(const boost::system::error_code& error,
+      void error_handler(const ASIO_ERROR_CODE& error,
                          std::weak_ptr<connection_type> connection)
       { error_callback_(error, connection); }
 
@@ -164,17 +164,17 @@ namespace via
         next_connection_ = connection_type::create(io_service_,
           [this](int event, std::weak_ptr<connection_type> ptr)
             { event_handler(event, ptr); },
-          [this](boost::system::error_code const& error,
+          [this](ASIO_ERROR_CODE const& error,
                  std::weak_ptr<connection_type> ptr)
             { error_handler(error, ptr); });
 
         if (acceptor_v6_.is_open())
           acceptor_v6_.async_accept(next_connection_->socket(),
-            [this](boost::system::error_code const& error)
+            [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
         if (acceptor_v4_.is_open())
           acceptor_v4_.async_accept(next_connection_->socket(),
-            [this](boost::system::error_code const& error)
+            [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
       }
 
@@ -193,7 +193,7 @@ namespace via
       /// @see set_error_callback
       /// @param io_service the boost asio io_service used by the acceptor
       /// and connections.
-      explicit server(boost::asio::io_service& io_service) :
+      explicit server(ASIO::io_service& io_service) :
         io_service_(io_service),
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
@@ -218,7 +218,7 @@ namespace via
       /// and connections.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      explicit server(boost::asio::io_service& io_service,
+      explicit server(ASIO::io_service& io_service,
                       event_callback_type event_callback,
                       error_callback_type error_callback) :
         io_service_(io_service),
@@ -242,8 +242,8 @@ namespace via
       /// Set the event_callback function.
       /// For use with the Constructor or create function that doesn't take
       /// an event_callback parameter.
-      /// @see server(boost::asio::io_service& io_service)
-      /// @see create(boost::asio::io_service& io_service)
+      /// @see server(ASIO::io_service& io_service)
+      /// @see create(ASIO::io_service& io_service)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback) NOEXCEPT
       { event_callback_ = event_callback; }
@@ -252,8 +252,8 @@ namespace via
       /// Set the error_callback function.
       /// For use with the Constructor or create function that doesn't take
       /// an error_callback parameter.
-      /// @see server(boost::asio::io_service& io_service)
-      /// @see create(boost::asio::io_service& io_service)
+      /// @see server(ASIO::io_service& io_service)
+      /// @see create(ASIO::io_service& io_service)
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback) NOEXCEPT
       { error_callback_ = error_callback; }
@@ -263,24 +263,24 @@ namespace via
       /// @param port the port number to serve.
       /// @param ipv4_only whether an IPV4 only server is required.
       /// @return the boost error code, false if no error occured
-      boost::system::error_code accept_connections(unsigned short port, bool ipv4_only)
+      ASIO_ERROR_CODE accept_connections(unsigned short port, bool ipv4_only)
       {
         // Determine whether the IPv6 acceptor accepts both IPv6 & IPv4
-        boost::asio::ip::v6_only ipv6_only(false);
-        boost::system::error_code ec;
+        ASIO::ip::v6_only ipv6_only(false);
+        ASIO_ERROR_CODE ec;
 
         // Open the IPv6 acceptor unless IPv4 only mode
         if (!ipv4_only)
         {
-          acceptor_v6_.open(boost::asio::ip::tcp::v6(), ec);
+          acceptor_v6_.open(ASIO::ip::tcp::v6(), ec);
           if (!ec)
           {
             acceptor_v6_.set_option(ipv6_only, ec);
             acceptor_v6_.get_option(ipv6_only);
             acceptor_v6_.set_option
-              (boost::asio::ip::tcp::acceptor::reuse_address(true));
+              (ASIO::ip::tcp::acceptor::reuse_address(true));
             acceptor_v6_.bind
-              (boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v6(), port));
+              (ASIO::ip::tcp::endpoint(ASIO::ip::tcp::v6(), port));
             acceptor_v6_.listen();
           }
         }
@@ -289,13 +289,13 @@ namespace via
         // only supports IPv6
         if (!acceptor_v6_.is_open() || ipv6_only)
         {
-          acceptor_v4_.open(boost::asio::ip::tcp::v4(), ec);
+          acceptor_v4_.open(ASIO::ip::tcp::v4(), ec);
           if (!ec)
           {
             acceptor_v4_.set_option
-                (boost::asio::ip::tcp::acceptor::reuse_address(true));
+                (ASIO::ip::tcp::acceptor::reuse_address(true));
             acceptor_v4_.bind
-              (boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
+              (ASIO::ip::tcp::endpoint(ASIO::ip::tcp::v4(), port));
             acceptor_v4_.listen();
           }
         }
@@ -310,7 +310,7 @@ namespace via
       /// @pre It must be an SSL server.
       /// @return The password.
       const std::string password(std::size_t, // max_length,
-                       boost::asio::ssl::context::password_purpose)// purpose)
+                       ASIO::ssl::context::password_purpose)// purpose)
         const NOEXCEPT
       { return password_; }
 
@@ -323,7 +323,7 @@ namespace via
         password_ = password;
         connection_type::ssl_context().set_password_callback
             ([this](std::size_t max_length,
-                    boost::asio::ssl::context::password_purpose purpose)
+                    ASIO::ssl::context::password_purpose purpose)
         { return server::password(max_length, purpose); });
       }
 #endif

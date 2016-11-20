@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2015-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -33,10 +33,10 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class udp_adaptor
     {
-      boost::asio::io_service& io_service_;        ///< The asio io_service.
-      boost::asio::ip::udp::socket socket_;        ///< The asio UDP socket.
-      boost::asio::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
-      boost::asio::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
+      ASIO::io_service& io_service_;        ///< The asio io_service.
+      ASIO::ip::udp::socket socket_;        ///< The asio UDP socket.
+      ASIO::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
+      ASIO::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
       bool is_connected_; ///< The socket is connected (i.e. not bound).
 
     protected:
@@ -49,7 +49,7 @@ namespace via
       // not used by un-encrypted sockets.
       void handshake(ErrorHandler handshake_handler, bool /*is_server*/ = false)
       {
-        boost::system::error_code ec; // Default is success
+        ASIO_ERROR_CODE ec; // Default is success
         handshake_handler(ec);
       }
 
@@ -60,9 +60,9 @@ namespace via
       /// @param connect_handler the connect callback function.
       /// @param host_iterator the tcp resolver iterator.
       void connect_socket(ConnectHandler connect_handler,
-                          boost::asio::ip::tcp::resolver::iterator host_iterator)
+                          ASIO::ip::tcp::resolver::iterator host_iterator)
       {
-        boost::system::error_code ec; // Default is success
+        ASIO_ERROR_CODE ec; // Default is success
         connect_handler(ec, host_iterator);
       }
 
@@ -74,9 +74,9 @@ namespace via
       void read(void* ptr, size_t size, CommsHandler read_handler)
       {
         if (is_connected_)
-          socket_.async_receive(boost::asio::buffer(ptr, size), read_handler);
+          socket_.async_receive(ASIO::buffer(ptr, size), read_handler);
         else
-          socket_.async_receive_from(boost::asio::buffer(ptr, size),
+          socket_.async_receive_from(ASIO::buffer(ptr, size),
                                      rx_endpoint_, read_handler);
       }
 
@@ -94,11 +94,11 @@ namespace via
 
       /// The udp_adaptor constructor.
       /// @param io_service the asio io_service associted with this connection
-      explicit udp_adaptor(boost::asio::io_service& io_service)
+      explicit udp_adaptor(ASIO::io_service& io_service)
         : io_service_(io_service)
         , socket_(io_service_)
-        , rx_endpoint_(boost::asio::ip::address_v4::any(), 0)
-        , tx_endpoint_(boost::asio::ip::address_v4::broadcast(), 0)
+        , rx_endpoint_(ASIO::ip::address_v4::any(), 0)
+        , tx_endpoint_(ASIO::ip::address_v4::broadcast(), 0)
         , is_connected_(false)
       {}
 
@@ -121,9 +121,9 @@ namespace via
                              std::string listen_address = "")
       {
         // Get the address
-        boost::system::error_code error;
-        boost::asio::ip::address ip_address
-            (boost::asio::ip::address::from_string(multicast_address, error));
+        ASIO_ERROR_CODE error;
+        ASIO::ip::address ip_address
+            (ASIO::ip::address::from_string(multicast_address, error));
         if (error)
           return false;
 
@@ -132,26 +132,26 @@ namespace via
           return false;
 
         // if a listen_address is given then use it
-        boost::asio::ip::address local_address;
+        ASIO::ip::address local_address;
         if (!listen_address.empty())
         {
-          local_address = boost::asio::ip::address
-              (boost::asio::ip::address::from_string(listen_address, error));
+          local_address = ASIO::ip::address
+              (ASIO::ip::address::from_string(listen_address, error));
           // Ensure that the listen_address is valid and the same protocol as
           // the multicast_address
           if (error || (local_address.is_v6() != ip_address.is_v6()))
             return false;
 
-          rx_endpoint_ = boost::asio::ip::udp::endpoint(local_address, port_number);
+          rx_endpoint_ = ASIO::ip::udp::endpoint(local_address, port_number);
         }
         else // otherwise use the IPv4 or IPv6 any address
         {
           if (ip_address.is_v6())
-            rx_endpoint_ = boost::asio::ip::udp::endpoint
-                              (boost::asio::ip::address_v6::any(), port_number);
+            rx_endpoint_ = ASIO::ip::udp::endpoint
+                              (ASIO::ip::address_v6::any(), port_number);
           else
-            rx_endpoint_ = boost::asio::ip::udp::endpoint
-                              (boost::asio::ip::address_v4::any(), port_number);
+            rx_endpoint_ = ASIO::ip::udp::endpoint
+                              (ASIO::ip::address_v4::any(), port_number);
         }
 
         // Open the socket
@@ -161,17 +161,17 @@ namespace via
           return false;
 
         // Set it for reuse then bind it
-        socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+        socket_.set_option(ASIO::ip::udp::socket::reuse_address(true));
         socket_.bind(rx_endpoint_, error);
         if (error)
           return false;
 
         if (!listen_address.empty())
           // Note: asio supports only v4 at the moment.
-          socket_.set_option(boost::asio::ip::multicast::join_group
+          socket_.set_option(ASIO::ip::multicast::join_group
                                (ip_address.to_v4(), local_address.to_v4()));
         else
-          socket_.set_option(boost::asio::ip::multicast::join_group(ip_address));
+          socket_.set_option(ASIO::ip::multicast::join_group(ip_address));
 
         return true;
       }
@@ -185,9 +185,9 @@ namespace via
                               std::string const& multicast_address)
       {
         // Get the address
-        boost::system::error_code error;
-        boost::asio::ip::address ip_address
-            (boost::asio::ip::address::from_string(multicast_address, error));
+        ASIO_ERROR_CODE error;
+        ASIO::ip::address ip_address
+            (ASIO::ip::address::from_string(multicast_address, error));
         if (error)
           return false;
 
@@ -196,7 +196,7 @@ namespace via
           return false;
 
         // Set the transmit endpoint
-        tx_endpoint_ = boost::asio::ip::udp::endpoint(ip_address, port_number);
+        tx_endpoint_ = ASIO::ip::udp::endpoint(ip_address, port_number);
 
         // Open the socket
         if (!socket_.is_open())
@@ -204,7 +204,7 @@ namespace via
         if (error)
           return false;
 
-        socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+        socket_.set_option(ASIO::ip::udp::socket::reuse_address(true));
 
         return true;
       }
@@ -219,14 +219,14 @@ namespace via
         rx_endpoint_.port(port_number);
 
         // Open the socket (Ipv4)
-        boost::system::error_code error;
+        ASIO_ERROR_CODE error;
         if (!socket_.is_open())
           socket_.open(rx_endpoint_.protocol(), error);
         if (error)
           return false;
 
         // Set it for reuse then bind it
-        socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+        socket_.set_option(ASIO::ip::udp::socket::reuse_address(true));
         socket_.bind(rx_endpoint_, error);
 
         return !error;
@@ -242,14 +242,14 @@ namespace via
         tx_endpoint_.port(port_number);
 
         // Open the socket (Ipv4)
-        boost::system::error_code error;
+        ASIO_ERROR_CODE error;
         if (!socket_.is_open())
           socket_.open(rx_endpoint_.protocol(), error);
         if (error)
           return false;
 
-        socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
-        socket_.set_option(boost::asio::socket_base::broadcast(true));
+        socket_.set_option(ASIO::ip::udp::socket::reuse_address(true));
+        socket_.set_option(ASIO::socket_base::broadcast(true));
 
         return true;
       }
@@ -265,16 +265,16 @@ namespace via
                    ConnectHandler connectHandler)
       {
         // resolve the port on the local host
-        boost::asio::ip::udp::resolver resolver(io_service_);
-        boost::asio::ip::udp::resolver::query query(host_name, port );
-        boost::asio::ip::udp::resolver::iterator iterator(resolver.resolve(query));
+        ASIO::ip::udp::resolver resolver(io_service_);
+        ASIO::ip::udp::resolver::query query(host_name, port );
+        ASIO::ip::udp::resolver::iterator iterator(resolver.resolve(query));
 
         // Determine whether the host and port was found
-        if (iterator == boost::asio::ip::udp::resolver::iterator())
+        if (iterator == ASIO::ip::udp::resolver::iterator())
           return false;
 
         // Attempt to connect to it.
-        boost::system::error_code error;
+        ASIO_ERROR_CODE error;
         socket_.connect(*iterator, error);
         if (error)
           return false;
@@ -284,7 +284,7 @@ namespace via
         // Call the connectHandler with the success error code.
         // Note: uses a tcp resolver::iterator because the connectHandler
         // requires it.
-        connectHandler(error, boost::asio::ip::tcp::resolver::iterator());
+        connectHandler(error, ASIO::ip::tcp::resolver::iterator());
 
         return true;
       }
@@ -296,10 +296,10 @@ namespace via
       /// disconnected.
       void shutdown(CommsHandler write_handler)
       {
-        boost::system::error_code ec;
-        socket_.shutdown(boost::asio::ip::udp::socket::shutdown_both, ec);
+        ASIO_ERROR_CODE ec;
+        socket_.shutdown(ASIO::ip::udp::socket::shutdown_both, ec);
 
-        ec = boost::system::error_code(boost::asio::error::eof);
+        ec = ASIO_ERROR_CODE(ASIO::error::eof);
         write_handler(ec, 0);
       }
 
@@ -308,7 +308,7 @@ namespace via
       /// Cancels any send, receive or connect operations and closes the socket.
       void close()
       {
-        boost::system::error_code ignoredEc;
+        ASIO_ERROR_CODE ignoredEc;
         if (socket_.is_open())
           socket_.close (ignoredEc);
       }
@@ -319,7 +319,7 @@ namespace via
       /// @param handshake_handler the handshake callback function.
       void start(ErrorHandler handshake_handler)
       {
-        boost::system::error_code ec; // Default is success
+        ASIO_ERROR_CODE ec; // Default is success
         handshake_handler(ec);
       }
 
@@ -328,13 +328,13 @@ namespace via
       // @param error the error_code
       // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(boost::system::error_code const&, bool&) NOEXCEPT
+      bool is_disconnect(ASIO_ERROR_CODE const&, bool&) NOEXCEPT
       { return false; }
 
       /// @fn socket
       /// Accessor for the underlying udp socket.
       /// @return a reference to the udp socket.
-      boost::asio::ip::udp::socket& socket() NOEXCEPT
+      ASIO::ip::udp::socket& socket() NOEXCEPT
       { return socket_; }
     };
   }

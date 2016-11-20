@@ -17,6 +17,16 @@ macx {
   INCLUDEPATH *= /usr/local/include
 }
 
+# Determine if using the standalone asio library
+!isEmpty(ASIO_ROOT) {
+  DEFINES += ASIO_STANDALONE
+
+  ASIO_INC_DIR = $$ASIO_ROOT/include
+
+  INCLUDEPATH *= $$ASIO_INC_DIR
+  HEADERS += $${ASIO_INC_DIR}/asio.hpp
+}
+
 INC_DIR = $$VIAHTTPLIB/include
 
 INCLUDEPATH *= $${INC_DIR}

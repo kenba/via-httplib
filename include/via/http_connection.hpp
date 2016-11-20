@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -250,7 +250,7 @@ namespace via
       response.set_minor_version(rx_.request().minor_version());
       tx_header_ = response.message();
 
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)),
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_header_)),
                   response.is_continue());
     }
 
@@ -267,7 +267,7 @@ namespace via
       response.set_minor_version(rx_.request().minor_version());
       tx_header_ = response.message();
 
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)),
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_header_)),
                   response.is_continue());
     }
 
@@ -284,13 +284,13 @@ namespace via
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       tx_header_ = response.message(body.size());
-      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
+      comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
 
       // Don't send a body in response to a HEAD request
       if (!rx_.is_head())
       {
         tx_body_.swap(body);
-        buffers.push_back(boost::asio::buffer(tx_body_));
+        buffers.push_back(ASIO::buffer(tx_body_));
       }
 
       return send(std::move(buffers), response.is_continue());
@@ -308,7 +308,7 @@ namespace via
         return false;
 
       // Calculate the overall size of the data in the buffers
-      size_t size(boost::asio::buffer_size(buffers));
+      size_t size(ASIO::buffer_size(buffers));
 
       // Don't send a body in response to a HEAD request
       if (rx_.is_head())
@@ -317,7 +317,7 @@ namespace via
       response.set_major_version(rx_.request().major_version());
       response.set_minor_version(rx_.request().minor_version());
       tx_header_ = response.message(size);
-      buffers.push_front(boost::asio::buffer(tx_header_));
+      buffers.push_front(ASIO::buffer(tx_header_));
 
       return send(std::move(buffers), response.is_continue());
     }
@@ -335,9 +335,9 @@ namespace via
       tx_header_ = chunk_header.to_string();
       tx_body_.swap(chunk);
 
-      comms::ConstBuffers buffers(1, boost::asio::buffer(tx_header_));
-      buffers.push_back(boost::asio::buffer(tx_body_));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
+      comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
+      buffers.push_back(ASIO::buffer(tx_body_));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
@@ -349,12 +349,12 @@ namespace via
     bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
     {
       // Calculate the overall size of the data in the buffers
-      size_t size(boost::asio::buffer_size(buffers));
+      size_t size(ASIO::buffer_size(buffers));
 
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
-      buffers.push_front(boost::asio::buffer(tx_header_));
-      buffers.push_back(boost::asio::buffer(http::CRLF));
+      buffers.push_front(ASIO::buffer(tx_header_));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
@@ -367,7 +367,7 @@ namespace via
       http::last_chunk last_chunk(extension, trailer_string);
       tx_header_ = last_chunk.to_string();
 
-      return send(comms::ConstBuffers(1, boost::asio::buffer(tx_header_)));
+      return send(comms::ConstBuffers(1, ASIO::buffer(tx_header_)));
     }
 
     ////////////////////////////////////////////////////////////////////////

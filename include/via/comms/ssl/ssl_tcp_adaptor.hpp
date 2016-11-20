@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2016 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -42,22 +42,22 @@ namespace via
       class ssl_tcp_adaptor
       {
         /// The asio io_service.
-        boost::asio::io_service& io_service_;
+        ASIO::io_service& io_service_;
         /// The asio SSL TCP socket.
-        boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
+        ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
-        boost::asio::ip::tcp::resolver::iterator host_iterator_;
+        ASIO::ip::tcp::resolver::iterator host_iterator_;
 
         /// @fn resolve_host
         /// Resolves the host name and port.
         /// @param host_name the host name.
         /// @param port_name the host port.
-        boost::asio::ip::tcp::resolver::iterator resolve_host
+        ASIO::ip::tcp::resolver::iterator resolve_host
           (char const* host_name, char const* port_name) const
         {
-          boost::system::error_code ignoredEc;
-          boost::asio::ip::tcp::resolver resolver(io_service_);
-          boost::asio::ip::tcp::resolver::query query(host_name, port_name);
+          ASIO_ERROR_CODE ignoredEc;
+          ASIO::ip::tcp::resolver resolver(io_service_);
+          ASIO::ip::tcp::resolver::query query(host_name, port_name);
           return resolver.resolve(query, ignoredEc);
         }
 
@@ -70,7 +70,7 @@ namespace via
         /// Note that the callback is called once for each certificate in the
         /// certificate chain, starting from the root certificate authority.
         static bool verify_certificate(bool preverified,
-                                       boost::asio::ssl::verify_context& ctx)
+                                       ASIO::ssl::verify_context& ctx)
         {
           char subject_name[256];
           X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
@@ -86,8 +86,8 @@ namespace via
         /// @param is_server whether performing client or server handshaking
         void handshake(ErrorHandler handshake_handler, bool is_server)
         {
-          socket_.async_handshake(is_server ? boost::asio::ssl::stream_base::server
-                                            : boost::asio::ssl::stream_base::client,
+          socket_.async_handshake(is_server ? ASIO::ssl::stream_base::server
+                                            : ASIO::ssl::stream_base::client,
                                   handshake_handler);
         }
 
@@ -96,16 +96,16 @@ namespace via
         /// @param connect_handler the connect callback function.
         /// @param host_iterator the resolver iterator.
         void connect_socket(ConnectHandler connect_handler,
-                            boost::asio::ip::tcp::resolver::iterator host_iterator)
+                            ASIO::ip::tcp::resolver::iterator host_iterator)
         {
           // Attempt to connect to the host
-          boost::asio::async_connect(socket_.lowest_layer(), host_iterator,
+          ASIO::async_connect(socket_.lowest_layer(), host_iterator,
                                      connect_handler);
         }
 
         /// The ssl_tcp_adaptor constructor.
         /// @param io_service the asio io_service associted with this connection
-        explicit ssl_tcp_adaptor(boost::asio::io_service& io_service) :
+        explicit ssl_tcp_adaptor(ASIO::io_service& io_service) :
           io_service_(io_service),
           socket_(io_service_, ssl_context()),
           host_iterator_()
@@ -127,10 +127,10 @@ namespace via
         /// A static function to manage the ssl context for the ssl
         /// connections.
         /// @return ssl_context the ssl context.
-        static boost::asio::ssl::context& ssl_context()
+        static ASIO::ssl::context& ssl_context()
         {
-          static boost::asio::ssl::context context_
-              (boost::asio::ssl::context::tlsv12);
+          static ASIO::ssl::context context_
+              (ASIO::ssl::context::tlsv12);
           return context_;
         }
 
@@ -144,13 +144,13 @@ namespace via
         bool connect(const char* host_name, const char* port_name,
                      ConnectHandler connect_handler)
         {
-          ssl_context().set_verify_mode(boost::asio::ssl::verify_peer);
+          ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
           socket_.set_verify_callback([]
-            (bool preverified, boost::asio::ssl::verify_context& ctx)
+            (bool preverified, ASIO::ssl::verify_context& ctx)
               { return verify_certificate(preverified, ctx); });
 
           host_iterator_ = resolve_host(host_name, port_name);
-          if (host_iterator_ == boost::asio::ip::tcp::resolver::iterator())
+          if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
             return false;
 
           connect_socket(connect_handler, host_iterator_);
@@ -165,7 +165,7 @@ namespace via
         void read(void* ptr, size_t size, CommsHandler read_handler)
         {
           socket_.async_read_some
-              (boost::asio::buffer(ptr, size), read_handler);
+              (ASIO::buffer(ptr, size), read_handler);
         }
 
         /// @fn write
@@ -174,7 +174,7 @@ namespace via
         /// @param write_handler the handler called after a message is sent.
         void write(ConstBuffers& buffers, CommsHandler write_handler)
         {
-          boost::asio::async_write(socket_, buffers, write_handler);
+          ASIO::async_write(socket_, buffers, write_handler);
         }
 
         /// @fn shutdown
@@ -184,7 +184,7 @@ namespace via
         void shutdown(CommsHandler write_handler)
         {
           // Cancel any pending operations
-          boost::system::error_code ignoredEc;
+          ASIO_ERROR_CODE ignoredEc;
           socket().cancel(ignoredEc);
 
           // Call async_shutdown with the write_handler as a shutdown handler.
@@ -192,7 +192,7 @@ namespace via
           // write side of the SSL stream and then waits (asynchronously) for
           // the SSL close_notify response from the other side.
           socket_.async_shutdown([write_handler]
-             (boost::system::error_code const& ec){ write_handler(ec, 0); });
+             (ASIO_ERROR_CODE const& ec){ write_handler(ec, 0); });
         }
 
         /// @fn close
@@ -200,7 +200,7 @@ namespace via
         /// Cancels any send, receive or connect operations and closes the socket.
         void close()
         {
-          boost::system::error_code ignoredEc;
+          ASIO_ERROR_CODE ignoredEc;
           if (socket().is_open())
             socket().close (ignoredEc);
         }
@@ -220,10 +220,10 @@ namespace via
         /// @param error the error_code
         /// @retval ssl_shutdown - an SSL shutdown should be performed
         /// @return true if the socket is disconnected, false otherwise.
-        bool is_disconnect(boost::system::error_code const& error,
+        bool is_disconnect(ASIO_ERROR_CODE const& error,
                            bool& ssl_shutdown) NOEXCEPT
         {
-          bool ssl_error(boost::asio::error::get_ssl_category() == error.category());
+          bool ssl_error(ASIO::error::get_ssl_category() == error.category());
           ssl_shutdown = ssl_error &&
                (SSL_R_SHORT_READ != ERR_GET_REASON(error.value())) &&
                (SSL_R_PROTOCOL_IS_SHUTDOWN != ERR_GET_REASON(error.value()));
@@ -234,7 +234,7 @@ namespace via
         /// @fn socket
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
-        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>
+        ASIO::ssl::stream<ASIO::ip::tcp::socket>
         ::lowest_layer_type& socket() NOEXCEPT
         { return socket_.lowest_layer(); }
       };
