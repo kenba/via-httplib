@@ -46,7 +46,7 @@ The unbuffered methods use "scatter-gather" write functions to avoid copying dat
 
 ### Boost / Standalone `asio` Configuration
 
-The library uses [boost asio]((http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) by default.  
+The library uses [boost asio](http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) by default.  
 To use [standalone asio](http://think-async.com/):
 
    + set the environment variable `$ASIO_ROOT` to the path of the `asio` root directory;
