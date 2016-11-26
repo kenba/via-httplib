@@ -39,6 +39,13 @@ win32 {
   VER_MAJ = 1
   VER_MIN = 3
   VER_PAT = 0
+
+  # Set BOOST_ROOT to the usual linux & mac locations
+  macx {
+    BOOST_ROOT = /usr/local
+  } else {
+    BOOST_ROOT = /usr
+  }
 }
 
 TEMPLATE = lib
