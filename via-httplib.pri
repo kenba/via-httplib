@@ -18,6 +18,7 @@ macx {
 }
 
 # Determine if using the standalone asio library
+ASIO_ROOT = $$(ASIO_ROOT)
 !isEmpty(ASIO_ROOT) {
   DEFINES += ASIO_STANDALONE
 

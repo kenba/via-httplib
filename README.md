@@ -3,7 +3,9 @@ via-httplib: A C++ HTTP Library
 
 A library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
-`via-httplib` is an asynchronous C++ HTTP server built upon `asio` (both `boost` and `standalone`) 
+`via-httplib` is an asynchronous C++ HTTP server built upon `asio` (both
+[boost](http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) and
+[standalone](http://think-async.com/)) 
 that aims to provide a simple, secure and efficient server that complies with the
 requirements of [rfc7230](https://tools.ietf.org/html/rfc7230)
 wherever possible.
@@ -40,7 +42,42 @@ containers, e.g.:
 | `ssl_tcp_adaptor` | `std::string`     | An HTTPS text server.         |
 
 The HTTP message bodies can be sent using **buffered** or **unbuffered** methods.  
-The unbuffered methods use "scatter-gather" writes to avoid copying data.
+The unbuffered methods use "scatter-gather" write functions to avoid copying data.
+
+### Boost / Standalone `asio` Configuration
+
+The library uses [boost asio]((http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) by default.  
+To use [standalone asio](http://think-async.com/):
+
+   + set the environment variable `$ASIO_ROOT` to the path of the `asio` root directory;
+   + add `$ASIO_ROOT/include` to your include path;
+   + define the macro `ASIO_STANDALONE`.
+   
+Note: if you use `qmake` file and include the file [via-httplib.pri](via-httplib.pri) then you just
+need to set the `$ASIO_ROOT` environment variable.
+
+Portability between `bost asio` and `standalone asio` is provided by the macros:
+
+   + ASIO,
+   + ASIO_ERROR_CODE and
+   + ASIO_TIMER.
+
+They are defined in [socket_adaptor.hpp](include/via/comms/socket_adaptor.hpp):
+   
+	#ifdef ASIO_STANDALONE
+	  #include <asio.hpp>
+	  #define ASIO asio
+	  #define ASIO_ERROR_CODE asio::error_code
+	  #define ASIO_TIMER asio::steady_timer
+	#else
+	  #include <boost/asio.hpp>
+	  #define ASIO boost::asio
+	  #define ASIO_ERROR_CODE boost::system::error_code
+	  #define ASIO_TIMER boost::asio::deadline_timer
+	#endif
+	
+It is hoped that they can continue to provide portability when `asio` becomes a standard C++ library:
+see: [Networking Library Proposal](http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/n4478.html).
 
 Requirements
 ------------

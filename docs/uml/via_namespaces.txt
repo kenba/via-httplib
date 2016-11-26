@@ -1,40 +1,42 @@
 @startuml
 
-'Copyright (c) 2013-2015 Ken Barker
+'Copyright (c) 2013-2016 Ken Barker
 
 title Via Namespaces
 
-'class via.http_server<extends socket_adaptor, container>
-via.http_server *-- via.comms.server
-via.http_server *-- "*" via.http_connection
+set namespaceSeparator ::
 
-'class via.http_connection<extends socket_adaptor, container>
-via.http_connection *-- via.comms.connection
-via.http_connection *-- via.http.request
+'class via::http_server<extends socket_adaptor, container>
+via::http_server *-- via::comms::server
+via::http_server *-- "*" via::http_connection
 
-'class via.http_client<extends socket_adaptor, container>
-via.http_client *-- via.comms.connection
-via.http_client *-- via.http.response
+'class via::http_connection<extends socket_adaptor, container>
+via::http_connection *-- via::comms::connection
+via::http_connection *-- via::http::request
 
-via.http.request *-- via.http.request_method
-via.http.request *-- via.http.headers
-via.http.request *-- via.http.chunk
-via.http.request *-- via.http.response_status
+'class via::http_client<extends socket_adaptor, container>
+via::http_client *-- via::comms::connection
+via::http_client *-- via::http::response
 
-via.http.response *-- via.http.response_status
-via.http.response *-- via.http.headers
-via.http.response *-- via.http.chunk
+via::http::request *-- via::http::request_method
+via::http::request *-- via::http::headers
+via::http::request *-- via::http::chunk
+via::http::request *-- via::http::response_status
 
-'via.http.chunk *-- via.http.headers
-'via.http.headers *-- "*" via.http.header_field
+via::http::response *-- via::http::response_status
+via::http::response *-- via::http::headers
+via::http::response *-- via::http::chunk
 
-'class via.comms.connection<extends socket_adaptor, container>
-via.comms.server *-- "*" via.comms.connection
-via.comms.connection *-- via.comms.socket_adaptor
+'via::http::chunk *-- via::http::headers
+'via::http::headers *-- "*" via::http::header_field
 
-abstract class via.comms.socket_adaptor
-'via.comms.socket_adaptor <|-- via.comms.udp_adaptor
-via.comms.socket_adaptor <|-- via.comms.tcp_adaptor
-via.comms.socket_adaptor <|-- via.comms.ssl.ssl_tcp_adaptor
+'class via::comms::connection<extends socket_adaptor, container>
+via::comms::server *-- "*" via::comms::connection
+via::comms::connection *-- via::comms::socket_adaptor
+
+abstract class via::comms::socket_adaptor
+via::comms::socket_adaptor <|-- via::comms::udp_adaptor
+via::comms::socket_adaptor <|-- via::comms::tcp_adaptor
+via::comms::socket_adaptor <|-- via::comms::ssl::ssl_tcp_adaptor
 
 @enduml

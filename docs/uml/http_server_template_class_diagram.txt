@@ -1,22 +1,24 @@
 @startuml
 
-'Copyright (c) 2013-2015 Ken Barker
+'Copyright (c) 2013-2016 Ken Barker
 
 title http_server class template 
 
-class via.http_server<extends socket_adaptor, container, use_strand>
-via.http_server *-- "*" via.http_connection
+set namespaceSeparator ::
 
-class via.http_connection<extends socket_adaptor, container, use_strand>
-via.http_connection o-- socket_adaptor
-via.http_connection *-- container
+class via::http_server<extends socket_adaptor, container, use_strand>
+via::http_server *-- "*" via::http_connection
+
+class via::http_connection<extends socket_adaptor, container, use_strand>
+via::http_connection o-- socket_adaptor
+via::http_connection *-- container
 
 abstract class socket_adaptor
-socket_adaptor <|-- via.comms.tcp_adaptor
-socket_adaptor <|-- via.comms.ssl.ssl_tcp_adaptor
+socket_adaptor <|-- via::comms::tcp_adaptor
+socket_adaptor <|-- via::comms::ssl::ssl_tcp_adaptor
 
 abstract class container
-container <|-- std.vector
-container <|-- std.string
+container <|-- std::vector
+container <|-- std::string
 
 @enduml

@@ -1,20 +1,22 @@
 @startuml
 
-'Copyright (c) 2013-2015 Ken Barker
+'Copyright (c) 2013-2016 Ken Barker
 
 title via-httplib client classes
 
-class via.http_client<extends socket_adaptor, container>
-via.http_client *-- socket_adaptor
-via.http_client *-- container
-via.http_client *-- via.http.response_receiver
+set namespaceSeparator ::
+
+class via::http_client<extends socket_adaptor, container>
+via::http_client *-- socket_adaptor
+via::http_client *-- container
+via::http_client *-- via::http::response_receiver
 
 abstract class socket_adaptor
-socket_adaptor <|-- via.comms.tcp_adaptor
-socket_adaptor <|-- via.comms.ssl.ssl_tcp_adaptor
+socket_adaptor <|-- via::comms::tcp_adaptor
+socket_adaptor <|-- via::comms::ssl::ssl_tcp_adaptor
 
 abstract class container
-container <|-- std.vector
-container <|-- std.string
+container <|-- std::vector
+container <|-- std::string
 
 @enduml
