@@ -33,6 +33,18 @@ namespace via
     /// paths, empty if none or if their was a problem reading the parameters.
     Parameters get_route_parameters(std::string uri_path, std::string route_path);
 
+    /// Get the route parameter with the given name from the route parameters.
+    /// @param params a map of route parameter name:value pairs.
+    /// @param name a parameter name.
+    /// @return the value corresponding to the parameter name, or an empty
+    /// string if not found.
+    inline std::string get_parameter(Parameters const& params,
+                                     std::string const& name)
+    {
+      auto iter(params.find(name));
+      return (iter != params.cend()) ? iter->second : std::string();
+    }
+
     /// @class request_router
     /// The class contains the route paths to search in HTTP requests.
     /// Note: the routes are searched in the order that they are added.
