@@ -337,14 +337,14 @@ namespace via
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param connection a weak ponter to the underlying comms connection.
-    void event_handler(int event, std::weak_ptr<connection_type> connection)
+    void event_handler(int event, std::shared_ptr<connection_type> connection)
     {
       if (via::comms::CONNECTED == event)
         connected_handler(connection);
       else
       {
         // Get the raw pointer of the connection
-        void* pointer(connection.lock().get());
+        void* pointer(connection.get());
         if (!pointer)
           return;
 
@@ -380,7 +380,7 @@ namespace via
     /// @param error the boost error_code.
     // @param connection a weak ponter to the underlying comms connection.
     void error_handler(const ASIO_ERROR_CODE &error,
-                       std::weak_ptr<connection_type>) // connection)
+                       std::shared_ptr<connection_type>) // connection)
     {
       std::cerr << "error_handler" << std::endl;
       std::cerr << error <<  std::endl;
@@ -430,11 +430,11 @@ namespace via
       message_sent_handler_ ()
     {
       server_->set_event_callback([this]
-        (int event, std::weak_ptr<connection_type> connection)
+        (int event, std::shared_ptr<connection_type> connection)
           { event_handler(event, connection); });
       server_->set_error_callback([this]
         (ASIO_ERROR_CODE const& error,
-         std::weak_ptr<connection_type> connection)
+         std::shared_ptr<connection_type> connection)
           { error_handler(error, connection); });
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_server will want to send messages immediately

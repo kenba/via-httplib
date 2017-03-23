@@ -135,30 +135,27 @@ namespace via
       /// It forwards the connection's event signal.
       /// For a disconnected event, it deletes the connection.
       /// @param event the event, @see event_type.
-      /// @param connection a weak_pointer to the connection that sent the
+      /// @param connection a shared_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, std::weak_ptr<connection_type> ptr)
+      void event_handler(int event, std::shared_ptr<connection_type> ptr)
       {
         event_callback_(event, ptr);
         if (event == DISCONNECTED)
         {
-          if (std::shared_ptr<connection_type> connection = ptr.lock())
-          {
-            // search for the connection to delete
-            connections_iterator iter(connections_.find(connection));
-            if (iter != connections_.end())
-              connections_.erase(iter);
-          }
+          // search for the connection to delete
+          connections_iterator iter(connections_.find(ptr));
+          if (iter != connections_.end())
+            connections_.erase(iter);
         }
       }
 
       /// @fn error_handler.
       /// It just forwards the connection's error signal.
       /// @param error the boost asio error.
-      /// @param connection a weak_pointer to the connection that sent the
+      /// @param connection a shared_pointer to the connection that sent the
       /// error.
       void error_handler(const ASIO_ERROR_CODE& error,
-                         std::weak_ptr<connection_type> connection)
+                         std::shared_ptr<connection_type> connection)
       { error_callback_(error, connection); }
 
       /// @fn start_accept
@@ -166,10 +163,10 @@ namespace via
       void start_accept()
       {
         next_connection_ = connection_type::create(io_service_,
-          [this](int event, std::weak_ptr<connection_type> ptr)
+          [this](int event, std::shared_ptr<connection_type> ptr)
             { event_handler(event, ptr); },
           [this](ASIO_ERROR_CODE const& error,
-                 std::weak_ptr<connection_type> ptr)
+                 std::shared_ptr<connection_type> ptr)
             { error_handler(error, ptr); });
 
         if (acceptor_v6_.is_open())

@@ -71,11 +71,11 @@ namespace via
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
 
       /// Event callback function type.
-      typedef std::function<void (int, weak_pointer)> event_callback_type;
+      typedef std::function<void (int, shared_pointer)> event_callback_type;
 
       /// Error callback function type.
       typedef std::function<void (ASIO_ERROR_CODE const&,
-                                  weak_pointer)> error_callback_type;
+                                  shared_pointer)> error_callback_type;
 
     private:
 
@@ -205,9 +205,9 @@ namespace via
       void signal_error(ASIO_ERROR_CODE const& error)
       {
         if (is_error_a_disconnect(error))
-          event_callback_(DISCONNECTED, weak_from_this());
+          event_callback_(DISCONNECTED, enable::shared_from_this());
         else
-          error_callback_(error, weak_from_this());
+          error_callback_(error, enable::shared_from_this());
       }
 
       /// @fn read_callback
@@ -245,7 +245,7 @@ namespace via
       {
         receiving_ = false;
         rx_buffer_->resize(bytes_transferred);
-        event_callback_(RECEIVED, weak_from_this());
+        event_callback_(RECEIVED, enable::shared_from_this());
         enable_reception();
       }
 
@@ -298,7 +298,7 @@ namespace via
         if (!tx_queue_->empty())
           write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
 
-        event_callback_(SENT, weak_from_this());
+        event_callback_(SENT, enable::shared_from_this());
       }
 
       /// @fn handshake_callback
@@ -325,7 +325,7 @@ namespace via
           (ConstBuffers(1, ASIO::buffer(pointer->tx_queue_->front())));
             pointer->receiving_ = false;
             pointer->enable_reception();
-            pointer->event_callback_(CONNECTED, ptr);
+            pointer->event_callback_(CONNECTED, pointer);
           }
           else
           {
