@@ -142,6 +142,7 @@ namespace via
 
     std::shared_ptr<server_type> server_;    ///< the communications server
     connection_collection http_connections_; ///< the communications channels
+    std::mutex http_connections_mutex_; ///< a mutex for http_connections_
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
 
@@ -182,6 +183,8 @@ namespace via
       void* pointer(connection.lock().get());
       if (!pointer)
         return;
+
+      std::lock_guard<std::mutex> guard(http_connections_mutex_);
 
       // search for the connection in the collection
       connection_collection_iterator iter(http_connections_.find(pointer));
@@ -327,7 +330,10 @@ namespace via
       if (disconnected_handler_)
         disconnected_handler_(iter->second);
 
-      http_connections_.erase(iter);
+      {
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        http_connections_.erase(iter);
+      }
 
       // If the http_server is being shutdown and this was the last connection
       if (shutting_down_ && http_connections_.empty())
@@ -349,12 +355,16 @@ namespace via
           return;
 
         // search for the connection in the collection
-        connection_collection_iterator iter(http_connections_.find(pointer));
-        if (iter == http_connections_.end())
+        connection_collection_iterator iter(http_connections_.end());
         {
-          std::cerr << "http_server, event_handler error: connection not found "
-                    << std::endl;
-          return;
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          iter = http_connections_.find(pointer);
+          if (iter == http_connections_.end())
+          {
+            std::cerr << "http_server, event_handler error: connection not found "
+                      << std::endl;
+            return;
+          }
         }
 
         switch(event)
@@ -402,6 +412,7 @@ namespace via
     explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
       http_connections_(),
+      http_connections_mutex_(),
       request_router_(),
       shutting_down_(false),
 
@@ -695,6 +706,8 @@ namespace via
       if (!http_connections_.empty())
       {
         shutting_down_ = true;
+
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
         for (auto& elem : http_connections_)
           elem.second->disconnect();
       }
@@ -705,6 +718,7 @@ namespace via
     /// Close the http server and all of the connections associated with it.
     void close()
     {
+      std::lock_guard<std::mutex> guard(http_connections_mutex_);
       http_connections_.clear();
       server_->close();
     }
