@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -25,6 +25,8 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <thread>
+#include <mutex>
 
 namespace via
 {
@@ -73,6 +75,9 @@ namespace via
       /// The asio::io_service to use.
       ASIO::io_service& io_service_;
 
+      /// Strand to ensure the accept handler is not called concurrently.
+      ASIO::io_service::strand strand_;
+
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
 
@@ -84,6 +89,9 @@ namespace via
 
       /// The connections established with this server.
       connections connections_;
+
+      /// A mutex to protect connections_.
+      std::mutex connections_mutex_;
 
       /// The password. Only used by SSL servers.
       std::string password_;
@@ -121,9 +129,12 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
+            {
+              std::lock_guard<std::mutex> guard(connections_mutex_);
+              connections_.insert(next_connection_);
+            }
             next_connection_->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
-            connections_.insert(next_connection_);
             next_connection_.reset();
           }
 
@@ -142,6 +153,8 @@ namespace via
         event_callback_(event, ptr);
         if (event == DISCONNECTED)
         {
+          std::lock_guard<std::mutex> guard(connections_mutex_);
+
           // search for the connection to delete
           connections_iterator iter(connections_.find(ptr));
           if (iter != connections_.end())
@@ -170,13 +183,41 @@ namespace via
             { error_handler(error, ptr); });
 
         if (acceptor_v6_.is_open())
-          acceptor_v6_.async_accept(next_connection_->socket(),
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+        {
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+          if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+            acceptor_v6_.async_accept(next_connection_->socket(),
+               strand_.wrap([this](ASIO_ERROR_CODE const& error)
+                            { accept_handler(error); }));
+          else
+            acceptor_v6_.async_accept(next_connection_->socket(),
+              [this](ASIO_ERROR_CODE const& error)
+                { accept_handler(error); });
+        }
         if (acceptor_v4_.is_open())
-          acceptor_v4_.async_accept(next_connection_->socket(),
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+        {
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+          if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+            acceptor_v4_.async_accept(next_connection_->socket(),
+              strand_.wrap([this](ASIO_ERROR_CODE const& error)
+                           { accept_handler(error); }));
+          else
+            acceptor_v4_.async_accept(next_connection_->socket(),
+              [this](ASIO_ERROR_CODE const& error)
+                { accept_handler(error); });
+        }
       }
 
     public:
@@ -196,10 +237,12 @@ namespace via
       /// and connections.
       explicit server(ASIO::io_service& io_service) :
         io_service_(io_service),
+        strand_(io_service),
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
         connections_(),
+        connections_mutex_(),
         password_(),
         event_callback_(),
         error_callback_(),
@@ -223,10 +266,12 @@ namespace via
                       event_callback_type event_callback,
                       error_callback_type error_callback) :
         io_service_(io_service),
+        strand_(io_service),
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
         connections_(),
+        connections_mutex_(),
         password_(),
         event_callback_(event_callback),
         error_callback_(error_callback),
@@ -375,6 +420,7 @@ namespace via
         if (acceptor_v4_.is_open())
           acceptor_v4_.close();
 
+        std::lock_guard<std::mutex> guard(connections_mutex_);
         connections_.clear();
       }
     };
