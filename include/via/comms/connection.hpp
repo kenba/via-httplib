@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -319,13 +319,13 @@ namespace via
           if (!error)
           {
             pointer->connected_ = true;
+            pointer->event_callback_(CONNECTED, ptr);
             pointer->set_socket_options();
             if (!pointer->tx_queue_->empty())
               pointer->write_data
           (ConstBuffers(1, ASIO::buffer(pointer->tx_queue_->front())));
             pointer->receiving_ = false;
             pointer->enable_reception();
-            pointer->event_callback_(CONNECTED, ptr);
           }
           else
           {
@@ -354,16 +354,45 @@ namespace via
         if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (!error)
+          {
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+            if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+            pointer->handshake(
+                    pointer->strand_.wrap([ptr](ASIO_ERROR_CODE const& error)
+              { handshake_callback(ptr, error); }), false);
+          else
             pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }, false);
+          }
           else
           {
             if ((ASIO::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
-              pointer->connect_socket([ptr]
-                  (ASIO_ERROR_CODE const& error,
-                   resolver_iterator host_iterator)
-              { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
+            {
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+              if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+                pointer->connect_socket(pointer->strand_.wrap([ptr]
+                    (ASIO_ERROR_CODE const& error,
+                     resolver_iterator host_iterator)
+                { connect_callback(ptr, error, host_iterator); }), ++host_iterator);
+              else
+                pointer->connect_socket([ptr]
+                    (ASIO_ERROR_CODE const& error,
+                     resolver_iterator host_iterator)
+                { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
+            }
             else
             {
               pointer->close();
@@ -583,9 +612,21 @@ namespace via
       bool connect(const char *host_name, const char *port_name)
       {
         weak_pointer ptr(weak_from_this());
-        return SocketAdaptor::connect(host_name, port_name,
-          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
-            { connect_callback(ptr, error, itr); });
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+            if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+          return SocketAdaptor::connect(host_name, port_name, strand_.wrap(
+            [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
+              { connect_callback(ptr, error, itr); }));
+        else
+          return SocketAdaptor::connect(host_name, port_name,
+            [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
+              { connect_callback(ptr, error, itr); });
       }
 
       /// @fn start
@@ -608,8 +649,21 @@ namespace via
         send_buffer_size_    = send_buffer_size;
 
         weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
-          { handshake_callback(weak_ptr, error); });
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4127 ) // conditional expression is constant
+#endif
+        if (use_strand)
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+          SocketAdaptor::start(
+                  strand_.wrap([weak_ptr](ASIO_ERROR_CODE const& error)
+            { handshake_callback(weak_ptr, error); }));
+        else
+          SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
+            { handshake_callback(weak_ptr, error); });
       }
 
       /// @fn disconnect
