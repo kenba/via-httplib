@@ -1,156 +1,154 @@
-via-httplib: A C++ HTTP Library
-===============================
+# via-httplib: A C++ HTTP Library
 
-A library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
+A lightweight library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
-`via-httplib` is an asynchronous C++ HTTP server built upon `asio` (both
-[boost](http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) and
-[standalone](http://think-async.com/)) 
-that aims to provide a simple, secure and efficient server that complies with the
-requirements of [rfc7230](https://tools.ietf.org/html/rfc7230)
-wherever possible.
+`via-httplib` is an asynchronous communications library built upon `asio` (either
+[boost](http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio.html) or
+[standalone](http://think-async.com/)) to enable simple, secure and efficient
+HTTP/HTTPS servers to be built that comply with
+[rfc7230](https://tools.ietf.org/html/rfc7230) wherever possible.
 
-### SSL / TLS Configuration
+## Requirements
 
-The server is `via::http_server`, a class template requiring a
-`SocketAdaptor` to instantiate it:
-
- + a `tcp_adaptor` for a plain **HTTP** server
- + an `ssl_tcp_adaptor` for an **HTTPS** server  
- 
-### IPV6 / IPV4 Configuration
-
-Whether the server accepts IPV6 and IPV4 connections or just IPV4 connections
-depends upon how the port is configured:
-
- + **IPV6**, (the default) the server accepts both IPV6 and IPV4 connections
- + **IPV4 only**, the server only accepts IPV4 connections  
- 
-### Data / Text Configuration
-
-The server can be configured to pass HTTP message bodies in different types of
-containers, e.g.:
-
-   + `std::vector<char>` (the default) for handing binary data, e.g. images, files, etc.
-   + `std::string` for handing textural data, e.g. HTML, JSON, etc.
-  
-| Socket Adaptor    | Container         | Description                   |
-|-------------------|-------------------|-------------------------------|
-| `tcp_adaptor`     | `std::vector<char>`   | An HTTP data server.  |
-| `tcp_adaptor`     | `std::string`     | An HTTP text server.          |
-| `ssl_tcp_adaptor` | `std::vector<char>`   | An HTTPS data server. |
-| `ssl_tcp_adaptor` | `std::string`     | An HTTPS text server.         |
-
-The HTTP message bodies can be sent using **buffered** or **unbuffered** methods.  
-The unbuffered methods use "scatter-gather" write functions to avoid copying data.
-
-### Boost / Standalone `asio` Configuration
-
-The library uses [boost asio](http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio.html) by default.  
-To use [standalone asio](http://think-async.com/):
-
-   + set the environment variable `$ASIO_ROOT` to the path of the `asio` root directory;
-   + add `$ASIO_ROOT/include` to your include path;
-   + define the macro `ASIO_STANDALONE`.
-   
-Note: if you use `qmake` file and include the file [via-httplib.pri](via-httplib.pri) then you just
-need to set the `$ASIO_ROOT` environment variable.
-
-Portability between `bost asio` and `standalone asio` is provided by the macros:
-
-   + ASIO,
-   + ASIO_ERROR_CODE and
-   + ASIO_TIMER.
-
-They are defined in [socket_adaptor.hpp](include/via/comms/socket_adaptor.hpp):
-   
-	#ifdef ASIO_STANDALONE
-	  #include <asio.hpp>
-	  #define ASIO asio
-	  #define ASIO_ERROR_CODE asio::error_code
-	  #define ASIO_TIMER asio::steady_timer
-	#else
-	  #include <boost/asio.hpp>
-	  #define ASIO boost::asio
-	  #define ASIO_ERROR_CODE boost::system::error_code
-	  #define ASIO_TIMER boost::asio::deadline_timer
-	#endif
-	
-It is hoped that they can continue to provide portability when `asio` becomes a standard C++ library:
-see: [Networking Library Proposal](http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/n4478.html).
-
-Requirements
-------------
-
-+ A C++11 compiler.   
++ A C++11 compliant compiler.   
 This version requires a complier that supports:  lambdas, enum classes, member function delete
-and std::functional. It's been tested with `MSVC 2015`, `GCC 6.2` and `MinGw 5.3.0`.  
+and std::functional.  
+It's been tested with `MSVC 2015`, `GCC 6.2` and `MinGw 5.3.0`.  
 
-+ The `asio` C++ library, either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
-Note: if `boost` and `standalone asio` libraries are installed together, this library will use
-`standalone asio` for comms.
++ The `asio` C++ library.  
+Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
 
-+ For HTTPS, the `OpenSSL` library, see [openssl](http://www.openssl.org/).
++ For HTTPS: the `OpenSSL` library, see [openssl](http://www.openssl.org/).  
+  Note: there is an issue building `boost::asio` versions prior to `1.62` with `openssl` version `1.1.0`, see [#12238](https://svn.boost.org/trac/boost/ticket/12238)
 
-+ For C++ code documentation, Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
++ For C++ code documentation: Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
-+ Note: there is an issue building `boost::asio` with `Visual Studio 2015 Update 2`, see [Issue 4](https://github.com/kenba/via-httplib/issues/4)
-
-Getting Started
----------------
+## Getting Started
 
 Download the latest tagged version of `via-httplib` from
 [Github](https://github.com/kenba/via-httplib)
 and follow the instructions here: [Make](docs/MAKE.md).  
-Or simply build the .cpp files into your application (there are 8 of them).
 
-`via-http` lib depends on the `standalone asio` or `boost` libraries.
+`via-http` lib depends on the `standalone asio` or `boost` libraries.  
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
 [boost getting started](http://www.boost.org/doc/libs/1_62_0/more/getting_started/index.html).
+Otherwise `standalone asio` can be downloaded from: [asio](http://think-async.com/).
 
-Otherwise `standalone asio` can be downloaded from: [standalone asio](http://think-async.com/).
+If you require an **HTTPS** server or client then you must also install the
+[OpenSSL](https://www.openssl.org/) library.  
+Please note that a plain **HTTP** server does **not** require `OpenSLL`.
 
-The `asio` library (and hence `via-httplib`) depends upon the
-`OpenSSL` library to implement SSL/TLS sockets.
-If you require an **HTTPS** server or client then you'll need to install the
-`OpenSSL` library as well.
-Please note that a plain HTTP server should *not* require `OpenSLL`.
+The [Server User Guide](docs/Server.md) explains how to use the library to create HTTP servers and
+the [Client User Guide](docs/Client.md) explains how to use the library to create HTTP clients.
 
-If `OpenSLL` is not installed on your machine then you may download the latest stable
-package from [openssl source](http://www.openssl.org/source/) and build it.
-Note: a binary distribution may be available for your machine,
-see: [OpenSSL binaries](https://wiki.openssl.org/index.php/Binaries).
+## Example HTTP Server
+
+The following code implements an HTTP server that responds to GET requests to the
+`/hello` and `/hello/:name` endpoints:
+
+    #include "via/comms/tcp_adaptor.hpp"
+    #include "via/http_server.hpp"
+    #include "via/http/request_router.hpp"
+    #include <iostream>
+
+    /// Define an HTTP server using std::string to store message bodies
+    typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
+    typedef http_server_type::http_connection_type http_connection;
+    
+    using namespace via::http;
+
+    namespace
+    {
+      /// /hello request handler
+      tx_response get_hello_handler(rx_request const&, //request,
+                                    Parameters const&, //parameters,
+                                    std::string const&, // data,
+                                    std::string &response_body)
+      {
+        response_body += "Hello, whoever you are?!";
+        return tx_response(response_status::code::OK);
+      }
+
+      /// /hello/:name request handler
+      tx_response get_hello_name_handler(rx_request const&, //request,
+                                         Parameters const& parameters,
+                                         std::string const&, // data,
+                                         std::string &response_body)
+      {
+        response_body += "Hello, ";
+        auto iter(parameters.find("name"));
+        if (iter != parameters.end())
+          response_body += iter->second;
+
+        return tx_response(response_status::code::OK);
+      }
+    }
+
+    int main(int /* argc */, char *argv[])
+    {
+      std::string app_name(argv[0]);
+      unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
+      std::cout << app_name << ": " << port_number << std::endl;
+
+      try
+      {
+        // The asio io_service.
+        boost::asio::io_service io_service;
+
+        // Create the HTTP server
+        http_server_type http_server(io_service);
+
+        // Attach the request method handlers
+        http_server.request_router().add_method("GET", "/hello", get_hello_handler);
+        http_server.request_router().add_method(request_method::GET, "/hello/:name",
+                                                get_hello_name_handler);
+
+        // Accept connections (both IPV4 and IPV6) on the default port (80)
+        boost::system::error_code error(http_server.accept_connections());
+        if (error)
+        {
+          std::cerr << "Error: "  << error.message() << std::endl;
+          return 1;
+        }
+
+        // Start the server
+        io_service.run();
+      }
+      catch (std::exception& e)
+      {
+        std::cerr << "Exception:"  << e.what() << std::endl;
+        return 1;
+      }
+
+      return 0;
+    }
+
+## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [Build Guide](docs/MAKE.md) | How to build the library. |
+| [Configuration](docs/Configuration.md) | How to configure the library. |
 | [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
 | [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
-| [Security Guide](docs/Server_Security.md) | How to configure the library securely. |
+| [Security Guide](docs/Server_Security.md) | HTTP Server secruity considerations. |
 | [Design](docs/Design_Top.md) | The library design. |
 | [examples/server](examples/server) | Example HTTP & HTTPS servers. |
 | [examples/client](examples/client) | Example HTTP & HTTPS clients. |
-
-Namespace Structure
--------------------
-
-![Via Namespaces](docs/images/via_namespaces.png)
-
-Directory Structure
--------------------
+    
+## Directory Structure
 
 | Directory            | Contents                                                                 |
 |----------------------|--------------------------------------------------------------------------|
 | [via](include/via)           | The `via-httplib` API classes: [http_server](include/via/http_server.hpp), [http_connection](include/via/http_connection.hpp) and [http_client](include/via/http_client.hpp). |
 | [examples/server](examples/server) | Example HTTP & HTTPS servers.                              |
 | [examples/client](examples/client) | Example HTTP & HTTPS clients.                              |
-| `tests`              | A unit tests for the HTTP parsers and encoders.                          |
+| [tests](tests)       | Unit tests for the HTTP parsers and encoders.                            |
 | [docs](docs)         | The User Guides and design documents.                                    |
 | `docs/html`          | [Doxygen](http://www.stack.nl/~dimitri/doxygen/) output directory. Created by running `doxygen Doxyfile` in the [docs](docs) directory. | 
 
-Acknowledgements
-----------------
+## Acknowledgements
 
 Thanks to:
  + **Neil Tisdale** for encouraging and inspiring me to create the library
