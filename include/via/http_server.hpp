@@ -70,25 +70,21 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket to use:
+  /// @tparam SocketAdaptor the type of socket to use:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the rx & tx buffers:
+  /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
-  /// @param use_strand for multi-threaded
-  /// if true use an asio::strand to wrap the handlers,
-  /// default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char>,
-            bool use_strand = false>
+  template <typename SocketAdaptor, typename Container = std::vector<char>>
   class http_server
   {
   public:
 
     /// The comms server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
+    typedef comms::server<SocketAdaptor, Container> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, use_strand>
+    typedef http_connection<SocketAdaptor, Container>
       http_connection_type;
 
     /// The underlying comms connection, TCP or SSL.
@@ -141,7 +137,9 @@ namespace via
     // Variables
 
     std::shared_ptr<server_type> server_;    ///< the communications server
+#ifdef HTTP_THREAD_SAFE
     std::mutex http_connections_mutex_;      ///< a mutex for http_connections_
+#endif
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
@@ -186,15 +184,11 @@ namespace via
 
       connection_collection_iterator iter;
       bool iter_not_found(false);
-      if (use_strand)
       {
+#ifdef HTTP_THREAD_SAFE
         std::lock_guard<std::mutex> guard(http_connections_mutex_);
+#endif
         // search for the connection in the collection
-        iter = http_connections_.find(pointer);
-        iter_not_found = (iter == http_connections_.end());
-      }
-      else
-      {
         iter = http_connections_.find(pointer);
         iter_not_found = (iter == http_connections_.end());
       }
@@ -217,15 +211,13 @@ namespace via
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
 
-        if (use_strand)
         {
+#ifdef HTTP_THREAD_SAFE
           std::lock_guard<std::mutex> guard(http_connections_mutex_);
+#endif
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
         }
-        else
-          http_connections_.insert
-              (connection_collection_value_type(pointer, http_connection));
 
         // signal that the socket is connected
         if (connected_handler_)
@@ -351,17 +343,11 @@ namespace via
 
       bool http_connections_empty(false);
       {
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          http_connections_.erase(iter);
-          http_connections_empty = http_connections_.empty();
-        }
-        else
-        {
-          http_connections_.erase(iter);
-          http_connections_empty = http_connections_.empty();
-        }
+#ifdef HTTP_THREAD_SAFE
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+#endif
+        http_connections_.erase(iter);
+        http_connections_empty = http_connections_.empty();
       }
 
       // If the http_server is being shutdown and this was the last connection
@@ -386,15 +372,10 @@ namespace via
         connection_collection_iterator iter;
         bool iter_not_found(false);
 
-        if (use_strand)
         {
+#ifdef HTTP_THREAD_SAFE
           std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          // search for the connection in the collection
-          iter = http_connections_.find(pointer);
-          iter_not_found = (iter == http_connections_.end());
-        }
-        else
-        {
+#endif
           // search for the connection in the collection
           iter = http_connections_.find(pointer);
           iter_not_found = (iter == http_connections_.end());
@@ -451,7 +432,9 @@ namespace via
     /// @param auth_ptr a shared pointer to an authentication.
     explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
+#ifdef HTTP_THREAD_SAFE
       http_connections_mutex_(),
+#endif
       http_connections_(),
       request_router_(),
       shutting_down_(false),
@@ -747,17 +730,11 @@ namespace via
       {
         shutting_down_ = true;
 
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          for (auto& elem : http_connections_)
-            elem.second->disconnect();
-        }
-        else
-        {
-          for (auto& elem : http_connections_)
-            elem.second->disconnect();
-        }
+#ifdef HTTP_THREAD_SAFE
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+#endif
+        for (auto& elem : http_connections_)
+          elem.second->disconnect();
       }
       else
         close();
@@ -767,13 +744,10 @@ namespace via
     void close()
     {
       {
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          http_connections_.clear();
-        }
-        else
-          http_connections_.clear();
+#ifdef HTTP_THREAD_SAFE
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+#endif
+        http_connections_.clear();
       }
       server_->close();
     }

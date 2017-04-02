@@ -25,8 +25,10 @@
 #include <set>
 #include <string>
 #include <sstream>
+#ifdef HTTP_THREAD_SAFE
 #include <thread>
 #include <mutex>
+#endif
 
 namespace via
 {
@@ -41,23 +43,20 @@ namespace via
     /// @see connection
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
-    /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+    /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @param Container the container to use for the rx & tx buffers,
+    /// @tparam Container the container to use for the rx & tx buffers,
     /// std::vector<char> or std::string.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
-    /// @param use_strand if true use an asio::strand to wrap the handlers,
-    /// default false.
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char>,
-              bool use_strand = false>
+    template <typename SocketAdaptor, typename Container = std::vector<char>>
     class server
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container, use_strand> connection_type;
+      typedef connection<SocketAdaptor, Container> connection_type;
 
       /// A set of connections.
       typedef std::set<std::shared_ptr<connection_type> > connections;
@@ -84,8 +83,10 @@ namespace via
       /// The next connection to be accepted.
       std::shared_ptr<connection_type> next_connection_;
 
+#ifdef HTTP_THREAD_SAFE
       /// A mutex to protect connections_.
       std::mutex connections_mutex_;
+#endif
 
       /// The connections established with this server.
       connections connections_;
@@ -126,14 +127,10 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
-            if (use_strand)
-            {
-              std::lock_guard<std::mutex> guard(connections_mutex_);
-              connections_.insert(next_connection_);
-            }
-            else
-              connections_.insert(next_connection_);
-
+#ifdef HTTP_THREAD_SAFE
+            std::lock_guard<std::mutex> guard(connections_mutex_);
+#endif
+            connections_.insert(next_connection_);
             next_connection_->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
             next_connection_.reset();
@@ -156,22 +153,13 @@ namespace via
         {
           if (std::shared_ptr<connection_type> connection = ptr.lock())
           {
-            if (use_strand)
-            {
-              std::lock_guard<std::mutex> guard(connections_mutex_);
-
-              // search for the connection to delete
-              connections_iterator iter(connections_.find(connection));
-              if (iter != connections_.end())
-                connections_.erase(iter);
-            }
-            else
-            {
-              // search for the connection to delete
-              connections_iterator iter(connections_.find(connection));
-              if (iter != connections_.end())
-                connections_.erase(iter);
-            }
+#ifdef HTTP_THREAD_SAFE
+            std::lock_guard<std::mutex> guard(connections_mutex_);
+#endif
+            // search for the connection to delete
+            connections_iterator iter(connections_.find(connection));
+            if (iter != connections_.end())
+              connections_.erase(iter);
           }
         }
       }
@@ -226,7 +214,9 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
+#ifdef HTTP_THREAD_SAFE
         connections_mutex_(),
+#endif
         connections_(),
         password_(),
         event_callback_(),
@@ -254,7 +244,9 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
+#ifdef HTTP_THREAD_SAFE
         connections_mutex_(),
+#endif
         connections_(),
         password_(),
         event_callback_(event_callback),
@@ -404,13 +396,10 @@ namespace via
         if (acceptor_v4_.is_open())
           acceptor_v4_.close();
 
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(connections_mutex_);
-          connections_.clear();
-        }
-        else
-          connections_.clear();
+#ifdef HTTP_THREAD_SAFE
+        std::lock_guard<std::mutex> guard(connections_mutex_);
+#endif
+        connections_.clear();
       }
     };
   }

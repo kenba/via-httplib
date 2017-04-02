@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -10,6 +10,7 @@
 /// @brief An example HTTP server containing all of the callbacks using
 /// a single io_service and a thread pool calling io_service::run().
 //////////////////////////////////////////////////////////////////////////////
+#define HTTP_THREAD_SAFE
 #include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <thread>
@@ -17,8 +18,7 @@
 
 /// Define an HTTP server using std::string to store message bodies and an
 /// asio strand to protect the handlers
-typedef via::http_server<via::comms::tcp_adaptor, std::string, true>
-                                                             http_server_type;
+typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::chunk_type http_chunk_type;
 
