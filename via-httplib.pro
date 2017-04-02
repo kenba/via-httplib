@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 Ken Barker
+# Copyright (c) 2013-2017 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -38,7 +38,7 @@ win32 {
   # Library version numbers
   VER_MAJ = 1
   VER_MIN = 3
-  VER_PAT = 0
+  VER_PAT = 1
 
   # Set BOOST_ROOT to the usual linux & mac locations
   macx {

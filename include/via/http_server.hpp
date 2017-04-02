@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -141,6 +141,7 @@ namespace via
     // Variables
 
     std::shared_ptr<server_type> server_;    ///< the communications server
+    std::mutex http_connections_mutex_;      ///< a mutex for http_connections_
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
@@ -183,9 +184,22 @@ namespace via
       if (!pointer)
         return;
 
-      // search for the connection in the collection
-      connection_collection_iterator iter(http_connections_.find(pointer));
-      if (iter == http_connections_.end())
+      connection_collection_iterator iter;
+      bool iter_not_found(false);
+      if (use_strand)
+      {
+        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        // search for the connection in the collection
+        iter = http_connections_.find(pointer);
+        iter_not_found = (iter == http_connections_.end());
+      }
+      else
+      {
+        iter = http_connections_.find(pointer);
+        iter_not_found = (iter == http_connections_.end());
+      }
+
+      if (iter_not_found)
       {
         // Create and configure a new http_connection_type.
         std::shared_ptr<http_connection_type> http_connection
@@ -203,8 +217,16 @@ namespace via
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
 
-        http_connections_.insert
-            (connection_collection_value_type(pointer, http_connection));
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          http_connections_.insert
+              (connection_collection_value_type(pointer, http_connection));
+        }
+        else
+          http_connections_.insert
+              (connection_collection_value_type(pointer, http_connection));
+
         // signal that the socket is connected
         if (connected_handler_)
           connected_handler_(http_connection);
@@ -327,10 +349,23 @@ namespace via
       if (disconnected_handler_)
         disconnected_handler_(iter->second);
 
-      http_connections_.erase(iter);
+      bool http_connections_empty(false);
+      {
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          http_connections_.erase(iter);
+          http_connections_empty = http_connections_.empty();
+        }
+        else
+        {
+          http_connections_.erase(iter);
+          http_connections_empty = http_connections_.empty();
+        }
+      }
 
       // If the http_server is being shutdown and this was the last connection
-      if (shutting_down_ && http_connections_.empty())
+      if (shutting_down_ && http_connections_empty)
         server_->close();
     }
 
@@ -348,9 +383,24 @@ namespace via
         if (!pointer)
           return;
 
-        // search for the connection in the collection
-        connection_collection_iterator iter(http_connections_.find(pointer));
-        if (iter == http_connections_.end())
+        connection_collection_iterator iter;
+        bool iter_not_found(false);
+
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          // search for the connection in the collection
+          iter = http_connections_.find(pointer);
+          iter_not_found = (iter == http_connections_.end());
+        }
+        else
+        {
+          // search for the connection in the collection
+          iter = http_connections_.find(pointer);
+          iter_not_found = (iter == http_connections_.end());
+        }
+
+        if (iter_not_found)
         {
           std::cerr << "http_server, event_handler error: connection not found "
                     << std::endl;
@@ -401,6 +451,7 @@ namespace via
     /// @param auth_ptr a shared pointer to an authentication.
     explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
+      http_connections_mutex_(),
       http_connections_(),
       request_router_(),
       shutting_down_(false),
@@ -695,8 +746,18 @@ namespace via
       if (!http_connections_.empty())
       {
         shutting_down_ = true;
-        for (auto& elem : http_connections_)
-          elem.second->disconnect();
+
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          for (auto& elem : http_connections_)
+            elem.second->disconnect();
+        }
+        else
+        {
+          for (auto& elem : http_connections_)
+            elem.second->disconnect();
+        }
       }
       else
         close();
@@ -705,7 +766,15 @@ namespace via
     /// Close the http server and all of the connections associated with it.
     void close()
     {
-      http_connections_.clear();
+      {
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          http_connections_.clear();
+        }
+        else
+          http_connections_.clear();
+      }
       server_->close();
     }
 

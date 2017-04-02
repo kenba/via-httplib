@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -25,6 +25,8 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <thread>
+#include <mutex>
 
 namespace via
 {
@@ -82,6 +84,9 @@ namespace via
       /// The next connection to be accepted.
       std::shared_ptr<connection_type> next_connection_;
 
+      /// A mutex to protect connections_.
+      std::mutex connections_mutex_;
+
       /// The connections established with this server.
       connections connections_;
 
@@ -121,9 +126,16 @@ namespace via
             error_callback_(error, next_connection_);
           else
           {
+            if (use_strand)
+            {
+              std::lock_guard<std::mutex> guard(connections_mutex_);
+              connections_.insert(next_connection_);
+            }
+            else
+              connections_.insert(next_connection_);
+
             next_connection_->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
-            connections_.insert(next_connection_);
             next_connection_.reset();
           }
 
@@ -144,10 +156,22 @@ namespace via
         {
           if (std::shared_ptr<connection_type> connection = ptr.lock())
           {
-            // search for the connection to delete
-            connections_iterator iter(connections_.find(connection));
-            if (iter != connections_.end())
-              connections_.erase(iter);
+            if (use_strand)
+            {
+              std::lock_guard<std::mutex> guard(connections_mutex_);
+
+              // search for the connection to delete
+              connections_iterator iter(connections_.find(connection));
+              if (iter != connections_.end())
+                connections_.erase(iter);
+            }
+            else
+            {
+              // search for the connection to delete
+              connections_iterator iter(connections_.find(connection));
+              if (iter != connections_.end())
+                connections_.erase(iter);
+            }
           }
         }
       }
@@ -202,6 +226,7 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
+        connections_mutex_(),
         connections_(),
         password_(),
         event_callback_(),
@@ -229,6 +254,7 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
+        connections_mutex_(),
         connections_(),
         password_(),
         event_callback_(event_callback),
@@ -378,7 +404,13 @@ namespace via
         if (acceptor_v4_.is_open())
           acceptor_v4_.close();
 
-        connections_.clear();
+        if (use_strand)
+        {
+          std::lock_guard<std::mutex> guard(connections_mutex_);
+          connections_.clear();
+        }
+        else
+          connections_.clear();
       }
     };
   }
