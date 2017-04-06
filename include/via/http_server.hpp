@@ -60,6 +60,10 @@
 #include <map>
 #include <stdexcept>
 #include <iostream>
+#ifdef HTTP_THREAD_SAFE
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/locks.hpp>
+#endif
 
 namespace via
 {
@@ -138,7 +142,7 @@ namespace via
 
     std::shared_ptr<server_type> server_;    ///< the communications server
 #ifdef HTTP_THREAD_SAFE
-    std::mutex http_connections_mutex_;      ///< a mutex for http_connections_
+    boost::shared_mutex http_connections_mutex_; ///< a mutex for http_connections_
 #endif
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
@@ -186,7 +190,7 @@ namespace via
       bool iter_not_found(false);
       {
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
         // search for the connection in the collection
         iter = http_connections_.find(pointer);
@@ -213,7 +217,7 @@ namespace via
 
         {
 #ifdef HTTP_THREAD_SAFE
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
           http_connections_.insert
               (connection_collection_value_type(pointer, http_connection));
@@ -344,7 +348,7 @@ namespace via
       bool http_connections_empty(false);
       {
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
         http_connections_.erase(iter);
         http_connections_empty = http_connections_.empty();
@@ -374,7 +378,7 @@ namespace via
 
         {
 #ifdef HTTP_THREAD_SAFE
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
+          boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
           // search for the connection in the collection
           iter = http_connections_.find(pointer);
@@ -731,7 +735,7 @@ namespace via
         shutting_down_ = true;
 
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
         for (auto& elem : http_connections_)
           elem.second->disconnect();
@@ -745,7 +749,7 @@ namespace via
     {
       {
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<std::mutex> guard(http_connections_mutex_);
+        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
         http_connections_.clear();
       }
