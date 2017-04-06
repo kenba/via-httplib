@@ -98,10 +98,6 @@ namespace via
     typedef std::map<void*, std::shared_ptr<http_connection_type> >
       connection_collection;
 
-    /// The template requires a typename to access the iterator.
-    typedef typename connection_collection::iterator
-      connection_collection_iterator;
-
     /// The template requires a typename to collection value_type.
     typedef typename connection_collection::value_type
       connection_collection_value_type;
@@ -186,22 +182,23 @@ namespace via
       if (!pointer)
         return;
 
-      connection_collection_iterator iter;
+      std::shared_ptr<http_connection_type> http_connection;
       bool iter_not_found(false);
       {
 #ifdef HTTP_THREAD_SAFE
         boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
         // search for the connection in the collection
-        iter = http_connections_.find(pointer);
+        auto iter(http_connections_.find(pointer));
         iter_not_found = (iter == http_connections_.end());
+        if (!iter_not_found)
+          http_connection = iter->second;
       }
 
       if (iter_not_found)
       {
         // Create and configure a new http_connection_type.
-        std::shared_ptr<http_connection_type> http_connection
-            (new http_connection_type(connection,
+        http_connection = std::make_shared<http_connection_type>(connection,
                                       strict_crlf_,
                                       max_whitespace_,
                                       max_method_length_,
@@ -210,7 +207,7 @@ namespace via
                                       max_header_number_,
                                       max_header_length_,
                                       max_body_size_,
-                                      max_chunk_size_));
+                                      max_chunk_size_);
 
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
@@ -229,7 +226,7 @@ namespace via
       }
       else
         std::cerr << "http_server, error: duplicate connection for "
-                  << iter->second->remote_address() << std::endl;
+                  << http_connection->remote_address() << std::endl;
     }
 
     /// Route the request using the request_router_.
@@ -253,12 +250,9 @@ namespace via
     }
 
     /// Receive data packets on an underlying communications connection.
-    /// @param iter a valid iterator into the connection collection.
-    void receive_handler(connection_collection_iterator conn)
+    /// @param http_connection a shared pointer to an http_connection.
+    void receive_handler(std::shared_ptr<http_connection_type> http_connection)
     {
-      // Get the connection
-      std::shared_ptr<http_connection_type> http_connection(conn->second);
-
       // Get the receive buffer
       Container const& rx_buffer(http_connection->read_rx_buffer());
       Container_const_iterator iter(rx_buffer.begin());
@@ -339,17 +333,19 @@ namespace via
     /// Handle a disconnected signal from an underlying comms connection.
     /// Noitfy the handler and erase the connection from the collection.
     /// @param iter a valid iterator into the connection collection.
-    void disconnected_handler(connection_collection_iterator iter)
+    void disconnected_handler(void* pointer,
+                        std::shared_ptr<http_connection_type> http_connection)
     {
       // Noitfy the disconnected handler if one exists
       if (disconnected_handler_)
-        disconnected_handler_(iter->second);
+        disconnected_handler_(http_connection);
 
       bool http_connections_empty(false);
       {
 #ifdef HTTP_THREAD_SAFE
         std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
+        auto iter(http_connections_.find(pointer));
         http_connections_.erase(iter);
         http_connections_empty = http_connections_.empty();
       }
@@ -373,16 +369,17 @@ namespace via
         if (!pointer)
           return;
 
-        connection_collection_iterator iter;
+        std::shared_ptr<http_connection_type> http_connection;
         bool iter_not_found(false);
-
         {
 #ifdef HTTP_THREAD_SAFE
           boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
 #endif
           // search for the connection in the collection
-          iter = http_connections_.find(pointer);
+          auto iter(http_connections_.find(pointer));
           iter_not_found = (iter == http_connections_.end());
+          if (!iter_not_found)
+            http_connection = iter->second;
         }
 
         if (iter_not_found)
@@ -395,15 +392,15 @@ namespace via
         switch(event)
         {
         case via::comms::RECEIVED:
-          receive_handler(iter);
+          receive_handler(http_connection);
           break;
         case via::comms::SENT:
           // Noitfy the sent handler if one exists
           if (message_sent_handler_)
-            message_sent_handler_(iter->second);
+            message_sent_handler_(http_connection);
           break;
         case via::comms::DISCONNECTED:
-          disconnected_handler(iter);
+          disconnected_handler(pointer, http_connection);
           break;
         default:
           ;
