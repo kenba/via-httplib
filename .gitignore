@@ -1,5 +1,5 @@
 docs/html/
 debug/
 release/
-*.pro.user
+*.user
 *.vcxproj
