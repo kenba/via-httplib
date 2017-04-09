@@ -62,6 +62,9 @@ namespace via
         /// The container for storing values.
         typedef std::vector<value_type, Alloc> bucket_data_type;
 
+        /// An iterator into the bucket container.
+        typedef typename bucket_data_type::iterator bucket_iterator;
+
         //////////////////////////////////////////////////////////////////////
         // Data
 
@@ -80,10 +83,10 @@ namespace via
         /// @param key the search key.
         /// @return an iterator to the key, value pair or where a new pair
         /// should be inserted.
-        auto find_position_for(Key const& key)
+        bucket_iterator find_position_for(Key const& key)
         {
-          auto iter(std::lower_bound(data_.begin(), data_.end(), key,
-          [](auto const& item, auto const& key){ return item.first < key; }));
+          bucket_iterator iter(std::lower_bound(data_.begin(), data_.end(), key,
+          [](value_type const& item, Key const& key){ return item.first < key; }));
 
           return iter;
         }
@@ -98,14 +101,14 @@ namespace via
         /// @param key the search key.
         /// @param default_value the value to return if key wasn't found.
         /// @return the value if key is found, default_value otherwise.
-        value_type value_for(Key key, value_type const& default_value) const
+        value_type value_for(Key const& key, value_type const& default_value) const
         {
           // Allow multiple readers.
           boost::shared_lock<boost::shared_mutex> guard(mutex_);
 
           // Note: can't use find_position_for becasue it isn't const
           auto iter(std::lower_bound(data_.cbegin(), data_.cend(), key,
-          [](auto const& item, auto const& key){ return item.first < key; }));
+          [](value_type const& item, Key const& key){ return item.first < key; }));
 
           return ((iter != data_.cend()) && (iter->first == key)) ?
                    *iter : default_value;
@@ -153,7 +156,7 @@ namespace via
       /// Get the index of the data bucket for the key.
       /// @param key the search key.
       /// @return the index of the dat bucket in the array.
-      auto get_bucket_index(Key const& key) const
+      std::size_t get_bucket_index(Key const& key) const
       { return hasher_(key) % buckets_.size(); }
 
     public:
@@ -178,7 +181,7 @@ namespace via
       threadsafe_hash_map& operator=(threadsafe_hash_map const& other) = delete;
 
       /// The number of buckets.
-      auto bucket_count() const noexcept
+      std::size_t bucket_count() const noexcept
       { return buckets_.size(); }
 
       /// Find the value for the given Key, returns default_value if not found.
@@ -186,10 +189,11 @@ namespace via
       /// @param default_value the value to return if key wasn't found,
       /// default, the default value for the Value type.
       /// @return the value if key is found, default_value otherwise.
-      value_type find(Key key, value_type const& default_value = value_type()) const
+      value_type find(Key const& key,
+                      value_type const& default_value = value_type()) const
       {
         auto index(get_bucket_index(key));
-        return buckets_[index].value_for(std::move(key), default_value);
+        return buckets_[index].value_for(key, default_value);
       }
 
       /// Insert or update a key, value entry.
