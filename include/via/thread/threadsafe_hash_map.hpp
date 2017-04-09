@@ -120,7 +120,7 @@ namespace via
           std::lock_guard<boost::shared_mutex> guard(mutex_);
 
           auto iter(find_position_for(value.first));
-          if(iter != data_.end())
+          if((iter != data_.end()) && (iter->first == value.first))
             *iter = std::move(value);
           else
             data_.emplace(iter, std::move(value));

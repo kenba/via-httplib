@@ -53,30 +53,36 @@ BOOST_AUTO_TEST_CASE(Default_Single_Threaded_1)
 
   BOOST_CHECK_EQUAL(10, test_hash_map.find(1).second);
   BOOST_CHECK_EQUAL(20, test_hash_map.find(2).second);
-  BOOST_CHECK_EQUAL(0, test_hash_map.find(21).second);
+  BOOST_CHECK_EQUAL(0, test_hash_map.find(40).second);
 
   // Add another key, value pair at the same hash as 2
-  test_hash_map.emplace(21, 210);
+  test_hash_map.emplace(40, 210);
   BOOST_CHECK(!test_hash_map.empty());
   bucket_data = test_hash_map.data();
   BOOST_CHECK_EQUAL(3u, bucket_data.size());
 
   BOOST_CHECK_EQUAL(10, test_hash_map.find(1).second);
   BOOST_CHECK_EQUAL(20, test_hash_map.find(2).second);
-  BOOST_CHECK_EQUAL(210, test_hash_map.find(21).second);
+  BOOST_CHECK_EQUAL(210, test_hash_map.find(40).second);
   BOOST_CHECK_EQUAL(-1, test_hash_map.find(31, vt(-2,-1)).second);
+
+  // Add another key, value pair at the same hash as 2
+  test_hash_map.emplace(21, 110);
+  BOOST_CHECK(!test_hash_map.empty());
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(4u, bucket_data.size());
 
   // Change a value
   test_hash_map.insert(vt(2, 200));
   BOOST_CHECK_EQUAL(200, test_hash_map.find(2).second);
   bucket_data = test_hash_map.data();
-  BOOST_CHECK_EQUAL(3u, bucket_data.size());
+  BOOST_CHECK_EQUAL(4u, bucket_data.size());
 
   // Remove a value
   test_hash_map.erase(2);
   BOOST_CHECK_EQUAL(0, test_hash_map.find(2).second);
   bucket_data = test_hash_map.data();
-  BOOST_CHECK_EQUAL(2u, bucket_data.size());
+  BOOST_CHECK_EQUAL(3u, bucket_data.size());
 
   // Clear the map
   test_hash_map.clear();
