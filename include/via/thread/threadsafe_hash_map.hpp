@@ -16,10 +16,10 @@
 /// The code is a modified version of threadsafe_lookup_table from
 /// Chapter 6 of C++ Concurrency In Action by Anthony Williams.
 //////////////////////////////////////////////////////////////////////////////
-#include <vector>
 #include <utility>
-#include <memory>
-#include <functional>
+#include <vector>
+#include <array>
+#include <algorithm>
 #include <mutex>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/locks.hpp>
@@ -39,11 +39,14 @@ namespace via
     /// @tparam Key the map key type.
     /// @tparam Value the map value type.
     /// @tparam Hash the hash function for the Key. Default std::hash<Key>.
-    /// @tparam Alloc the allocator for the bucket_data_type. Default
-    /// std::allocator.
+    /// @tparam num_buckets the number of data buckets.
+    /// It should be a prime number, default 19.
+    /// @tparam Alloc the allocator for the bucket_data_type.
+    /// Default std::allocator.
     //////////////////////////////////////////////////////////////////////////
     template<typename Key, typename Value,
              typename Hash = std::hash<Key>,
+             unsigned num_buckets = 19,
              typename Alloc = std::allocator<std::pair<Key, Value> > >
     class threadsafe_hash_map
     {
@@ -80,7 +83,7 @@ namespace via
         auto find_position_for(Key const& key)
         {
           auto iter(std::lower_bound(data_.begin(), data_.end(), key,
-            [](auto const& item, auto key){ return item.first < key; }));
+          [](auto const& item, auto const& key){ return item.first < key; }));
 
           return iter;
         }
@@ -95,38 +98,37 @@ namespace via
         /// @param key the search key.
         /// @param default_value the value to return if key wasn't found.
         /// @return the value if key is found, default_value otherwise.
-        value_type value_for(Key const& key,
-                             value_type const& default_value) const
+        value_type value_for(Key key, value_type const& default_value) const
         {
           // Allow multiple readers.
           boost::shared_lock<boost::shared_mutex> guard(mutex_);
 
           // Note: can't use find_position_for becasue it isn't const
           auto iter(std::lower_bound(data_.cbegin(), data_.cend(), key,
-            [](auto const& item, auto key){ return item.first < key; }));
+          [](auto const& item, auto const& key){ return item.first < key; }));
 
-          return ((iter != data_.end()) && (iter->first == key)) ?
+          return ((iter != data_.cend()) && (iter->first == key)) ?
                    *iter : default_value;
         }
 
         /// Add or update a key, value entry.
         /// @param key the search key.
         /// @param value the value for the key.
-        void add_or_update_mapping(value_type const& value)
+        void add_or_update_mapping(value_type value)
         {
           // Only allow one writer.
           std::lock_guard<boost::shared_mutex> guard(mutex_);
 
           auto iter(find_position_for(value.first));
           if(iter != data_.end())
-            *iter = value;
+            *iter = std::move(value);
           else
-            data_.emplace(iter, value);
+            data_.emplace(iter, std::move(value));
         }
 
         /// Remove the key entry.
         /// @param key the search key.
-        void remove_mapping(Key const& key)
+        void remove_mapping(Key key)
         {
           std::lock_guard<boost::shared_mutex> guard(mutex_);
 
@@ -143,15 +145,16 @@ namespace via
       Hash hasher_;
 
       /// The data buckets.
-      std::vector<std::unique_ptr<bucket_type>> buckets_;
+      std::array<bucket_type, num_buckets> buckets_;
 
       ////////////////////////////////////////////////////////////////////////
       // Functions
 
-      /// Get the data bucket for the key.
+      /// Get the index of the data bucket for the key.
       /// @param key the search key.
-      bucket_type& get_bucket(Key const& key) const
-      { return *buckets_[hasher_(key) % buckets_.size()]; }
+      /// @return the index of the dat bucket in the array.
+      auto get_bucket_index(Key const& key) const
+      { return hasher_(key) % buckets_.size(); }
 
     public:
 
@@ -159,16 +162,11 @@ namespace via
       typedef typename bucket_type::value_type value_type;
 
       /// Constructor
-      /// @param num_buckets the number of data buckets (ideally a prime number)
-      /// default 19.
       /// @param hasher the hash function, default the template hash function.
-      threadsafe_hash_map(unsigned num_buckets = 19, Hash const& hasher = Hash())
+      threadsafe_hash_map(Hash const& hasher = Hash())
         : hasher_(hasher)
-        , buckets_(num_buckets)
-      {
-        for(auto& elem : buckets_)
-          elem = std::make_unique<bucket_type>();
-      }
+        , buckets_()
+      {}
 
       /// Destructor, default.
       ~threadsafe_hash_map() = default;
@@ -179,25 +177,43 @@ namespace via
       /// Disable assignment.
       threadsafe_hash_map& operator=(threadsafe_hash_map const& other) = delete;
 
-      /// Get the value for the given Key.
+      /// The number of buckets.
+      auto bucket_count() const noexcept
+      { return buckets_.size(); }
+
+      /// Find the value for the given Key, returns default_value if not found.
       /// @param key the search key.
       /// @param default_value the value to return if key wasn't found,
       /// default, the default value for the Value type.
       /// @return the value if key is found, default_value otherwise.
-      value_type value_for(Key const& key,
-                           value_type const& default_value = value_type()) const
-      { return get_bucket(key).value_for(key, default_value); }
+      value_type find(Key key, value_type const& default_value = value_type()) const
+      {
+        auto index(get_bucket_index(key));
+        return buckets_[index].value_for(std::move(key), default_value);
+      }
 
-      /// Add or update a key, value entry.
+      /// Insert or update a key, value entry.
       /// @param key the search key.
       /// @param value the value for the key.
-      void add_or_update_mapping(value_type const& value)
-      { get_bucket(value.first).add_or_update_mapping(value); }
+      void insert(value_type value)
+      {
+        auto index(get_bucket_index(value.first));
+        buckets_[index].add_or_update_mapping(std::move(value));
+      }
+
+      /// Emplace or update a key, value entry.
+      /// @param key the search key.
+      /// @param value the value for the key.
+      void emplace(Key key, Value value)
+      { insert(value_type(key, value)); }
 
       /// Remove the key entry.
       /// @param key the search key.
-      void remove_mapping(Key const& key)
-      { get_bucket(key).remove_mapping(key); }
+      void erase(Key key)
+      {
+        auto index(get_bucket_index(key));
+        buckets_[index].remove_mapping(std::move(key));
+      }
 
       /// Determine whether the collection is empty.
       /// Note: it locks all of the buckets for reading before reading them.
@@ -209,11 +225,11 @@ namespace via
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
           locks.push_back
-              (boost::shared_lock<boost::shared_mutex>(elem->mutex_));
+              (boost::shared_lock<boost::shared_mutex>(elem.mutex_));
 
         for(auto const& elem : buckets_)
         {
-          if (!elem->data_.empty())
+          if (!elem.data_.empty())
             return false;
         }
 
@@ -230,14 +246,14 @@ namespace via
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
           locks.push_back
-              (boost::shared_lock<boost::shared_mutex>(elem->mutex_));
+              (boost::shared_lock<boost::shared_mutex>(elem.mutex_));
 
         std::vector<value_type> bucket_data;
         for(auto const& bucket : buckets_)
         {
-          if (!bucket->data_.empty())
+          if (!bucket.data_.empty())
           {
-            for (auto elem : bucket->data_)
+            for (auto elem : bucket.data_)
               bucket_data.push_back(std::move(elem));
           }
         }
@@ -253,10 +269,10 @@ namespace via
         std::vector<boost::unique_lock<boost::shared_mutex>> locks;
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
-          locks.push_back(boost::unique_lock<boost::shared_mutex>(elem->mutex_));
+          locks.push_back(boost::unique_lock<boost::shared_mutex>(elem.mutex_));
 
-        for(auto const& elem : buckets_)
-          elem->data_.clear();
+        for(auto& elem : buckets_)
+          elem.data_.clear();
       }
 
     };
