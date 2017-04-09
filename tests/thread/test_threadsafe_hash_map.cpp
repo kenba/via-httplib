@@ -19,47 +19,69 @@ BOOST_AUTO_TEST_CASE(Default_Single_Threaded_1)
 {
   threadsafe_hash_map<int, int> test_hash_map;
 
+  typedef threadsafe_hash_map<int, int>::value_type vt;
+
   // Test an empty map
   BOOST_CHECK(test_hash_map.empty());
-  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(1));
-  BOOST_CHECK_EQUAL(-1, test_hash_map.value_for(1, -1));
+  auto bucket_data(test_hash_map.data());
+  BOOST_CHECK_EQUAL(0u, bucket_data.size());
+
+  auto test_value(test_hash_map.value_for(1));
+  BOOST_CHECK_EQUAL(0, test_value.first);
+  BOOST_CHECK_EQUAL(0, test_value.second);
+
+  test_value = test_hash_map.value_for(1, vt(-2, -1));
+  BOOST_CHECK_EQUAL(-2, test_value.first);
+  BOOST_CHECK_EQUAL(-1, test_value.second);
 
   // Add a key, value pair
-  test_hash_map.add_or_update_mapping(1, 10);
+  test_hash_map.add_or_update_mapping(vt(1, 10));
   BOOST_CHECK(!test_hash_map.empty());
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(1u, bucket_data.size());
 
-  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1));
-  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(2));
-  BOOST_CHECK_EQUAL(-1, test_hash_map.value_for(2, -1));
+  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1).second);
+  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(2).second);
+  BOOST_CHECK_EQUAL(-1, test_hash_map.value_for(2, vt(-2, -1)).second);
 
   // Add another key, value pair
-  test_hash_map.add_or_update_mapping(2, 20);
+  test_hash_map.add_or_update_mapping(vt(2, 20));
   BOOST_CHECK(!test_hash_map.empty());
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(2u, bucket_data.size());
 
-  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1));
-  BOOST_CHECK_EQUAL(20, test_hash_map.value_for(2));
-  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(21));
+  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1).second);
+  BOOST_CHECK_EQUAL(20, test_hash_map.value_for(2).second);
+  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(21).second);
 
   // Add another key, value pair at the same hash as 2
-  test_hash_map.add_or_update_mapping(21, 210);
+  test_hash_map.add_or_update_mapping(vt(21, 210));
   BOOST_CHECK(!test_hash_map.empty());
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(3u, bucket_data.size());
 
-  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1));
-  BOOST_CHECK_EQUAL(20, test_hash_map.value_for(2));
-  BOOST_CHECK_EQUAL(210, test_hash_map.value_for(21));
-  BOOST_CHECK_EQUAL(-1, test_hash_map.value_for(31, -1));
+  BOOST_CHECK_EQUAL(10, test_hash_map.value_for(1).second);
+  BOOST_CHECK_EQUAL(20, test_hash_map.value_for(2).second);
+  BOOST_CHECK_EQUAL(210, test_hash_map.value_for(21).second);
+  BOOST_CHECK_EQUAL(-1, test_hash_map.value_for(31, vt(-2,-1)).second);
 
   // Change a value
-  test_hash_map.add_or_update_mapping(2, 200);
-  BOOST_CHECK_EQUAL(200, test_hash_map.value_for(2));
+  test_hash_map.add_or_update_mapping(vt(2, 200));
+  BOOST_CHECK_EQUAL(200, test_hash_map.value_for(2).second);
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(3u, bucket_data.size());
 
   // Remove a value
   test_hash_map.remove_mapping(2);
-  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(2));
+  BOOST_CHECK_EQUAL(0, test_hash_map.value_for(2).second);
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(2u, bucket_data.size());
 
   // Clear the map
   test_hash_map.clear();
   BOOST_CHECK(test_hash_map.empty());
+  bucket_data = test_hash_map.data();
+  BOOST_CHECK_EQUAL(0u, bucket_data.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
