@@ -61,8 +61,9 @@
 #include <stdexcept>
 #include <iostream>
 #ifdef HTTP_THREAD_SAFE
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/locks.hpp>
+#include "via/thread/threadsafe_hash_map.hpp"
+#else
+#include <map>
 #endif
 
 namespace via
@@ -95,12 +96,13 @@ namespace via
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
+#ifdef HTTP_THREAD_SAFE
+    typedef thread::threadsafe_hash_map<void*, std::shared_ptr<http_connection_type>>
+      connection_collection;
+#else
     typedef std::map<void*, std::shared_ptr<http_connection_type> >
       connection_collection;
-
-    /// The template requires a typename to collection value_type.
-    typedef typename connection_collection::value_type
-      connection_collection_value_type;
+#endif
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -137,9 +139,6 @@ namespace via
     // Variables
 
     std::shared_ptr<server_type> server_;    ///< the communications server
-#ifdef HTTP_THREAD_SAFE
-    boost::shared_mutex http_connections_mutex_; ///< a mutex for http_connections_
-#endif
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
@@ -183,17 +182,18 @@ namespace via
         return;
 
       std::shared_ptr<http_connection_type> http_connection;
-      bool iter_not_found(false);
-      {
 #ifdef HTTP_THREAD_SAFE
-        boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
+      auto value(http_connections_.find(pointer));
+      bool iter_not_found(value.first != pointer);
+      if (!iter_not_found)
+        http_connection = value.second;
+#else
+      // search for the connection in the collection
+      auto iter(http_connections_.find(pointer));
+      bool iter_not_found(iter == http_connections_.end());
+      if (!iter_not_found)
+        http_connection = iter->second;
 #endif
-        // search for the connection in the collection
-        auto iter(http_connections_.find(pointer));
-        iter_not_found = (iter == http_connections_.end());
-        if (!iter_not_found)
-          http_connection = iter->second;
-      }
 
       if (iter_not_found)
       {
@@ -211,14 +211,7 @@ namespace via
 
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
-
-        {
-#ifdef HTTP_THREAD_SAFE
-          std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
-#endif
-          http_connections_.insert
-              (connection_collection_value_type(pointer, http_connection));
-        }
+        http_connections_.emplace(pointer, http_connection);
 
         // signal that the socket is connected
         if (connected_handler_)
@@ -340,18 +333,15 @@ namespace via
       if (disconnected_handler_)
         disconnected_handler_(http_connection);
 
-      bool http_connections_empty(false);
-      {
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
+      http_connections_.erase(pointer);
+#else
+      auto iter(http_connections_.find(pointer));
+      http_connections_.erase(iter);
 #endif
-        auto iter(http_connections_.find(pointer));
-        http_connections_.erase(iter);
-        http_connections_empty = http_connections_.empty();
-      }
 
       // If the http_server is being shutdown and this was the last connection
-      if (shutting_down_ && http_connections_empty)
+      if (shutting_down_ && http_connections_.empty())
         server_->close();
     }
 
@@ -370,17 +360,18 @@ namespace via
           return;
 
         std::shared_ptr<http_connection_type> http_connection;
-        bool iter_not_found(false);
-        {
 #ifdef HTTP_THREAD_SAFE
-          boost::shared_lock<boost::shared_mutex> guard(http_connections_mutex_);
+        auto value(http_connections_.find(pointer));
+        bool iter_not_found(value.first != pointer);
+        if (!iter_not_found)
+          http_connection = value.second;
+#else
+        // search for the connection in the collection
+        auto iter(http_connections_.find(pointer));
+        bool iter_not_found(iter == http_connections_.end());
+        if (!iter_not_found)
+          http_connection = iter->second;
 #endif
-          // search for the connection in the collection
-          auto iter(http_connections_.find(pointer));
-          iter_not_found = (iter == http_connections_.end());
-          if (!iter_not_found)
-            http_connection = iter->second;
-        }
 
         if (iter_not_found)
         {
@@ -433,9 +424,6 @@ namespace via
     /// @param auth_ptr a shared pointer to an authentication.
     explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
-#ifdef HTTP_THREAD_SAFE
-      http_connections_mutex_(),
-#endif
       http_connections_(),
       request_router_(),
       shutting_down_(false),
@@ -732,10 +720,13 @@ namespace via
         shutting_down_ = true;
 
 #ifdef HTTP_THREAD_SAFE
-        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
-#endif
+        auto connection_data(http_connections_.data());
+        for (auto& elem : connection_data)
+          elem.second->disconnect();
+#else
         for (auto& elem : http_connections_)
           elem.second->disconnect();
+#endif
       }
       else
         close();
@@ -744,12 +735,7 @@ namespace via
     /// Close the http server and all of the connections associated with it.
     void close()
     {
-      {
-#ifdef HTTP_THREAD_SAFE
-        std::lock_guard<boost::shared_mutex> guard(http_connections_mutex_);
-#endif
-        http_connections_.clear();
-      }
+      http_connections_.clear();
       server_->close();
     }
 

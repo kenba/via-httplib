@@ -22,12 +22,12 @@
     #include <boost/asio/ssl/context.hpp>
   #endif
 #endif
-#include <set>
 #include <string>
 #include <sstream>
 #ifdef HTTP_THREAD_SAFE
-#include <thread>
-#include <mutex>
+#include "via/thread/threadsafe_hash_map.hpp"
+#else
+#include <set>
 #endif
 
 namespace via
@@ -59,10 +59,12 @@ namespace via
       typedef connection<SocketAdaptor, Container> connection_type;
 
       /// A set of connections.
+#ifdef HTTP_THREAD_SAFE
+      typedef thread::threadsafe_hash_map<void *, std::shared_ptr<connection_type>>
+        connections;
+#else
       typedef std::set<std::shared_ptr<connection_type> > connections;
-
-      /// An iterator to the connections;
-      typedef typename connections::iterator connections_iterator;
+#endif
 
       /// Event callback function type.
       typedef typename connection_type::event_callback_type event_callback_type;
@@ -82,11 +84,6 @@ namespace via
 
       /// The next connection to be accepted.
       std::shared_ptr<connection_type> next_connection_;
-
-#ifdef HTTP_THREAD_SAFE
-      /// A mutex to protect connections_.
-      std::mutex connections_mutex_;
-#endif
 
       /// The connections established with this server.
       connections connections_;
@@ -128,9 +125,10 @@ namespace via
           else
           {
 #ifdef HTTP_THREAD_SAFE
-            std::lock_guard<std::mutex> guard(connections_mutex_);
+            connections_.emplace(next_connection_.get(), next_connection_);
+#else
+            connections_.emplace(next_connection_);
 #endif
-            connections_.insert(next_connection_);
             next_connection_->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
             next_connection_.reset();
@@ -154,12 +152,13 @@ namespace via
           if (std::shared_ptr<connection_type> connection = ptr.lock())
           {
 #ifdef HTTP_THREAD_SAFE
-            std::lock_guard<std::mutex> guard(connections_mutex_);
-#endif
+            connections_.erase(connection.get());
+#else
             // search for the connection to delete
-            connections_iterator iter(connections_.find(connection));
+            auto iter(connections_.find(connection));
             if (iter != connections_.end())
               connections_.erase(iter);
+#endif
           }
         }
       }
@@ -214,9 +213,6 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
-#ifdef HTTP_THREAD_SAFE
-        connections_mutex_(),
-#endif
         connections_(),
         password_(),
         event_callback_(),
@@ -244,9 +240,6 @@ namespace via
         acceptor_v6_(io_service),
         acceptor_v4_(io_service),
         next_connection_(),
-#ifdef HTTP_THREAD_SAFE
-        connections_mutex_(),
-#endif
         connections_(),
         password_(),
         event_callback_(event_callback),
@@ -396,9 +389,6 @@ namespace via
         if (acceptor_v4_.is_open())
           acceptor_v4_.close();
 
-#ifdef HTTP_THREAD_SAFE
-        std::lock_guard<std::mutex> guard(connections_mutex_);
-#endif
         connections_.clear();
       }
     };
