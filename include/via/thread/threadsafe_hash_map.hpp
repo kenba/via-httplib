@@ -43,18 +43,21 @@ namespace via
     /// It should be a prime number, default 19.
     /// @tparam Alloc the allocator for the bucket_data_type.
     /// Default std::allocator.
+    /// @tparam cache_line_size the size of a cache line on the hardware.
+    /// Default 64 bytes.
     //////////////////////////////////////////////////////////////////////////
     template<typename Key, typename Value,
              typename Hash = std::hash<Key>,
              unsigned num_buckets = 19,
-             typename Alloc = std::allocator<std::pair<Key, Value> > >
+             typename Alloc = std::allocator<std::pair<Key, Value>>,
+             unsigned cache_line_size = 64u>
     class threadsafe_hash_map
     {
       /// @class bucket_type
       /// Each bucket is a std::vector of Key, Value std::pair's sorted by Key
       /// and protected by a shared_mutex.
       /// The shared_mutex enables mulutiple simultaneous readers per bucket.
-      struct bucket_type
+      struct alignas(cache_line_size) bucket_type
       {
         /// The underlying data type: a key, value pair.
         typedef std::pair<Key, Value> value_type;
