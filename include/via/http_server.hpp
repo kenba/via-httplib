@@ -60,6 +60,11 @@
 #include <map>
 #include <stdexcept>
 #include <iostream>
+#ifdef HTTP_THREAD_SAFE
+#include "via/thread/threadsafe_hash_map.hpp"
+#else
+#include <map>
+#endif
 
 namespace via
 {
@@ -70,41 +75,34 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket to use:
+  /// @tparam SocketAdaptor the type of socket to use:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the rx & tx buffers:
+  /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
-  /// @param use_strand for multi-threaded
-  /// if true use an asio::strand to wrap the handlers,
-  /// default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char>,
-            bool use_strand = false>
+  template <typename SocketAdaptor, typename Container = std::vector<char>>
   class http_server
   {
   public:
 
     /// The comms server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container, use_strand> server_type;
+    typedef comms::server<SocketAdaptor, Container> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container, use_strand>
+    typedef http_connection<SocketAdaptor, Container>
       http_connection_type;
 
     /// The underlying comms connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
 
     /// A collection of http_connections keyed by the connection pointer.
+#ifdef HTTP_THREAD_SAFE
+    typedef thread::threadsafe_hash_map<void*, std::shared_ptr<http_connection_type>>
+      connection_collection;
+#else
     typedef std::map<void*, std::shared_ptr<http_connection_type> >
       connection_collection;
-
-    /// The template requires a typename to access the iterator.
-    typedef typename connection_collection::iterator
-      connection_collection_iterator;
-
-    /// The template requires a typename to collection value_type.
-    typedef typename connection_collection::value_type
-      connection_collection_value_type;
+#endif
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
@@ -141,7 +139,6 @@ namespace via
     // Variables
 
     std::shared_ptr<server_type> server_;    ///< the communications server
-    std::mutex http_connections_mutex_;      ///< a mutex for http_connections_
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
@@ -184,26 +181,24 @@ namespace via
       if (!pointer)
         return;
 
-      connection_collection_iterator iter;
-      bool iter_not_found(false);
-      if (use_strand)
-      {
-        std::lock_guard<std::mutex> guard(http_connections_mutex_);
-        // search for the connection in the collection
-        iter = http_connections_.find(pointer);
-        iter_not_found = (iter == http_connections_.end());
-      }
-      else
-      {
-        iter = http_connections_.find(pointer);
-        iter_not_found = (iter == http_connections_.end());
-      }
+      std::shared_ptr<http_connection_type> http_connection;
+#ifdef HTTP_THREAD_SAFE
+      auto value(http_connections_.find(pointer));
+      bool iter_not_found(value.first != pointer);
+      if (!iter_not_found)
+        http_connection = value.second;
+#else
+      // search for the connection in the collection
+      auto iter(http_connections_.find(pointer));
+      bool iter_not_found(iter == http_connections_.end());
+      if (!iter_not_found)
+        http_connection = iter->second;
+#endif
 
       if (iter_not_found)
       {
         // Create and configure a new http_connection_type.
-        std::shared_ptr<http_connection_type> http_connection
-            (new http_connection_type(connection,
+        http_connection = std::make_shared<http_connection_type>(connection,
                                       strict_crlf_,
                                       max_whitespace_,
                                       max_method_length_,
@@ -212,20 +207,11 @@ namespace via
                                       max_header_number_,
                                       max_header_length_,
                                       max_body_size_,
-                                      max_chunk_size_));
+                                      max_chunk_size_);
 
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
-
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          http_connections_.insert
-              (connection_collection_value_type(pointer, http_connection));
-        }
-        else
-          http_connections_.insert
-              (connection_collection_value_type(pointer, http_connection));
+        http_connections_.emplace(pointer, http_connection);
 
         // signal that the socket is connected
         if (connected_handler_)
@@ -233,7 +219,7 @@ namespace via
       }
       else
         std::cerr << "http_server, error: duplicate connection for "
-                  << iter->second->remote_address() << std::endl;
+                  << http_connection->remote_address() << std::endl;
     }
 
     /// Route the request using the request_router_.
@@ -257,12 +243,9 @@ namespace via
     }
 
     /// Receive data packets on an underlying communications connection.
-    /// @param iter a valid iterator into the connection collection.
-    void receive_handler(connection_collection_iterator conn)
+    /// @param http_connection a shared pointer to an http_connection.
+    void receive_handler(std::shared_ptr<http_connection_type> http_connection)
     {
-      // Get the connection
-      std::shared_ptr<http_connection_type> http_connection(conn->second);
-
       // Get the receive buffer
       Container const& rx_buffer(http_connection->read_rx_buffer());
       Container_const_iterator iter(rx_buffer.begin());
@@ -343,29 +326,22 @@ namespace via
     /// Handle a disconnected signal from an underlying comms connection.
     /// Noitfy the handler and erase the connection from the collection.
     /// @param iter a valid iterator into the connection collection.
-    void disconnected_handler(connection_collection_iterator iter)
+    void disconnected_handler(void* pointer,
+                        std::shared_ptr<http_connection_type> http_connection)
     {
       // Noitfy the disconnected handler if one exists
       if (disconnected_handler_)
-        disconnected_handler_(iter->second);
+        disconnected_handler_(http_connection);
 
-      bool http_connections_empty(false);
-      {
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          http_connections_.erase(iter);
-          http_connections_empty = http_connections_.empty();
-        }
-        else
-        {
-          http_connections_.erase(iter);
-          http_connections_empty = http_connections_.empty();
-        }
-      }
+#ifdef HTTP_THREAD_SAFE
+      http_connections_.erase(pointer);
+#else
+      auto iter(http_connections_.find(pointer));
+      http_connections_.erase(iter);
+#endif
 
       // If the http_server is being shutdown and this was the last connection
-      if (shutting_down_ && http_connections_empty)
+      if (shutting_down_ && http_connections_.empty())
         server_->close();
     }
 
@@ -383,22 +359,19 @@ namespace via
         if (!pointer)
           return;
 
-        connection_collection_iterator iter;
-        bool iter_not_found(false);
-
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          // search for the connection in the collection
-          iter = http_connections_.find(pointer);
-          iter_not_found = (iter == http_connections_.end());
-        }
-        else
-        {
-          // search for the connection in the collection
-          iter = http_connections_.find(pointer);
-          iter_not_found = (iter == http_connections_.end());
-        }
+        std::shared_ptr<http_connection_type> http_connection;
+#ifdef HTTP_THREAD_SAFE
+        auto value(http_connections_.find(pointer));
+        bool iter_not_found(value.first != pointer);
+        if (!iter_not_found)
+          http_connection = value.second;
+#else
+        // search for the connection in the collection
+        auto iter(http_connections_.find(pointer));
+        bool iter_not_found(iter == http_connections_.end());
+        if (!iter_not_found)
+          http_connection = iter->second;
+#endif
 
         if (iter_not_found)
         {
@@ -410,15 +383,15 @@ namespace via
         switch(event)
         {
         case via::comms::RECEIVED:
-          receive_handler(iter);
+          receive_handler(http_connection);
           break;
         case via::comms::SENT:
           // Noitfy the sent handler if one exists
           if (message_sent_handler_)
-            message_sent_handler_(iter->second);
+            message_sent_handler_(http_connection);
           break;
         case via::comms::DISCONNECTED:
-          disconnected_handler(iter);
+          disconnected_handler(pointer, http_connection);
           break;
         default:
           ;
@@ -451,7 +424,6 @@ namespace via
     /// @param auth_ptr a shared pointer to an authentication.
     explicit http_server(ASIO::io_service& io_service) :
       server_(new server_type(io_service)),
-      http_connections_mutex_(),
       http_connections_(),
       request_router_(),
       shutting_down_(false),
@@ -691,15 +663,62 @@ namespace via
     void set_password(std::string const& password) NOEXCEPT
     { server_->set_password(password); }
 
+    /// Set the certificates required for an SSL server.
+    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
+    /// @param certificate the server SSL certificate.
+    /// @param private_key the private key.
+    /// @param tmp_dh the tmp_dh, default blank.
+    static ASIO_ERROR_CODE set_ssl_certificates
+                       (const std::string& certificate,
+                        const std::string& private_key,
+                        const std::string& tmp_dh = std::string(""))
+    {
+      ASIO_ERROR_CODE error;
+#ifdef HTTP_SSL
+      server_type::connection_type::ssl_context().
+          use_certificate(ASIO::const_buffer(certificate.c_str(),
+                                             certificate.size()),
+                          ASIO::ssl::context::pem, error);
+      if (error)
+        return error;
+
+      server_type::connection_type::ssl_context().
+          use_private_key(ASIO::const_buffer(private_key.c_str(),
+                                             private_key.size()),
+                          ASIO::ssl::context::pem, error);
+      if (error)
+        return error;
+
+      if (tmp_dh.empty())
+        server_type::connection_type::ssl_context().
+           set_options(ASIO::ssl::context::default_workarounds |
+                       ASIO::ssl::context::no_sslv2);
+      else
+      {
+        server_type::connection_type::ssl_context().
+            use_tmp_dh(ASIO::const_buffer(tmp_dh.c_str(), tmp_dh.size()), error);
+        if (error)
+          return error;
+
+        server_type::connection_type::ssl_context().
+           set_options(ASIO::ssl::context::default_workarounds |
+                       ASIO::ssl::context::no_sslv2 |
+                       ASIO::ssl::context::single_dh_use,
+                       error);
+      }
+#endif // HTTP_SSL
+      return error;
+    }
+
     /// Set the files required for an SSL server.
     /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
     /// @param certificate_file the server SSL certificate file.
     /// @param key_file the private key file
-    /// @param dh_file the dh file.
+    /// @param dh_file the dh file, default blank.
     static ASIO_ERROR_CODE set_ssl_files
                        (const std::string& certificate_file,
                         const std::string& key_file,
-                        std::string        dh_file = "")
+                        const std::string& dh_file = std::string(""))
     {
       ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
@@ -721,8 +740,8 @@ namespace via
                        ASIO::ssl::context::no_sslv2);
       else
       {
-        server_type::connection_type::ssl_context().use_tmp_dh_file(dh_file,
-                                                                   error);
+        server_type::connection_type::ssl_context().
+            use_tmp_dh_file(dh_file, error);
         if (error)
           return error;
 
@@ -747,17 +766,14 @@ namespace via
       {
         shutting_down_ = true;
 
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          for (auto& elem : http_connections_)
-            elem.second->disconnect();
-        }
-        else
-        {
-          for (auto& elem : http_connections_)
-            elem.second->disconnect();
-        }
+#ifdef HTTP_THREAD_SAFE
+        auto connection_data(http_connections_.data());
+        for (auto& elem : connection_data)
+          elem.second->disconnect();
+#else
+        for (auto& elem : http_connections_)
+          elem.second->disconnect();
+#endif
       }
       else
         close();
@@ -766,15 +782,7 @@ namespace via
     /// Close the http server and all of the connections associated with it.
     void close()
     {
-      {
-        if (use_strand)
-        {
-          std::lock_guard<std::mutex> guard(http_connections_mutex_);
-          http_connections_.clear();
-        }
-        else
-          http_connections_.clear();
-      }
+      http_connections_.clear();
       server_->close();
     }
 

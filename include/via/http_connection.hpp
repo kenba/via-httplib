@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2017 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -32,31 +32,28 @@ namespace via
   /// @see comms::connection
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+  /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
   /// ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the tx buffer, default
+  /// @tparam Container the container to use for the tx buffer, default
   /// std::vector<char>.
   /// It must contain a contiguous array of bytes. E.g. std::string or
   /// std::array<char, size>
-  /// @param use_strand if true use an asio::strand to wrap the handlers,
-  /// default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container, bool use_strand>
+  template <typename SocketAdaptor, typename Container>
   class http_connection : public std::enable_shared_from_this
-                      <http_connection<SocketAdaptor, Container, use_strand> >
+                                   <http_connection<SocketAdaptor, Container>>
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, use_strand>
-                                                              connection_type;
+    typedef comms::connection<SocketAdaptor, Container> connection_type;
 
     /// A weak pointer to this type.
-    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container,
-                                     use_strand> > weak_pointer;
+    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container>>
+                                                     weak_pointer;
 
     /// A strong pointer to this type.
-    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container,
-                                       use_strand> > shared_pointer;
+    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container>>
+                                                     shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;

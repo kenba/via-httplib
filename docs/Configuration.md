@@ -39,15 +39,14 @@ see: [Networking Library Proposal](http://open-std.org/JTC1/SC22/WG21/docs/paper
 
 An HTTP Server is created from a template class:
 
-    template <typename SocketAdaptor, typename Container = std::vector<char>,
-              bool use_strand = false>
+    template <typename SocketAdaptor, typename Container = std::vector<char> >
     class http_server
     .
     .
     .
     
-The `SocketAdaptor`, `Container` and `use_strand` template parameters configure:
-SSL/TLS comms, data/text data bodies and multithreading.
+The `SocketAdaptor` and `Container` template parameters configure:
+SSL/TLS comms and data/text data bodies.
 
 ### SSL / TLS Configuration
 
@@ -89,10 +88,10 @@ E.g.
 ### Multithreading Configuration
 
 The server can be configured to use run the `asio::io_service` in multiple threads
-(in a thread pool) by setting `use_strand`, e.g.:
+(in a thread pool) by setting teh macro `HTTP_THREAD_SAFE`, e.g.:
 
     // A multithreading HTTP text server.
-    typedef via::http_server<via::comms::tcp_adaptor, std::string, true> http_server_type;
+    typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
     .
     .
     .

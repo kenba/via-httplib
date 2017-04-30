@@ -86,9 +86,16 @@ win32 {
   LIBS += -lpthread
 }
 
-SOURCES += \
-  $${VIAHTTPLIB}/examples/server/example_http_server.cpp
+HEADERS += \
+  $${VIAHTTPLIB}/examples/cacert.hpp \
+  $${VIAHTTPLIB}/examples/privkey.hpp
 
+SOURCES += \
+  $${VIAHTTPLIB}/examples/cacert.cpp \
+  $${VIAHTTPLIB}/examples/privkey.cpp \
+  $${VIAHTTPLIB}/examples/server/thread_pool_http_server.cpp
+
+#  $${VIAHTTPLIB}/examples/server/example_http_server.cpp
 #  $${VIAHTTPLIB}/examples/server/chunked_http_server.cpp
 #  $${VIAHTTPLIB}/examples/server/example_https_server.cpp
 #  $${VIAHTTPLIB}/examples/server/simple_http_server.cpp

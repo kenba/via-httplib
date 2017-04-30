@@ -11,6 +11,8 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
+#include "../examples/cacert.hpp"
+#include "../examples/privkey.hpp"
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
@@ -206,9 +208,7 @@ int main(int argc, char *argv[])
   std::cout << app_name << ": " << port_number << std::endl;
 
   // The values for the SSL functions
-  std::string password         = "test";
-  std::string certificate_file = "cacert.pem";
-  std::string private_key_file = "privkey.pem";
+  std::string password = "test";
 
   try
   {
@@ -238,10 +238,11 @@ int main(int argc, char *argv[])
     // Set up SSL/TLS
     https_server.set_password(password);
     ASIO_ERROR_CODE error
-        (https_server_type::set_ssl_files(certificate_file, private_key_file));
+        (https_server_type::set_ssl_certificates(CACERT, PRIVKEY));
     if (error)
     {
-      std::cerr << "Error: "  << error.message() << std::endl;
+      std::cerr << "Error, set_ssl_certificates: "
+                << error.message() << std::endl;
       return 1;
     }
 

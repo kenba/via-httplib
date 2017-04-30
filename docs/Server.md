@@ -7,7 +7,7 @@ class template defined in `<via/http_server.hpp>`:
 
     namespace via
     {
-      template <typename SocketAdaptor, typename Container = std::vector<char>, bool use_strand = false>
+      template <typename SocketAdaptor, typename Container = std::vector<char> >
       class http_server
       {
         ...
@@ -20,7 +20,6 @@ The `http_server` class template parameters are:
 |---------------|---------------------|----------------------------------------|
 | SocketAdaptor |                     | `via::comms::tcp_adaptor` for HTTP or<br>`via::comms::ssl::ssl_tcp_adaptor` for HTTPS. |
 | Container     | `std::vector<char>` |`std::vector<char>` for data or<br>`std::string` for text |
-| use_strand    | false               | Use an `asio::strand` to manage multiple threads,<br>see: [boost asio strands](http://www.boost.org/doc/libs/1_62_0/doc/html/boost_asio/overview/core/strands.html) |
  
 E.g. an HTTP server using std::string as a Container:
  

@@ -1,12 +1,12 @@
 @startuml
 
-'Copyright (c) 2013-2016 Ken Barker
+'Copyright (c) 2013-2017 Ken Barker
 
 title http_client classes template
 
 set namespaceSeparator ::
 
-class via::http_client<extends socket_adaptor, container, use_strand>
+class via::http_client<extends socket_adaptor, container>
 via::http_client *-- socket_adaptor
 via::http_client *-- container
 

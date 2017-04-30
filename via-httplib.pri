@@ -33,6 +33,7 @@ INC_DIR = $$VIAHTTPLIB/include
 INCLUDEPATH *= $${INC_DIR}
 
 HEADERS += $${INC_DIR}/via/*.hpp
+HEADERS += $${INC_DIR}/via/thread/*.hpp
 HEADERS += $${INC_DIR}/via/http/*.hpp
 HEADERS += $${INC_DIR}/via/http/authentication/*.hpp
 HEADERS += $${INC_DIR}/via/comms/*.hpp

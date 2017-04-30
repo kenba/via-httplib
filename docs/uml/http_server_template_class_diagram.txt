@@ -1,15 +1,15 @@
 @startuml
 
-'Copyright (c) 2013-2016 Ken Barker
+'Copyright (c) 2013-2017 Ken Barker
 
 title http_server class template 
 
 set namespaceSeparator ::
 
-class via::http_server<extends socket_adaptor, container, use_strand>
+class via::http_server<extends socket_adaptor, container>
 via::http_server *-- "*" via::http_connection
 
-class via::http_connection<extends socket_adaptor, container, use_strand>
+class via::http_connection<extends socket_adaptor, container>
 via::http_connection o-- socket_adaptor
 via::http_connection *-- container
 

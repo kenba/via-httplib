@@ -28,34 +28,30 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @param SocketAdaptor the type of socket to use:
+  /// @tparam SocketAdaptor the type of socket to use:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
-  /// @param Container the container to use for the tx buffer:
+  /// @tparam Container the container to use for the tx buffer:
   /// std::vector<char> or std::string, default std::vector<char>.
-  /// @param use_strand if true use an asio::strand to wrap the handlers,
-  /// default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char>,
-            bool use_strand = false>
+  template <typename SocketAdaptor, typename Container = std::vector<char>>
   class http_client : public std::enable_shared_from_this
-                          <http_client<SocketAdaptor, Container, use_strand> >
+                                       <http_client<SocketAdaptor, Container>>
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container, use_strand>
-                                                              connection_type;
+    typedef comms::connection<SocketAdaptor, Container> connection_type;
 
     /// A weak pointer to this type.
-    typedef typename std::weak_ptr<http_client<SocketAdaptor, Container,
-                                                   use_strand> > weak_pointer;
+    typedef typename std::weak_ptr<http_client<SocketAdaptor, Container>>
+                                                 weak_pointer;
 
     /// A shared pointer to this type.
-    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container,
-                                                   use_strand> > shared_pointer;
+    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container>>
+                                                 shared_pointer;
 
     /// The enable_shared_from_this type of this class.
     typedef typename std::enable_shared_from_this
-                <http_client<SocketAdaptor, Container, use_strand> > enable;
+                               <http_client<SocketAdaptor, Container>> enable;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;

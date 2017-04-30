@@ -35,37 +35,31 @@ namespace via
 
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
-    /// @param SocketAdaptor the type of socket, use: tcp_adaptor or
+    /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @param Container the container to use for the rx & tx buffers, default
+    /// @tparam Container the container to use for the rx & tx buffers, default
     /// std::vector<char> or std::string.
     /// It must contain a contiguous array of bytes. E.g. std::string or
     /// std::array<char, size>
-    /// @param use_strand if true use an asio::strand to wrap the handlers,
-    /// default false.
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char>,
-              bool use_strand = false>
+    template <typename SocketAdaptor, typename Container = std::vector<char>>
     class connection : public SocketAdaptor,
-        public std::enable_shared_from_this
-            <connection<SocketAdaptor, Container, use_strand> >
+      public std::enable_shared_from_this<connection<SocketAdaptor, Container>>
     {
     public:
 
 
       /// A weak pointer to a connection.
-      typedef typename std::weak_ptr<connection<SocketAdaptor, Container,
-                                                  use_strand> >
+      typedef typename std::weak_ptr<connection<SocketAdaptor, Container>>
          weak_pointer;
 
       /// A shared pointer to a connection.
-      typedef typename std::shared_ptr<connection<SocketAdaptor, Container,
-                                                    use_strand> >
+      typedef typename std::shared_ptr<connection<SocketAdaptor, Container>>
          shared_pointer;
 
       /// The enable_shared_from_this type of this class.
       typedef typename std::enable_shared_from_this
-                  <connection<SocketAdaptor, Container, use_strand> > enable;
+                                <connection<SocketAdaptor, Container>> enable;
 
       /// The resolver_iterator type of the SocketAdaptor
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
@@ -79,8 +73,10 @@ namespace via
 
     private:
 
+#ifdef HTTP_THREAD_SAFE
       /// Strand to ensure the connection's handlers are not called concurrently.
       ASIO::io_service::strand strand_;
+#endif
       size_t rx_buffer_size_;              ///< The receive buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
       std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
@@ -117,24 +113,18 @@ namespace via
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
+#ifdef HTTP_THREAD_SAFE
+          SocketAdaptor::write(tx_buffers_,
+             strand_.wrap([weak_ptr, tx_queue]
+                          (ASIO_ERROR_CODE const& error,
+                           size_t bytes_transferred)
+          { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
+#else
+          SocketAdaptor::write(tx_buffers_,
+            [weak_ptr, tx_queue](ASIO_ERROR_CODE const& error,
+                                 size_t bytes_transferred)
+          { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
 #endif
-          if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
-            SocketAdaptor::write(tx_buffers_,
-               strand_.wrap([weak_ptr, tx_queue]
-                            (ASIO_ERROR_CODE const& error,
-                             size_t bytes_transferred)
-            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
-          else
-            SocketAdaptor::write(tx_buffers_,
-              [weak_ptr, tx_queue](ASIO_ERROR_CODE const& error,
-                                   size_t bytes_transferred)
-            { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
         }
 
         return connected_;
@@ -147,24 +137,18 @@ namespace via
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
         std::shared_ptr<Container> rx_buffer(rx_buffer_);
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
+#ifdef HTTP_THREAD_SAFE
+        SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
+            strand_.wrap([weak_ptr, rx_buffer]
+                         (ASIO_ERROR_CODE const& error,
+                          size_t bytes_transferred)
+         { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
+#else
+        SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
+          [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
+                                size_t bytes_transferred)
+         { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
 #endif
-        if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
-          SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-              strand_.wrap([weak_ptr, rx_buffer]
-                           (ASIO_ERROR_CODE const& error,
-                            size_t bytes_transferred)
-           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
-        else
-          SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
-            [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
-                                  size_t bytes_transferred)
-           { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
       }
 
       /// This function determines whether the error is a socket disconnect.
@@ -355,43 +339,31 @@ namespace via
         {
           if (!error)
           {
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
-#endif
-            if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
+#ifdef HTTP_THREAD_SAFE
             pointer->handshake(
                     pointer->strand_.wrap([ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }), false);
-          else
+#else
             pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }, false);
+#endif
           }
           else
           {
             if ((ASIO::error::host_not_found == error) &&
                 (resolver_iterator() != host_iterator))
             {
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
+#ifdef HTTP_THREAD_SAFE
+              pointer->connect_socket(pointer->strand_.wrap([ptr]
+                  (ASIO_ERROR_CODE const& error,
+                   resolver_iterator host_iterator)
+              { connect_callback(ptr, error, host_iterator); }), ++host_iterator);
+#else
+              pointer->connect_socket([ptr]
+                  (ASIO_ERROR_CODE const& error,
+                   resolver_iterator host_iterator)
+              { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
 #endif
-              if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
-                pointer->connect_socket(pointer->strand_.wrap([ptr]
-                    (ASIO_ERROR_CODE const& error,
-                     resolver_iterator host_iterator)
-                { connect_callback(ptr, error, host_iterator); }), ++host_iterator);
-              else
-                pointer->connect_socket([ptr]
-                    (ASIO_ERROR_CODE const& error,
-                     resolver_iterator host_iterator)
-                { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
             }
             else
             {
@@ -416,7 +388,9 @@ namespace via
                           error_callback_type error_callback,
                           size_t rx_buffer_size) :
         SocketAdaptor(io_service),
+#ifdef HTTP_THREAD_SAFE
         strand_(io_service),
+#endif
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
@@ -444,7 +418,9 @@ namespace via
       explicit connection(ASIO::io_service& io_service,
                           size_t rx_buffer_size) :
         SocketAdaptor(io_service),
+#ifdef HTTP_THREAD_SAFE
         strand_(io_service),
+#endif
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
@@ -612,21 +588,15 @@ namespace via
       bool connect(const char *host_name, const char *port_name)
       {
         weak_pointer ptr(weak_from_this());
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
+#ifdef HTTP_THREAD_SAFE
+        return SocketAdaptor::connect(host_name, port_name, strand_.wrap(
+          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
+            { connect_callback(ptr, error, itr); }));
+#else
+        return SocketAdaptor::connect(host_name, port_name,
+          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
+            { connect_callback(ptr, error, itr); });
 #endif
-            if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
-          return SocketAdaptor::connect(host_name, port_name, strand_.wrap(
-            [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
-              { connect_callback(ptr, error, itr); }));
-        else
-          return SocketAdaptor::connect(host_name, port_name,
-            [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
-              { connect_callback(ptr, error, itr); });
       }
 
       /// @fn start
@@ -650,20 +620,14 @@ namespace via
 
         weak_pointer weak_ptr(weak_from_this());
 
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4127 ) // conditional expression is constant
+#ifdef HTTP_THREAD_SAFE
+        SocketAdaptor::start(
+                strand_.wrap([weak_ptr](ASIO_ERROR_CODE const& error)
+          { handshake_callback(weak_ptr, error); }));
+#else
+        SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
+          { handshake_callback(weak_ptr, error); });
 #endif
-        if (use_strand)
-#ifdef _MSC_VER
-#pragma warning( pop )
-#endif
-          SocketAdaptor::start(
-                  strand_.wrap([weak_ptr](ASIO_ERROR_CODE const& error)
-            { handshake_callback(weak_ptr, error); }));
-        else
-          SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
-            { handshake_callback(weak_ptr, error); });
       }
 
       /// @fn disconnect
