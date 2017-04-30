@@ -10,9 +10,19 @@ project (via-httplib)
 option(VIA_HTTPLIB_BUILD_SHARED_LIBS "Build via-httplib as shared libraries." ON)
 option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." OFF)
 
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 file(GLOB_RECURSE includes include/via/*.hpp)
-file(GLOB_RECURSE sources src/via/http/*.cpp)
+
+set (sources
+  ${SOURCE_DIR}/via/http/character.cpp
+  ${SOURCE_DIR}/via/http/chunk.cpp
+  ${SOURCE_DIR}/via/http/header_field.cpp
+  ${SOURCE_DIR}/via/http/headers.cpp
+  ${SOURCE_DIR}/via/http/request.cpp
+  ${SOURCE_DIR}/via/http/request_method.cpp
+  ${SOURCE_DIR}/via/http/response.cpp
+  ${SOURCE_DIR}/via/http/response_status.cpp )
 
 # Add include files to a separate target for QtCreator
 # see: https://cmake.org/pipermail/cmake/2012-August/051811.html
@@ -22,34 +32,27 @@ find_package (Git)
 if(Git_FOUND)
   set(GIT_VERSION "COMMAND ${GIT_EXECUTABLE} .git describe")
 else()
-  set(GIT_VERSION "1.0.0")
+  set(GIT_VERSION "1.4.0")
 endif()
 
 if(VIA_HTTPLIB_BUILD_TESTS)
   file(GLOB_RECURSE sources_test tests/*.cpp)
   set(Boost_COMPONENTS system thread unit_test_framework)
 else()
-  set(Boost_COMPONENTS system thread)
+  set(Boost_COMPONENTS)
 endif()
 
 # Note: request_router.cpp and authentication files require
-# boost algorithm and boost archive respectively.
-find_package(Boost REQUIRED ${Boost_COMPONENTS})
+# boost::algorithm and boost::archive respectively.
+find_package(Boost ${Boost_COMPONENTS})
 if(Boost_FOUND)
   set(Boost_USE_MULTITHREADED ON)
   include_directories(${Boost_INCLUDE_DIRS})
-endif()
 
-find_package( OpenSSL )
-if (OpenSSL_FOUND)
-  add_definitions(-DBOOST_NETWORK_ENABLE_HTTPS)
-  include_directories(${OpenSSL_INCLUDE_DIRS})
-endif()
-
-find_package( Asio )
-if (Asio_FOUND)
-  add_definitions(-DASIO_STANDALONE)
-  include_directories(${Asio_INCLUDE_DIRS})
+  set (sources ${sources}
+    ${SOURCE_DIR}/via/http/request_router.cpp
+    ${SOURCE_DIR}/via/http/authentication/base64.cpp
+    ${SOURCE_DIR}/via/http/authentication/basic.cpp )
 endif()
 
 if (MSVC)

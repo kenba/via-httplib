@@ -37,8 +37,8 @@ win32 {
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 3
-  VER_PAT = 1
+  VER_MIN = 4
+  VER_PAT = 0
 
   # Set BOOST_ROOT to the usual linux & mac locations
   macx {
