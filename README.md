@@ -18,10 +18,13 @@ It's been tested with `MSVC 2015`, `GCC 6.2` and `MinGw 5.3.0`.
 + The `asio` C++ library.  
 Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
 
++ For: mutithreading, authentication and/or the request router, the relevant [boost](http://www.boost.org/) libraries are required.  
+However, if they are not required, the library can use [standalone asio](http://think-async.com/) on its own.
+
 + For HTTPS: the `OpenSSL` library, see [openssl](http://www.openssl.org/).  
   Note: there is an issue building `boost::asio` versions prior to `1.62` with `openssl` version `1.1.0`, see [#12238](https://svn.boost.org/trac/boost/ticket/12238)
 
-+ For C++ code documentation: Doxygen, see [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
++ For C++ code documentation: [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
 ## Getting Started
 
