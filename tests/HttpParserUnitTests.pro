@@ -59,7 +59,7 @@ OBJECTS_DIR = $${DESTDIR}/obj
   QMAKE_CXXFLAGS += /W4
 }
 
-BOOST_LIBS = test_exec_monitor
+BOOST_LIBS = unit_test_framework
 include($$VIAHTTPLIB/examples/boost_libs.pri)
 
 include($$VIAHTTPLIB/via-httplib.pri)
