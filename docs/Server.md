@@ -1,6 +1,6 @@
 # HTTP Server User Guide #
 
-![HTTP Server Class Template](http://www.plantuml.com/plantuml/proxy?idx=1&src=https://github.com/kenba/via-httplib/blob/master/docs/uml/http_server_template_class_diagram.txt)
+![HTTP Server Class Template](http://www.plantuml.com/plantuml/proxy?src=https://github.com/kenba/via-httplib/blob/master/docs/uml/http_server_template_class_diagram.txt)
 
 An application creates an HTTP server type by instantiating the `http_server`
 class template defined in `<via/http_server.hpp>`:
