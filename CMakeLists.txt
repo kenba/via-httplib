@@ -36,7 +36,7 @@ target_sources(${PROJECT_NAME}
     src/via/http/response_status.cpp
 )
 
-find_package(Boost)
+find_package(Boost REQUIRED COMPONENTS system thread ) # atomic date_time unit_test_framework
 if(Boost_FOUND)
   set(Boost_USE_MULTITHREADED ON)
   set(Boost_USE_STATIC_LIBS ${VIA_HTTPLIB_BUILD_STATIC_LIBS})
@@ -73,6 +73,33 @@ if(Boost_FOUND)
   target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
   # Boost::asio is header only but it requires Boost::system
   target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
+  
+  add_executable(test_${PROJECT_NAME} "")
+  
+  target_sources(test_${PROJECT_NAME} 
+  PRIVATE
+    tests/test_main.cpp
+    tests/http/test_character.cpp
+    tests/http/test_chunk.cpp
+    tests/http/test_header_field.cpp
+    tests/http/test_headers.cpp
+    tests/http/test_request.cpp
+    tests/http/test_request_router.cpp
+    tests/http/test_request_uri.cpp
+    tests/http/test_response.cpp
+    tests/http/authentication/test_base64.cpp
+    tests/http/authentication/test_basic_authentication.cpp
+    tests/thread/test_threadsafe_hash_map.cpp
+  )
+  
+  target_link_libraries(test_${PROJECT_NAME} 
+    PRIVATE
+	  ${PROJECT_NAME})
+	#  Boost::thread)
+	#  Boost::unit_test_framework)
+	
+  add_test(NAME test_via_http_Parsers COMMAND  test_${PROJECT_NAME})
+  
 endif(Boost_FOUND)
 
 install(TARGETS ${PROJECT_NAME} # EXPORT ViaHttpTargets
