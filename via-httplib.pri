@@ -7,7 +7,7 @@
 
 win32 {
   # Set the minimum target Windows version to Windows 7
-  DEFINES *= _WIN32_WINNT=_WIN32_WINNT_WIN7
+  # DEFINES *= _WIN32_WINNT=_WIN32_WINNT_WIN7
 
   INCLUDEPATH *= $$BOOST_ROOT
 }
