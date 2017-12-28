@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE} "")
 
 file(GLOB_RECURSE INCLUDE_FILES include/via/*.hpp)
 target_sources(${PROJECT_NAME}
-  PUBLIC
+  PRIVATE
     ${INCLUDE_FILES}
 )
 
@@ -65,7 +65,11 @@ endif(MSVC)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
   
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC 
+  $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 if(Boost_FOUND)
@@ -107,22 +111,24 @@ if(Boost_FOUND)
       Boost::unit_test_framework)
   endif()
 	
-  add_test(NAME via_http_Parsers_test COMMAND ${PROJECT_NAME}_test)
+  add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
   
 endif(Boost_FOUND)
 
-install(TARGETS ${PROJECT_NAME} # EXPORT ViaHttpTargets
+install(TARGETS ${PROJECT_NAME} EXPORT ViaHttpLibTargets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
     INCLUDES DESTINATION include
 )
 
-#install(EXPORT ViaHttpTargets 
-#    FILE ViaHttp.cmake
-#    NAMESPACE ViaHttp::
-#    DESTINATION lib/cmake/ViaHttp
-#)
+install(EXPORT ViaHttpLibTargets 
+    FILE ViaHttpLib.cmake
+    NAMESPACE ViaHttpLib::
+    DESTINATION lib/cmake/ViaHttpLib
+)
+
+add_library(ViaHttpLib::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 find_package (Git)
 if(Git_FOUND)
