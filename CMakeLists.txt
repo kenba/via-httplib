@@ -100,10 +100,10 @@ if(Boost_FOUND)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
     
-    find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+    find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
       PRIVATE
-    #  Boost::thread
+      Boost::thread
       Boost::unit_test_framework)
   endif()
 	
