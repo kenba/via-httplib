@@ -36,11 +36,8 @@ target_sources(${PROJECT_NAME}
     src/via/http/response_status.cpp
 )
 
-find_package(Boost REQUIRED COMPONENTS system thread ) # atomic date_time unit_test_framework
+find_package(Boost REQUIRED COMPONENTS system)
 if(Boost_FOUND)
-  set(Boost_USE_MULTITHREADED ON)
-  set(Boost_USE_STATIC_LIBS ${VIA_HTTPLIB_BUILD_STATIC_LIBS})
-  
   # Note: request_router.cpp and authentication files require
   # boost::algorithm and boost::archive respectively.
   target_sources(${PROJECT_NAME} 
@@ -57,14 +54,16 @@ endif(Boost_FOUND)
 if (WIN32)
   # Set minimum version to Windows 7
   # target_compile_definitions(${PROJECT_NAME} PUBLIC WIN32_WINNT=_WIN32_WINNT_WIN7)
-  if (MSVC)
-      target_compile_definitions(${PROJECT_NAME} PUBLIC SCL_SECURE_NO_WARNINGS)
-  endif(MSVC)
 endif(WIN32)
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_constexpr)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_lambdas)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_noexcept)
+if (MSVC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC SCL_SECURE_NO_WARNINGS)
+  target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+else()
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+endif(MSVC)
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
   
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE src)
@@ -74,9 +73,9 @@ if(Boost_FOUND)
   # Boost::asio is header only but it requires Boost::system
   target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
   
-  add_executable(test_${PROJECT_NAME} "")
+  add_executable(${PROJECT_NAME}_test "")
   
-  target_sources(test_${PROJECT_NAME} 
+  target_sources(${PROJECT_NAME}_test
   PRIVATE
     tests/test_main.cpp
     tests/http/test_character.cpp
@@ -92,13 +91,23 @@ if(Boost_FOUND)
     tests/thread/test_threadsafe_hash_map.cpp
   )
   
-  target_link_libraries(test_${PROJECT_NAME} 
+  target_link_libraries(${PROJECT_NAME}_test 
     PRIVATE
-	  ${PROJECT_NAME})
-	#  Boost::thread)
-	#  Boost::unit_test_framework)
+   ${PROJECT_NAME})
+  
+  if (MSVC)
+    target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
+  else()
+    target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
+    
+    find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+    target_link_libraries(${PROJECT_NAME}_test
+      PRIVATE
+    #  Boost::thread
+      Boost::unit_test_framework)
+  endif()
 	
-  add_test(NAME test_via_http_Parsers COMMAND  test_${PROJECT_NAME})
+  add_test(NAME via_http_Parsers_test COMMAND ${PROJECT_NAME}_test)
   
 endif(Boost_FOUND)
 
