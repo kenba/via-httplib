@@ -122,19 +122,25 @@ install(TARGETS ${PROJECT_NAME} EXPORT ViaHttpLibTargets
     INCLUDES DESTINATION include
 )
 
+set(ConfigPackageLocation lib/cmake/ViaHttpLib)
 install(EXPORT ViaHttpLibTargets 
-    FILE ViaHttpLib.cmake
-    NAMESPACE ViaHttpLib::
-    DESTINATION lib/cmake/ViaHttpLib
+    FILE ViaHttpLibTargets.cmake
+    NAMESPACE Via::
+    DESTINATION ${ConfigPackageLocation}
 )
 
-add_library(ViaHttpLib::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(Via::httplib ALIAS ${PROJECT_NAME})
 
-find_package (Git)
-if(Git_FOUND)
-  set(CPACK_PACKAGE_VERSION "COMMAND ${GIT_EXECUTABLE} .git describe")
-else()
-  set(CPACK_PACKAGE_VERSION "1.4.0")
-endif()
+set(CPACK_PACKAGE_VERSION "1.4.1")
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("ViaHttpLibConfigVersion.cmake"
+  VERSION ${CPACK_PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES "ViaHttpLibConfig.cmake" "ViaHttpLibConfigVersion.cmake"
+  DESTINATION ${ConfigPackageLocation}
+)
 
 include(CPack)
