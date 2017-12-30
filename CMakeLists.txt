@@ -16,16 +16,7 @@ endif(VIA_HTTPLIB_BUILD_STATIC_LIBS)
 
 set(CMAKE_DEBUG_POSTFIX "-debug")
 
-add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE} "")
-
-file(GLOB_RECURSE INCLUDE_FILES include/via/*.hpp)
-target_sources(${PROJECT_NAME}
-  PRIVATE
-    ${INCLUDE_FILES}
-)
-
-target_sources(${PROJECT_NAME} 
-  PRIVATE
+add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
     src/via/http/character.cpp
     src/via/http/chunk.cpp
     src/via/http/header_field.cpp
@@ -38,6 +29,11 @@ target_sources(${PROJECT_NAME}
 
 find_package(Boost REQUIRED COMPONENTS system)
 if(Boost_FOUND)
+  target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+
+  # Boost::asio is header only but it requires Boost::system
+  target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
+
   # Note: request_router.cpp and authentication files require
   # boost::algorithm and boost::archive respectively.
   target_sources(${PROJECT_NAME} 
@@ -50,11 +46,6 @@ else()
   find_package(Asio)
   target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
 endif(Boost_FOUND)
-
-if (WIN32)
-  # Set minimum version to Windows 7
-  # target_compile_definitions(${PROJECT_NAME} PUBLIC WIN32_WINNT=_WIN32_WINNT_WIN7)
-endif(WIN32)
 
 if (MSVC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC SCL_SECURE_NO_WARNINGS)
@@ -73,14 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 if(Boost_FOUND)
-  target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-  # Boost::asio is header only but it requires Boost::system
-  target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
-  
-  add_executable(${PROJECT_NAME}_test "")
-  
-  target_sources(${PROJECT_NAME}_test
-  PRIVATE
+  add_executable(${PROJECT_NAME}_test
     tests/test_main.cpp
     tests/http/test_character.cpp
     tests/http/test_chunk.cpp
@@ -93,6 +77,12 @@ if(Boost_FOUND)
     tests/http/authentication/test_base64.cpp
     tests/http/authentication/test_basic_authentication.cpp
     tests/thread/test_threadsafe_hash_map.cpp
+  )
+  
+  file(GLOB_RECURSE INCLUDE_FILES include/via/*.hpp)
+  target_sources(${PROJECT_NAME}_test
+    PRIVATE
+      ${INCLUDE_FILES}
   )
   
   target_link_libraries(${PROJECT_NAME}_test 
@@ -125,11 +115,11 @@ install(TARGETS ${PROJECT_NAME} EXPORT ViaHttpLibTargets
 set(ConfigPackageLocation lib/cmake/ViaHttpLib)
 install(EXPORT ViaHttpLibTargets 
     FILE ViaHttpLibTargets.cmake
-    NAMESPACE Via::
+    NAMESPACE ViaHttpLib::
     DESTINATION ${ConfigPackageLocation}
 )
 
-add_library(Via::httplib ALIAS ${PROJECT_NAME})
+add_library(ViaHttpLib::httplib ALIAS ${PROJECT_NAME})
 
 set(CPACK_PACKAGE_VERSION "1.4.1")
 

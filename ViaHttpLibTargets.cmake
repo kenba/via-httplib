@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget Via::via-httplib)
+foreach(_expectedTarget ViaHttpLib::via-httplib)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -50,13 +50,13 @@ if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
 
-# Create imported target Via::via-httplib
-add_library(Via::via-httplib STATIC IMPORTED)
+# Create imported target ViaHttpLib::via-httplib
+add_library(ViaHttpLib::via-httplib STATIC IMPORTED)
 
-set_target_properties(Via::via-httplib PROPERTIES
+set_target_properties(ViaHttpLib::via-httplib PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "SCL_SECURE_NO_WARNINGS"
   INTERFACE_COMPILE_FEATURES "cxx_std_11"
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;C:/DevLibraries/boost/boost_1_65_0;${_IMPORT_PREFIX}/include"
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "Boost::system"
 )
 
