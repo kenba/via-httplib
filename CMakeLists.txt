@@ -28,12 +28,12 @@ add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
     src/via/http/response_status.cpp
 )
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
 if(Boost_FOUND)
   target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
   # Boost::asio is header only but it requires Boost::system
-  target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
+  # target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
 
   # Note: request_router.cpp and authentication files require
   # boost::algorithm and boost::archive respectively.
@@ -92,17 +92,18 @@ if(VIA_HTTPLIB_BUILD_TESTS)
     PRIVATE
    ${PROJECT_NAME})
   
-  target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
   if (MSVC)
     target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
+	target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
     
     find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
       PRIVATE
-      Boost::thread
-      Boost::unit_test_framework)
+	  boost_system
+      boost_thread
+      boost_unit_test_framework)
   endif()
 	
   add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
