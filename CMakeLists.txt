@@ -4,7 +4,7 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 # The software should be used for Good, not Evil.
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.2)
 project (via-httplib)
 
 option(VIA_HTTPLIB_BUILD_SHARED_LIBS "Build via-httplib as shared libraries." ON)
@@ -28,13 +28,6 @@ set (sources
 # see: https://cmake.org/pipermail/cmake/2012-August/051811.html
 add_custom_target(headers SOURCES ${includes})
 
-find_package (Git)
-if(Git_FOUND)
-  set(GIT_VERSION "COMMAND ${GIT_EXECUTABLE} .git describe")
-else()
-  set(GIT_VERSION "1.4.0")
-endif()
-
 if(VIA_HTTPLIB_BUILD_TESTS)
   file(GLOB_RECURSE sources_test tests/*.cpp)
   set(Boost_COMPONENTS system thread unit_test_framework)
@@ -44,7 +37,7 @@ endif()
 
 # Note: request_router.cpp and authentication files require
 # boost::algorithm and boost::archive respectively.
-find_package(Boost ${Boost_COMPONENTS})
+find_package(Boost COMPONENTS ${Boost_COMPONENTS})
 if(Boost_FOUND)
   set(Boost_USE_MULTITHREADED ON)
   include_directories(${Boost_INCLUDE_DIRS})
@@ -78,8 +71,6 @@ else()
   set( VIA_HTTPLIB_LIBRARY_TYPE STATIC )
 endif()
 
-## packaging
-
 add_library(${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
   ${includes} ${sources})
 
@@ -87,8 +78,16 @@ if(VIA_HTTPLIB_BUILD_TESTS)
   target_compile_options(${VIA_HTTPLIB_LIBRARY_NAME} PRIVATE --coverage)
   add_executable(unit_tests ${includes} ${sources} ${sources_test}) 
   target_compile_options(unit_tests PRIVATE --coverage)
-  target_link_libraries(unit_tests ${Boost_COMPONENTS})
+  target_link_libraries(unit_tests PRIVATE
+     ${VIA_HTTPLIB_LIBRARY_NAME}
+	 Boost::system
+	 Boost::thread
+	 Boost::unit_test_framework)
 endif(VIA_HTTPLIB_BUILD_TESTS)
+
+## packaging
+
+set(GIT_VERSION "1.4.1")
 
 install(TARGETS ${VIA_HTTPLIB_LIBRARY_NAME} DESTINATION lib)
 
