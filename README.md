@@ -1,5 +1,7 @@
 # via-httplib: A C++ HTTP Library
 
+[![Build Status](https://travis-ci.org/kenba/via-httplib.svg?branch=master)](https://travis-ci.org/kenba/via-httplib)
+
 A lightweight library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
 `via-httplib` is an asynchronous communications library built upon `asio` (either
