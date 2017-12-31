@@ -17,16 +17,6 @@ env:
   
     # Boost
     - BOOST_VERSION=default
-  
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-precise-3.8
-    
-    packages:
-    - g++-6
-    - clang-3.8
 
 before_install:
   - pip install --user cpp-coveralls
@@ -34,7 +24,8 @@ before_install:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_BUILD_SHARED_LIBS=OFF -DVIA_HTTPLIB_BUILD_TESTS=ON --build .. -- -j2
+  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ..
+  - make
 
 after_success:
   - coveralls --exclude lib --exclude unit_tests --gcov-options '\-lp'
