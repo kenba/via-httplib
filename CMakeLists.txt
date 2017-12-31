@@ -47,7 +47,7 @@ if (MSVC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC SCL_SECURE_NO_WARNINGS)
   target_compile_options(${PROJECT_NAME} PRIVATE /W4)
 else()
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif(MSVC)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
