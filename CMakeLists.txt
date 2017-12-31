@@ -84,7 +84,9 @@ add_library(${VIA_HTTPLIB_LIBRARY_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
   ${includes} ${sources})
 
 if(VIA_HTTPLIB_BUILD_TESTS)
-  add_executable(unit_tests ${includes} ${sources} ${sources_test})
+  target_compile_options(${VIA_HTTPLIB_LIBRARY_NAME} PRIVATE --coverage)
+  add_executable(unit_tests ${includes} ${sources} ${sources_test}) 
+  target_compile_options(unit_tests PRIVATE --coverage)
   target_link_libraries(unit_tests ${Boost_COMPONENTS})
 endif(VIA_HTTPLIB_BUILD_TESTS)
 

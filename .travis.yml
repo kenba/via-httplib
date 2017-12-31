@@ -9,8 +9,7 @@ branches:
 compiler:
   - gcc
   - clang
-  
-    
+
 env:
   global:
     # Ubuntu version
@@ -28,12 +27,17 @@ addons:
     packages:
     - g++-6
     - clang-3.8
-        
+
+before_install:
+  - pip install --user cpp-coveralls
+ 
 script:
   - mkdir _builds
   - cd _builds
-  - cmake ..
-  - make
+  - cmake -DVIA_HTTPLIB_BUILD_SHARED_LIBS=OFF -DVIA_HTTPLIB_BUILD_TESTS=ON --build .. -- -j2
+
+after_success:
+  - coveralls --exclude lib --exclude unit_tests --gcov-options '\-lp'
   
 notifications:
   email:
