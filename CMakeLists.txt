@@ -51,6 +51,7 @@ else()
 endif(MSVC)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_override)
   
 target_include_directories(${PROJECT_NAME} PUBLIC 
   $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}/include>
