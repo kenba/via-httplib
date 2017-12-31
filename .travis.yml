@@ -34,7 +34,7 @@ before_install:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ..
+  - cmake ..
   - make
 
 after_success:
