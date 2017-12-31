@@ -1,6 +1,7 @@
 # via-httplib: A C++ HTTP Library
 
-[![Build Status](https://travis-ci.org/kenba/via-httplib.svg?branch=master)](https://travis-ci.org/kenba/via-httplib)
+#[![Build Status](https://travis-ci.org/kenba/via-httplib.svg?branch=master)](https://travis-ci.org/kenba/via-httplib)
+#[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
 
 A lightweight library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
