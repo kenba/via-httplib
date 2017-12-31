@@ -43,9 +43,9 @@ if(Boost_FOUND)
       src/via/http/authentication/base64.cpp
       src/via/http/authentication/basic.cpp 
   )
-else()
-  find_package(Asio)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
+# else()
+#  find_package(Asio)
+#  target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
 endif(Boost_FOUND)
 
 if (MSVC)
