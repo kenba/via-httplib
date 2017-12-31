@@ -1,6 +1,6 @@
 language: cpp
 os: linux
-dist: precise
+dist: trusty
 sudo: false
 
 branches:
@@ -16,6 +16,7 @@ env:
   global:
     # Boost
     - BOOST_VERSION=default
+    - BOOST_BUILD=true
 
 cache:
   directories:
@@ -80,11 +81,12 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ${CMAKE_OPTIONS} .. 
   - make
+  - ctest
 
 after_success:
-  - coveralls --exclude lib --exclude unit_tests --gcov-options '\-lp'
+  - coveralls --exclude lib --exclude via_http_test --gcov-options '\-lp'
   
 notifications:
   email:
