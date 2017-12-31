@@ -1,0 +1,44 @@
+language: cpp
+sudo: false
+
+branches:
+  only:
+  - master
+  - "/^v\\d+\\./"
+
+compiler:
+  - gcc
+  - clang
+  
+    
+env:
+  global:
+    # Ubuntu version
+    - LINUX_DIST=trusty
+  
+    # Boost
+    - BOOST_VERSION=default
+  
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.8
+    
+    packages:
+    - g++-6
+    - clang-3.8
+        
+script:
+  - mkdir _builds
+  - cd _builds
+  - cmake ..
+  - make
+  
+notifications:
+  email:
+    recipients:
+      - ken.barker@via-technology.aero
+    on_success: change
+    on_failure: always
+    
