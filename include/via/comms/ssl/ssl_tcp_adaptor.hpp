@@ -219,7 +219,7 @@ namespace via
 
         /// @fn is_disconnect
         /// This function determines whether the error is a socket disconnect,
-        /// it also determines whether the caller should perfrom an SSL
+        /// it also determines whether the caller should perform an SSL
         /// shutdown.
         /// @param error the error_code
         /// @retval ssl_shutdown - an SSL shutdown should be performed
@@ -229,7 +229,10 @@ namespace via
         {
           bool ssl_error(ASIO::error::get_ssl_category() == error.category());
           ssl_shutdown = ssl_error &&
+// SSL_R_SHORT_READ is no longer defined in openssl 1.1.x
+#ifdef SSL_R_SHORT_READ
                (SSL_R_SHORT_READ != ERR_GET_REASON(error.value())) &&
+#endif
                (SSL_R_PROTOCOL_IS_SHUTDOWN != ERR_GET_REASON(error.value()));
 
           return ssl_error && !ssl_shutdown;
