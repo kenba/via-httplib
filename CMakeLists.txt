@@ -4,7 +4,7 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 # The software should be used for Good, not Evil.
 
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.5)
 project (via-httplib)
 
 option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." OFF)
@@ -32,7 +32,7 @@ find_package(Boost REQUIRED)
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
 # Boost::asio is header only but it requires Boost::system
-# target_link_libraries(${PROJECT_NAME} INTERFACE boost_system)
+target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
 
 # Note: request_router.cpp and authentication files require
 # boost::algorithm and boost::archive respectively.
@@ -50,8 +50,7 @@ else()
   target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif(MSVC)
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_override)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
   
 target_include_directories(${PROJECT_NAME} PUBLIC 
   $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}/include>
@@ -92,14 +91,14 @@ if(VIA_HTTPLIB_BUILD_TESTS)
     target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
-	target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
+	  target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
     
     find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
       PRIVATE
-	  boost_system
-      boost_thread
-      boost_unit_test_framework)
+	    Boost::system
+      Boost::thread
+      Boost::unit_test_framework)
   endif()
 	
   add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
