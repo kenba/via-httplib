@@ -16,11 +16,7 @@ env:
     # Boost
     - BOOST_VERSION=default
     - BOOST_BUILD=true
-
-cache:
-  directories:
-    - ${TRAVIS_BUILD_DIR}/deps/boost-1.64.0
-    
+   
 before_install:
   - pip install --user cpp-coveralls
   
@@ -70,8 +66,8 @@ install:
   ############################################################################
   - |
     if [[ "${BOOST_BUILD}" == "true" ]]; then
-      (cd ${BOOST_DIR}/tools/build && ./bootstrap.sh && ./b2 install --prefix=${BOOST_DIR}/lib)
-      export PATH=${DEPS_DIR}/b2/bin:${PATH}
+      (cd ${BOOST_DIR}/tools/build && ./bootstrap.sh --prefix=${DEPS_DIR}/boost && ./b2 install)
+      CMAKE_OPTIONS+=" -DBOOST_LIBRARYDIR=${DEPS_DIR}/boost/lib"
     fi
 
 before_script:
