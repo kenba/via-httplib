@@ -78,9 +78,8 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ${CMAKE_OPTIONS} .. 
+  - cmake ${CMAKE_OPTIONS} .. 
   - make
-  - ctest
 
 after_success:
   - coveralls --exclude lib --exclude via_http_test --gcov-options '\-lp'
