@@ -72,7 +72,7 @@ install:
     if [[ "${BOOST_BUILD}" == "true" ]]; then
       (cd ${BOOST_DIR}/tools/build && ./bootstrap.sh && ./b2 install --prefix=${DEPS_DIR}/b2)
       export PATH=${DEPS_DIR}/b2/bin:${PATH}
-      (cd ${BOOST_DIR} && ./b2 --with-thread --with-unit_test_framework --build-type=minimal ${BOOST_DIR}/lib)
+      (cd ${DEPS_DIR} && ./b2 --with-thread --with-unit_test_framework --build-type=minimal ${BOOST_DIR}/lib)
     fi
 
 before_script:
