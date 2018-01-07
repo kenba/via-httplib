@@ -7,7 +7,7 @@
 cmake_minimum_required (VERSION 3.5)
 project (via-httplib)
 
-option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." OFF)
+option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." ON)
 option(VIA_HTTPLIB_BUILD_STATIC_LIBS "Build via-httplib as static libraries." ON)
 set(VIA_HTTPLIB_LIBRARY_TYPE SHARED)
 

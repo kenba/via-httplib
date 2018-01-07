@@ -18,7 +18,6 @@ env:
     - BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu
     # CMake
     - CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR}"
-    - CMAKE_OPTIONS+=" -DVIA_HTTPLIB_BUILD_TESTS=ON"
    
 before_install:
   - pip install --user cpp-coveralls
@@ -51,7 +50,7 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
