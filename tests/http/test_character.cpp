@@ -16,6 +16,20 @@ using namespace via::http;
 //////////////////////////////////////////////////////////////////////////////
 BOOST_AUTO_TEST_SUITE(TestSeparators)
 
+BOOST_AUTO_TEST_CASE(EndOfLine)
+{
+  BOOST_CHECK(is_end_of_line('\r'));
+  BOOST_CHECK(is_end_of_line('\n'));
+  BOOST_CHECK(!is_end_of_line('\t'));
+}
+
+BOOST_AUTO_TEST_CASE(SpaceOrTab)
+{
+  BOOST_CHECK(is_space_or_tab(' '));
+  BOOST_CHECK(is_space_or_tab('\t'));
+  BOOST_CHECK(!is_space_or_tab('\r'));
+}
+
 BOOST_AUTO_TEST_CASE(ValidSeparators1)
 {
   BOOST_CHECK(is_separator('('));

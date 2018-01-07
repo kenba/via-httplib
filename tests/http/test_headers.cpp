@@ -495,6 +495,10 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
   std::string COOKIE_STR("abcdefg hijkl");
   const std::string& cookies(the_headers.find("set-cookie"));
   BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
+
+  BOOST_CHECK_EQUAL("Chunked",
+    the_headers.find
+    (header_field::id::TRANSFER_ENCODING).c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ValidCookieHeader2)
@@ -513,6 +517,10 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader2)
   std::string COOKIE_STR("abcdefg hijkl;ijklm nopq");
   const std::string& cookies(the_headers.find("set-cookie"));
   BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
+
+  BOOST_CHECK_EQUAL("Chunked",
+    the_headers.find
+    (header_field::id::TRANSFER_ENCODING).c_str());
 }
 
 BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
@@ -531,6 +539,10 @@ BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
   std::string CONTENT_STR("abcdefg hijkl,ijklm nopq");
   const std::string& content(the_headers.find("content-language"));
   BOOST_CHECK_EQUAL(CONTENT_STR, content);
+
+  BOOST_CHECK_EQUAL("Chunked",
+    the_headers.find
+    (header_field::id::TRANSFER_ENCODING).c_str());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
