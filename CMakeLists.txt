@@ -7,7 +7,7 @@
 cmake_minimum_required (VERSION 3.5)
 project (via-httplib)
 
-option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." ON)
+option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." OFF)
 option(VIA_HTTPLIB_BUILD_STATIC_LIBS "Build via-httplib as static libraries." ON)
 set(VIA_HTTPLIB_LIBRARY_TYPE SHARED)
 
@@ -65,7 +65,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
-  target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
 
   add_executable(${PROJECT_NAME}_test
     tests/test_main.cpp
@@ -96,6 +95,7 @@ if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
     target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
     
     find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
