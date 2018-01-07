@@ -28,20 +28,25 @@ add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
     src/via/http/response_status.cpp
 )
 
-find_package(Boost REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+find_package(Boost REQUIRED COMPONENTS system)
+if(Boost_FOUND)
+  target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
-# Boost::asio is header only but it requires Boost::system
-target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
+  # Boost::asio is header only but it requires Boost::system
+  target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
 
-# Note: request_router.cpp and authentication files require
-# boost::algorithm and boost::archive respectively.
-target_sources(${PROJECT_NAME} 
-PRIVATE
-  src/via/http/request_router.cpp
-  src/via/http/authentication/base64.cpp
-  src/via/http/authentication/basic.cpp 
-)
+  # Note: request_router.cpp and authentication files require
+  # boost::algorithm and boost::archive respectively.
+  target_sources(${PROJECT_NAME} 
+    PRIVATE
+      src/via/http/request_router.cpp
+      src/via/http/authentication/base64.cpp
+      src/via/http/authentication/basic.cpp 
+  )
+else()
+  find_package(Asio)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
+endif(Boost_FOUND)
 
 if (MSVC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC SCL_SECURE_NO_WARNINGS)
@@ -59,7 +64,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
-if(VIA_HTTPLIB_BUILD_TESTS)
+if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
   target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
 
   add_executable(${PROJECT_NAME}_test
@@ -91,27 +96,45 @@ if(VIA_HTTPLIB_BUILD_TESTS)
     target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
-	  target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
     
     find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
       PRIVATE
-	    Boost::system
+      Boost::system
       Boost::thread
       Boost::unit_test_framework)
   endif()
 	
   add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
   
-endif(VIA_HTTPLIB_BUILD_TESTS)
+endif()
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} EXPORT ViaHttpLibTargets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
     INCLUDES DESTINATION include
 )
 
+set(ConfigPackageLocation lib/cmake/ViaHttpLib)
+install(EXPORT ViaHttpLibTargets 
+    FILE ViaHttpLibTargets.cmake
+    NAMESPACE ViaHttpLib::
+    DESTINATION ${ConfigPackageLocation}
+)
+
+add_library(ViaHttpLib::httplib ALIAS ${PROJECT_NAME})
+
 set(CPACK_PACKAGE_VERSION "1.4.1")
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("ViaHttpLibConfigVersion.cmake"
+  VERSION ${CPACK_PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES "ViaHttpLibConfig.cmake" "ViaHttpLibConfigVersion.cmake"
+  DESTINATION ${ConfigPackageLocation}
+)
 
 include(CPack)

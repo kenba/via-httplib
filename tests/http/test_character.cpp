@@ -166,25 +166,25 @@ BOOST_AUTO_TEST_CASE(ValidHex1)
 BOOST_AUTO_TEST_CASE(InvalidHex1)
 {
   std::string hex_string("0xabcdef");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidHex2)
 {
   std::string hex_string("abcdefx");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidHex3)
 {
   std::string hex_string("ffffffffff");
-  size_t value(from_hex_string(hex_string));
+  auto value(from_hex_string(hex_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidHex4)
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(InvalidHex4)
   std::string hex_string("");
   size_t value(from_hex_string(hex_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(std::numeric_limits<size_t>::max(), value);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -220,25 +220,25 @@ BOOST_AUTO_TEST_CASE(ValidDec1)
 BOOST_AUTO_TEST_CASE(InvalidDec1)
 {
   std::string dec_string("123456x");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidDec2)
 {
   std::string dec_string("10000000000000000");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_CASE(InvalidDec3)
 {
   std::string dec_string("");
-  size_t value(from_dec_string(dec_string));
+  auto value(from_dec_string(dec_string));
 
-  BOOST_CHECK_EQUAL(size_t(ULONG_MAX), value);
+  BOOST_CHECK_EQUAL(-1, value);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
