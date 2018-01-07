@@ -20,8 +20,8 @@ BOOST_AUTO_TEST_CASE(Default_Single_Threaded_1)
   threadsafe_hash_map<int, int> test_hash_map;
   BOOST_CHECK_EQUAL(19u, test_hash_map.bucket_count());
 
-  BOOST_CHECK_EQUAL((19u + 1u) * 64u, sizeof(threadsafe_hash_map<int, int>));
-
+  BOOST_CHECK((19u + 1u) * 64u <= sizeof(threadsafe_hash_map<int, int>));
+  
   typedef threadsafe_hash_map<int, int>::value_type vt;
 
   // Test an empty map

@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(InvalidHex2)
 
 BOOST_AUTO_TEST_CASE(InvalidHex3)
 {
-  std::string hex_string("ffffffffff");
+  std::string hex_string("fffffffffffffffff");
   auto value(from_hex_string(hex_string));
 
   BOOST_CHECK_EQUAL(-1, value);
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(InvalidDec1)
 
 BOOST_AUTO_TEST_CASE(InvalidDec2)
 {
-  std::string dec_string("10000000000000000");
+  std::string dec_string("10000000000000000000");
   auto value(from_dec_string(dec_string));
 
   BOOST_CHECK_EQUAL(-1, value);
