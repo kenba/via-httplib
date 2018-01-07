@@ -14,8 +14,11 @@ compiler:
 env:
   global:
     # Boost
-    - BOOST_VERSION=default
-    - BOOST_BUILD=true
+    - BOOST_DIR=/usr/include
+    - BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu
+    # CMake
+    - CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR}"
+    - CMAKE_OPTIONS+=" -DVIA_HTTPLIB_BUILD_TESTS=True"
    
 before_install:
   - pip install --user cpp-coveralls
@@ -26,28 +29,7 @@ install:
   ############################################################################
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
-  - if [[ "${BOOST_VERSION}" == "default" ]]; then BOOST_VERSION=1.64.0; fi
-  
-  ############################################################################
-  # Install Boost headers
-  ############################################################################
-  - |
-    if [[ "${BOOST_VERSION}" != "" ]]; then
-      BOOST_DIR=${DEPS_DIR}/boost-${BOOST_VERSION}
-      if [[ -z "$(ls -A ${BOOST_DIR})" ]]; then
-        if [[ "${BOOST_VERSION}" == "trunk" ]]; then
-          BOOST_URL="http://github.com/boostorg/boost.git"
-          travis_retry git clone --depth 1 --recursive ${BOOST_URL} ${BOOST_DIR} || exit 1
-          (cd ${BOOST_DIR} && ./bootstrap.sh && ./b2 headers) || exit 1
-        else
-          BOOST_URL="http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_${BOOST_VERSION//\./_}.tar.gz"
-          mkdir -p ${BOOST_DIR}
-          { travis_retry wget -O - ${BOOST_URL} | tar --strip-components=1 -xz -C ${BOOST_DIR}; } || exit 1
-        fi
-      fi
-      CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR}"
-    fi
-    
+      
   ############################################################################
   # Install a recent CMake
   ############################################################################
@@ -61,18 +43,9 @@ install:
     fi
   - cmake --version
 
-  ############################################################################
-  # Install Boost.Build
-  ############################################################################
-  - |
-    if [[ "${BOOST_BUILD}" == "true" ]]; then
-      (cd ${BOOST_DIR}/tools/build && ./bootstrap.sh && ./b2 install --prefix=${DEPS_DIR}/b2)
-      export PATH=${DEPS_DIR}/b2/bin:${PATH}
-      (cd ${BOOST_DIR} && ./bootstrap.sh --with-libraries=unit_test_framework,thread,system --prefix=${DEPS_DIR}/boost && b2 link=shared threading=multi variant=release install)
-      CMAKE_OPTIONS+=" -DBOOST_LIBRARYDIR=${DEPS_DIR}/boost/lib"
-    fi
-
 before_script:
+  - sudo apt-get update -qq
+  - sudo apt-get install libboost-thread-dev libboost-system-dev libboost-test-dev
   - cd ${TRAVIS_BUILD_DIR}
 
 script:
@@ -82,7 +55,7 @@ script:
   - make
 
 after_success:
-  - coveralls --exclude lib --exclude via_http_test --gcov-options '\-lp'
+  - coveralls --exclude lib --exclude via-httplib_test --gcov-options '\-lp'
   
 notifications:
   email:
