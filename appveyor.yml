@@ -4,7 +4,11 @@ image: Visual Studio 2017
 
 platform:
   - x64
- 
+
+environment:
+  BOOST_ROOT: C:\Libraries\boost_1_65_1
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_65_1\lib64-msvc-14.1
+
 configuration:
   - Release
   - Debug
@@ -13,7 +17,7 @@ install:
     - git submodule update --init --recursive
 
 before_build:
-    - cmake -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=C:\Libraries\boost_1_65_1 .
+    - cmake -G "Visual Studio 15 2017 Win64" .
 
 build:
   project: $(APPVEYOR_BUILD_FOLDER)\$(APPVEYOR_PROJECT_NAME).sln
