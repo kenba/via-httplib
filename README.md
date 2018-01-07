@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/kenba/via-httplib.svg?branch=master)](https://travis-ci.org/kenba/via-httplib)
 [![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
+[![Build status](https://ci.appveyor.com/api/projects/status/jfc8gvnncfnr18fs?svg=true)](https://ci.appveyor.com/project/kenba/via-httplib)
 
 A lightweight library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
