@@ -55,7 +55,7 @@ else()
   target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif(MSVC)
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_14)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_lambdas)
   
 target_include_directories(${PROJECT_NAME} PUBLIC 
   $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}/include>
@@ -102,7 +102,9 @@ if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
       PRIVATE
       Boost::system
       Boost::thread
-      Boost::unit_test_framework)
+      Boost::unit_test_framework
+      --coverage)
+    
   endif()
 	
   add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)

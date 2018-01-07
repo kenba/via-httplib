@@ -53,6 +53,7 @@ script:
   - cd _builds
   - cmake ${CMAKE_OPTIONS} .. 
   - make
+  - ./via-httplib_test
 
 after_success:
   - coveralls --exclude lib --exclude via-httplib_test --gcov-options '\-lp'
