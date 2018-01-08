@@ -499,6 +499,11 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
   BOOST_CHECK_EQUAL("Chunked",
     the_headers.find
     (header_field::id::TRANSFER_ENCODING).c_str());
+
+  std::string HEADER_STRING("set-cookie: abcdefg hijkl\r\n");
+  HEADER_STRING += "transfer-encoding: Chunked\r\n";
+  auto header_str(the_headers.to_string());
+  BOOST_CHECK_EQUAL(HEADER_STRING, header_str);
 }
 
 BOOST_AUTO_TEST_CASE(ValidCookieHeader2)

@@ -8,6 +8,7 @@ cmake_minimum_required (VERSION 3.5)
 project (via-httplib)
 
 option(VIA_HTTPLIB_BUILD_TESTS "Build the unit tests." OFF)
+option(VIA_HTTPLIB_COVERAGE "Enable code coverage." OFF)
 option(VIA_HTTPLIB_BUILD_STATIC_LIBS "Build via-httplib as static libraries." ON)
 set(VIA_HTTPLIB_LIBRARY_TYPE SHARED)
 
@@ -95,15 +96,18 @@ if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
     target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
   else()
     target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
-    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
     
     find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
     target_link_libraries(${PROJECT_NAME}_test
       PRIVATE
       Boost::system
       Boost::thread
-      Boost::unit_test_framework
-      --coverage)
+      Boost::unit_test_framework)
+
+      if (VIA_HTTPLIB_COVERAGE)
+        target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+        target_link_libraries(${PROJECT_NAME}_test PRIVATE --coverage)
+      endif()
     
   endif()
 	
@@ -127,7 +131,7 @@ install(EXPORT ViaHttpLibTargets
 
 add_library(ViaHttpLib::httplib ALIAS ${PROJECT_NAME})
 
-set(CPACK_PACKAGE_VERSION "1.4.1")
+set(CPACK_PACKAGE_VERSION "1.5.0")
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("ViaHttpLibConfigVersion.cmake"

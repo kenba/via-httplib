@@ -51,13 +51,13 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
-  - coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
+  - coveralls --root . -e build/CMakeFiles --gcov-options '\-lp'
   
 notifications:
   email:

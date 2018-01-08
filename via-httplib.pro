@@ -15,9 +15,6 @@ isEmpty(VIAHTTPLIB) {
 }
 
 win32 {
-  # Min version is Windows 7
-  DEFINES += _WIN32_WINNT=_WIN32_WINNT_WIN7
-
   # Get the BOOST_ROOT environment variable
   BOOST_ROOT = $$(BOOST_ROOT)
 
@@ -37,7 +34,7 @@ win32 {
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 4
+  VER_MIN = 5
   VER_PAT = 0
 
   # Set BOOST_ROOT to the usual linux & mac locations
