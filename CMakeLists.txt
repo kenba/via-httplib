@@ -115,11 +115,24 @@ if(VIA_HTTPLIB_BUILD_TESTS AND Boost_FOUND)
   
 endif()
 
+# Introduce variables:
+# * CMAKE_INSTALL_LIBDIR
+# * CMAKE_INSTALL_BINDIR
+# * CMAKE_INSTALL_INCLUDEDIR
+include(GNUInstallDirs)
+
 install(TARGETS ${PROJECT_NAME} EXPORT ViaHttpLibTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+# Install headers:
+install(
+    DIRECTORY "include/via"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    FILES_MATCHING PATTERN "*.hpp"
 )
 
 set(ConfigPackageLocation lib/cmake/ViaHttpLib)
@@ -134,12 +147,12 @@ add_library(ViaHttpLib::httplib ALIAS ${PROJECT_NAME})
 set(CPACK_PACKAGE_VERSION "1.5.0")
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file("ViaHttpLibConfigVersion.cmake"
+write_basic_package_version_file("cmake/ViaHttpLibConfigVersion.cmake"
   VERSION ${CPACK_PACKAGE_VERSION}
   COMPATIBILITY AnyNewerVersion
 )
 
-install(FILES "ViaHttpLibConfig.cmake" "ViaHttpLibConfigVersion.cmake"
+install(FILES "cmake/ViaHttpLibConfig.cmake" "cmake/ViaHttpLibConfigVersion.cmake"
   DESTINATION ${ConfigPackageLocation}
 )
 
