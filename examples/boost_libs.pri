@@ -23,18 +23,22 @@ win32 {
     isEmpty(BOOST_VERSION) {
       error("Please set BOOST_VERSION to the version of the boost libraries")
     }
+    BOOST_LIB_SIZE = $$(BOOST_LIB_SIZE)
+    isEmpty(BOOST_VERSION) {
+      error("Please set BOOST_LIB_SIZE to the size of the boost libraries: -x64 or -x32")
+    }
     MINGW_VERSION = $$(MINGW_VERSION)
     isEmpty(MINGW_VERSION) {
-      error("Please set MINGW_VERSION to the version of the boost libraries")
+      error("Please set MINGW_VERSION to the version of the MinGW compiler")
     }
 
     BOOST_LIB_PREFIX = boost_
 
     CONFIG(release, debug|release){
-      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt$${BOOST_LIB_SIZE}$${BOOST_VERSION}
     }
     CONFIG(debug, debug|release){
-      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt-d$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt-d$${BOOST_LIB_SIZE}$${BOOST_VERSION}
     }
   }
 

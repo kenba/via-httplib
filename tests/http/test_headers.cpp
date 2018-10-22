@@ -500,8 +500,14 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
     the_headers.find
     (header_field::id::TRANSFER_ENCODING).c_str());
 
+// Visual Studio outputs string in different order to GCC and Clang
+#ifdef _MSC_VER
   std::string HEADER_STRING("set-cookie: abcdefg hijkl\r\n");
   HEADER_STRING += "transfer-encoding: Chunked\r\n";
+#else
+  std::string HEADER_STRING("transfer-encoding: Chunked\r\n");
+  HEADER_STRING += "set-cookie: abcdefg hijkl\r\n";
+#endif
   auto header_str(the_headers.to_string());
   BOOST_CHECK_EQUAL(HEADER_STRING, header_str);
 }
