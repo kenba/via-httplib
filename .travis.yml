@@ -57,7 +57,7 @@ script:
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
-  - coveralls --root . -e build/CMakeFiles --gcov-options '\-lp'
+  - coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
   
 notifications:
   email:
