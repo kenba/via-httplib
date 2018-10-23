@@ -131,8 +131,9 @@ namespace via
 #endif
             next_connection_->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
-            next_connection_.reset();
           }
+
+          next_connection_.reset();
 
           start_accept();
         }
