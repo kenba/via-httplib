@@ -289,9 +289,10 @@ namespace via
       /// The function called whenever a socket adaptor receives a connection
       /// handshake.
       /// It ensures that the connection still exists and the event is valid.
-      /// If there was an error, it shutdowns the connection and signals the
-      /// error. Otherwise, it calls enable_reception to listen on the
-      /// connection and signals that it's connected.
+      /// If there was an error, it closes the connection, signals the error
+      /// and disconnects the connection.
+      /// Otherwise, it calls enable_reception to listen on the connection
+      /// and signals that it's connected.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       static void handshake_callback(weak_pointer ptr,
@@ -314,7 +315,8 @@ namespace via
           else
           {
             pointer->close();
-            pointer->signal_error(error);
+            pointer->error_callback_(error, ptr);
+            pointer->event_callback_(DISCONNECTED, ptr);
           }
         }
       }
