@@ -328,7 +328,8 @@ namespace via
       /// this shall always be accepted for an unencypted conection.
       /// If the error was host not found and there are more host to try,
       /// it attempts to connect to the next host
-      /// Otherwise it shuts down and signals an error
+      /// Otherwise it closes the socket, signals an error and disconnects the
+      /// connection.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param host_iterator an iterator to the host to connect to.
@@ -370,7 +371,8 @@ namespace via
             else
             {
               pointer->close();
-              pointer->signal_error(error);
+              pointer->error_callback_(error, ptr);
+              pointer->event_callback_(DISCONNECTED, ptr);
             }
           }
         }
