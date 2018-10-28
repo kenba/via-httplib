@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2016 Ken Barker
+// Copyright (c) 2015-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -326,9 +326,14 @@ namespace via
       /// @fn is_disconnect
       /// This function determines whether the error is a socket disconnect.
       // @param error the error_code
-      // @retval ssl_shutdown - an ssl_disconnect should be performed
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(ASIO_ERROR_CODE const&, bool&) NOEXCEPT
+      bool is_disconnect(ASIO_ERROR_CODE const&) NOEXCEPT
+      { return false; }
+
+      /// This function determines whether the caller should perform an SSL
+      /// shutdown.
+      // @param error the error_code
+      bool is_shutdown(ASIO_ERROR_CODE const&) NOEXCEPT
       { return false; }
 
       /// @fn socket

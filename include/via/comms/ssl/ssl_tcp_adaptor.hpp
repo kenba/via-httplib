@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -224,18 +224,21 @@ namespace via
         /// @param error the error_code
         /// @retval ssl_shutdown - an SSL shutdown should be performed
         /// @return true if the socket is disconnected, false otherwise.
-        bool is_disconnect(ASIO_ERROR_CODE const& error,
-                           bool& ssl_shutdown) NOEXCEPT
+        bool is_disconnect(ASIO_ERROR_CODE const& error) NOEXCEPT
+        { return ASIO::error::get_ssl_category() == error.category(); }
+
+        /// @fn is_shutdown
+        /// This function determines whether the caller should perform an SSL
+        /// shutdown.
+        // @param error the error_code
+        bool is_shutdown(ASIO_ERROR_CODE const& error) NOEXCEPT
         {
-          bool ssl_error(ASIO::error::get_ssl_category() == error.category());
-          ssl_shutdown = ssl_error &&
+          return
 // SSL_R_SHORT_READ is no longer defined in openssl 1.1.x
 #ifdef SSL_R_SHORT_READ
                (SSL_R_SHORT_READ != ERR_GET_REASON(error.value())) &&
 #endif
                (SSL_R_PROTOCOL_IS_SHUTDOWN != ERR_GET_REASON(error.value()));
-
-          return ssl_error && !ssl_shutdown;
         }
 
         /// @fn socket

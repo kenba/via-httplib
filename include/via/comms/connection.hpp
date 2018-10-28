@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2017 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -47,7 +47,6 @@ namespace via
       public std::enable_shared_from_this<connection<SocketAdaptor, Container>>
     {
     public:
-
 
       /// A weak pointer to a connection.
       typedef typename std::weak_ptr<connection<SocketAdaptor, Container>>
@@ -170,34 +169,36 @@ namespace via
         case ASIO::error::bad_descriptor:
           return true;
         default:
-          {
-          bool ssl_shutdown(false);
-          bool is_a_disconnect(SocketAdaptor::is_disconnect(error, ssl_shutdown));
-          if (ssl_shutdown)
-            shutdown();
-
-          return is_a_disconnect;
-          }
+          return false;
         }
       }
 
-      /// @fn signal_error
+      /// @fn signal_error_or_disconnect
       /// This function is called whenever an error event occurs.
-      /// It determines whether the error code is for a disconnect in which
+      /// It determines whether the error code is for an ssl shutdown
+      /// in which case it sends a shutdown message or a disconnect in which
       /// case it sends a DISCONNECTED signal otherwise it sends the
       /// error signal.
-      void signal_error(ASIO_ERROR_CODE const& error)
+      void signal_error_or_disconnect(ASIO_ERROR_CODE const& error)
       {
-        if (is_error_a_disconnect(error))
-          event_callback_(DISCONNECTED, weak_from_this());
+        bool is_an_ssl_disconnect(SocketAdaptor::is_disconnect(error));
+        bool is_an_ssl_shutdown(is_an_ssl_disconnect && connected_ &&
+                                SocketAdaptor::is_shutdown(error));
+        if (is_an_ssl_shutdown)
+          shutdown();
         else
-          error_callback_(error, weak_from_this());
+        {
+          if (is_an_ssl_disconnect || is_error_a_disconnect(error))
+            event_callback_(DISCONNECTED, weak_from_this());
+          else
+            error_callback_(error, weak_from_this());
+        }
       }
 
       /// @fn read_callback
       /// The function called whenever a socket adaptor receives a data packet.
       /// It ensures that the connection still exists and the event is valid.
-      /// If there was an error it calls the connection's signal_error
+      /// If there was an error it calls the connection's signal_error_or_disconnect
       /// function, otherwise it calls the connection's read_handler.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
@@ -213,7 +214,7 @@ namespace via
         if (pointer && (ASIO::error::operation_aborted != error))
         {
           if (error)
-            pointer->signal_error(error);
+            pointer->signal_error_or_disconnect(error);
           else
             pointer->read_handler(bytes_transferred);
         }
@@ -236,7 +237,7 @@ namespace via
       /// @fn write_callback
       /// The function called whenever a socket adaptor has sent a data packet.
       /// It ensures that the connection still exists and the event is valid.
-      /// If there was an error it calls the connection's signal_error
+      /// If there was an error it calls the connection's signal_error_or_disconnect
       /// function, otherwise it calls the connection's write_handler.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
@@ -254,7 +255,7 @@ namespace via
           if (error)
           {
             pointer->tx_queue_->clear();
-            pointer->signal_error(error);
+            pointer->signal_error_or_disconnect(error);
           }
           else
           {
@@ -315,8 +316,7 @@ namespace via
           else
           {
             pointer->close();
-            pointer->error_callback_(error, ptr);
-            pointer->event_callback_(DISCONNECTED, ptr);
+            pointer->signal_error_or_disconnect(error);
           }
         }
       }
@@ -371,8 +371,7 @@ namespace via
             else
             {
               pointer->close();
-              pointer->error_callback_(error, ptr);
-              pointer->event_callback_(DISCONNECTED, ptr);
+              pointer->signal_error_or_disconnect(error);
             }
           }
         }
