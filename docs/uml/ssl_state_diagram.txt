@@ -1,0 +1,29 @@
+@startuml
+
+'Copyright (c) 2018 Ken Barker
+
+'title SSL connection states
+
+[*] --> Connecting : connect
+Connecting -> Handshaking
+Connecting --> [*] : connection error
+Handshaking : SSL handshake
+Handshaking --> Connected : CONNECTED
+Handshaking --> [*] : handshake error
+
+Connected : receive and
+Connected : send data
+Connected -> Connected : SENT
+Connected -> Connected : RECEIVED
+Connected --> [*] : DISCONNECTED
+
+Connected --> Shutdown_Pending : disconnect and\nsending data
+Connected --> Send_Shutdown : disconnect and\nnot sending data
+
+Shutdown_Pending : wait for data to be sent
+Shutdown_Pending -> Send_Shutdown
+
+Send_Shutdown : send SSL close notify
+Send_Shutdown --> Connected
+
+@enduml

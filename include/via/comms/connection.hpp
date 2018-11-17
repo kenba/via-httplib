@@ -92,6 +92,7 @@ namespace via
       bool keep_alive_;         ///< The tcp keep alive status.
       bool connected_;          ///< If the socket is connected.
       bool disconnect_pending_; ///< Shutdown the socket after the next write.
+      bool shutdown_sent_;      ///< The SSL shutdown signal has been sent.
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -182,10 +183,11 @@ namespace via
       void signal_error_or_disconnect(ASIO_ERROR_CODE const& error)
       {
         bool is_an_ssl_disconnect(SocketAdaptor::is_disconnect(error));
-        bool is_an_ssl_shutdown(is_an_ssl_disconnect && connected_ &&
+        bool is_an_ssl_shutdown(is_an_ssl_disconnect &&
                                 SocketAdaptor::is_shutdown(error));
-        if (is_an_ssl_shutdown)
-          shutdown();
+        // if the other end has requested an SSL shutdown
+        if (!shutdown_sent_ && is_an_ssl_shutdown)
+          shutdown(); // reply with an SSL shutdown
         else
         {
           if (is_an_ssl_disconnect || is_error_a_disconnect(error))
@@ -252,7 +254,11 @@ namespace via
         shared_pointer pointer(ptr.lock());
         if (pointer && (ASIO::error::operation_aborted != error))
         {
-          if (error)
+          // Disconnect the socket as soon as a shutdown request has been sent
+          // I.e. don't wait for the reply
+          if (pointer->shutdown_sent_)
+            pointer->event_callback_(DISCONNECTED, ptr);
+          else if (error)
           {
             pointer->tx_queue_->clear();
             pointer->signal_error_or_disconnect(error);
@@ -316,7 +322,7 @@ namespace via
           else
           {
             pointer->close();
-            pointer->signal_error_or_disconnect(error);
+            pointer->error_callback_(error, ptr);
           }
         }
       }
@@ -371,7 +377,7 @@ namespace via
             else
             {
               pointer->close();
-              pointer->signal_error_or_disconnect(error);
+              pointer->error_callback_(error, ptr);
             }
           }
         }
@@ -408,7 +414,8 @@ namespace via
         no_delay_(false),
         keep_alive_(false),
         connected_(false),
-        disconnect_pending_(false)
+        disconnect_pending_(false),
+        shutdown_sent_(false)
       {}
 
       /// Constructor for client connections.
@@ -438,7 +445,8 @@ namespace via
         no_delay_(false),
         keep_alive_(false),
         connected_(false),
-        disconnect_pending_(false)
+        disconnect_pending_(false),
+        shutdown_sent_(false)
       {}
 
       /// Set the socket's tcp no delay status.
@@ -653,6 +661,7 @@ namespace via
         std::shared_ptr<std::deque<Container>> tx_queue(tx_queue_);
 
         // Call shutdown with the callback
+        shutdown_sent_ = true;
         SocketAdaptor::shutdown([weak_ptr, tx_queue]
                         (ASIO_ERROR_CODE const& error, int bytes)
                         { write_callback(weak_ptr, error, bytes, tx_queue); });
