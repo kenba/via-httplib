@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2017 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -14,7 +14,6 @@
 /// @brief The server template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
-#include "via/no_except.hpp"
 #ifdef HTTP_SSL
   #ifdef ASIO_STANDALONE
     #include <asio/ssl/context.hpp>
@@ -261,7 +260,7 @@ namespace via
       /// @see server(ASIO::io_service& io_service)
       /// @see create(ASIO::io_service& io_service)
       /// @param event_callback the event callback function.
-      void set_event_callback(event_callback_type event_callback) NOEXCEPT
+      void set_event_callback(event_callback_type event_callback) noexcept
       { event_callback_ = event_callback; }
 
       /// @fn set_error_callback
@@ -271,7 +270,7 @@ namespace via
       /// @see server(ASIO::io_service& io_service)
       /// @see create(ASIO::io_service& io_service)
       /// @param error_callback the error callback function.
-      void set_error_callback(error_callback_type error_callback) NOEXCEPT
+      void set_error_callback(error_callback_type error_callback) noexcept
       { error_callback_ = error_callback; }
 
       /// @fn accept_connections
@@ -327,7 +326,7 @@ namespace via
       /// @return The password.
       const std::string password(std::size_t, // max_length,
                        ASIO::ssl::context::password_purpose)// purpose)
-        const NOEXCEPT
+        const noexcept
       { return password_; }
 
       /// @fn set_password
@@ -346,7 +345,7 @@ namespace via
 
       /// Set the size of the receive buffer.
       /// @param size the new size of the receive buffer.
-      void set_rx_buffer_size(size_t size) NOEXCEPT
+      void set_rx_buffer_size(size_t size) noexcept
       { rx_buffer_size_ = size; }
 
       /// @fn set_timeout
@@ -355,29 +354,29 @@ namespace via
       /// @post sockets will close if no activity has occured after the
       /// timeout period.
       /// @param timeout the timeout in milliseconds.
-      void set_timeout(int timeout) NOEXCEPT
+      void set_timeout(int timeout) noexcept
       { timeout_ = timeout; }
 
       /// @fn set_keep_alive
       /// Set the tcp keep alive status for all future connections.
       /// @param enable if true enables the tcp socket keep alive status.
-      void set_keep_alive(bool enable) NOEXCEPT
+      void set_keep_alive(bool enable) noexcept
       { keep_alive_ = enable; }
 
       /// Set the size of the tcp sockets receive buffer.
       /// @param size the new size of the socket receive buffer, must be > 0.
-      void set_receive_buffer_size(int size) NOEXCEPT
+      void set_receive_buffer_size(int size) noexcept
       { receive_buffer_size_ = size; }
 
       /// Set the size of the tcp sockets send buffer.
       /// @param size the new size of the socket send buffer, must be > 0.
-      void set_send_buffer_size(int size) NOEXCEPT
+      void set_send_buffer_size(int size) noexcept
       { send_buffer_size_ = size; }
 
       /// @fn set_no_delay
       /// Set the tcp no delay status for all future connections.
       /// @param enable if true it disables the Nagle algorithm.
-      void set_no_delay(bool enable) NOEXCEPT
+      void set_no_delay(bool enable) noexcept
       { no_delay_ = enable; }
 
       /// @fn close

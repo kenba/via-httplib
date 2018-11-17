@@ -15,7 +15,6 @@
 /// @brief Contains the udp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
-#include "via/no_except.hpp"
 
 namespace via
 {
@@ -327,19 +326,19 @@ namespace via
       /// This function determines whether the error is a socket disconnect.
       // @param error the error_code
       /// @return true if a disconnect error, false otherwise.
-      bool is_disconnect(ASIO_ERROR_CODE const&) NOEXCEPT
+      bool is_disconnect(ASIO_ERROR_CODE const&) noexcept
       { return false; }
 
       /// This function determines whether the caller should perform an SSL
       /// shutdown.
       // @param error the error_code
-      bool is_shutdown(ASIO_ERROR_CODE const&) NOEXCEPT
+      bool is_shutdown(ASIO_ERROR_CODE const&) noexcept
       { return false; }
 
       /// @fn socket
       /// Accessor for the underlying udp socket.
       /// @return a reference to the udp socket.
-      ASIO::ip::udp::socket& socket() NOEXCEPT
+      ASIO::ip::udp::socket& socket() noexcept
       { return socket_; }
     };
   }

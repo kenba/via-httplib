@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -97,7 +97,7 @@ namespace via
 
       /// clear the field_line.
       /// Sets all member variables to their initial state.
-      void clear() NOEXCEPT
+      void clear() noexcept
       {
         name_.clear();
         value_.clear();
@@ -108,7 +108,7 @@ namespace via
 
       /// swap member variables with another field_line.
       /// @param other the other field_line
-      void swap(field_line& other) NOEXCEPT
+      void swap(field_line& other) noexcept
       {
         name_.swap(other.name_);
         value_.swap(other.value_);
@@ -146,16 +146,16 @@ namespace via
 
       /// Accessor for the field name.
       /// @return the field name (as a lower case string)
-      const std::string& name() const NOEXCEPT
+      const std::string& name() const noexcept
       { return name_; }
 
       /// Accessor for the field value.
       /// @return the field value in the same case that it was received in.
-      const std::string& value() const NOEXCEPT
+      const std::string& value() const noexcept
       { return value_; }
 
       /// Calculate the length of the header.
-      size_t length() const NOEXCEPT
+      size_t length() const noexcept
       { return name_.size() + value_.size(); }
     }; // class field_line
 
@@ -210,7 +210,7 @@ namespace via
 
       /// Clear the message_headers.
       /// Sets all member variables to their initial state.
-      void clear() NOEXCEPT
+      void clear() noexcept
       {
         fields_.clear();
         field_.clear();
@@ -220,7 +220,7 @@ namespace via
 
       /// Swap member variables with another message_headers.
       /// @param other the other message_headers
-      void swap(message_headers& other) NOEXCEPT
+      void swap(message_headers& other) noexcept
       {
         fields_.swap(other.fields_);
         field_.swap(other.field_);
@@ -289,7 +289,7 @@ namespace via
       /// @return the value of the Content-Length field or
       /// -1 if it was invalid.
       /// May also return zero if it was not found.
-      std::ptrdiff_t content_length() const NOEXCEPT;
+      std::ptrdiff_t content_length() const noexcept;
 
       /// Whether Chunked Transfer Coding is applied to the message.
       /// @return true if there is a transfer-encoding header and it does
@@ -307,7 +307,7 @@ namespace via
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const NOEXCEPT
+      bool valid() const noexcept
       { return valid_; }
 
       // @return headers as a map
@@ -323,7 +323,7 @@ namespace via
 
     /// A function to determine whether the header string contains an extra
     /// CRLF pair, which could cause HTTP message spliting.
-    bool are_headers_split(std::string const& headers) NOEXCEPT;
+    bool are_headers_split(std::string const& headers) noexcept;
   }
 }
 

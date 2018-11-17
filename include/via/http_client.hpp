@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -342,7 +342,7 @@ namespace via
     }
 
     /// Accessor for whether the underlying socket is connected.
-    bool is_connected() const NOEXCEPT
+    bool is_connected() const noexcept
     { return connection_->connected(); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -350,22 +350,22 @@ namespace via
 
     /// Connect the invalid response received callback function.
     /// @param handler the handler for an invalid response received.
-    void invalid_response_event(ResponseHandler handler) NOEXCEPT
+    void invalid_response_event(ResponseHandler handler) noexcept
     { http_invalid_handler_ = handler; }
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected signal.
-    void connected_event(ConnectionHandler handler) NOEXCEPT
+    void connected_event(ConnectionHandler handler) noexcept
     { connected_handler_ = handler; }
 
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
-    void disconnected_event(ConnectionHandler handler) NOEXCEPT
+    void disconnected_event(ConnectionHandler handler) noexcept
     { disconnected_handler_ = handler; }
 
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
-    void message_sent_event(ConnectionHandler handler) NOEXCEPT
+    void message_sent_event(ConnectionHandler handler) noexcept
     { message_sent_handler_ = handler; }
 
     ////////////////////////////////////////////////////////////////////////
@@ -378,17 +378,17 @@ namespace via
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.
-    http::rx_response const& response() const NOEXCEPT
+    http::rx_response const& response() const noexcept
     { return rx_.response(); }
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const NOEXCEPT
+    http::rx_chunk<Container> const& chunk() const noexcept
     { return rx_.chunk(); }
 
     /// Accessor for the body.
     /// @return a constant reference to the body.
-    Container const& body() const NOEXCEPT
+    Container const& body() const noexcept
     { return rx_.body(); }
 
     /// Get the host name to send in the http "Host:" header.
@@ -554,7 +554,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a shared pointer to the connection
-    std::shared_ptr<connection_type> connection() NOEXCEPT
+    std::shared_ptr<connection_type> connection() noexcept
     { return connection_; }
   };
 }

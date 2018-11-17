@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -22,7 +22,7 @@ namespace via
     const std::string SC(";");
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_separator(char c) NOEXCEPT
+    bool is_separator(char c) noexcept
     {
       switch (c)
       {
@@ -38,12 +38,12 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_pct_encoded(char const* c) NOEXCEPT
+    bool is_pct_encoded(char const* c) noexcept
     { return (c[0] == '%') && std::isxdigit(c[1]) && std::isxdigit(c[2]); }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_gen_delim(char c) NOEXCEPT
+    bool is_gen_delim(char c) noexcept
     {
       switch (c)
       {
@@ -56,7 +56,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_sub_delim(char c) NOEXCEPT
+    bool is_sub_delim(char c) noexcept
     {
       switch (c)
       {
@@ -70,7 +70,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool is_unreserved(char c) NOEXCEPT
+    bool is_unreserved(char c) noexcept
     {
       if (std::isalnum(c))
         return true;
@@ -99,7 +99,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::ptrdiff_t from_hex_string(std::string const& hex_string) NOEXCEPT
+    std::ptrdiff_t from_hex_string(std::string const& hex_string) noexcept
     {
       // Ensure that the string only contains hexadecimal characters
       std::string::const_iterator iter(hex_string.begin());
@@ -121,7 +121,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::ptrdiff_t from_dec_string(std::string const& dec_string) NOEXCEPT
+    std::ptrdiff_t from_dec_string(std::string const& dec_string) noexcept
     {
       // Ensure that the string only contains decimal characters
       std::string::const_iterator iter(dec_string.begin());

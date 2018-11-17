@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -103,7 +103,7 @@ namespace via
 
       /// Clear the chunk_header.
       /// Sets all member variables to their initial state.
-      void clear() NOEXCEPT
+      void clear() noexcept
       {
         size_ = 0;
         length_ = 0;
@@ -117,7 +117,7 @@ namespace via
 
       /// Swap member variables with another chunk_header.
       /// @param other the other chunk_header
-      void swap(chunk_header& other) NOEXCEPT
+      void swap(chunk_header& other) noexcept
       {
         std::swap(size_, other.size_);
         std::swap(length_, other.length_);
@@ -150,32 +150,32 @@ namespace via
 
       /// Accessor for the strict crlf parsing state.
       /// @return the strict_crlf_ state.
-      bool strict_crlf() const NOEXCEPT
+      bool strict_crlf() const noexcept
       { return strict_crlf_; }
 
       /// Accessor for the chunk size.
       /// @return the chunk size in bytes.
-      size_t size() const NOEXCEPT
+      size_t size() const noexcept
       { return size_; }
 
       /// Accessor for the size hex string.
       /// @return the chunk size as a hex string.
-      std::string const& hex_size() const NOEXCEPT
+      std::string const& hex_size() const noexcept
       { return hex_size_; }
 
       /// Accessor for the chunk extension.
       /// @return the chunk extension, blank if none.
-      std::string const& extension() const NOEXCEPT
+      std::string const& extension() const noexcept
       { return extension_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const NOEXCEPT
+      bool valid() const noexcept
       { return valid_; }
 
       /// Function to determine whether this is the last chunk.
       /// @return true if the last chunk, false otherwise.
-      bool is_last() const NOEXCEPT
+      bool is_last() const noexcept
       { return size() == 0; }
 
       ////////////////////////////////////////////////////////////////////////
@@ -253,7 +253,7 @@ namespace via
 
       /// clear the rx_chunk.
       /// Sets all member variables to their initial state.
-      void clear() NOEXCEPT
+      void clear() noexcept
       {
         chunk_header::clear();
         data_.clear();
@@ -263,7 +263,7 @@ namespace via
 
       /// swap member variables with another rx_chunk.
       /// @param other the other rx_chunk
-      void swap(rx_chunk& other) NOEXCEPT
+      void swap(rx_chunk& other) noexcept
       {
         chunk_header::swap(other);
         data_.swap(other.data_);
@@ -337,17 +337,17 @@ namespace via
 
       /// Accessor for the chunk message trailers.
       /// @return a constant reference to the trailer message_headers
-      const message_headers& trailers() const NOEXCEPT
+      const message_headers& trailers() const noexcept
       { return trailers_; }
 
       /// Accessor for the chunk message data.
       /// @return a constant reference to the data
-      const Container& data() const NOEXCEPT
+      const Container& data() const noexcept
       { return data_; }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
-      bool valid() const NOEXCEPT
+      bool valid() const noexcept
       { return valid_; }
     }; // rx_chunk
 

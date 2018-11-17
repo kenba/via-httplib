@@ -15,7 +15,6 @@
 /// @brief The connection template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
-#include "via/no_except.hpp"
 #ifndef ASIO_STANDALONE
 #include <boost/system/error_code.hpp>
 #endif
@@ -702,11 +701,11 @@ namespace via
 
       /// @fn connected
       /// Accessor for the connected_ flag.
-      bool connected() const NOEXCEPT
+      bool connected() const noexcept
       { return connected_; }
 
       /// Accessor to set the connected_ flag.
-      void set_connected(bool enable) NOEXCEPT
+      void set_connected(bool enable) noexcept
       { connected_ = enable; }
 
       /// @fn send_data(Container const& packet)

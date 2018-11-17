@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -122,7 +122,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::ptrdiff_t message_headers::content_length() const NOEXCEPT
+    std::ptrdiff_t message_headers::content_length() const noexcept
     {
       // Find whether there is a content length field.
       const std::string& content_length(find(header_field::id::CONTENT_LENGTH));
@@ -190,7 +190,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool are_headers_split(std::string const& headers) NOEXCEPT
+    bool are_headers_split(std::string const& headers) noexcept
     {
       char prev('0');
       char pprev('0');

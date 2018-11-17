@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2017 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -505,13 +505,13 @@ namespace via
     /// Otherwise, the server will handle request with request_router_.
     /// @post disables the built-in request_router.
     /// @param handler the handler for a received HTTP request.
-    void request_received_event(RequestHandler handler) NOEXCEPT
+    void request_received_event(RequestHandler handler) noexcept
     { http_request_handler_ = handler; }
 
     /// Connect the chunk received callback function.
     /// @post disables automatic concatenating of chunks.
     /// @param handler the handler for a received HTTP chunk.
-    void chunk_received_event(ChunkHandler handler) NOEXCEPT
+    void chunk_received_event(ChunkHandler handler) noexcept
     { http_chunk_handler_ = handler; }
 
     /// Connect the expect continue received callback function.
@@ -523,7 +523,7 @@ namespace via
     /// so that the client can continue to send the body of the request.
     /// @post disables automatic sending of a 100 Continue response
     /// @param handler the handler for an "expects continue" request.
-    void request_expect_continue_event(RequestHandler handler) NOEXCEPT
+    void request_expect_continue_event(RequestHandler handler) noexcept
     { http_continue_handler_ = handler; }
 
     /// Connect the invalid request received callback function.
@@ -533,22 +533,22 @@ namespace via
     /// @post disables automatic sending of an invalid response message.
     /// @post disables auto_disconnect_ (if enabled).
     /// @param handler the handler for a invalid request received.
-    void invalid_request_event(RequestHandler handler) NOEXCEPT
+    void invalid_request_event(RequestHandler handler) noexcept
     { http_invalid_handler_ = handler; }
 
     /// Connect the connected callback function.
     /// @param handler the handler for the socket connected event.
-    void socket_connected_event(ConnectionHandler handler) NOEXCEPT
+    void socket_connected_event(ConnectionHandler handler) noexcept
     { connected_handler_= handler; }
 
     /// Connect the disconnected callback function.
     /// @param handler the handler for the socket disconnected signal.
-    void socket_disconnected_event(ConnectionHandler handler) NOEXCEPT
+    void socket_disconnected_event(ConnectionHandler handler) noexcept
     { disconnected_handler_ = handler; }
 
     /// Connect the message sent callback function.
     /// @param handler the handler for the message sent signal.
-    void message_sent_event(ConnectionHandler handler) NOEXCEPT
+    void message_sent_event(ConnectionHandler handler) noexcept
     { message_sent_handler_= handler; }
 
     ////////////////////////////////////////////////////////////////////////
@@ -556,55 +556,55 @@ namespace via
 
     /// Set whether to require strict CRLF HTTP request checking.
     /// @param enable strict CRLF HTTP checking
-    void set_strict_crlf(bool enable) NOEXCEPT
+    void set_strict_crlf(bool enable) noexcept
     { strict_crlf_ = enable; }
 
     /// Set the maximum number of consecutive whitespace characters to allow.
     /// @param max_length default http_request::DEFAULT_MAX_WHITESPACE_CHARS.
     void set_max_whitespace(unsigned char max_length =
-        http_request::DEFAULT_MAX_WHITESPACE_CHARS) NOEXCEPT
+        http_request::DEFAULT_MAX_WHITESPACE_CHARS) noexcept
     { max_whitespace_ = max_length; }
 
     /// Set the maximum HTTP request method length to allow.
     /// @param max_length default http_request::DEFAULT_MAX_METHOD_LENGTH.
     void set_max_method_length(unsigned char max_length =
-        http_request::DEFAULT_MAX_METHOD_LENGTH) NOEXCEPT
+        http_request::DEFAULT_MAX_METHOD_LENGTH) noexcept
     { max_method_length_ = max_length; }
 
     /// Set the maximum HTTP request uri length to allow.
     /// @param max_length default http_request::DEFAULT_MAX_URI_LENGTH.
     void set_max_uri_length(size_t max_length =
-        http_request::DEFAULT_MAX_URI_LENGTH) NOEXCEPT
+        http_request::DEFAULT_MAX_URI_LENGTH) noexcept
     { max_uri_length_ = max_length; }
 
     /// Set the maximum HTTP request header line length to allow.
     /// @param max_length default http_request::DEFAULT_MAX_LINE_LENGTH.
     void set_max_header_line_length(unsigned short max_length =
-        http_request::DEFAULT_MAX_LINE_LENGTH) NOEXCEPT
+        http_request::DEFAULT_MAX_LINE_LENGTH) noexcept
     { max_line_length_ = max_length; }
 
     /// Set the maximum number of HTTP request header fields to allow.
     /// @param max_number default http_request::DEFAULT_MAX_HEADER_NUMBER.
     void set_max_number_of_headers(unsigned short max_number =
-        http_request::DEFAULT_MAX_HEADER_NUMBER) NOEXCEPT
+        http_request::DEFAULT_MAX_HEADER_NUMBER) noexcept
     { max_header_number_ = max_number; }
 
     /// Set the maximum total length of HTTP request headers to allow.
     /// @param max_length default http_request::DEFAULT_MAX_HEADER_LENGTH.
     void set_max_headers_length(size_t max_length =
-        http_request::DEFAULT_MAX_HEADER_LENGTH) NOEXCEPT
+        http_request::DEFAULT_MAX_HEADER_LENGTH) noexcept
     { max_header_length_ = max_length; }
 
     /// Set the maximum HTTP request body size to allow.
     /// @param max_size default http_request::DEFAULT_MAX_BODY_SIZE.
     void set_max_body_size(size_t max_size =
-        http_request::DEFAULT_MAX_BODY_SIZE) NOEXCEPT
+        http_request::DEFAULT_MAX_BODY_SIZE) noexcept
     { max_body_size_ = max_size; }
 
     /// Set the maximum HTTP request chunk size to allow.
     /// @param max_size default http_request::DEFAULT_MAX_CHUNK_SIZE.
     void set_max_chunk_size(size_t max_size =
-        http_request::DEFAULT_MAX_CHUNK_SIZE) NOEXCEPT
+        http_request::DEFAULT_MAX_CHUNK_SIZE) noexcept
     { max_chunk_size_ = max_size; }
 
     ////////////////////////////////////////////////////////////////////////
@@ -615,7 +615,7 @@ namespace via
     /// Note: http_server never sends a body in a response to a HEAD request.
     /// @post HEAD translation enabled/disabled.
     /// @param enable enable the function, default true.
-    void set_translate_head(bool enable = true) NOEXCEPT
+    void set_translate_head(bool enable = true) noexcept
     { translate_head_ = enable; }
 
     /// Enable whether the http server echos TRACE requests.
@@ -625,25 +625,25 @@ namespace via
     /// However it's considered a security vulnerability nowadays, so the
     /// default behaviour is to send a 405 "Method Not Allowed" response instead.
     /// @param enable enable the function, default false.
-    void set_trace_enabled(bool enable = false) NOEXCEPT
+    void set_trace_enabled(bool enable = false) noexcept
     { trace_enabled_ = enable; }
 
     /// Enable whether the http server automatically disconnects invalid requests.
     /// @pre if invalid_request_handler is called to register an application
     /// handler for invlaid requests then auto_disconnect_ is ignored.
     /// @param enable enable the function, default false.
-    void set_auto_disconnect(bool enable = false) NOEXCEPT
+    void set_auto_disconnect(bool enable = false) noexcept
     { auto_disconnect_ = enable; }
 
     /// Set the size of the server receive buffer.
     /// @param size the new size of the receive buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    void set_rx_buffer_size(size_t size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) NOEXCEPT
+    void set_rx_buffer_size(size_t size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) noexcept
     { server_->set_rx_buffer_size(size); }
 
     /// Set the tcp keep alive status for all future connections.
     /// @param enable if true enables the tcp socket keep alive status.
-    void set_keep_alive(bool enable) NOEXCEPT
+    void set_keep_alive(bool enable) noexcept
     { server_->set_keep_alive(enable); }
 
     /// Set the send and receive timeout values for all future connections.
@@ -651,7 +651,7 @@ namespace via
     /// @post sockets will close if no activity has occured after the
     /// timeout period.
     /// @param timeout the timeout in milliseconds.
-    void set_timeout(int timeout) NOEXCEPT
+    void set_timeout(int timeout) noexcept
     { server_->set_timeout(timeout); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -660,7 +660,7 @@ namespace via
     /// Set the password for an SSL connection.
     /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
     /// @param password the SSL password
-    void set_password(std::string const& password) NOEXCEPT
+    void set_password(std::string const& password) noexcept
     { server_->set_password(password); }
 
     /// Set the certificates required for an SSL server.
@@ -788,7 +788,7 @@ namespace via
 
     /// Accessor function for the comms server.
     /// @return a shared pointer to the server
-    std::shared_ptr<server_type> tcp_server() NOEXCEPT
+    std::shared_ptr<server_type> tcp_server() noexcept
     { return server_; }
   };
 

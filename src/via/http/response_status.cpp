@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -97,7 +97,7 @@ namespace via
     namespace response_status
     {
     //////////////////////////////////////////////////////////////////////////
-    const std::string& reason_phrase(code status_code) NOEXCEPT
+    const std::string& reason_phrase(code status_code) noexcept
 
     {
       switch(status_code)

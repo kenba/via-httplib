@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -156,7 +156,7 @@ namespace via
     namespace header_field
     {
       ////////////////////////////////////////////////////////////////////////
-      const std::string& standard_name(id field_id) NOEXCEPT
+      const std::string& standard_name(id field_id) noexcept
       {
         switch(field_id)
         {
@@ -222,7 +222,7 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
 
       ////////////////////////////////////////////////////////////////////////
-      const std::string& lowercase_name(id field_id) NOEXCEPT
+      const std::string& lowercase_name(id field_id) noexcept
       {
         switch(field_id)
         {

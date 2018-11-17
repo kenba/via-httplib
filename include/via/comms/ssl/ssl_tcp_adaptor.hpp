@@ -17,7 +17,6 @@
 /// is provided by the OpenSSL library which must be included with this file.
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/socket_adaptor.hpp"
-#include "via/no_except.hpp"
 #ifdef ASIO_STANDALONE
   #include <asio/ssl.hpp>
 #else
@@ -224,14 +223,14 @@ namespace via
         /// @param error the error_code
         /// @retval ssl_shutdown - an SSL shutdown should be performed
         /// @return true if the socket is disconnected, false otherwise.
-        bool is_disconnect(ASIO_ERROR_CODE const& error) NOEXCEPT
+        bool is_disconnect(ASIO_ERROR_CODE const& error) noexcept
         { return ASIO::error::get_ssl_category() == error.category(); }
 
         /// @fn is_shutdown
         /// This function determines whether the caller should perform an SSL
         /// shutdown.
         // @param error the error_code
-        bool is_shutdown(ASIO_ERROR_CODE const& error) NOEXCEPT
+        bool is_shutdown(ASIO_ERROR_CODE const& error) noexcept
         {
           return
 // SSL_R_SHORT_READ is no longer defined in openssl 1.1.x
@@ -245,7 +244,7 @@ namespace via
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
         ASIO::ssl::stream<ASIO::ip::tcp::socket>
-        ::lowest_layer_type& socket() NOEXCEPT
+        ::lowest_layer_type& socket() noexcept
         { return socket_.lowest_layer(); }
       };
 

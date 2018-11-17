@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2017 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -183,7 +183,7 @@ namespace via
     /// Note: http_server never sends a body in a response to a HEAD request.
     /// @post HEAD translation enabled/disabled.
     /// @param enable enable the function.
-    void set_translate_head(bool enable) NOEXCEPT
+    void set_translate_head(bool enable) noexcept
     { rx_.set_translate_head(enable); }
 
     /// Enable whether the http server concatenates chunked requests.
@@ -191,7 +191,7 @@ namespace via
     /// recieved chunks will be concatenated into the request message body.
     /// @post chunk concatenation enabled/disabled.
     /// @param enable enable the function.
-    void set_concatenate_chunks(bool enable) NOEXCEPT
+    void set_concatenate_chunks(bool enable) noexcept
     { rx_.set_concatenate_chunks(enable); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -208,31 +208,31 @@ namespace via
 
     /// Accessor for the receive buffer.
     /// @return the receive buffer.
-    Container const& rx_buffer() const NOEXCEPT
+    Container const& rx_buffer() const noexcept
     { return rx_buffer_; }
 
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
-    std::string remote_address() const NOEXCEPT
+    std::string remote_address() const noexcept
     { return remote_address_; }
 
     /// The request receiver for this connection.
-    http::request_receiver<Container>& rx() NOEXCEPT
+    http::request_receiver<Container>& rx() noexcept
     { return rx_; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
-    http::rx_request const& request() const NOEXCEPT
+    http::rx_request const& request() const noexcept
     { return rx_.request(); }
 
     /// Accessor for the body.
     /// @return a constant reference to the body.
-    Container const& body() const NOEXCEPT
+    Container const& body() const noexcept
     { return rx_.body(); }
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const NOEXCEPT
+    http::rx_chunk<Container> const& chunk() const noexcept
     { return rx_.chunk(); }
 
     ////////////////////////////////////////////////////////////////////////
@@ -380,7 +380,7 @@ namespace via
 
     /// Accessor function for the comms connection.
     /// @return a weak pointer to the connection
-    typename connection_type::weak_pointer connection() NOEXCEPT
+    typename connection_type::weak_pointer connection() noexcept
     { return connection_; }
   };
 

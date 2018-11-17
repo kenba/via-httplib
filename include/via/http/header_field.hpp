@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,7 +14,6 @@
 /// @file header_field.hpp
 /// @brief Enumerations and functions to handle HTTP header fields.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/no_except.hpp"
 #include <string>
 
 namespace via
@@ -86,12 +85,12 @@ namespace via
       /// Lookup the RFC2616 standard name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616.
-      const std::string& standard_name(id field_id) NOEXCEPT;
+      const std::string& standard_name(id field_id) noexcept;
 
       /// Lookup the lowercase name for the given header field.
       /// @param id the header field id.
       /// @return the field name from RFC2616 converted to lowercase.
-      const std::string& lowercase_name(id field_id) NOEXCEPT;
+      const std::string& lowercase_name(id field_id) noexcept;
 
       /// Format the field name and value into an http header line.
       /// @param name header field name.

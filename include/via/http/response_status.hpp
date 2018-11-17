@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,7 +15,6 @@
 /// @brief Enumerations and functions to handle HTTP response statuses.
 //////////////////////////////////////////////////////////////////////////////
 #include <string>
-#include <via/no_except.hpp>
 
 namespace via
 {
@@ -88,7 +87,7 @@ namespace via
       /// See RFC2616 Section 6.1.1.
       /// @param status_code the reason status code
       /// @return the standard reason phrase associated with the status code.
-      const std::string& reason_phrase(code status_code) NOEXCEPT;
+      const std::string& reason_phrase(code status_code) noexcept;
 
       /// Find whether there's a standard reason phrase for the status_code.
       /// See RFC2616 Section 6.1.1.
@@ -102,7 +101,7 @@ namespace via
       /// @param status_code the reason status code.
       /// @return true if the response may contain a message body,
       /// false otherwise.
-      inline bool content_permitted(int status_code) NOEXCEPT
+      inline bool content_permitted(int status_code) noexcept
       {
         return (status_code >= static_cast<int>(code::OK))
             && (status_code != static_cast<int>(code::NO_CONTENT))
