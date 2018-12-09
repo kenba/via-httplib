@@ -57,6 +57,7 @@ else()
 endif(MSVC)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_lambdas)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_noexcept)
   
 target_include_directories(${PROJECT_NAME} PUBLIC 
   $<BUILD_INTERFACE:${${PROJECT_NAME}_BINARY_DIR}/include>
