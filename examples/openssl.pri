@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016 Ken Barker
+# Copyright (c) 2014-2018 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -33,17 +33,10 @@ isEmpty(OPENSSL_ROOT) {
 
     # Check whether using mingw compiler
     *-g++* {
-      LIBS += -L$${OPENSSL_ROOT}/lib/mingw
+      LIBS += -L$${OPENSSL_ROOT}/lib
 
-      CONFIG(release, debug|release){
-        LIBS += -lssl
-        LIBS += -lcrypto
-      }
-
-      CONFIG(debug, debug|release){
-        LIBS += -lssl
-        LIBS += -lcrypto
-      }
+      LIBS += -llibssl
+      LIBS += -llibcrypto
     }
   }
   else {
