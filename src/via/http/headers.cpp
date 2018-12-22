@@ -55,7 +55,8 @@ namespace via
             break;
         else
           state_ = HEADER_VALUE;
-        // intentional fall-through
+        [[fallthrough]]; // intentional fall-through
+
       case HEADER_VALUE:
         // The header line should end with an \r\n...
         if (!is_end_of_line(c))
@@ -90,17 +91,17 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    void message_headers::add(const std::string& name, const std::string& value)
+    void message_headers::add(std::string_view name, std::string_view value)
     {
       std::unordered_map<std::string, std::string>::iterator iter
-        (fields_.find(name));
+        (fields_.find(name.data()));
       // if the field name was found previously
       if (iter != fields_.end())
       {
         if (name.find(COOKIE) != std::string::npos)
-          iter->second += SC + value;
+          iter->second += SC + std::string(value);
         else
-          iter->second += COMMA + value;
+          iter->second += COMMA + std::string(value);
       }
       else
         fields_.insert(std::unordered_map<std::string, std::string>::value_type
@@ -109,10 +110,10 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    const std::string& message_headers::find(const std::string& name) const
+    const std::string& message_headers::find(std::string_view name) const
     {
       std::unordered_map<std::string, std::string>::const_iterator iter
-        (fields_.find(name));
+        (fields_.find(name.data()));
 
       if (iter != fields_.end())
         return iter->second;
@@ -190,24 +191,27 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    bool are_headers_split(std::string const& headers) noexcept
+    bool are_headers_split(std::string_view headers) noexcept
     {
       char prev('0');
       char pprev('0');
 
-      std::string::const_iterator iter(headers.begin());
-      for(; iter != headers.end(); ++iter)
+      if (!headers.empty())
       {
-        if (*iter == '\n')
+        auto iter(headers.cbegin());
+        for(; iter != headers.cend(); ++iter)
         {
-          if (prev == '\n')
-            return true;
-          else if ((prev == '\r') && (pprev == '\n'))
-            return true;
-        }
+          if (*iter == '\n')
+          {
+            if (prev == '\n')
+              return true;
+            else if ((prev == '\r') && (pprev == '\n'))
+              return true;
+          }
 
-        pprev = prev;
-        prev = *iter;
+          pprev = prev;
+          prev = *iter;
+        }
       }
 
       return false;

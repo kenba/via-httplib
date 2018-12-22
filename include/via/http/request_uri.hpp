@@ -15,6 +15,7 @@
 /// @brief The HTTP request_uri class.
 //////////////////////////////////////////////////////////////////////////////
 #include <string>
+#include <string_view>
 
 namespace via
 {
@@ -37,13 +38,13 @@ namespace via
       /// If either is found it modifies the path accordingly and sets the
       /// query and fragment with the appropriate text from the uri.
       /// @param uri the uri from an HTTP request
-      explicit request_uri(std::string const& uri)
-        : path_(uri)
+      explicit request_uri(std::string_view uri)
+        : path_(uri.data())
         , query_()
         , fragment_()
       {
-        auto query_start(uri.find('?'));
-        auto fragment_start(uri.find('#'));
+        auto query_start(path_.find('?'));
+        auto fragment_start(path_.find('#'));
 
         bool has_fragment(fragment_start != std::string::npos);
         bool has_query(query_start < fragment_start);

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2018 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -38,7 +38,8 @@ namespace via
         }
         else
           state_ = CHUNK_SIZE;
-        // intentional fall-through
+        [[fallthrough]]; // intentional fall-through
+
       case CHUNK_SIZE:
         if (std::isxdigit (c))
         {
@@ -97,7 +98,8 @@ namespace via
         }
         else
           state_ = CHUNK_EXTENSION;
-        // intentional fall-through
+        [[fallthrough]]; // intentional fall-through
+
       case CHUNK_EXTENSION:
         if (!is_end_of_line(c))
           extension_.push_back(c);

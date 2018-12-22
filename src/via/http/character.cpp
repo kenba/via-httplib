@@ -7,6 +7,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/character.hpp"
+#include <algorithm>
 #include <sstream>
 #include <cstdlib>
 #include <cerrno>
@@ -99,46 +100,50 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::ptrdiff_t from_hex_string(std::string const& hex_string) noexcept
+    std::ptrdiff_t from_hex_string(std::string_view hex_string) noexcept
     {
       // Ensure that the string only contains hexadecimal characters
-      std::string::const_iterator iter(hex_string.begin());
-      for (; iter != hex_string.end(); ++iter)
-        if (!std::isxdigit(*iter))
+      if (!hex_string.empty() &&
+          std::all_of(hex_string.cbegin(), hex_string.cend(),
+                      [](auto c){ return std::isxdigit(c); }))
+      {
+        // Get the length from the hex_string.
+        // Note: strtol may return zero for a string containing zero or if
+        // no valid conversion could be performed. It may also set errno
+        // if the number is out of range...
+        errno = 0;
+        std::ptrdiff_t value(std::strtol(hex_string.data(), 0, 16));
+        if (errno || ((value == 0) && (hex_string[0] != '0')))
           return -1;
-
-      // Get the length from the hex_string.
-      // Note: strtol may return zero for a string containing zero or if
-      // no valid conversion could be performed. It may also set errno
-      // if the number is out of range...
-      errno = 0;
-      std::ptrdiff_t length(std::strtol(hex_string.c_str(), 0, 16));
-      if (errno || ((length == 0) && (hex_string[0] != '0')))
-        return -1;
+        else
+          return value;
+      }
       else
-        return length;
+        return -1;
     }
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    std::ptrdiff_t from_dec_string(std::string const& dec_string) noexcept
+    std::ptrdiff_t from_dec_string(std::string_view dec_string) noexcept
     {
       // Ensure that the string only contains decimal characters
-      std::string::const_iterator iter(dec_string.begin());
-      for (; iter != dec_string.end(); ++iter)
-        if (!std::isdigit(*iter))
+      if (!dec_string.empty() &&
+          std::all_of(dec_string.cbegin(), dec_string.cend(),
+                      [](auto c){ return std::isdigit(c); }))
+      {
+        // Get the length from the dec_string.
+        // Note: strtol may return zero for a string containing zero or if
+        // no valid conversion could be performed. It may also set errno
+        // if the number is out of range...
+        errno = 0;
+        std::ptrdiff_t value(std::strtol(dec_string.data(), 0, 10));
+        if (errno || ((value == 0) && (dec_string[0] != '0')))
           return -1;
-
-      // Get the length from the dec_string.
-      // Note: strtol may return zero for a string containing zero or if
-      // no valid conversion could be performed. It may also set errno
-      // if the number is out of range...
-      errno = 0;
-      std::ptrdiff_t length(std::strtol(dec_string.c_str(), 0, 10));
-      if (errno || ((length == 0) && (dec_string[0] != '0')))
-        return -1;
+        else
+          return value;
+      }
       else
-        return length;
+        return -1;
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -147,15 +152,6 @@ namespace via
     {
       std::stringstream number_stream;
       number_stream << std::hex << number;
-      return number_stream.str();
-    }
-    //////////////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////////////
-    std::string to_dec_string(size_t number)
-    {
-      std::stringstream number_stream;
-      number_stream << number;
       return number_stream.str();
     }
     //////////////////////////////////////////////////////////////////////////

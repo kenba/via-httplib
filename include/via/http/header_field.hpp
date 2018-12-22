@@ -15,6 +15,7 @@
 /// @brief Enumerations and functions to handle HTTP header fields.
 //////////////////////////////////////////////////////////////////////////////
 #include <string>
+#include <string_view>
 
 namespace via
 {
@@ -95,13 +96,13 @@ namespace via
       /// Format the field name and value into an http header line.
       /// @param name header field name.
       /// @param value header field value.
-      std::string to_header(std::string const& name,
-                            std::string const& value);
+      std::string to_header(std::string_view name, std::string_view value);
 
       /// Format the field id and value into an http header line.
       /// @param id header field id.
       /// @param value header field value.
-      std::string to_header(id field_id, std::string const& value);
+      inline std::string to_header(id field_id, std::string_view value)
+      { return to_header(standard_name(field_id), value); }
 
       /// Create an http header line for the current date and time.
       std::string date_header();

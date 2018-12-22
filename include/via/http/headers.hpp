@@ -271,13 +271,13 @@ namespace via
       /// Add a header to the collection.
       /// @param name the field name (in lower case)
       /// @param value the field value.
-      void add(const std::string& name, const std::string& value);
+      void add(std::string_view name, std::string_view value);
 
       /// Find the value for a given header name.
       /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
       /// @return the value, blank if not found
-      const std::string& find(const std::string& name) const;
+      const std::string& find(std::string_view name) const;
 
       /// Find the value for a given header id.
       /// @param field_id the id of the header.
@@ -323,7 +323,7 @@ namespace via
 
     /// A function to determine whether the header string contains an extra
     /// CRLF pair, which could cause HTTP message spliting.
-    bool are_headers_split(std::string const& headers) noexcept;
+    bool are_headers_split(std::string_view headers) noexcept;
   }
 }
 

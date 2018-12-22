@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 Ken Barker
+# Copyright (c) 2013-2018 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -39,12 +39,12 @@ HEADERS += $${INC_DIR}/via/http/authentication/*.hpp
 HEADERS += $${INC_DIR}/via/comms/*.hpp
 HEADERS += $${INC_DIR}/via/comms/ssl/*.hpp
 
-release: LIBS += -L$${VIAHTTPLIB}/release
-debug:   LIBS += -L$${VIAHTTPLIB}/debug
-
 # Ensure that the dubug library has a different name
 VIA_HTTPLIB_NAME = via-httplib
-CONFIG(debug, debug|release) {
+CONFIG(release, debug|release) {
+  LIBS += -L$${VIAHTTPLIB}/release
+} else {
+  LIBS += -L$${VIAHTTPLIB}/debug
   win32 {
    VIA_HTTPLIB_NAME = $$join(VIA_HTTPLIB_NAME,,,d)
   } else {

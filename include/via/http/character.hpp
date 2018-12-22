@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include <cctype>
 #include <string>
+#include <string_view>
 
 namespace via
 {
@@ -34,20 +35,20 @@ namespace via
     /// i.e. CR or LF.
     /// @param c the character
     /// @return true if character is CR or LF, false otherwise.
-    inline bool is_end_of_line(char c) noexcept
+    inline constexpr bool is_end_of_line(char c) noexcept
     { return ('\r' == c) || ('\n' == c); }
 
     /// Test whether a character is a space or tab character.
     /// Note: equivalent to C++11 std::isblank in <cctype>
     /// @param c the character
     /// @return true if character is space or tab, false otherwise.
-    inline bool is_space_or_tab(char c) noexcept
+    inline constexpr bool is_space_or_tab(char c) noexcept
     { return (' ' == c) || ('\t' == c); }
 
     /// Test whether a character is a control character.
     /// @param c the character
     /// @return true if character is control character, false otherwise.
-    inline bool is_ctl(char c) noexcept
+    inline constexpr bool is_ctl(char c) noexcept
     { return ((0 <= c) && (31 >= c)) || (127 ==c); }
 
     /// Test whether a character is a separator character.
@@ -94,7 +95,7 @@ namespace via
     /// @pre the character must be a valid digit character.
     /// @param c the character
     /// @return the integer equivalent of the character
-    inline int read_digit(char c) noexcept
+    inline constexpr int read_digit(char c) noexcept
     { return (c -'0');}
 
     /// The http version string, i.e. HTTP/1.1
@@ -106,7 +107,7 @@ namespace via
     /// Convert a string representing a hexadecimal number to an unsigned int.
     /// @param hex_string the string containing a vald hexadecimal number
     /// @return the number represented by the string, -1 if invalid.
-    std::ptrdiff_t from_hex_string(std::string const& hex_string) noexcept;
+    std::ptrdiff_t from_hex_string(std::string_view hex_string) noexcept;
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
@@ -116,12 +117,13 @@ namespace via
     /// Convert a string representing a decimal number to an unsigned int.
     /// @param dec_string the string containing a vald decimal number
     /// @return the number represented by the string, -1 if invalid.
-    std::ptrdiff_t from_dec_string(std::string const& dec_string) noexcept;
+    std::ptrdiff_t from_dec_string(std::string_view dec_string) noexcept;
 
     /// Convert an int into a decimal string.
     /// @param number to be represented
     /// @return the string containing the number in decimal.
-    std::string to_dec_string(size_t number);
+    inline std::string to_dec_string(size_t number)
+    { return std::to_string(number); }
   }
 }
 

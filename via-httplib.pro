@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2017 Ken Barker
+# Copyright (c) 2013-2018 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -34,7 +34,7 @@ win32 {
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 5
+  VER_MIN = 7
   VER_PAT = 0
 
   # Set BOOST_ROOT to the usual linux & mac locations
@@ -48,9 +48,9 @@ win32 {
 TEMPLATE = lib
 CONFIG -= lib_bundle
 CONFIG -= qt
-CONFIG += c++14
+CONFIG += c++17
 CONFIG += thread
-CONFIG += shared
+CONFIG += static
 CONFIG += separate_debug_info
 
 # Compiler options
@@ -75,7 +75,6 @@ CONFIG += separate_debug_info
 
 *-msvc* {
   message(Setting flags for Visual Studio)
-  CONFIG += static
 }
 
 include (via-httplib.pri)
