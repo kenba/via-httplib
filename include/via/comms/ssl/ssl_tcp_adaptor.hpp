@@ -16,7 +16,7 @@
 /// Only include this file if you need an HTTPS server or client. SSL support
 /// is provided by the OpenSSL library which must be included with this file.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/socket_adaptor.hpp"
+#include "via/comms/tcp_adaptor.hpp"
 #ifdef ASIO_STANDALONE
   #include <asio/ssl.hpp>
 #else
@@ -50,19 +50,6 @@ namespace via
         ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
         ASIO::ip::tcp::resolver::iterator host_iterator_;
-
-        /// @fn resolve_host
-        /// Resolves the host name and port.
-        /// @param host_name the host name.
-        /// @param port_name the host port.
-        ASIO::ip::tcp::resolver::iterator resolve_host
-          (char const* host_name, char const* port_name) const
-        {
-          ASIO_ERROR_CODE ignoredEc;
-          ASIO::ip::tcp::resolver resolver(io_service_);
-          ASIO::ip::tcp::resolver::query query(host_name, port_name);
-          return resolver.resolve(query, ignoredEc);
-        }
 
         /// @fn verify_certificate
         /// The verify callback function.
@@ -144,7 +131,7 @@ namespace via
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
         /// @param connect_handler the handler to call when connected.
-        bool connect(const char* host_name, const char* port_name,
+        bool connect(std::string_view host_name, std::string_view port_name,
                      ConnectHandler connect_handler)
         {
           ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
@@ -152,7 +139,7 @@ namespace via
             (bool preverified, ASIO::ssl::verify_context& ctx)
               { return verify_certificate(preverified, ctx); });
 
-          host_iterator_ = resolve_host(host_name, port_name);
+          host_iterator_ = resolve_host(io_service_, host_name, port_name);
           if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
             return false;
 

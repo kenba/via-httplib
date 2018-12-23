@@ -15,11 +15,28 @@
 /// @brief Contains the tcp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
+#include <string_view>
 
 namespace via
 {
   namespace comms
   {
+    /// @fn resolve_host
+    /// resolves the host name and port.
+    /// @param io_service the asio io_service associted with the connection.
+    /// @param host_name the host name.
+    /// @param port_name the host port.
+    /// @return a TCP resolver::iterator
+    ASIO::ip::tcp::resolver::iterator resolve_host
+        (ASIO::io_service& io_service,
+         std::string_view host_name, std::string_view port_name)
+    {
+      ASIO_ERROR_CODE ignoredEc;
+      ASIO::ip::tcp::resolver resolver(io_service);
+      ASIO::ip::tcp::resolver::query query(host_name.data(), port_name.data());
+      return resolver.resolve(query, ignoredEc);
+    }
+
     //////////////////////////////////////////////////////////////////////////
     /// @class tcp_adaptor
     /// This class enables the connection class to use tcp sockets.
@@ -34,19 +51,6 @@ namespace via
       ASIO::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.
       ASIO::ip::tcp::resolver::iterator host_iterator_;
-
-      /// @fn resolve_host
-      /// resolves the host name and port.
-      /// @param host_name the host name.
-      /// @param port_name the host port.
-      ASIO::ip::tcp::resolver::iterator resolve_host
-          (char const* host_name, char const* port_name) const
-      {
-        ASIO_ERROR_CODE ignoredEc;
-        ASIO::ip::tcp::resolver resolver(io_service_);
-        ASIO::ip::tcp::resolver::query query(host_name, port_name);
-        return resolver.resolve(query, ignoredEc);
-      }
 
     protected:
 
@@ -97,10 +101,10 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       /// @param connectHandler the handler to call when connected.
-      bool connect(const char* host_name, const char* port_name,
+      bool connect(std::string_view host_name, std::string_view port_name,
                    ConnectHandler connectHandler)
       {
-        host_iterator_ = resolve_host(host_name, port_name);
+        host_iterator_ = resolve_host(io_service_, host_name, port_name);
         if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
           return false;
 

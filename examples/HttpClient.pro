@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016 Ken Barker
+# Copyright (c) 2014-2018 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -18,7 +18,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
-CONFIG += c++14
+CONFIG += c++17
 CONFIG += debug
 
 # output directories
