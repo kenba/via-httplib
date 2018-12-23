@@ -176,19 +176,19 @@ namespace via
       /// capture paramters from the uri path like Node.js.
       /// @param handler the request handler to be called.
       /// @return true if the path is new, false otherwise.
-      bool add_method(std::string const& method, std::string const& path,
+      bool add_method(std::string_view method, std::string_view path,
                       Handler handler,
                       authentication::authentication const* auth_ptr = nullptr)
       {
         // Serach for the path in the existing routes
-        auto iter(std::find(routes_.begin(), routes_.end(), path));
+        auto iter(std::find(routes_.begin(), routes_.end(), path.data()));
         bool is_new_path(iter == routes_.end());
         if (is_new_path)
-          routes_.push_back(Route(path,
-                    MethodHandlers_value_type(method, { handler, auth_ptr })));
+          routes_.push_back(Route(std::string(path),
+                    MethodHandlers_value_type(std::string(method), { handler, auth_ptr })));
         else
           iter->method_handlers.insert
-              (MethodHandlers_value_type(method, { handler, auth_ptr }));
+              (MethodHandlers_value_type(std::string(method), { handler, auth_ptr }));
 
         return is_new_path;
       }
@@ -200,7 +200,7 @@ namespace via
       /// capture paramters from the uri path like Node.js.
       /// @param handler the request handler to be called.
       /// @return true if the path is new, false otherwise.
-      bool add_method(request_method::id method_id, std::string const& path,
+      bool add_method(request_method::id method_id, std::string_view path,
                       Handler handler,
                       authentication::authentication const* auth_ptr = nullptr)
       { return add_method(request_method::name(method_id), path, handler, auth_ptr); }

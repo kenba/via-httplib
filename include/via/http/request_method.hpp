@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "character.hpp"
 #include <string>
+#include <string_view>
 
 #ifdef DELETE
 #undef DELETE
@@ -44,7 +45,7 @@ namespace via
 
       /// The standard method name associated with ids above.
       /// @return the standard method name.
-      const std::string& name(id method_id) noexcept;
+      const std::string_view name(id method_id) noexcept;
     }
   }
 }

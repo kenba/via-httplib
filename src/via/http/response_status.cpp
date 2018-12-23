@@ -15,79 +15,70 @@ namespace
   // associated with the given response status code.
 
   // Informational 1xx
-  const std::string	REASON_CONTINUE         ("Continue");
-  const std::string	REASON_SWITCHING_PROTOCOLS
-                                            ("Switching Protocols");
+  const char REASON_CONTINUE[] =            {"Continue"};
+  const char REASON_SWITCHING_PROTOCOLS[] = {"Switching Protocols"};
+
   // Successful 2xx
-  const std::string	REASON_OK               ("OK");
-  const std::string	REASON_CREATED          ("Created");
-  const std::string	REASON_ACCEPTED         ("Accepted");
-  const std::string	REASON_NON_AUTHORITATIVE("Non-Authoritative Information");
-  const std::string	REASON_NO_CONTENT       ("No Content");
-  const std::string	REASON_RESET_CONTENT    ("Reset Content");
-  const std::string	REASON_PARTIAL_CONTENT  ("Partial Content");
+  const char REASON_OK[] =                  {"OK"};
+  const char REASON_CREATED[] =             {"Created"};
+  const char REASON_ACCEPTED[] =            {"Accepted"};
+  const char REASON_NON_AUTHORITATIVE[] =   {"Non-Authoritative Information"};
+  const char REASON_NO_CONTENT[] =          {"No Content"};
+  const char REASON_RESET_CONTENT[] =       {"Reset Content"};
+  const char REASON_PARTIAL_CONTENT[] =     {"Partial Content"};
 
   // Redirection 3xx
-  const std::string	REASON_MULTIPLE_CHOICES ("Multiple Choices");
-  const std::string	REASON_MOVED_PERMANENTLY("Moved Permanently");
-  const std::string	REASON_FOUND            ("Found");
-  const std::string	REASON_SEE_OTHER        ("See Other");
-  const std::string	REASON_NOT_MODIFIED     ("Not Modified");
-  const std::string	REASON_USE_PROXY        ("Use Proxy");
-  const std::string	REASON_TEMPORARY_REDIRECT
-                                            ("Temporary Redirect");
-  const std::string	REASON_PERMANENT_REDIRECT
-                                            ("Permanent Redirect");
+  const char REASON_MULTIPLE_CHOICES[] =    {"Multiple Choices"};
+  const char REASON_MOVED_PERMANENTLY[] =   {"Moved Permanently"};
+  const char REASON_FOUND[] =               {"Found"};
+  const char REASON_SEE_OTHER[] =           {"See Other"};
+  const char REASON_NOT_MODIFIED[] =        {"Not Modified"};
+  const char REASON_USE_PROXY[] =           {"Use Proxy"};
+  const char REASON_TEMPORARY_REDIRECT[] =  {"Temporary Redirect"};
+  const char REASON_PERMANENT_REDIRECT[] =  {"Permanent Redirect"};
 
   // Client Error 4xx
-  const std::string	REASON_BAD_REQUEST      ("Bad Request");
-  const std::string	REASON_UNAUTHORISED     ("Unauthorized");
-  const std::string	REASON_PAYMENT_REQUIRED ("Payment Required");
-  const std::string	REASON_FORBIDDEN        ("Forbidden");
-  const std::string	REASON_NOT_FOUND        ("Not Found");
-  const std::string	REASON_METHOD_NOT_ALLOWED
-                                            ("Method Not Allowed");
-  const std::string	REASON_NOT_ACCEPTABLE
-                                            ("Not Acceptable");
-  const std::string	REASON_PROXY_AUTHENTICATION_REQUIRED
-                                            ("Proxy Authentication Required");
-  const std::string	REASON_REQUEST_TIMEOUT  ("Request Time-out");
-  const std::string	REASON_CONFLICT         ("Conflict");
-  const std::string	REASON_GONE             ("Gone");
-  const std::string	REASON_LENGTH_REQUIRED  ("Length Required");
-  const std::string	REASON_PRECONDITION_FAILED
-                                            ("Precondition Failed");
-  const std::string	REASON_PAYLOAD_TOO_LARGE
-                                            ("Payload Too Large");
-  const std::string	REASON_REQUEST_URI_TOO_LONG
-                                            ("Request-URI Too Long");
-  const std::string	REASON_UNSUPPORTED_MEDIA_TYPE
-                                            ("Unsupported Media Type");
-  const std::string	REASON_REQUEST_RANGE_NOT_SATISFIABLE
-                                          ("Requested range not satisfiable");
-  const std::string	REASON_EXPECTATION_FAILED
-                                            ("Expectation Failed");
-  const std::string REASON_UPGRADE_REQUIRED ("Upgrade Required");
-  const std::string REASON_PRECONDITION_REQUIRED
-                                            ("Precondition Required");
-  const std::string REASON_TOO_MANY_REQUESTS("Too Many Requests");
-  const std::string REASON_REQUEST_HEADER_FIELDS_TOO_LARGE
-                                            ("Request Header Fields Too Large");
+  const char REASON_BAD_REQUEST[] =         {"Bad Request"};
+  const char REASON_UNAUTHORISED[] =        {"Unauthorized"};
+  const char REASON_PAYMENT_REQUIRED[] =    {"Payment Required"};
+  const char REASON_FORBIDDEN[] =           {"Forbidden"};
+  const char REASON_NOT_FOUND[] =           {"Not Found"};
+  const char REASON_METHOD_NOT_ALLOWED[] =  {"Method Not Allowed"};
+  const char REASON_NOT_ACCEPTABLE[] =      {"Not Acceptable"};
+  const char REASON_PROXY_AUTHENTICATION_REQUIRED[] =
+                                            {"Proxy Authentication Required"};
+  const char REASON_REQUEST_TIMEOUT[] =     {"Request Time-out"};
+  const char REASON_CONFLICT[] =            {"Conflict"};
+  const char REASON_GONE[] =                {"Gone"};
+  const char REASON_LENGTH_REQUIRED[] =     {"Length Required"};
+  const char REASON_PRECONDITION_FAILED[] = {"Precondition Failed"};
+  const char REASON_PAYLOAD_TOO_LARGE[] =   {"Payload Too Large"};
+  const char REASON_REQUEST_URI_TOO_LONG[] = {"Request-URI Too Long"};
+  const char REASON_UNSUPPORTED_MEDIA_TYPE[] =
+                                            {"Unsupported Media Type"};
+  const char REASON_REQUEST_RANGE_NOT_SATISFIABLE[] =
+                                            {"Requested range not satisfiable"};
+  const char REASON_EXPECTATION_FAILED[] =  {"Expectation Failed"};
+  const char REASON_UPGRADE_REQUIRED[] =    {"Upgrade Required"};
+  const char REASON_PRECONDITION_REQUIRED[] =
+                                            {"Precondition Required"};
+  const char REASON_TOO_MANY_REQUESTS[] =   {"Too Many Requests"};
+  const char REASON_REQUEST_HEADER_FIELDS_TOO_LARGE[] =
+                                            {"Request Header Fields Too Large"};
 
   // Server Error 5xx
-  const std::string	REASON_INTERNAL_SERVER_ERROR
-                                            ("Internal Server Error");
-  const std::string	REASON_NOT_IMPLEMENTED  ("Not Implemented");
-  const std::string	REASON_BAD_GATEWAY      ("Bad Gateway");
-  const std::string	REASON_SERVICE_UNAVAILABLE
-                                            ("Service Unavailable");
-  const std::string	REASON_GATEWAY_TIMEOUT  ("Gateway Time-out");
-  const std::string	REASON_HTTP_VERSION_NOT_SUPPORTED
-                                            ("HTTP Version not supported");
-  const std::string	REASON_NETWORK_AUTHENTICATION_REQUIRED
-                                            ("Network Authentication Required");
+  const char REASON_INTERNAL_SERVER_ERROR[] =
+                                            {"Internal Server Error"};
+  const char REASON_NOT_IMPLEMENTED[] =     {"Not Implemented"};
+  const char REASON_BAD_GATEWAY[] =         {"Bad Gateway"};
+  const char REASON_SERVICE_UNAVAILABLE[] = {"Service Unavailable"};
+  const char REASON_GATEWAY_TIMEOUT[] =     {"Gateway Time-out"};
+  const char REASON_HTTP_VERSION_NOT_SUPPORTED[] =
+                                            {"HTTP Version not supported"};
+  const char REASON_NETWORK_AUTHENTICATION_REQUIRED[] =
+                                            {"Network Authentication Required"};
 
-  const std::string EMPTY_STRING("");
+  const char EMPTY_STRING[] = {""};
 }
 
 namespace via
@@ -97,8 +88,7 @@ namespace via
     namespace response_status
     {
     //////////////////////////////////////////////////////////////////////////
-    const std::string& reason_phrase(code status_code) noexcept
-
+    const std::string_view reason_phrase(code status_code) noexcept
     {
       switch(status_code)
       {

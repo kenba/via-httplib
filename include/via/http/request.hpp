@@ -801,7 +801,8 @@ namespace via
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head_)
-              request_.set_method(request_method::name(request_method::id::GET));
+              request_.set_method
+                  (std::string(request_method::name(request_method::id::GET)));
             return RX_VALID;
           }
         }

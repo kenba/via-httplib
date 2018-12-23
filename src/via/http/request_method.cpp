@@ -13,16 +13,16 @@ namespace
 {
   // The following strings are for the standard request methods defined in
   // RFC2616 section 9.
-  const std::string	METHOD_OPTIONS ("OPTIONS");
-  const std::string	METHOD_GET     ("GET");
-  const std::string	METHOD_HEAD    ("HEAD");
-  const std::string	METHOD_POST    ("POST");
-  const std::string	METHOD_PUT     ("PUT");
-  const std::string	METHOD_DELETE  ("DELETE");
-  const std::string	METHOD_TRACE   ("TRACE");
-  const std::string	METHOD_CONNECT ("CONNECT");
+  const char METHOD_OPTIONS[] = {"OPTIONS"};
+  const char METHOD_GET[] =     {"GET"};
+  const char METHOD_HEAD[]=     {"HEAD"};
+  const char METHOD_POST[] =    {"POST"};
+  const char METHOD_PUT[] =     {"PUT"};
+  const char METHOD_DELETE[] =  {"DELETE"};
+  const char METHOD_TRACE[] =   {"TRACE"};
+  const char METHOD_CONNECT[] = {"CONNECT"};
 
-  const std::string EMPTY_STRING("");
+  const char EMPTY_STRING[] = {""};
 }
 
 namespace via
@@ -33,7 +33,7 @@ namespace via
     {
 
       //////////////////////////////////////////////////////////////////////////
-      const std::string& name(id method_id) noexcept
+      const std::string_view name(id method_id) noexcept
       {
         switch(method_id)
         {
