@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(NamesEqual)
        i <= static_cast<int>(header_field::id::EXTENSION_HEADER); ++i)
   {
     header_field::id field_id(static_cast<header_field::id>(i));
-    std::string lowerName(boost::algorithm::to_lower_copy(header_field::standard_name(field_id)));
+    std::string lowerName(boost::algorithm::to_lower_copy(std::string(header_field::standard_name(field_id))));
 
     BOOST_CHECK_EQUAL(header_field::lowercase_name(field_id), lowerName);
   }

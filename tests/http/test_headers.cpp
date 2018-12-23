@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2018 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -27,8 +27,8 @@ BOOST_AUTO_TEST_CASE(ValidSingleVectorChar1)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A single http header line in a vector of unsigned chars.
@@ -41,8 +41,8 @@ BOOST_AUTO_TEST_CASE(ValidSingleVectorUnsignedhar1)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A single http header line in a string.
@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(ValidSingleString1)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A single http header line in a string with an extra character.
@@ -68,8 +68,8 @@ BOOST_AUTO_TEST_CASE(ValidSingleString2)
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() != next);
   BOOST_CHECK_EQUAL('A', *next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A single http header line in a string without a space after the :.
@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine3)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A standard single http header line in a string.
@@ -95,9 +95,9 @@ BOOST_AUTO_TEST_CASE(ValidSingleLine4)
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                     (header_field::id::ACCEPT_CHARSET).c_str(),
-                      field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+                     (header_field::id::ACCEPT_CHARSET).data(),
+                      field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 // A single http header line in a string, but starting with a space.
@@ -166,8 +166,8 @@ BOOST_AUTO_TEST_CASE(ValidMultiString1)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().data());
 }
 
 // A multiple http header line in a vector of chars
@@ -180,8 +180,8 @@ BOOST_AUTO_TEST_CASE(ValidMultiLine1)
   field_line field(false, 8, 1024);
   BOOST_CHECK(field.parse(next, header_data.end()));
   BOOST_CHECK(header_data.end() == next);
-  BOOST_CHECK_EQUAL("content",  field.name().c_str());
-  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().c_str());
+  BOOST_CHECK_EQUAL("content",  field.name().data());
+  BOOST_CHECK_EQUAL("ab cd ef gh", field.value().data());
 }
 
 // A standard single http header line in two strings.
@@ -199,9 +199,9 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg1)
   BOOST_CHECK(field.parse(next, header_data2.end()));
   BOOST_CHECK(header_data2.end() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                    (header_field::id::ACCEPT_CHARSET).c_str(),
-                    field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+                    (header_field::id::ACCEPT_CHARSET).data(),
+                    field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
@@ -218,9 +218,9 @@ BOOST_AUTO_TEST_CASE(ValidMultiMsg2)
   BOOST_CHECK(field.parse(next, header_data2.end()));
   BOOST_CHECK(header_data2.end() == next);
   BOOST_CHECK_EQUAL(header_field::lowercase_name
-                    (header_field::id::ACCEPT_CHARSET).c_str(),
-                     field.name().c_str());
-  BOOST_CHECK_EQUAL("abcdefgh", field.value().c_str());
+                    (header_field::id::ACCEPT_CHARSET).data(),
+                     field.name().data());
+  BOOST_CHECK_EQUAL("abcdefgh", field.value().data());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(ValidMultipleHeaderMultiLine1)
 
   BOOST_CHECK_EQUAL("Chunked",
                     the_headers.find
-                    (header_field::id::TRANSFER_ENCODING).c_str());
+                    (header_field::id::TRANSFER_ENCODING).data());
 }
 
 BOOST_AUTO_TEST_CASE(InValidSingleHeaderString1)
@@ -498,7 +498,7 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
 
   BOOST_CHECK_EQUAL("Chunked",
     the_headers.find
-    (header_field::id::TRANSFER_ENCODING).c_str());
+    (header_field::id::TRANSFER_ENCODING).data());
 
 // Visual Studio outputs string in different order to GCC and Clang
 #ifdef _MSC_VER
@@ -531,7 +531,7 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader2)
 
   BOOST_CHECK_EQUAL("Chunked",
     the_headers.find
-    (header_field::id::TRANSFER_ENCODING).c_str());
+    (header_field::id::TRANSFER_ENCODING).data());
 }
 
 BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
@@ -553,7 +553,7 @@ BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
 
   BOOST_CHECK_EQUAL("Chunked",
     the_headers.find
-    (header_field::id::TRANSFER_ENCODING).c_str());
+    (header_field::id::TRANSFER_ENCODING).data());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
