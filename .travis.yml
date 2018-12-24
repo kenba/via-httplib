@@ -1,6 +1,6 @@
 language: cpp
 os: linux
-dist: trusty
+dist: xenial
 sudo: false
 
 branches:
@@ -25,19 +25,19 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-7
+            - g++-8
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
       
     - compiler: clang
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-xenial-7.0
           packages:
-            - clang-5.0
+            - clang-7.0
       env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
    
 before_install:
   - eval "${MATRIX_EVAL}"
