@@ -6,8 +6,8 @@ platform:
   - x64
 
 environment:
-  BOOST_ROOT: C:\Libraries\boost_1_65_1
-  BOOST_LIBRARYDIR: C:\Libraries\boost_1_65_1\lib64-msvc-14.1
+  BOOST_ROOT: C:\Libraries\boost_1_67_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_67_0\lib64-msvc-14.1
 
 configuration:
   - Release
