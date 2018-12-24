@@ -213,7 +213,7 @@ namespace via
 
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.
-    std::string remote_address() const noexcept
+    std::string const& remote_address() const noexcept
     { return remote_address_; }
 
     /// The request receiver for this connection.
@@ -325,7 +325,8 @@ namespace via
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container chunk, std::string extension = "")
+    bool send_chunk(Container chunk,
+                     std::string_view extension = std::string_view())
     {
       size_t size(chunk.size());
       http::chunk_header chunk_header(size, extension);
@@ -334,7 +335,7 @@ namespace via
 
       comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
       buffers.push_back(ASIO::buffer(tx_body_));
-      buffers.push_back(ASIO::buffer(http::CRLF));
+      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
       return send(std::move(buffers));
     }
 
@@ -343,7 +344,8 @@ namespace via
     /// Their lifetime MUST exceed that of the write
     /// @param buffers the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
+    bool send_chunk(comms::ConstBuffers buffers,
+                     std::string_view extension = std::string_view())
     {
       // Calculate the overall size of the data in the buffers
       size_t size(ASIO::buffer_size(buffers));
@@ -351,15 +353,15 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
       buffers.push_front(ASIO::buffer(tx_header_));
-      buffers.push_back(ASIO::buffer(http::CRLF));
+      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
       return send(std::move(buffers));
     }
 
     /// Send the last HTTP chunk for a response.
     /// @param extension the (optional) chunk extension.
     /// @param trailer_string the (optional) chunk trailers.
-    bool last_chunk(std::string extension = "",
-                    std::string trailer_string = "")
+    bool last_chunk(std::string_view extension = std::string_view(),
+                     std::string_view trailer_string = std::string_view())
     {
       http::last_chunk last_chunk(extension, trailer_string);
       tx_header_ = last_chunk.to_string();

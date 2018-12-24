@@ -660,7 +660,7 @@ namespace via
     /// Set the password for an SSL connection.
     /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
     /// @param password the SSL password
-    void set_password(std::string const& password) noexcept
+    void set_password(std::string_view password) noexcept
     { server_->set_password(password); }
 
     /// Set the certificates required for an SSL server.
@@ -669,21 +669,21 @@ namespace via
     /// @param private_key the private key.
     /// @param tmp_dh the tmp_dh, default blank.
     static ASIO_ERROR_CODE set_ssl_certificates
-                       (const std::string& certificate,
-                        const std::string& private_key,
-                        const std::string& tmp_dh = std::string(""))
+                       (std::string_view certificate,
+                        std::string_view private_key,
+                        std::string_view tmp_dh = std::string_view())
     {
       ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
       server_type::connection_type::ssl_context().
-          use_certificate(ASIO::const_buffer(certificate.c_str(),
+          use_certificate(ASIO::const_buffer(certificate.data(),
                                              certificate.size()),
                           ASIO::ssl::context::pem, error);
       if (error)
         return error;
 
       server_type::connection_type::ssl_context().
-          use_private_key(ASIO::const_buffer(private_key.c_str(),
+          use_private_key(ASIO::const_buffer(private_key.data(),
                                              private_key.size()),
                           ASIO::ssl::context::pem, error);
       if (error)
@@ -696,7 +696,7 @@ namespace via
       else
       {
         server_type::connection_type::ssl_context().
-            use_tmp_dh(ASIO::const_buffer(tmp_dh.c_str(), tmp_dh.size()), error);
+            use_tmp_dh(ASIO::const_buffer(tmp_dh.data(), tmp_dh.size()), error);
         if (error)
           return error;
 
@@ -716,20 +716,20 @@ namespace via
     /// @param key_file the private key file
     /// @param dh_file the dh file, default blank.
     static ASIO_ERROR_CODE set_ssl_files
-                       (const std::string& certificate_file,
-                        const std::string& key_file,
-                        const std::string& dh_file = std::string(""))
+                       (std::string_view certificate_file,
+                        std::string_view key_file,
+                        std::string_view dh_file = std::string_view())
     {
       ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
       server_type::connection_type::ssl_context().
-          use_certificate_file(certificate_file,
+          use_certificate_file(certificate_file.data(),
                                ASIO::ssl::context::pem, error);
       if (error)
         return error;
 
       server_type::connection_type::ssl_context().
-          use_private_key_file(key_file, ASIO::ssl::context::pem,
+          use_private_key_file(key_file.data(), ASIO::ssl::context::pem,
                                error);
       if (error)
         return error;
@@ -741,7 +741,7 @@ namespace via
       else
       {
         server_type::connection_type::ssl_context().
-            use_tmp_dh_file(dh_file, error);
+            use_tmp_dh_file(dh_file.data(), error);
         if (error)
           return error;
 

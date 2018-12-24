@@ -333,7 +333,7 @@ namespace via
       /// Set the password.
       /// @pre It must be an SSL server.
       /// @param password the password
-      void set_password(std::string const& password)
+      void set_password(std::string_view password)
       {
         password_ = password;
         connection_type::ssl_context().set_password_callback

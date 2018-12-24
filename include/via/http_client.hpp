@@ -331,7 +331,7 @@ namespace via
     /// @param period the time to wait after a disconnect before attempting to
     /// re-connect, default zero. I.e. don't attempt to re-connect.
     /// @return true if resolved, false otherwise.
-    bool connect(const std::string& host_name, std::string port_name = "http",
+    bool connect(std::string_view host_name, std::string_view port_name = "http",
                  unsigned long period = 0)
     {
       host_name_ = host_name;
@@ -486,7 +486,8 @@ namespace via
     /// Send an HTTP body chunk.
     /// @param chunk the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(Container chunk, std::string extension = "")
+    bool send_chunk(Container chunk,
+                     std::string_view extension = std::string_view())
     {
       if (!is_connected())
         return false;
@@ -498,7 +499,7 @@ namespace via
 
       comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
       buffers.push_back(ASIO::buffer(tx_body_));
-      buffers.push_back(ASIO::buffer(http::CRLF));
+      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
       return send(std::move(buffers));
     }
 
@@ -507,7 +508,8 @@ namespace via
     /// Their lifetime MUST exceed that of the write
     /// @param buffers the body chunk to send
     /// @param extension the (optional) chunk extension.
-    bool send_chunk(comms::ConstBuffers buffers, std::string extension = "")
+    bool send_chunk(comms::ConstBuffers buffers,
+                     std::string_view extension = std::string_view())
     {
       if (!is_connected())
         return false;
@@ -518,15 +520,15 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
       buffers.push_front(ASIO::buffer(tx_header_));
-      buffers.push_back(ASIO::buffer(http::CRLF));
+      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
       return send(std::move(buffers));
     }
 
     /// Send the last HTTP chunk for a request.
     /// @param extension the (optional) chunk extension.
     /// @param trailer_string the (optional) chunk trailers.
-    bool last_chunk(std::string extension = "",
-                    std::string trailer_string = "")
+    bool last_chunk(std::string_view extension = std::string_view(),
+                     std::string_view trailer_string = std::string_view())
     {
       if (!is_connected())
         return false;
