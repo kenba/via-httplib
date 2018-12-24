@@ -23,7 +23,7 @@ namespace via
   namespace http
   {
     /// The standard HTTP line terminator.
-    extern const char CRLF[];
+    extern const std::string CRLF;
 
     /// Test whether a character is an end of line character,
     /// i.e. CR or LF.

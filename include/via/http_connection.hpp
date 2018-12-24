@@ -335,7 +335,7 @@ namespace via
 
       comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
       buffers.push_back(ASIO::buffer(tx_body_));
-      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
@@ -353,7 +353,7 @@ namespace via
       http::chunk_header chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
       buffers.push_front(ASIO::buffer(tx_header_));
-      buffers.push_back(ASIO::buffer(std::string(http::CRLF)));
+      buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));
     }
 
