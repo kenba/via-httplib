@@ -23,13 +23,7 @@ namespace via
   namespace http
   {
     /// The standard HTTP line terminator.
-    extern const std::string CRLF;
-
-    /// The standard HTTP header continuation character, a comma.
-    extern const std::string COMMA;
-
-    /// The HTTP cookie header continuation character, a semi-colon.
-    extern const std::string SC;
+    extern const char CRLF[];
 
     /// Test whether a character is an end of line character,
     /// i.e. CR or LF.

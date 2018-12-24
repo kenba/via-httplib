@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorChar1)
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
 
-  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
+  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").data());
   BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
 }
@@ -399,7 +399,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorUnsignedChar1)
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('0', the_request.minor_version());
 
-  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
+  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").data());
   BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
   BOOST_CHECK(!the_request.missing_host_header());
@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   BOOST_CHECK_EQUAL('1', the_request.major_version());
   BOOST_CHECK_EQUAL('1', the_request.minor_version());
 
-  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").c_str());
+  BOOST_CHECK_EQUAL("text", the_request.headers().find("content").data());
   BOOST_CHECK_EQUAL(0, the_request.content_length());
   BOOST_CHECK(!the_request.is_chunked());
   BOOST_CHECK(!the_request.is_trace());

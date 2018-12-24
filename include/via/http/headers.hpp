@@ -277,12 +277,12 @@ namespace via
       /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
       /// @return the value, blank if not found
-      const std::string& find(std::string_view name) const;
+      std::string_view find(std::string_view name) const;
 
       /// Find the value for a given header id.
       /// @param field_id the id of the header.
       /// @return the value, blank if not found
-      const std::string& find(header_field::id field_id) const
+      std::string_view find(header_field::id field_id) const
       { return find(header_field::lowercase_name(field_id)); }
 
       /// If there is a Content-Length field return its size.

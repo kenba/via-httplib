@@ -138,8 +138,6 @@ namespace
   const char LC_LAST_MODIFIED[] =           {"last-modified"};
   const char LC_EXTENSION_HEADER[] =        {"extension-header"};
 
-  const char EMPTY_STRING[] = {""};
-
   /// The header field seperator, colon space.
   const char SEPARATOR[] = {": "};
 
@@ -214,7 +212,7 @@ namespace via
         case id::LAST_MODIFIED:       return HEADER_LAST_MODIFIED;
         case id::EXTENSION_HEADER:    return HEADER_EXTENSION_HEADER;
 
-        default:                      return EMPTY_STRING;
+        default:                      return std::string_view();
         }
       }
       ////////////////////////////////////////////////////////////////////////
@@ -280,7 +278,7 @@ namespace via
         case id::LAST_MODIFIED:       return LC_LAST_MODIFIED;
         case id::EXTENSION_HEADER:    return LC_EXTENSION_HEADER;
 
-        default:                      return EMPTY_STRING;
+        default:                      return std::string_view();
         }
       }
       ////////////////////////////////////////////////////////////////////////
@@ -295,9 +293,10 @@ namespace via
       {
         /// The value to use to format an HTTP date into RFC1123 format.
         static const char DATE_FORMAT[] = {"%a, %d %b %Y %H:%M:%S GMT"};
-        static char dateBuffer[30] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+        char dateBuffer[30] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         time_t uTime;
         time(&uTime);
         strftime(dateBuffer, 30, DATE_FORMAT, std::gmtime(&uTime));

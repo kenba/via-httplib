@@ -173,7 +173,9 @@ BOOST_AUTO_TEST_CASE(PassAuthentication2)
   // Simple user name password test, with an extra header
   std::string request_data(request_header);
   request_data += basic_auth + credentials1 + CRLF;
-  request_data += "TE: Chunked" + CRLF + CRLF;
+  request_data.append("TE: Chunked");
+  request_data.append(CRLF);
+  request_data.append(CRLF);
   std::string::iterator next(request_data.begin());
   rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
   BOOST_CHECK(request.parse(next, request_data.end()));

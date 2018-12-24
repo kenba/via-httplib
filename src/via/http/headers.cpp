@@ -12,12 +12,10 @@
 
 namespace
 {
-  const std::string EMPTY_STRING("");
-
-  const std::string COOKIE("cookie");
-  const std::string IDENTITY("identity");
-  const std::string CLOSE("close");
-  const std::string CONTINUE("100-continue");
+  const char COOKIE[] =   {"cookie"};
+  const char IDENTITY[] = {"identity"};
+  const char CLOSE[] =    {"close"};
+  const char CONTINUE[] = {"100-continue"};
 }
 
 namespace via
@@ -98,10 +96,9 @@ namespace via
       // if the field name was found previously
       if (iter != fields_.end())
       {
-        if (name.find(COOKIE) != std::string::npos)
-          iter->second += SC + std::string(value);
-        else
-          iter->second += COMMA + std::string(value);
+        char separator((name.find(COOKIE) != std::string::npos) ? ';' : ',');
+        iter->second.append({separator});
+        iter->second.append(value);
       }
       else
         fields_.insert(std::unordered_map<std::string, std::string>::value_type
@@ -110,15 +107,11 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    const std::string& message_headers::find(std::string_view name) const
+    std::string_view message_headers::find(std::string_view name) const
     {
       std::unordered_map<std::string, std::string>::const_iterator iter
         (fields_.find(name.data()));
-
-      if (iter != fields_.end())
-        return iter->second;
-      else
-        return EMPTY_STRING;
+      return (iter != fields_.end()) ? iter->second : std::string_view();
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -126,12 +119,8 @@ namespace via
     std::ptrdiff_t message_headers::content_length() const noexcept
     {
       // Find whether there is a content length field.
-      const std::string& content_length(find(header_field::id::CONTENT_LENGTH));
-      if (content_length.empty())
-        return 0;
-
-      // Get the length from the content length field.
-      return from_dec_string(content_length);
+      auto content_length(find(header_field::id::CONTENT_LENGTH));
+      return (content_length.empty()) ? 0 : from_dec_string(content_length);
     }
     //////////////////////////////////////////////////////////////////////////
 

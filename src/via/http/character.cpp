@@ -16,11 +16,7 @@ namespace via
 {
   namespace http
   {
-    const std::string CRLF("\r\n");
-
-    const std::string COMMA(",");
-
-    const std::string SC(";");
+    const char CRLF[] = {"\r\n"};
 
     //////////////////////////////////////////////////////////////////////////
     bool is_separator(char c) noexcept

@@ -493,7 +493,7 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader1)
   BOOST_CHECK(header_data.end() == header_next);
 
   std::string COOKIE_STR("abcdefg hijkl");
-  const std::string& cookies(the_headers.find("set-cookie"));
+  std::string cookies(the_headers.find("set-cookie"));
   BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
 
   BOOST_CHECK_EQUAL("Chunked",
@@ -526,7 +526,7 @@ BOOST_AUTO_TEST_CASE(ValidCookieHeader2)
   BOOST_CHECK(header_data.end() == header_next);
 
   std::string COOKIE_STR("abcdefg hijkl;ijklm nopq");
-  const std::string& cookies(the_headers.find("set-cookie"));
+  std::string cookies(the_headers.find("set-cookie"));
   BOOST_CHECK_EQUAL(COOKIE_STR, cookies);
 
   BOOST_CHECK_EQUAL("Chunked",
@@ -548,7 +548,7 @@ BOOST_AUTO_TEST_CASE(ValidRepeatedHeader1)
   BOOST_CHECK(header_data.end() == header_next);
 
   std::string CONTENT_STR("abcdefg hijkl,ijklm nopq");
-  const std::string& content(the_headers.find("content-language"));
+  std::string content(the_headers.find("content-language"));
   BOOST_CHECK_EQUAL(CONTENT_STR, content);
 
   BOOST_CHECK_EQUAL("Chunked",

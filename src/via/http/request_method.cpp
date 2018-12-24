@@ -21,8 +21,6 @@ namespace
   const char METHOD_DELETE[] =  {"DELETE"};
   const char METHOD_TRACE[] =   {"TRACE"};
   const char METHOD_CONNECT[] = {"CONNECT"};
-
-  const char EMPTY_STRING[] = {""};
 }
 
 namespace via
@@ -37,17 +35,17 @@ namespace via
       {
         switch(method_id)
         {
-        case id::OPTIONS:                       return METHOD_OPTIONS;
-        case id::GET:                           return METHOD_GET;
-        case id::HEAD:                          return METHOD_HEAD;
-        case id::POST:                          return METHOD_POST;
-        case id::PUT:                           return METHOD_PUT;
-        case id::DELETE:                        return METHOD_DELETE;
-        case id::TRACE:                         return METHOD_TRACE;
-        case id::CONNECT:                       return METHOD_CONNECT;
+        case id::OPTIONS: return METHOD_OPTIONS;
+        case id::GET:     return METHOD_GET;
+        case id::HEAD:    return METHOD_HEAD;
+        case id::POST:    return METHOD_POST;
+        case id::PUT:     return METHOD_PUT;
+        case id::DELETE:  return METHOD_DELETE;
+        case id::TRACE:   return METHOD_TRACE;
+        case id::CONNECT: return METHOD_CONNECT;
 
         // Unknown method id
-        default:                                return EMPTY_STRING;
+        default:          return std::string_view();
         }
       }
       //////////////////////////////////////////////////////////////////////////

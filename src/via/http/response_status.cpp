@@ -77,8 +77,6 @@ namespace
                                             {"HTTP Version not supported"};
   const char REASON_NETWORK_AUTHENTICATION_REQUIRED[] =
                                             {"Network Authentication Required"};
-
-  const char EMPTY_STRING[] = {""};
 }
 
 namespace via
@@ -154,7 +152,7 @@ namespace via
                                 return REASON_NETWORK_AUTHENTICATION_REQUIRED;
 
       // Unknown Error Status Code
-      default:                            return EMPTY_STRING;
+      default:                            return std::string_view();
       }
     }
     //////////////////////////////////////////////////////////////////////////
