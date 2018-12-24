@@ -6,6 +6,7 @@ sudo: false
 branches:
   only:
   - master
+  - develop
   - "/^v\\d+\\./"
 
 compiler:
