@@ -1,6 +1,6 @@
 # Copyright (c) 2018 Ken Barker
 
-FROM alpine:3.8 AS build
+FROM alpine:edge AS build
 
 LABEL maintainer="ken.barker@via-technology.aero"
 
@@ -43,7 +43,7 @@ RUN cd /opt/via-httplib/build \
  && make
 
 # Create a clean alpine image and copy the server to it
-FROM alpine:3.8
+FROM alpine:edge
 
 RUN apk --update add --no-cache \
   openssh openssl-dev \
