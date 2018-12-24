@@ -255,9 +255,9 @@ namespace via
       /// @param major_version default '1'
       /// @param minor_version default '1'
       explicit response_line(int status,
-                             std::string const& reason_phrase,
-                             char major_version = '1',
-                             char minor_version = '1') :
+                               std::string_view reason_phrase,
+                               char major_version = '1',
+                               char minor_version = '1') :
         strict_crlf_(false),
         max_whitespace_(254),
         max_status_no_(65534),
@@ -288,7 +288,7 @@ namespace via
       /// Set the response status and reason phrase.
       /// @param status the response status.
       /// @param reason_phrase the the response reason phrase.
-      void set_status_and_reason(int status, std::string const& reason_phrase)
+      void set_status_and_reason(int status, std::string_view reason_phrase)
       {
         status_ = status;
         reason_phrase_ = reason_phrase;
@@ -439,7 +439,7 @@ namespace via
       /// @param status_code the response status code
       /// @param header_string default blank
       explicit tx_response(response_status::code status_code,
-                           std::string header_string = "") :
+                            std::string header_string = "") :
         response_line(status_code),
         header_string_(header_string)
       {}
@@ -448,9 +448,9 @@ namespace via
       /// @param reason_phrase the reason phrase for the response status.
       /// @param status the response status
       /// @param header_string default blank
-      explicit tx_response(const std::string& reason_phrase,
-                           int status,
-                           std::string header_string = "") :
+      explicit tx_response(std::string_view reason_phrase,
+                            int status,
+                            std::string_view header_string = std::string_view()) :
         response_line(status, reason_phrase),
         header_string_(header_string)
       {}
@@ -463,7 +463,7 @@ namespace via
       /// @param header_string the new header string
       /// @return true if the header string has been set, false if the header
       /// string is invalid.
-      bool set_header_string(std::string const& header_string)
+      bool set_header_string(std::string_view header_string)
       {
         header_string_ = header_string;
         return !are_headers_split(header_string_);
@@ -473,13 +473,13 @@ namespace via
       /// @see http::header_field::field_id
       /// @param field_id the header field id
       /// @param value the header field value
-      void add_header(header_field::id field_id, const std::string& value)
+      void add_header(header_field::id field_id, std::string_view value)
       { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the response.
       /// @param field the header field name
       /// @param value the header field value
-      void add_header(std::string const& field, const std::string& value)
+      void add_header(std::string_view field, std::string_view value)
       { header_string_ += header_field::to_header(field, value);  }
 
       /// Add an http content length header line for the given size.

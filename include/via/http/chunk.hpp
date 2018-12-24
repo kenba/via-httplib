@@ -186,7 +186,7 @@ namespace via
       /// @param size the size of the chunk in bytes.
       /// @param extension the chunk extension (default blank).
       explicit chunk_header(size_t size,
-                            std::string extension = "")
+                             std::string_view extension = std::string_view())
         : size_(size)
         , hex_size_(to_hex_string(size))
         , extension_(extension)
@@ -202,7 +202,7 @@ namespace via
 
       /// Set the chunk extension.
       /// @param extension the chunk extension
-      void set_extension(std::string const& extension)
+      void set_extension(std::string_view extension)
       { extension_ = extension; }
 
       /// Output as a string.
@@ -365,18 +365,18 @@ namespace via
       /// Send the last HTTP chunk for a request or response.
       /// @param extension the (optional) chunk extension.
       /// @param trailer_string the (optional) chunk trailers.
-      explicit last_chunk(std::string const& extension,
-                          std::string const& trailer_string) :
+      explicit last_chunk(std::string_view extension,
+                           std::string_view trailer_string) :
         extension_(extension),
         trailer_string_(trailer_string)
       {}
 
       /// Add a free form trailer to the chunk.
-      void add_trailer(std::string const& field, std::string const& value)
+      void add_trailer(std::string_view field, std::string_view value)
       { trailer_string_ += header_field::to_header(field, value);  }
 
       /// Add a standard trailer to the chunk.
-      void add_trailer(header_field::id field_id, std::string const& value)
+      void add_trailer(header_field::id field_id, std::string_view value)
       { trailer_string_ += header_field::to_header(field_id, value);  }
 
       /// The http chunk header string.

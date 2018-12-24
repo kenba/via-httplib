@@ -225,9 +225,9 @@ namespace via
       /// @param major_version default '1'
       /// @param minor_version default '1'
       explicit request_line(request_method::id method_id,
-                            std::string uri,
-                            char major_version = '1',
-                            char minor_version = '1') :
+                              std::string_view uri,
+                              char major_version = '1',
+                              char minor_version = '1') :
         strict_crlf_(false),
         max_whitespace_(8),
         max_method_length_(8),
@@ -249,10 +249,10 @@ namespace via
       /// @param uri the HTTP uri, default blank
       /// @param major_version default '1'
       /// @param minor_version default '1'
-      explicit request_line(std::string const& method,
-                            std::string const& uri,
-                            char major_version = '1',
-                            char minor_version = '1') :
+      explicit request_line(std::string_view method,
+                              std::string_view uri,
+                              char major_version = '1',
+                              char minor_version = '1') :
         strict_crlf_(false),
         max_whitespace_(8),
         max_method_length_(8),
@@ -271,12 +271,12 @@ namespace via
 
       /// Set the request method.
       /// @param method the HTTP request method.
-      void set_method(const std::string& method)
+      void set_method(std::string_view method)
       { method_ = method; }
 
       /// Set the request uri.
       /// @param uri the HTTP request uri.
-      void set_uri(const std::string& uri)
+      void set_uri(std::string_view uri)
       { uri_ = uri; }
 
       /// Set the HTTP major version.
@@ -458,10 +458,10 @@ namespace via
       /// @param major_version default 1
       /// @param minor_version default 1
       explicit tx_request(request_method::id method_id,
-                          std::string uri,
-                          std::string header_string = "",
-                          char major_version = '1',
-                          char minor_version = '1') :
+                           std::string_view uri,
+                           std::string_view header_string = std::string_view(),
+                           char major_version = '1',
+                           char minor_version = '1') :
         request_line(method_id, uri, major_version, minor_version),
         header_string_(header_string)
       {}
@@ -472,11 +472,11 @@ namespace via
       /// @param header_string default blank
       /// @param major_version default 1
       /// @param minor_version default 1
-      explicit tx_request(const std::string& method,
-                          std::string uri,
-                          std::string header_string = "",
-                          char major_version = '1',
-                          char minor_version = '1') :
+      explicit tx_request(std::string_view method,
+                           std::string_view uri,
+                           std::string_view header_string = std::string_view(),
+                           char major_version = '1',
+                           char minor_version = '1') :
         request_line(method, uri, major_version, minor_version),
         header_string_(header_string)
       {}
@@ -487,20 +487,20 @@ namespace via
       /// Note: will overwrite any other headers, so must be called before
       /// the following add_header fucntions.
       /// @param header_string the new header string
-      void set_header_string(std::string const& header_string)
+      void set_header_string(std::string_view header_string)
       { header_string_ = header_string; }
 
       /// Add a standard header to the request.
       /// @see http::header_field::field_id
       /// @param field_id the header field id
       /// @param value the header field value
-      void add_header(header_field::id field_id, const std::string& value)
+      void add_header(header_field::id field_id, std::string_view value)
       { header_string_ += header_field::to_header(field_id, value);  }
 
       /// Add a free form header to the request.
       /// @param field the header field name
       /// @param value the header field value
-      void add_header(std::string const& field, const std::string& value)
+      void add_header(std::string_view field, std::string_view value)
       { header_string_ += header_field::to_header(field, value);  }
 
       /// Add an http content length header line for the given size.
@@ -801,8 +801,7 @@ namespace via
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head_)
-              request_.set_method
-                  (std::string(request_method::name(request_method::id::GET)));
+              request_.set_method(request_method::name(request_method::id::GET));
             return RX_VALID;
           }
         }
