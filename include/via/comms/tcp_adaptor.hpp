@@ -27,9 +27,9 @@ namespace via
     /// @param host_name the host name.
     /// @param port_name the host port.
     /// @return a TCP resolver::iterator
-    ASIO::ip::tcp::resolver::iterator resolve_host
-        (ASIO::io_service& io_service,
-         std::string_view host_name, std::string_view port_name)
+    inline ASIO::ip::tcp::resolver::iterator resolve_host
+                      (ASIO::io_service& io_service,
+                       std::string_view host_name, std::string_view port_name)
     {
       ASIO_ERROR_CODE ignoredEc;
       ASIO::ip::tcp::resolver resolver(io_service);
