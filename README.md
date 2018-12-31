@@ -14,10 +14,10 @@ HTTP/HTTPS servers to be built that comply with
 
 ## Requirements
 
-+ A C++11 compliant compiler.   
-This version requires a complier that supports:  lambdas, enum classes, member function delete
-and std::functional.  
-It's been tested with `MSVC 2015`, `GCC 6.2` and `MinGw 5.3.0`.  
++ A C++17 compliant compiler.  
+This version requires a complier that supports string_view.
+It's been tested with `MSVC 2017`, `Clang 7.0.1`, `GCC 8.2` and `MinGw 7.3.0`.  
+C++11 versions are available in tags `1.6.0` and lower.  
 
 + The `asio` C++ library.  
 Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
@@ -48,6 +48,11 @@ Please note that a plain **HTTP** server does **not** require `OpenSLL`.
 
 The [Server User Guide](docs/Server.md) explains how to use the library to create HTTP servers and
 the [Client User Guide](docs/Client.md) explains how to use the library to create HTTP clients.
+
+An example https server [docker](https://www.docker.com/) image can be built
+using the following commands from this directory:
+
+    docker build . -t via-http-server:1.7.0
 
 ## Example HTTP Server
 

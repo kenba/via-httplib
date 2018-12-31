@@ -6,8 +6,8 @@ sudo: false
 branches:
   only:
   - master
-  - develop
-  - "/^v\\d+\\./"
+  # - develop
+  - "/^1\.\\d+\\./"
 
 env:
   global:
