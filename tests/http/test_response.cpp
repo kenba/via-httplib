@@ -652,7 +652,7 @@ BOOST_AUTO_TEST_CASE(ResponseEncode4)
   correct_response += "Transfer-Encoding: Chunked\r\n\r\n";
 
   tx_response the_response(response_status::code::OK);
-  the_response.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  the_response.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string resp_text(the_response.message());
 //  std::string resp_text(resp_data.begin(), resp_data.end());
   BOOST_CHECK_EQUAL(correct_response.data(), resp_text.data());
@@ -982,7 +982,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
 {
   // OK response with two bodies in chunked buffers.
   tx_response server_response1(response_status::code::OK);
-  server_response1.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  server_response1.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string response_data1(server_response1.message());
   std::string::iterator iter(response_data1.begin());
 
@@ -1036,7 +1036,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
 {
   // OK response with two bodies in chunked bodies all in one buffer
   tx_response server_response1(response_status::code::OK);
-  server_response1.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  server_response1.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string response_data1(server_response1.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");

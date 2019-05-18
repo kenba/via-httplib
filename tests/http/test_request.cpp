@@ -617,7 +617,7 @@ BOOST_AUTO_TEST_CASE(RequestEncode4)
   correct_request += "Expect: 100-Continue\r\n\r\n";
 
   tx_request the_request(request_method::id::POST, "/uri");
-  the_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  the_request.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   the_request.add_header("Expect", "100-Continue");
   std::string req_text(the_request.message());
   BOOST_CHECK_EQUAL(correct_request.c_str(), req_text.c_str());
@@ -1047,8 +1047,8 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
 {
   // A POST requests with two bodies in chunked bodies all in one buffer
   tx_request client_request(request_method::id::POST, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
-  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
+  client_request.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string request_data1(client_request.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
@@ -1209,8 +1209,8 @@ BOOST_AUTO_TEST_SUITE(TestRequestLoopback)
 
 BOOST_AUTO_TEST_CASE(LoopbackGet1)
 {
-  tx_request client_request(request_method::id::GET, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
+  tx_request client_request(request_method::GET, "/hello");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
   std::string request_data1(client_request.message());
   std::string::iterator iter(request_data1.begin());
 
@@ -1233,8 +1233,8 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
   // Two PUT requests with bodies all in separate buffers
   std::string request_body1("abcdefghijklmnopqrstuvwxyz0123456789");
 
-  tx_request client_request(request_method::id::PUT, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
+  tx_request client_request(request_method::PUT, "/hello");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
   std::string request_data1(client_request.message(request_body1.size()));
   std::string::iterator iter(request_data1.begin());
 
@@ -1253,8 +1253,8 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
   std::string request_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
 
   client_request.clear();
-  client_request = tx_request(request_method::id::PUT, "/goodbye");
-  client_request.add_header(header_field::id::HOST, "localhost");
+  client_request = tx_request(request_method::PUT, "/goodbye");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
   std::string request_data2(client_request.message(request_body2.size()));
   iter = request_data2.begin();
 
@@ -1275,16 +1275,16 @@ BOOST_AUTO_TEST_CASE(LoopbackPut2)
   // Two PUT requests with bodies all in one buffer
   std::string request_body1("abcdefghijklmnopqrstuvwxyz0123456789");
 
-  tx_request client_request(request_method::id::POST, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
+  tx_request client_request(request_method::POST, "/hello");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
   std::string request_data1(client_request.message(request_body1.size()));
 
   // The second request
   std::string request_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
 
   client_request.clear();
-  client_request = tx_request(request_method::id::PUT, "/goodbye");
-  client_request.add_header(header_field::id::HOST, "localhost");
+  client_request = tx_request(request_method::PUT, "/goodbye");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
   std::string request_data2(client_request.message(request_body2.size()));
 
   std::string request_buffer(request_data1 + request_body1 +
@@ -1307,9 +1307,9 @@ BOOST_AUTO_TEST_CASE(LoopbackPut2)
 BOOST_AUTO_TEST_CASE(LoopbackPost1)
 {
   // A POST requests with two bodies in chunked buffers.
-  tx_request client_request(request_method::id::POST, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
-  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  tx_request client_request(request_method::POST, "/hello");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
+  client_request.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string request_data1(client_request.message());
   std::string::iterator iter(request_data1.begin());
 
@@ -1368,9 +1368,9 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
 BOOST_AUTO_TEST_CASE(LoopbackPost2)
 {
   // A POST requests with two bodies in chunked bodies all in one buffer
-  tx_request client_request(request_method::id::POST, "/hello");
-  client_request.add_header(header_field::id::HOST, "localhost");
-  client_request.add_header(header_field::id::TRANSFER_ENCODING, "Chunked");
+  tx_request client_request(request_method::POST, "/hello");
+  client_request.add_header(header_field::HEADER_HOST, "localhost");
+  client_request.add_header(header_field::HEADER_TRANSFER_ENCODING, "Chunked");
   std::string request_data1(client_request.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");

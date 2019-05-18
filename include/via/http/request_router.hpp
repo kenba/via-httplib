@@ -268,7 +268,7 @@ namespace via
         {
           // send a METHOD_NOT_ALLOWED response with an ALLOW header
           tx_response response(response_status::code::METHOD_NOT_ALLOWED);
-          response.add_header(header_field::id::ALLOW, route_itr->allowed_methods());
+          response.add_header(header_field::HEADER_ALLOW, route_itr->allowed_methods());
           return response;
         }
         else
@@ -283,7 +283,7 @@ namespace via
             {
               // authentication failed, send an UNAUTHORISED response
               tx_response response(response_status::code::UNAUTHORISED);
-              response.add_header(header_field::id::WWW_AUTHENTICATE, challenge);
+              response.add_header(header_field::HEADER_WWW_AUTHENTICATE, challenge);
               return response;
             }
           }
