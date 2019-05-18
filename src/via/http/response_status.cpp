@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -8,76 +8,6 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/http/response_status.hpp"
 #include "via/http/character.hpp"
-
-namespace
-{
-  // The following strings are for the standard response reason phrases
-  // associated with the given response status code.
-
-  // Informational 1xx
-  const char REASON_CONTINUE[] =            {"Continue"};
-  const char REASON_SWITCHING_PROTOCOLS[] = {"Switching Protocols"};
-
-  // Successful 2xx
-  const char REASON_OK[] =                  {"OK"};
-  const char REASON_CREATED[] =             {"Created"};
-  const char REASON_ACCEPTED[] =            {"Accepted"};
-  const char REASON_NON_AUTHORITATIVE[] =   {"Non-Authoritative Information"};
-  const char REASON_NO_CONTENT[] =          {"No Content"};
-  const char REASON_RESET_CONTENT[] =       {"Reset Content"};
-  const char REASON_PARTIAL_CONTENT[] =     {"Partial Content"};
-
-  // Redirection 3xx
-  const char REASON_MULTIPLE_CHOICES[] =    {"Multiple Choices"};
-  const char REASON_MOVED_PERMANENTLY[] =   {"Moved Permanently"};
-  const char REASON_FOUND[] =               {"Found"};
-  const char REASON_SEE_OTHER[] =           {"See Other"};
-  const char REASON_NOT_MODIFIED[] =        {"Not Modified"};
-  const char REASON_USE_PROXY[] =           {"Use Proxy"};
-  const char REASON_TEMPORARY_REDIRECT[] =  {"Temporary Redirect"};
-  const char REASON_PERMANENT_REDIRECT[] =  {"Permanent Redirect"};
-
-  // Client Error 4xx
-  const char REASON_BAD_REQUEST[] =         {"Bad Request"};
-  const char REASON_UNAUTHORISED[] =        {"Unauthorized"};
-  const char REASON_PAYMENT_REQUIRED[] =    {"Payment Required"};
-  const char REASON_FORBIDDEN[] =           {"Forbidden"};
-  const char REASON_NOT_FOUND[] =           {"Not Found"};
-  const char REASON_METHOD_NOT_ALLOWED[] =  {"Method Not Allowed"};
-  const char REASON_NOT_ACCEPTABLE[] =      {"Not Acceptable"};
-  const char REASON_PROXY_AUTHENTICATION_REQUIRED[] =
-                                            {"Proxy Authentication Required"};
-  const char REASON_REQUEST_TIMEOUT[] =     {"Request Time-out"};
-  const char REASON_CONFLICT[] =            {"Conflict"};
-  const char REASON_GONE[] =                {"Gone"};
-  const char REASON_LENGTH_REQUIRED[] =     {"Length Required"};
-  const char REASON_PRECONDITION_FAILED[] = {"Precondition Failed"};
-  const char REASON_PAYLOAD_TOO_LARGE[] =   {"Payload Too Large"};
-  const char REASON_REQUEST_URI_TOO_LONG[] = {"Request-URI Too Long"};
-  const char REASON_UNSUPPORTED_MEDIA_TYPE[] =
-                                            {"Unsupported Media Type"};
-  const char REASON_REQUEST_RANGE_NOT_SATISFIABLE[] =
-                                            {"Requested range not satisfiable"};
-  const char REASON_EXPECTATION_FAILED[] =  {"Expectation Failed"};
-  const char REASON_UPGRADE_REQUIRED[] =    {"Upgrade Required"};
-  const char REASON_PRECONDITION_REQUIRED[] =
-                                            {"Precondition Required"};
-  const char REASON_TOO_MANY_REQUESTS[] =   {"Too Many Requests"};
-  const char REASON_REQUEST_HEADER_FIELDS_TOO_LARGE[] =
-                                            {"Request Header Fields Too Large"};
-
-  // Server Error 5xx
-  const char REASON_INTERNAL_SERVER_ERROR[] =
-                                            {"Internal Server Error"};
-  const char REASON_NOT_IMPLEMENTED[] =     {"Not Implemented"};
-  const char REASON_BAD_GATEWAY[] =         {"Bad Gateway"};
-  const char REASON_SERVICE_UNAVAILABLE[] = {"Service Unavailable"};
-  const char REASON_GATEWAY_TIMEOUT[] =     {"Gateway Time-out"};
-  const char REASON_HTTP_VERSION_NOT_SUPPORTED[] =
-                                            {"HTTP Version not supported"};
-  const char REASON_NETWORK_AUTHENTICATION_REQUIRED[] =
-                                            {"Network Authentication Required"};
-}
 
 namespace via
 {

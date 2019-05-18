@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -83,6 +83,74 @@ namespace via
         HTTP_VERSION_NOT_SUPPORTED    = 505,
         NETWORK_AUTHENTICATION_REQUIRED = 511
       };
+
+      // The following strings are for the standard response reason phrases
+      // associated with the given response status code.
+
+      // Informational 1xx
+      constexpr char REASON_CONTINUE[]            {"Continue"};
+      constexpr char REASON_SWITCHING_PROTOCOLS[] {"Switching Protocols"};
+
+      // Successful 2xx
+      constexpr char REASON_OK[]                  {"OK"};
+      constexpr char REASON_CREATED[]             {"Created"};
+      constexpr char REASON_ACCEPTED[]            {"Accepted"};
+      constexpr char REASON_NON_AUTHORITATIVE[]   {"Non-Authoritative Information"};
+      constexpr char REASON_NO_CONTENT[]          {"No Content"};
+      constexpr char REASON_RESET_CONTENT[]       {"Reset Content"};
+      constexpr char REASON_PARTIAL_CONTENT[]     {"Partial Content"};
+
+
+      // Redirection 3xx
+      constexpr char REASON_MULTIPLE_CHOICES[]    {"Multiple Choices"};
+      constexpr char REASON_MOVED_PERMANENTLY[]   {"Moved Permanently"};
+      constexpr char REASON_FOUND[]               {"Found"};
+      constexpr char REASON_SEE_OTHER[]           {"See Other"};
+      constexpr char REASON_NOT_MODIFIED[]        {"Not Modified"};
+      constexpr char REASON_USE_PROXY[]           {"Use Proxy"};
+      constexpr char REASON_TEMPORARY_REDIRECT[]  {"Temporary Redirect"};
+      constexpr char REASON_PERMANENT_REDIRECT[]  {"Permanent Redirect"};
+
+      // Client Error 4xx
+      constexpr char REASON_BAD_REQUEST[]         {"Bad Request"};
+      constexpr char REASON_UNAUTHORISED[]        {"Unauthorized"};
+      constexpr char REASON_PAYMENT_REQUIRED[]    {"Payment Required"};
+      constexpr char REASON_FORBIDDEN[]           {"Forbidden"};
+      constexpr char REASON_NOT_FOUND[]           {"Not Found"};
+      constexpr char REASON_METHOD_NOT_ALLOWED[]  {"Method Not Allowed"};
+      constexpr char REASON_NOT_ACCEPTABLE[]      {"Not Acceptable"};
+      constexpr char REASON_PROXY_AUTHENTICATION_REQUIRED[] =
+                                                {"Proxy Authentication Required"};
+      constexpr char REASON_REQUEST_TIMEOUT[]     {"Request Time-out"};
+      constexpr char REASON_CONFLICT[]            {"Conflict"};
+      constexpr char REASON_GONE[]                {"Gone"};
+      constexpr char REASON_LENGTH_REQUIRED[]     {"Length Required"};
+      constexpr char REASON_PRECONDITION_FAILED[] {"Precondition Failed"};
+      constexpr char REASON_PAYLOAD_TOO_LARGE[]   {"Payload Too Large"};
+      constexpr char REASON_REQUEST_URI_TOO_LONG[] {"Request-URI Too Long"};
+      constexpr char REASON_UNSUPPORTED_MEDIA_TYPE[] =
+                                                {"Unsupported Media Type"};
+      constexpr char REASON_REQUEST_RANGE_NOT_SATISFIABLE[] =
+                                                {"Requested range not satisfiable"};
+      constexpr char REASON_EXPECTATION_FAILED[]  {"Expectation Failed"};
+      constexpr char REASON_UPGRADE_REQUIRED[]    {"Upgrade Required"};
+      constexpr char REASON_PRECONDITION_REQUIRED[] =
+                                                {"Precondition Required"};
+      constexpr char REASON_TOO_MANY_REQUESTS[]   {"Too Many Requests"};
+      constexpr char REASON_REQUEST_HEADER_FIELDS_TOO_LARGE[] =
+                                                {"Request Header Fields Too Large"};
+
+      // Server Error 5xx
+      constexpr char REASON_INTERNAL_SERVER_ERROR[] =
+                                                {"Internal Server Error"};
+      constexpr char REASON_NOT_IMPLEMENTED[]     {"Not Implemented"};
+      constexpr char REASON_BAD_GATEWAY[]         {"Bad Gateway"};
+      constexpr char REASON_SERVICE_UNAVAILABLE[] {"Service Unavailable"};
+      constexpr char REASON_GATEWAY_TIMEOUT[]     {"Gateway Time-out"};
+      constexpr char REASON_HTTP_VERSION_NOT_SUPPORTED[]
+                                                {"HTTP Version not supported"};
+      constexpr char REASON_NETWORK_AUTHENTICATION_REQUIRED[]
+                                                {"Network Authentication Required"};
 
       /// The standard reason phrase associated with the response status code.
       /// See RFC2616 Section 6.1.1.

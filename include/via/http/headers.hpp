@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,13 +15,17 @@
 /// @brief Classes to parse and encode HTTP headers.
 //////////////////////////////////////////////////////////////////////////////
 #include "header_field.hpp"
-#include "character.hpp"
 #include <unordered_map>
 
 namespace via
 {
   namespace http
   {
+    constexpr char COOKIE[]   {"cookie"};
+    constexpr char IDENTITY[] {"identity"};
+    constexpr char CLOSE[]    {"close"};
+    constexpr char CONTINUE[] {"100-continue"};
+
     /// @enum Rx is the receiver parsing state and is valid for both the
     /// request and response receivers.
     enum Rx
@@ -70,7 +74,69 @@ namespace via
       /// Parse an individual character.
       /// @param c the current character to be parsed.
       /// @retval state the current state of the parser.
-      bool parse_char(char c);
+      bool parse_char(char c)
+      {
+        // Ensure that the overall header length is within limitts
+        if (++length_ > max_line_length_)
+          state_ = HEADER_ERROR_LENGTH;
+
+        switch (state_)
+        {
+        case HEADER_NAME:
+          if (std::isalpha(c) || ('-' == c))
+            name_.push_back(static_cast<char>(std::tolower(c)));
+          else if (':' == c)
+            state_ = HEADER_VALUE_LS;
+          else
+            return false;
+          break;
+
+        case HEADER_VALUE_LS:
+          // Ignore leading whitespace
+          if (is_space_or_tab(c))
+            // but only upto to a limit!
+            if (++ws_count_ > max_whitespace_)
+            {
+              state_ = HEADER_ERROR_WS;
+              return false;
+            }
+            else
+              break;
+          else
+            state_ = HEADER_VALUE;
+          [[fallthrough]]; // intentional fall-through
+
+        case HEADER_VALUE:
+          // The header line should end with an \r\n...
+          if (!is_end_of_line(c))
+            value_.push_back(c);
+          else if ('\r' == c)
+            state_ = HEADER_LF;
+          else // ('\n' == c)
+          {
+            if (strict_crlf_)
+            {
+              state_ = HEADER_ERROR_CRLF;
+              return false;
+            }
+            else
+              state_ = HEADER_VALID;
+          }
+          break;
+
+        case HEADER_LF:
+          if ('\n' == c)
+            state_ = HEADER_VALID;
+          else
+            return false;
+          break;
+
+        default:
+          return false;
+        }
+
+        return true;
+      }
 
     public:
 
@@ -271,13 +337,32 @@ namespace via
       /// Add a header to the collection.
       /// @param name the field name (in lower case)
       /// @param value the field value.
-      void add(std::string_view name, std::string_view value);
+      void add(std::string_view name, std::string_view value)
+      {
+        std::unordered_map<std::string, std::string>::iterator iter
+          (fields_.find(name.data()));
+        // if the field name was found previously
+        if (iter != fields_.end())
+        {
+          char separator((name.find(COOKIE) != std::string::npos) ? ';' : ',');
+          iter->second.append({separator});
+          iter->second.append(value);
+        }
+        else
+          fields_.insert(std::unordered_map<std::string, std::string>::value_type
+                               (name, value));
+      }
 
       /// Find the value for a given header name.
       /// Note: the name must be in lowercase for received message_headers.
       /// @param name the name of the header.
       /// @return the value, blank if not found
-      std::string_view find(std::string_view name) const;
+      std::string_view find(std::string_view name) const
+      {
+        std::unordered_map<std::string, std::string>::const_iterator iter
+          (fields_.find(name.data()));
+        return (iter != fields_.end()) ? iter->second : std::string_view();
+      }
 
       /// Find the value for a given header id.
       /// @param field_id the id of the header.
@@ -289,21 +374,57 @@ namespace via
       /// @return the value of the Content-Length field or
       /// -1 if it was invalid.
       /// May also return zero if it was not found.
-      std::ptrdiff_t content_length() const noexcept;
+      std::ptrdiff_t content_length() const noexcept
+      {
+        // Find whether there is a content length field.
+        auto content_length(find(header_field::LC_CONTENT_LENGTH));
+        return (content_length.empty()) ? 0 : from_dec_string(content_length);
+      }
 
       /// Whether Chunked Transfer Coding is applied to the message.
       /// @return true if there is a transfer-encoding header and it does
       /// NOT contain the keyword "identity". See RFC2616 section 4.4 para 2.
-      bool is_chunked() const;
+      bool is_chunked() const
+      {
+        // Find whether there is a transfer encoding header.
+        std::string xfer_encoding(find(header_field::LC_TRANSFER_ENCODING));
+        if (xfer_encoding.empty())
+          return false;
+
+        std::transform(xfer_encoding.begin(), xfer_encoding.end(),
+                       xfer_encoding.begin(), ::tolower);
+        // Note: is transfer encoding if "identity" is NOT found.
+        return (xfer_encoding.find(IDENTITY) == std::string::npos);
+      }
 
       /// Whether the connection should be closed after the response.
       /// @return true if there is a Connection: close header, false otherwise
-      bool close_connection() const;
+      bool close_connection() const
+      {
+        // Find whether there is a connection header.
+        std::string connection(find(header_field::LC_CONNECTION));
+        if (connection.empty())
+          return false;
+
+        std::transform(connection.begin(), connection.end(),
+                       connection.begin(), ::tolower);
+        return (connection.find(CLOSE) != std::string::npos);
+      }
 
       /// Whether the client expects a "100-continue" response.
       /// @return true if there is an Expect: 100-continue header, false
       /// otherwise
-      bool expect_continue() const;
+      bool expect_continue() const
+      {
+        // Find whether there is a expect header.
+        std::string expect(find(header_field::LC_EXPECT));
+        if (expect.empty())
+          return false;
+
+        std::transform(expect.begin(), expect.end(),
+                       expect.begin(), ::tolower);
+        return (expect.find(CONTINUE) != std::string::npos);
+      }
 
       /// Accessor for the valid flag.
       /// @return the valid flag.
@@ -318,12 +439,44 @@ namespace via
       /// Note: it is NOT terminated with an extra CRLF tso that it parses
       /// the are_headers_split function.
       /// @return a string containing all of the message_headers.
-      std::string to_string() const;
+      std::string to_string() const
+      {
+        std::string output;
+        for (std::unordered_map<std::string, std::string>::const_iterator
+             iter(fields_.begin()); iter != fields_.end(); ++iter)
+          output += header_field::to_header(iter->first, iter->second);
+
+        return output;
+      }
     };
 
     /// A function to determine whether the header string contains an extra
     /// CRLF pair, which could cause HTTP message spliting.
-    bool are_headers_split(std::string_view headers) noexcept;
+    inline bool are_headers_split(std::string_view headers) noexcept
+    {
+      char prev('0');
+      char pprev('0');
+
+      if (!headers.empty())
+      {
+        auto iter(headers.cbegin());
+        for(; iter != headers.cend(); ++iter)
+        {
+          if (*iter == '\n')
+          {
+            if (prev == '\n')
+              return true;
+            else if ((prev == '\r') && (pprev == '\n'))
+              return true;
+          }
+
+          pprev = prev;
+          prev = *iter;
+        }
+      }
+
+      return false;
+    }
   }
 }
 

@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -28,10 +28,21 @@ namespace via
   {
     namespace request_method
     {
+      // The following strings are for the standard request methods defined in
+      // RFC2616 section 9.
+      constexpr char OPTIONS[] {"OPTIONS"};
+      constexpr char GET[]     {"GET"};
+      constexpr char HEAD[]    {"HEAD"};
+      constexpr char POST[]    {"POST"};
+      constexpr char PUT[]     {"PUT"};
+      constexpr char DELETE[]  {"DELETE"};
+      constexpr char TRACE[]   {"TRACE"};
+      constexpr char CONNECT[] {"CONNECT"};
+
       /// Ids for the standard methods defined in RFC2616.
       /// They are intended to be used in conjunction with the function
       /// method_name to encode and decode the method from a request.
-      enum id
+      enum class id
       {
         OPTIONS,
         GET,
@@ -45,7 +56,23 @@ namespace via
 
       /// The standard method name associated with ids above.
       /// @return the standard method name.
-      const std::string_view name(id method_id) noexcept;
+      inline const std::string_view name(id method_id) noexcept
+      {
+        switch(method_id)
+        {
+        case id::OPTIONS: return request_method::OPTIONS;
+        case id::GET:     return request_method::GET;
+        case id::HEAD:    return request_method::HEAD;
+        case id::POST:    return request_method::POST;
+        case id::PUT:     return request_method::PUT;
+        case id::DELETE:  return request_method::DELETE;
+        case id::TRACE:   return request_method::TRACE;
+        case id::CONNECT: return request_method::CONNECT;
+
+        // Unknown method id
+        default:          return std::string_view();
+        }
+      }
     }
   }
 }

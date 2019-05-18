@@ -76,7 +76,167 @@ namespace via
       /// Parse an individual character.
       /// @param c the character to be parsed.
       /// @return true if valid, false otherwise.
-      bool parse_char(char c);
+      bool parse_char(char c)
+      {
+        switch (state_)
+        {
+        case REQ_METHOD:
+          // Valid HTTP methods must be uppercase chars
+          if (std::isupper(c))
+          {
+            method_.push_back(c);
+            if (method_.size() > max_method_length_)
+            {
+              state_ = REQ_ERROR_METHOD_LENGTH;
+              return false;
+            }
+          }
+          // If this char is whitespace and method has been read
+          else if (is_space_or_tab(c) && !method_.empty())
+          {
+            ws_count_ = 1;
+            state_ = REQ_URI;
+          }
+          else
+            return false;
+          break;
+
+        case REQ_URI:
+          if (is_end_of_line(c))
+            return false;
+          else if (is_space_or_tab(c))
+          {
+            // Ignore leading whitespace
+            // but only upto to a limit!
+            if (++ws_count_ > max_whitespace_)
+            {
+              state_ = REQ_ERROR_WS;
+              return false;
+            }
+
+            if (!uri_.empty())
+            {
+              ws_count_ = 1;
+              state_ = REQ_HTTP_H;
+            }
+          }
+          else
+          {
+            uri_.push_back(c);
+            if (uri_.size() > max_uri_length_)
+            {
+              state_ = REQ_ERROR_URI_LENGTH;
+              return false;
+            }
+          }
+          break;
+
+        case REQ_HTTP_H:
+          // Ignore leading whitespace
+          if (is_space_or_tab(c))
+          {
+            // but only upto to a limit!
+            if (++ws_count_ > max_whitespace_)
+            {
+              state_ = REQ_ERROR_WS;
+              return false;
+            }
+          }
+          else
+          {
+            if ('H' == c)
+              state_ = REQ_HTTP_T1;
+            else
+              return false;
+          }
+          break;
+
+        case REQ_HTTP_T1:
+          if ('T' == c)
+            state_ = REQ_HTTP_T2;
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_T2:
+          if ('T' == c)
+            state_ = REQ_HTTP_P;
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_P:
+          if ('P' == c)
+            state_ = REQ_HTTP_SLASH;
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_SLASH:
+          if ('/' == c)
+            state_ = REQ_HTTP_MAJOR;
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_MAJOR:
+          if (std::isdigit(c))
+          {
+            major_version_ = c;
+            state_ = REQ_HTTP_DOT;
+          }
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_DOT:
+          if ('.' == c)
+            state_ = REQ_HTTP_MINOR;
+          else
+            return false;
+          break;
+
+        case REQ_HTTP_MINOR:
+          if (std::isdigit(c))
+          {
+            minor_version_ = c;
+            state_ = REQ_CR;
+          }
+          else
+            return false;
+          break;
+
+        case REQ_CR:
+          // The HTTP line should end with a \r\n...
+          if ('\r' == c)
+            state_ = REQ_LF;
+          else
+          {
+            // but (if not being strict) permit just \n
+            if (!strict_crlf_ && ('\n' == c))
+              state_ = REQ_VALID;
+            else
+            {
+              state_ = REQ_ERROR_CRLF;
+              return false;
+            }
+          }
+          break;
+
+        case REQ_LF:
+          if ('\n' == c)
+          {
+            state_ = REQ_VALID;
+            break;
+          }
+          [[fallthrough]]; // intentional fall-through (for code coverage)
+
+         default:
+          return false;
+        }
+
+        return true;
+      }
 
     public:
 
@@ -291,7 +451,14 @@ namespace via
 
       /// Output as a string.
       /// @return a string containing the request line.
-      std::string to_string() const;
+      std::string to_string() const
+      {
+        std::string output(method_);
+        output += ' ' + uri_ + ' '
+               + http_version(major_version_, minor_version_)
+               + CRLF;
+        return output;
+      }
     }; // class request_line
 
     //////////////////////////////////////////////////////////////////////////
@@ -416,7 +583,7 @@ namespace via
       {
         return major_version() == '1' &&
                minor_version() == '1' &&
-               headers_.find(header_field::id::HOST).empty();
+               headers_.find(header_field::LC_HOST).empty();
       }
 
       /// Whether the client expects a "100-continue" response.
@@ -431,12 +598,12 @@ namespace via
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
       bool is_head() const noexcept
-      { return request_method::name(request_method::id::HEAD) == method(); }
+      { return request_method::HEAD == method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
       bool is_trace() const noexcept
-      { return request_method::name(request_method::id::TRACE) == method(); }
+      { return request_method::TRACE == method(); }
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
@@ -769,7 +936,7 @@ namespace via
               }
             } // if there's a body without a  content length header
             else if ((rx_size > 0) && request_.headers().
-                                find(header_field::id::CONTENT_LENGTH).empty())
+                                find(header_field::LC_CONTENT_LENGTH).empty())
             {
               response_code_ = response_status::code::LENGTH_REQUIRED;
               clear();
@@ -801,7 +968,7 @@ namespace via
             is_head_ = request_.is_head();
             // If enabled, translate a HEAD request to a GET request
             if (is_head_ && translate_head_)
-              request_.set_method(request_method::name(request_method::id::GET));
+              request_.set_method(request_method::GET);
             return RX_VALID;
           }
         }

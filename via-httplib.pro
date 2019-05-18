@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2018 Ken Barker
+# Copyright (c) 2013-2019 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -81,14 +81,8 @@ include (via-httplib.pri)
 
 SRC_DIR = $$VIAHTTPLIB/src
 
-SOURCES += $${SRC_DIR}/via/http/character.cpp
-SOURCES += $${SRC_DIR}/via/http/chunk.cpp
 SOURCES += $${SRC_DIR}/via/http/header_field.cpp
-SOURCES += $${SRC_DIR}/via/http/headers.cpp
-SOURCES += $${SRC_DIR}/via/http/request_method.cpp
-SOURCES += $${SRC_DIR}/via/http/request.cpp
 SOURCES += $${SRC_DIR}/via/http/response_status.cpp
-SOURCES += $${SRC_DIR}/via/http/response.cpp
 
 CONFIG(release, debug|release) {
   DESTDIR = $${OUT_PWD}/release

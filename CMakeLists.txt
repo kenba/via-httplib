@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2018 Louis Henry Nayegon.
+# Copyright (c) 2013-2019 Louis Henry Nayegon.
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -20,13 +20,7 @@ endif(VIA_HTTPLIB_BUILD_STATIC_LIBS)
 set(CMAKE_DEBUG_POSTFIX "-debug")
 
 add_library(${PROJECT_NAME} ${VIA_HTTPLIB_LIBRARY_TYPE}
-    src/via/http/character.cpp
-    src/via/http/chunk.cpp
     src/via/http/header_field.cpp
-    src/via/http/headers.cpp
-    src/via/http/request.cpp
-    src/via/http/request_method.cpp
-    src/via/http/response.cpp
     src/via/http/response_status.cpp
 )
 

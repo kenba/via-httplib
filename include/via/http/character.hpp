@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -17,54 +17,90 @@
 #include <cctype>
 #include <string>
 #include <string_view>
+#include <algorithm>
+#include <sstream>
+#include <cstdlib>
+#include <cerrno>
 
 namespace via
 {
   namespace http
   {
     /// The standard HTTP line terminator.
-    extern const std::string CRLF;
+    constexpr char CRLF[]{"\r\n"};
 
     /// Test whether a character is an end of line character,
     /// i.e. CR or LF.
     /// @param c the character
     /// @return true if character is CR or LF, false otherwise.
-    inline constexpr bool is_end_of_line(char c) noexcept
+    constexpr bool is_end_of_line(char c) noexcept
     { return ('\r' == c) || ('\n' == c); }
 
     /// Test whether a character is a space or tab character.
     /// Note: equivalent to C++11 std::isblank in <cctype>
     /// @param c the character
     /// @return true if character is space or tab, false otherwise.
-    inline constexpr bool is_space_or_tab(char c) noexcept
+    constexpr bool is_space_or_tab(char c) noexcept
     { return (' ' == c) || ('\t' == c); }
 
     /// Test whether a character is a control character.
     /// @param c the character
     /// @return true if character is control character, false otherwise.
-    inline constexpr bool is_ctl(char c) noexcept
+    constexpr bool is_ctl(char c) noexcept
     { return ((0 <= c) && (31 >= c)) || (127 ==c); }
 
     /// Test whether a character is a separator character.
     /// @param c the character
     /// @return true if character is a separator character, false otherwise.
-    bool is_separator(char c) noexcept;
+    inline bool is_separator(char c) noexcept
+    {
+      switch (c)
+      {
+      case '(': case ')': case '<': case '>': case '@':
+      case ',': case ';': case ':': case '\\': case '"':
+      case '/': case '[': case ']': case '?': case '=':
+      case '{': case '}': case ' ': case '\t':
+        return true;
+      default:
+        return false;
+      }
+    }
 
     /// Test whether a sequence of three characters is a percent encoding
     /// character according to RFC 3986.
     /// @param c the characters
     /// @return true if character is a percent encoding character, false otherwise.
-    bool is_pct_encoded(char const* c) noexcept;
+    inline bool is_pct_encoded(char const* c) noexcept
+    { return (c[0] == '%') && std::isxdigit(c[1]) && std::isxdigit(c[2]); }
 
     /// Test whether a character is a gen-delim according to RFC3986.
     /// @param c the character
     /// @return true if character is a gen-delim character, false otherwise.
-    bool is_gen_delim(char c) noexcept;
+    inline bool is_gen_delim(char c) noexcept
+    {
+      switch (c)
+      {
+      case ':': case '/': case '?': case '#': case '[': case ']': case '@':
+        return true;
+      default:
+        return false;
+      }
+    }
 
     /// Test whether a character is a sub-delim according to RFC 3986.
     /// @param c the character
     /// @return true if character is a sub-delim character, false otherwise.
-    bool is_sub_delim(char c) noexcept;
+    inline bool is_sub_delim(char c) noexcept
+    {
+      switch (c)
+      {
+      case '!': case '$': case '&': case '\'': case '(': case ')':
+      case '*': case '+': case ',': case ';': case '=':
+        return true;
+      default:
+        return false;
+      }
+    }
 
     /// Test whether a character is a reserved character according to RFC3986.
     /// I.e. whether it is a gen-delim or a sub-delim character.
@@ -76,7 +112,21 @@ namespace via
     /// Test whether a character is a unreserved character according to RFC3986.
     /// @param c the character
     /// @return true if character is a unreserved character, false otherwise.
-    bool is_unreserved(char c) noexcept;
+    inline bool is_unreserved(char c) noexcept
+    {
+      if (std::isalnum(c))
+        return true;
+      else
+      {
+        switch (c)
+        {
+        case '-': case '.': case '_': case '~':
+          return true;
+        default:
+          return false;
+        }
+      }
+    }
 
     /// Test whether a character is a token character.
     /// i.e. not a control or separator character.
@@ -89,29 +139,81 @@ namespace via
     /// @pre the character must be a valid digit character.
     /// @param c the character
     /// @return the integer equivalent of the character
-    inline constexpr int read_digit(char c) noexcept
+    constexpr int read_digit(char c) noexcept
     { return (c -'0');}
 
     /// The http version string, i.e. HTTP/1.1
     /// @param major_version the http major version number.
     /// @param minor_version the http minor version number.
     /// @return the http string for the given version.
-    std::string http_version(char major_version, char minor_version);
+    inline std::string http_version(char major_version, char minor_version)
+    {
+      std::string output("HTTP/");
+      output.push_back(major_version);
+      output.push_back('.');
+      output.push_back(minor_version);
+      return output;
+    }
 
     /// Convert a string representing a hexadecimal number to an unsigned int.
     /// @param hex_string the string containing a vald hexadecimal number
     /// @return the number represented by the string, -1 if invalid.
-    std::ptrdiff_t from_hex_string(std::string_view hex_string) noexcept;
+    inline std::ptrdiff_t from_hex_string(std::string_view hex_string) noexcept
+    {
+      // Ensure that the string only contains hexadecimal characters
+      if (!hex_string.empty() &&
+          std::all_of(hex_string.cbegin(), hex_string.cend(),
+                      [](auto c){ return std::isxdigit(c); }))
+      {
+        // Get the length from the hex_string.
+        // Note: strtol may return zero for a string containing zero or if
+        // no valid conversion could be performed. It may also set errno
+        // if the number is out of range...
+        errno = 0;
+        std::ptrdiff_t value(std::strtol(hex_string.data(), 0, 16));
+        if (errno || ((value == 0) && (hex_string[0] != '0')))
+          return -1;
+        else
+          return value;
+      }
+      else
+        return -1;
+    }
 
     /// Convert an unsigned int into a hexadecimal string.
     /// @param number to be represented
     /// @return the string containing the number in hexadecimal.
-    std::string to_hex_string(size_t number);
+    inline std::string to_hex_string(size_t number)
+    {
+      std::stringstream number_stream;
+      number_stream << std::hex << number;
+      return number_stream.str();
+    }
 
     /// Convert a string representing a decimal number to an unsigned int.
     /// @param dec_string the string containing a vald decimal number
     /// @return the number represented by the string, -1 if invalid.
-    std::ptrdiff_t from_dec_string(std::string_view dec_string) noexcept;
+    inline std::ptrdiff_t from_dec_string(std::string_view dec_string) noexcept
+    {
+      // Ensure that the string only contains decimal characters
+      if (!dec_string.empty() &&
+          std::all_of(dec_string.cbegin(), dec_string.cend(),
+                      [](auto c){ return std::isdigit(c); }))
+      {
+        // Get the length from the dec_string.
+        // Note: strtol may return zero for a string containing zero or if
+        // no valid conversion could be performed. It may also set errno
+        // if the number is out of range...
+        errno = 0;
+        std::ptrdiff_t value(std::strtol(dec_string.data(), 0, 10));
+        if (errno || ((value == 0) && (dec_string[0] != '0')))
+          return -1;
+        else
+          return value;
+      }
+      else
+        return -1;
+    }
 
     /// Convert an int into a decimal string.
     /// @param number to be represented
