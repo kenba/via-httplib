@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2015-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -17,6 +17,7 @@
 #include "via/http/request_handler.hpp"
 #include "via/http/request_uri.hpp"
 #include "via/http/authentication/authentication.hpp"
+#include <boost/algorithm/string.hpp>
 #include <map>
 
 namespace via
@@ -31,7 +32,44 @@ namespace via
     /// @param route_path the path in the Route.
     /// @return the map of route parameter name:value pairs extracted from the
     /// paths, empty if none or if their was a problem reading the parameters.
-    Parameters get_route_parameters(std::string uri_path, std::string route_path);
+    inline Parameters get_route_parameters(std::string uri_path, std::string route_path)
+    {
+      Parameters parameters;
+
+      // Find the first ':' in the route_path
+      auto param_start(route_path.find(':'));
+      if (param_start != std::string::npos)
+      {
+        // erase both paths prior to the ':'
+        route_path = route_path.substr(param_start);
+        uri_path   = uri_path.substr(param_start);
+
+        // get the strings between the '/'s
+        std::vector<std::string> names;
+        boost::split(names, route_path, boost::is_any_of("/"));
+
+        std::vector<std::string> values;
+        boost::split(values, uri_path, boost::is_any_of("/"));
+
+        // get the route_parameter name value pairs
+        if (names.size() == values.size())
+        {
+          for (auto i(0U); i < names.size(); ++i)
+          {
+            std::string name(names[i]);
+            if ((name[0] != ':') && (name != values[i]))
+              return Parameters();
+            else
+            {
+              name.erase(0, 1); // ignore the ':'
+              parameters.insert(Parameters::value_type(name, values[i]));
+            }
+          }
+        }
+      }
+
+      return parameters;
+    }
 
     /// Get the route parameter with the given name from the route parameters.
     /// @param params a map of route parameter name:value pairs.

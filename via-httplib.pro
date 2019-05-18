@@ -90,13 +90,6 @@ SOURCES += $${SRC_DIR}/via/http/request.cpp
 SOURCES += $${SRC_DIR}/via/http/response_status.cpp
 SOURCES += $${SRC_DIR}/via/http/response.cpp
 
-# Note: requires boost
-!isEmpty(BOOST_ROOT) {
-  SOURCES += $${SRC_DIR}/via/http/request_router.cpp
-  SOURCES += $${SRC_DIR}/via/http/authentication/base64.cpp
-  SOURCES += $${SRC_DIR}/via/http/authentication/basic.cpp
-}
-
 CONFIG(release, debug|release) {
   DESTDIR = $${OUT_PWD}/release
 } else {

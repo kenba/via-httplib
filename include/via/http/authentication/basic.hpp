@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2015-2019 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,6 +15,7 @@
 /// @brief Contains the basic authentication class.
 //////////////////////////////////////////////////////////////////////////////
 #include "authentication.hpp"
+#include "base64.hpp"
 
 namespace via
 {
@@ -22,6 +23,11 @@ namespace via
   {
     namespace authentication
     {
+
+      constexpr char BASIC[]{"Basic"};
+      constexpr char REALM[]{" realm="};
+      constexpr char QUOTE[]{"\""};
+
       /// @class basic
       /// This class implements HTTP basic authentication, see:
       /// https://www.ietf.org/rfc/rfc2617.txt &
@@ -43,11 +49,48 @@ namespace via
         /// Function to authenticate a request.
         /// @param headers the request message_headers.
         /// @return true if valid, false otherwise.
-        virtual bool is_valid(message_headers const& headers) const override;
+        virtual bool is_valid(message_headers const& headers) const override
+        {
+          // Does the request contain an AUTHORIZATION header?
+          std::string authorization(headers.find(header_field::id::AUTHORIZATION));
+          if (authorization.empty())
+            return false;
+
+          // Is it Basic?
+          auto basic_pos(authorization.find(BASIC));
+          if (basic_pos == std::string::npos)
+            return false;
+
+          // Strip the BASIC identifier from the string
+          basic_pos += 6;
+          authorization = authorization.substr(basic_pos);
+
+          // Decode the authorization value from Base 64
+          std::string decoded_authorization(base64::decode(authorization));
+
+          // Split the username from the password
+          auto user_end(decoded_authorization.find(':'));
+          if (user_end == std::string::npos)
+            return false;
+
+          // Search for the username
+          std::string username(decoded_authorization.substr(0, user_end));
+          auto iter(user_passwords_.find(username));
+          if (iter == user_passwords_.cend())
+            return false;
+
+          // Test the passowrd
+          std::string password(decoded_authorization.substr(user_end +1));
+          return (password == iter->second);
+        }
 
         /// The value to be sent in the authenticate response header.
         /// @return the authenticate string.
-        virtual std::string authenticate_value() const override;
+        virtual std::string authenticate_value() const override
+        {
+          return realm().empty() ? BASIC :
+                         std::string(BASIC) + REALM + QUOTE + realm() + QUOTE;
+        }
 
       public:
 
@@ -60,7 +103,7 @@ namespace via
 
         /// Destructor
         /// clears the user_passwords_ collection.
-        virtual ~basic()
+        virtual ~basic() override
         { user_passwords_.clear(); }
 
         /// Add a user and password to the user_passwords_ collection.

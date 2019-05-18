@@ -36,15 +36,6 @@ if(Boost_FOUND)
 
   # Boost::asio is header only but it requires Boost::system
   target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
-
-  # Note: request_router.cpp and authentication files require
-  # boost::algorithm and boost::archive respectively.
-  target_sources(${PROJECT_NAME} 
-    PRIVATE
-      src/via/http/request_router.cpp
-      src/via/http/authentication/base64.cpp
-      src/via/http/authentication/basic.cpp 
-  )
 else()
   find_package(Asio)
   target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
