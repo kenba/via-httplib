@@ -34,7 +34,7 @@ win32 {
 } else {
   # Library version numbers
   VER_MAJ = 1
-  VER_MIN = 7
+  VER_MIN = 8
   VER_PAT = 0
 
   # Set BOOST_ROOT to the usual linux & mac locations
@@ -78,11 +78,6 @@ CONFIG += separate_debug_info
 }
 
 include (via-httplib.pri)
-
-SRC_DIR = $$VIAHTTPLIB/src
-
-SOURCES += $${SRC_DIR}/via/http/header_field.cpp
-SOURCES += $${SRC_DIR}/via/http/response_status.cpp
 
 CONFIG(release, debug|release) {
   DESTDIR = $${OUT_PWD}/release
