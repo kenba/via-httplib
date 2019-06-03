@@ -70,7 +70,7 @@ if (VIA_HTTPLIB_UNIT_TESTS)
       target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
 
       if (VIA_HTTPLIB_COVERAGE)
-        target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+        target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
         target_link_libraries(${PROJECT_NAME}_test PRIVATE --coverage)
       endif()
 
