@@ -8,6 +8,7 @@ cmake_minimum_required (VERSION 3.12)
 cmake_policy(SET CMP0074 NEW)
 project (via-httplib)
 
+option(VIA_HTTPLIB_UNIT_TESTS "Enable unit tests." ON)
 option(VIA_HTTPLIB_COVERAGE "Enable code coverage." OFF)
 
 add_library(${PROJECT_NAME} INTERFACE)
@@ -29,54 +30,56 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   $<BUILD_INTERFACE:${${PROJECT_NAME}_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
-if(Boost_FOUND)
+if (VIA_HTTPLIB_UNIT_TESTS)
+  find_package(Boost REQUIRED COMPONENTS thread unit_test_framework)
+  if(Boost_FOUND)
 
-  add_executable(${PROJECT_NAME}_test
-    tests/test_main.cpp
-    tests/http/test_character.cpp
-    tests/http/test_chunk.cpp
-    tests/http/test_header_field.cpp
-    tests/http/test_headers.cpp
-    tests/http/test_request.cpp
-    tests/http/test_request_router.cpp
-    tests/http/test_request_uri.cpp
-    tests/http/test_response.cpp
-    tests/http/authentication/test_base64.cpp
-    tests/http/authentication/test_basic_authentication.cpp
-    tests/thread/test_threadsafe_hash_map.cpp
-  )
-  
-  file(GLOB_RECURSE INCLUDE_FILES include/via/*.hpp)
-  target_sources(${PROJECT_NAME}_test
-    PRIVATE
-      ${INCLUDE_FILES}
-  )
-  
-  target_compile_definitions(${PROJECT_NAME}_test PRIVATE BOOST_ALL_DYN_LINK)
-  target_include_directories(${PROJECT_NAME}_test PRIVATE ${Boost_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME}_test
-    PRIVATE
-    ${PROJECT_NAME}
-    Boost::system
-    Boost::thread
-    Boost::unit_test_framework)
+    add_executable(${PROJECT_NAME}_test
+      tests/test_main.cpp
+      tests/http/test_character.cpp
+      tests/http/test_chunk.cpp
+      tests/http/test_header_field.cpp
+      tests/http/test_headers.cpp
+      tests/http/test_request.cpp
+      tests/http/test_request_router.cpp
+      tests/http/test_request_uri.cpp
+      tests/http/test_response.cpp
+      tests/http/authentication/test_base64.cpp
+      tests/http/authentication/test_basic_authentication.cpp
+      tests/thread/test_threadsafe_hash_map.cpp
+    )
 
-  if (MSVC)
-    target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
-  else()
-    target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
-    
-    if (VIA_HTTPLIB_COVERAGE)
-      target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
-      target_link_libraries(${PROJECT_NAME}_test PRIVATE --coverage)
+    file(GLOB_RECURSE INCLUDE_FILES include/via/*.hpp)
+    target_sources(${PROJECT_NAME}_test
+      PRIVATE
+        ${INCLUDE_FILES}
+    )
+
+    target_compile_definitions(${PROJECT_NAME}_test PRIVATE BOOST_ALL_DYN_LINK)
+    target_include_directories(${PROJECT_NAME}_test PRIVATE ${Boost_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME}_test
+      PRIVATE
+      ${PROJECT_NAME}
+      Boost::system
+      Boost::thread
+      Boost::unit_test_framework)
+
+    if (MSVC)
+      target_compile_options(${PROJECT_NAME}_test PRIVATE /W4)
+    else()
+      target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra -Wpedantic)
+
+      if (VIA_HTTPLIB_COVERAGE)
+        target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+        target_link_libraries(${PROJECT_NAME}_test PRIVATE --coverage)
+      endif()
+
     endif()
-    
+
+    add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
+
   endif()
-	
-  add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
-  
-endif()
+endif(VIA_HTTPLIB_UNIT_TESTS)
 
 # Introduce variables:
 # * CMAKE_INSTALL_INCLUDEDIR
@@ -100,7 +103,7 @@ install(EXPORT ViaHttpLibTargets
     DESTINATION ${ConfigPackageLocation}
 )
 
-add_library(ViaHttpLib::httplib ALIAS ${PROJECT_NAME})
+add_library(ViaHttpLib::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 set(CPACK_PACKAGE_VERSION "1.8.0")
 

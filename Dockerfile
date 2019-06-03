@@ -24,6 +24,7 @@ RUN cd via-httplib \
  && mkdir build \
  && cd build \
  && cmake \
+    -DVIA_HTTPLIB_UNIT_TESTS=False \
     -DBOOST_INCLUDEDIR=${BOOST_INCLUDEDIR} \
     -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR} \
     -DCMAKE_INSTALL_PREFIX=/usr \
