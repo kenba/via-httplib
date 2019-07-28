@@ -56,7 +56,7 @@ install:
   ############################################################################
   # Install a recent CMake
   ############################################################################
-  - wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
+  - sudo wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
   - sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
   - sudo apt-get update
   - sudo apt -y install cmake
