@@ -7,7 +7,6 @@ branches:
   only:
   - master
   - develop
-  - "/^1\.\\d+\\./"
 
 env:
   global:
