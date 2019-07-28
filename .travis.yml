@@ -24,9 +24,14 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - cmake
             - g++-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - ln -s /usr/bin/gcc-9 /usr/local/bin/gcc
+        - ln -s /usr/bin/g++-9 /usr/local/bin/g++
+        - export CC=/usr/bin/gcc-9
+        - export CXX=/usr/bin/g++-9
       
     - compiler: clang
       addons:
@@ -35,10 +40,15 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-bionic-8
           packages:
+            - cmake
             - clang-8
             - libstdc++-8-dev
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - ln -s /usr/bin/clang-8 /usr/local/bin/gcc
+        - ln -s /usr/bin/clang++-8 /usr/local/bin/g++
+        - export CC=/usr/bin/clang-8
+        - export CXX=/usr/bin/clang++-8
    
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -59,7 +69,9 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
+  - cmake --version
+  - cmake -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} \
+     -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
