@@ -42,6 +42,7 @@ matrix:
 
 before_install:
   - eval "${MATRIX_EVAL}"
+  - export PATH=/usr/bin:${PATH}
   - pip install --user cpp-coveralls
   
 install:
@@ -54,7 +55,6 @@ install:
   ############################################################################
   # Install a recent CMake
   ############################################################################
-  - sudo apt-get remove --purge cmake
   - sudo wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
   - sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
   - sudo apt-get update
