@@ -24,7 +24,6 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - cmake
             - g++-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
@@ -36,7 +35,6 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-bionic-8
           packages:
-            - cmake
             - clang-8
             - libstdc++-8-dev
       env:
