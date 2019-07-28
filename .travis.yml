@@ -1,12 +1,12 @@
 language: cpp
 os: linux
-dist: xenial
+dist: bionic
 sudo: false
 
 branches:
   only:
   - master
-  # - develop
+  - develop
   - "/^1\.\\d+\\./"
 
 env:
@@ -25,21 +25,21 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-8
+            - g++-9
       env:
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
       
     - compiler: clang
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7
+            - llvm-toolchain-bionic-8
           packages:
-            - clang-7
-            - libstdc++-7-dev
+            - clang-8
+            - libstdc++-8-dev
       env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
    
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -55,7 +55,7 @@ install:
   ############################################################################
   # Install a recent CMake
   ############################################################################
-  - CMAKE_VERSION=3.13.2
+  - CMAKE_VERSION=3.15.1
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
       CMAKE_URL="https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
