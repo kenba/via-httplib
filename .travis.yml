@@ -26,8 +26,8 @@ matrix:
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="CC=/usr/bin/gcc-9 && CXX=/usr/bin/g++-9"
-      
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+
     - compiler: clang
       addons:
         apt:
@@ -38,8 +38,8 @@ matrix:
             - clang-8
             - libstdc++-8-dev
       env:
-        - MATRIX_EVAL="CC=/usr/bin/clang-8 && CXX=/usr/bin/clang++-8"
-   
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+
 before_install:
   - eval "${MATRIX_EVAL}"
   - pip install --user cpp-coveralls
@@ -54,6 +54,7 @@ install:
   ############################################################################
   # Install a recent CMake
   ############################################################################
+  - sudo apt-get remove --purge cmake
   - sudo wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
   - sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
   - sudo apt-get update
