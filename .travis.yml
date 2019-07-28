@@ -56,14 +56,10 @@ install:
   ############################################################################
   # Install a recent CMake
   ############################################################################
-  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
-      sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-      sudo apt-get update
-      sudo apt -y install cmake
-    else
-      brew upgrade cmake || brew install cmake
-    fi
+  - wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
+  - sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+  - sudo apt-get update
+  - sudo apt -y install cmake
   - cmake --version
 
 before_script:
