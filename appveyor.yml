@@ -6,8 +6,8 @@ platform:
   - x64
 
 environment:
-  BOOST_ROOT: C:\Libraries\boost_1_67_0
-  BOOST_LIBRARYDIR: C:\Libraries\boost_1_67_0\lib64-msvc-14.1
+  BOOST_ROOT: C:\Libraries\boost_1_69_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_6790\lib64-msvc-14.1
 
 configuration:
   - Release
@@ -17,7 +17,7 @@ install:
     - git submodule update --init --recursive
 
 before_build:
-    - cmake -G "Visual Studio 15 2017 Win64" .
+    - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON -G "Visual Studio 15 2017 Win64" .
 
 build:
   project: $(APPVEYOR_BUILD_FOLDER)\$(APPVEYOR_PROJECT_NAME).sln

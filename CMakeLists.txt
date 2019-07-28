@@ -8,7 +8,7 @@ cmake_minimum_required (VERSION 3.12)
 cmake_policy(SET CMP0074 NEW)
 project (via-httplib)
 
-option(VIA_HTTPLIB_UNIT_TESTS "Enable unit tests." ON)
+option(VIA_HTTPLIB_UNIT_TESTS "Enable unit tests." OFF)
 option(VIA_HTTPLIB_COVERAGE "Enable code coverage." OFF)
 
 add_library(${PROJECT_NAME} INTERFACE)
