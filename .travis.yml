@@ -26,7 +26,7 @@ matrix:
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="COMPILER=g++ VER=9"
+        - MATRIX_EVAL="CXX=g++ VER=9"
 
     - compiler: clang
       addons:
@@ -38,12 +38,12 @@ matrix:
             - clang-8
             - libstdc++-8-dev
       env:
-        - MATRIX_EVAL="COMPILER=clang VER=8"
+        - MATRIX_EVAL="CXX=clang++ VER=8"
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - if [ "$COMPILER" == "g++" ]; then export CC=/usr/bin/gcc-${VER} && export CXX=/usr/bin/g++-${VER}; fi
-  - if [ "$COMPILER" == "clang" ]; then export CC=/usr/bin/clang-${VER} && export CXX=/usr/bin/clang++-${VER}; fi
+  - if [ "$CXX" == "g++" ]; then ln -s /usr/bin/gcc-${VER} /usr/local/bin/gcc && /usr/bin/g++-${VER} /usr/local/bin/g++; fi
+  - if [ "$CXX" == "clang" ]; then ln -s /usr/bin/clang-${VER} /usr/local/bin/clang && export /usr/bin/clang++-${VER} /usr/local/bin/clang++; fi
   - pip install --user cpp-coveralls
   
 install:
