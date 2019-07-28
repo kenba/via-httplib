@@ -27,6 +27,8 @@ matrix:
             - g++-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - CMAKE_C_COMPILER=gcc-9
+        - CMAKE_CXX_COMPILER=g++-9
       
     - compiler: clang
       addons:
@@ -39,6 +41,8 @@ matrix:
             - libstdc++-8-dev
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - CMAKE_C_COMPILER=clang-8
+        - CMAKE_CXX_COMPILER=clang++-8
    
 before_install:
   - eval "${MATRIX_EVAL}"
