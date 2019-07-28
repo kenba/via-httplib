@@ -50,20 +50,6 @@ install:
   ############################################################################
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
-      
-  ############################################################################
-  # Install a recent CMake
-  ############################################################################
-  - CMAKE_VERSION=3.15.1
-  - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
-      mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-    else
-      brew upgrade cmake || brew install cmake
-    fi
-  - cmake --version
 
 before_script:
   - sudo apt-get update -qq
@@ -73,8 +59,7 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DCMAKE_C_COMPILER=/usr/bin/${CC} -DCMAKE_CXX_COMPILER=/usr/bin/${CXX} \
-      -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
