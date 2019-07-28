@@ -28,8 +28,6 @@ matrix:
             - g++-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - ln -s /usr/bin/gcc-9 /usr/local/bin/gcc
-        - ln -s /usr/bin/g++-9 /usr/local/bin/g++
       
     - compiler: clang
       addons:
@@ -43,8 +41,6 @@ matrix:
             - libstdc++-8-dev
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
-        - ln -s /usr/bin/clang-8 /usr/local/bin/gcc
-        - ln -s /usr/bin/clang++-8 /usr/local/bin/g++
    
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -57,6 +53,19 @@ install:
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
 
+  ############################################################################
+  # Install a recent CMake
+  ############################################################################
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
+      sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+      sudo apt-get update
+      sudo apt -y install cmake
+    else
+      brew upgrade cmake || brew install cmake
+    fi
+  - cmake --version
+
 before_script:
   - sudo apt-get update -qq
   - sudo apt-get install libboost-thread-dev libboost-system-dev libboost-test-dev
@@ -66,8 +75,7 @@ script:
   - mkdir _builds
   - cd _builds
   - cmake --version
-  - cmake -DCMAKE_C_COMPILER=/usr/bin/${CC} -DCMAKE_CXX_COMPILER=/usr/bin/${CXX} \
-     -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
