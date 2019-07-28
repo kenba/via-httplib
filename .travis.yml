@@ -42,8 +42,9 @@ matrix:
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - if [ "$CXX" == "g++" ]; then ln -s /usr/bin/gcc-${VER} /usr/local/bin/gcc && /usr/bin/g++-${VER} /usr/local/bin/g++; fi
-  - if [ "$CXX" == "clang" ]; then ln -s /usr/bin/clang-${VER} /usr/local/bin/clang && export /usr/bin/clang++-${VER} /usr/local/bin/clang++; fi
+  - if [ "$CXX" == "g++" ]; then ln -s /usr/bin/gcc-${VER} /usr/local/bin/gcc && ln -s /usr/bin/g++-${VER} /usr/local/bin/g++; fi
+  - if [ "$CXX" == "clang" ]; then ln -s /usr/bin/clang-${VER} /usr/local/bin/clang && ln -s /usr/bin/clang++-${VER} /usr/local/bin/clang++; fi
+  - export PATH=/usr/local/bin:${PATH}
   - pip install --user cpp-coveralls
   
 install:
