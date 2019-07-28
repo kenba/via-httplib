@@ -73,7 +73,7 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} \
+  - cmake -DCMAKE_C_COMPILER=/usr/bin/${CC} -DCMAKE_CXX_COMPILER=/usr/bin/${CXX} \
       -DVIA_HTTPLIB_BUILD_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
