@@ -15,7 +15,7 @@ env:
     - BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu
     # CMake
     - CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR}"
-    
+
 matrix:
   include:
     - compiler: gcc
@@ -26,7 +26,8 @@ matrix:
           packages:
             - g++-9
       env:
-        - MATRIX_EVAL="CXX=g++ VER=9"
+        # This should specify the compiler version but it fails in cmake
+        - MATRIX_EVAL="CC=gcc && CXX=g++"
 
     - compiler: clang
       addons:
@@ -38,7 +39,8 @@ matrix:
             - clang-8
             - libstdc++-8-dev
       env:
-        - MATRIX_EVAL="CXX=clang++ VER=8"
+        # This should specify the compiler version but it fails in cmake
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -46,22 +48,13 @@ before_install:
   - if [ "$CXX" == "clang" ]; then ln -s /usr/bin/clang-${VER} /usr/local/bin/clang && ln -s /usr/bin/clang++-${VER} /usr/local/bin/clang++; fi
   - export PATH=/usr/local/bin:${PATH}
   - pip install --user cpp-coveralls
-  
+
 install:
   ############################################################################
   # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
   ############################################################################
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
-
-  ############################################################################
-  # Install a recent CMake
-  ############################################################################
-  - sudo wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-  - sudo add-apt-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-  - sudo apt-get update
-  - sudo apt -y install cmake
-  - cmake --version
 
 before_script:
   - sudo apt-get update -qq
@@ -71,15 +64,14 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake --version
-  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
+  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} ..
   - make
   - ./via-httplib_test
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
   - coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
-  
+
 notifications:
   email:
     recipients:
