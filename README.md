@@ -4,10 +4,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
 [![Build status](https://ci.appveyor.com/api/projects/status/jfc8gvnncfnr18fs?svg=true)](https://ci.appveyor.com/project/kenba/via-httplib)
 
-A lightweight library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
+A header-only library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
 `via-httplib` is an asynchronous communications library built upon `asio` (either
-[boost](http://www.boost.org/doc/libs/1_63_0/doc/html/boost_asio.html) or
+[boost](http://www.boost.org/doc/libs/1_70_0/doc/html/boost_asio.html) or
 [standalone](http://think-async.com/)) to enable simple, secure and efficient
 HTTP/HTTPS servers to be built that comply with
 [rfc7230](https://tools.ietf.org/html/rfc7230) wherever possible.
@@ -26,7 +26,6 @@ Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boo
 However, if they are not required, the library can use [standalone asio](http://think-async.com/) on its own.
 
 + For HTTPS: the `OpenSSL` library, see [openssl](http://www.openssl.org/).  
-  Note: there is an issue building `boost::asio` versions prior to `1.62` with `openssl` version `1.1.0`, see [#12238](https://svn.boost.org/trac/boost/ticket/12238)
 
 + For C++ code documentation: [Doxygen](http://www.stack.nl/~dimitri/doxygen/)
 
@@ -39,7 +38,7 @@ and follow the instructions here: [Make](docs/MAKE.md).
 `via-http` lib depends on the `standalone asio` or `boost` libraries.  
 If `boost` is not installed on your machine then download the latest package from
 [boost](http://www.boost.org/) and follow the instructions here:
-[boost getting started](http://www.boost.org/doc/libs/1_62_0/more/getting_started/index.html).
+[boost getting started](http://www.boost.org/doc/libs/1_70_0/more/getting_started/index.html).
 Otherwise `standalone asio` can be downloaded from: [asio](http://think-async.com/).
 
 If you require an **HTTPS** server or client then you must also install the
@@ -52,7 +51,7 @@ the [Client User Guide](docs/Client.md) explains how to use the library to creat
 An example https server [docker](https://www.docker.com/) image can be built
 using the following commands from this directory:
 
-    docker build . -t via-http-server:1.7.0
+    docker build . -t via-http-server:1.8.0
 
 ## Example HTTP Server
 

@@ -3,11 +3,6 @@ os: linux
 dist: bionic
 sudo: false
 
-cache:
-  directories:
-    - /usr/include
-    - /usr/lib/x86_64-linux-gnu
-  
 branches:
   only:
   - master

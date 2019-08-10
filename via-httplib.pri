@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2018 Ken Barker
+# Copyright (c) 2013-2019 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -6,9 +6,7 @@
 # http://www.boost.org/LICENSE_1_0.txt)
 
 win32 {
-  # Set the minimum target Windows version to Windows 7
-  # DEFINES *= _WIN32_WINNT=_WIN32_WINNT_WIN7
-
+  # Ensure Boost is in the INCLUDEPATH
   INCLUDEPATH *= $$BOOST_ROOT
 }
 
