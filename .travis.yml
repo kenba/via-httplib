@@ -19,17 +19,33 @@ env:
 matrix:
   include:
     - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
       env:
+        # This should specify the compiler version but it fails in cmake 
         - MATRIX_EVAL="CC=gcc && CXX=g++"
 
     - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-bionic-8
+          packages:
+            - libstdc++-8-dev
+            - clang-8
       env:
+        # This should specify the compiler version but it fails in cmake 
         - MATRIX_EVAL="CC=clang && CXX=clang++"
 
 before_install:
   - eval "${MATRIX_EVAL}"
   - pip install --user cpp-coveralls
-
+  
 install:
   ############################################################################
   # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
@@ -45,17 +61,18 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} ..
+  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} .. 
   - make
   - ./via-httplib_test
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
   - coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
-
+  
 notifications:
   email:
     recipients:
       - ken.barker@via-technology.aero
     on_success: change
     on_failure: always
+    
