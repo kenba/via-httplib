@@ -3,50 +3,28 @@ os: linux
 dist: bionic
 sudo: false
 
+cache:
+  directories:
+    - /usr/include
+    - /usr/lib/x86_64-linux-gnu
+  
 branches:
   only:
   - master
   - develop
 
-env:
-  global:
-    # Boost
-    - BOOST_DIR=/usr/include
-    - BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu
-    # CMake
-    - CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR}"
-
 matrix:
   include:
     - compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-9
       env:
-        # This should specify the compiler version but it fails in cmake
         - MATRIX_EVAL="CC=gcc && CXX=g++"
 
     - compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-bionic-8
-          packages:
-            - clang-8
-            - libstdc++-8-dev
       env:
-        # This should specify the compiler version but it fails in cmake
         - MATRIX_EVAL="CC=clang && CXX=clang++"
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - # TODO fix! if [ "$CXX" == "g++" ]; then sudo rm -f /usr/local/bin/gcc && ln -s /usr/bin/gcc-${VER} /usr/local/bin/gcc && sudo rm -f /usr/local/bin/g++ && ln -s /usr/bin/g++-${VER} /usr/local/bin/g++; fi
-  - if [ "$CXX" == "clang" ]; then ln -s /usr/bin/clang-${VER} /usr/local/bin/clang && ln -s /usr/bin/clang++-${VER} /usr/local/bin/clang++; fi
-  - export PATH=/usr/local/bin:${PATH}
   - pip install --user cpp-coveralls
 
 install:
@@ -64,7 +42,7 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} ..
+  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON .. 
   - make
   - ./via-httplib_test
 
@@ -78,4 +56,3 @@ notifications:
       - ken.barker@via-technology.aero
     on_success: change
     on_failure: always
-    
