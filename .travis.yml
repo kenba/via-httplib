@@ -8,6 +8,14 @@ branches:
   - master
   - develop
 
+env:
+  global:
+    # Boost
+    - BOOST_DIR=/usr/include
+    - BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu
+    # CMake
+    - CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR}"
+
 matrix:
   include:
     - compiler: gcc
@@ -37,7 +45,7 @@ before_script:
 script:
   - mkdir _builds
   - cd _builds
-  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON .. 
+  - cmake -DVIA_HTTPLIB_UNIT_TESTS=ON -DVIA_HTTPLIB_COVERAGE=ON ${CMAKE_OPTIONS} ..
   - make
   - ./via-httplib_test
 
