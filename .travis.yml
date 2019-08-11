@@ -43,7 +43,7 @@ script:
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}
-  - coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
+  - if [ "$CXX" == "g++" ]; then coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'; fi
 
 notifications:
   email:
