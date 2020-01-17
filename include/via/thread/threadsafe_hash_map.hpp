@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2017 Ken Barker
+// Copyright (c) 2017-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -21,8 +21,7 @@
 #include <array>
 #include <algorithm>
 #include <mutex>
-#include <boost/thread/shared_mutex.hpp>
-#include <boost/thread/locks.hpp>
+#include <shared_mutex>
 
 namespace via
 {
@@ -72,7 +71,7 @@ namespace via
         // Data
 
         /// A shared_mutex to protect the bucket data.
-        mutable boost::shared_mutex mutex_;
+        mutable std::shared_mutex mutex_;
 
         /// The bucket data.
         bucket_data_type data_;
@@ -107,7 +106,7 @@ namespace via
         value_type value_for(Key const& key, value_type const& default_value) const
         {
           // Allow multiple readers.
-          boost::shared_lock<boost::shared_mutex> guard(mutex_);
+          std::shared_lock<std::shared_mutex> guard(mutex_);
 
           // Note: can't use find_position_for becasue it isn't const
           auto iter(std::lower_bound(data_.cbegin(), data_.cend(), key,
@@ -123,7 +122,7 @@ namespace via
         void add_or_update_mapping(value_type value)
         {
           // Only allow one writer.
-          std::lock_guard<boost::shared_mutex> guard(mutex_);
+          std::lock_guard<std::shared_mutex> guard(mutex_);
 
           auto iter(find_position_for(value.first));
           if((iter != data_.end()) && (iter->first == value.first))
@@ -136,7 +135,7 @@ namespace via
         /// @param key the search key.
         void remove_mapping(Key key)
         {
-          std::lock_guard<boost::shared_mutex> guard(mutex_);
+          std::lock_guard<std::shared_mutex> guard(mutex_);
 
           auto iter(find_position_for(key));
           if(iter != data_.end())
@@ -228,11 +227,11 @@ namespace via
       bool empty() const
       {
         // lock all of the buckets for reading
-        std::vector<boost::shared_lock<boost::shared_mutex>> locks;
+        std::vector<std::shared_lock<std::shared_mutex>> locks;
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
           locks.push_back
-              (boost::shared_lock<boost::shared_mutex>(elem.mutex_));
+              (std::shared_lock<std::shared_mutex>(elem.mutex_));
 
         for(auto const& elem : buckets_)
         {
@@ -249,11 +248,11 @@ namespace via
       std::vector<value_type> data() const
       {
         // lock all of the buckets for reading
-        std::vector<boost::shared_lock<boost::shared_mutex>> locks;
+        std::vector<std::shared_lock<std::shared_mutex>> locks;
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
           locks.push_back
-              (boost::shared_lock<boost::shared_mutex>(elem.mutex_));
+              (std::shared_lock<std::shared_mutex>(elem.mutex_));
 
         std::vector<value_type> bucket_data;
         for(auto const& bucket : buckets_)
@@ -273,10 +272,10 @@ namespace via
       void clear()
       {
         // lock all of the buckets for writing
-        std::vector<boost::unique_lock<boost::shared_mutex>> locks;
+        std::vector<std::unique_lock<std::shared_mutex>> locks;
         locks.reserve(buckets_.size());
         for(auto& elem : buckets_)
-          locks.push_back(boost::unique_lock<boost::shared_mutex>(elem.mutex_));
+          locks.push_back(std::unique_lock<std::shared_mutex>(elem.mutex_));
 
         for(auto& elem : buckets_)
           elem.data_.clear();
