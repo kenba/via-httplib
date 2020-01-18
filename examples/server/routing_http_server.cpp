@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -50,11 +50,11 @@ int main(int /* argc */, char *argv[])
 
   try
   {
-    // The asio io_service.
-    boost::asio::io_service io_service;
+    // The asio io_context.
+    boost::asio::io_context io_context;
 
     // Create the HTTP server, attach the request method handlers
-    http_server_type http_server(io_service);
+    http_server_type http_server(io_context);
 
     http_server.request_router().add_method("GET", "/hello", get_hello_handler);
     http_server.request_router().add_method
@@ -70,7 +70,7 @@ int main(int /* argc */, char *argv[])
     }
 
     // Start the server
-    io_service.run();
+    io_context.run();
   }
   catch (std::exception& e)
   {

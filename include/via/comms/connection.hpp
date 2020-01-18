@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -74,7 +74,7 @@ namespace via
 
 #ifdef HTTP_THREAD_SAFE
       /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::io_service::strand strand_;
+      ASIO::io_context::strand strand_;
 #endif
       size_t rx_buffer_size_;              ///< The receive buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
@@ -387,18 +387,18 @@ namespace via
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
-      /// @param io_service the boost asio io_service used by the underlying
+      /// @param io_context the boost asio io_context used by the underlying
       /// socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
       /// @param rx_buffer_size the size of the receive_buffer.
-      explicit connection(ASIO::io_service& io_service,
+      explicit connection(ASIO::io_context& io_context,
                           event_callback_type event_callback,
                           error_callback_type error_callback,
                           size_t rx_buffer_size) :
-        SocketAdaptor(io_service),
+        SocketAdaptor(io_context),
 #ifdef HTTP_THREAD_SAFE
-        strand_(io_service),
+        strand_(io_context),
 #endif
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
@@ -422,14 +422,14 @@ namespace via
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
-      /// @param io_service the boost asio io_service used by the underlying
+      /// @param io_context the boost asio io_context used by the underlying
       /// socket adaptor.
       /// @param rx_buffer_size the size of the receive_buffer.
-      explicit connection(ASIO::io_service& io_service,
+      explicit connection(ASIO::io_context& io_context,
                           size_t rx_buffer_size) :
-        SocketAdaptor(io_service),
+        SocketAdaptor(io_context),
 #ifdef HTTP_THREAD_SAFE
-        strand_(io_service),
+        strand_(io_context),
 #endif
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
@@ -546,32 +546,32 @@ namespace via
       /// @pre the event_callback and error_callback functions must exist.
       /// E.g. if either of them are class member functions then the class
       /// MUST have been constructed BEFORE this function is called.
-      /// @param io_service the boost asio io_service for the socket adaptor.
+      /// @param io_context the boost asio io_context for the socket adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
       /// @param rx_buffer_size the size of the receive_buffer,
       /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
-      static shared_pointer create(ASIO::io_service& io_service,
+      static shared_pointer create(ASIO::io_context& io_context,
                                    event_callback_type event_callback,
                                    error_callback_type error_callback,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
       {
-        return shared_pointer(new connection(io_service, event_callback,
+        return shared_pointer(new connection(io_context, event_callback,
                                              error_callback, rx_buffer_size));
       }
 
       /// The factory function to create client connections.
-      /// @param io_service the boost asio io_service for the socket adaptor.
+      /// @param io_context the boost asio io_context for the socket adaptor.
       /// @param rx_buffer_size the size of the receive_buffer,
       /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
-      static shared_pointer create(ASIO::io_service& io_service,
+      static shared_pointer create(ASIO::io_context& io_context,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
-      { return shared_pointer(new connection(io_service, rx_buffer_size)); }
+      { return shared_pointer(new connection(io_context, rx_buffer_size)); }
 
       /// @fn set_event_callback
       /// Function to set the event callback function.
       /// For use with the client connection factory function.
-      /// @see create(ASIO::io_service& io_service)
+      /// @see create(ASIO::io_context& io_context)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback)
       { event_callback_ = event_callback; }
@@ -579,7 +579,7 @@ namespace via
       /// @fn set_error_callback
       /// Function to set the error callback function.
       /// For use with the client connection factory function.
-      /// @see create(ASIO::io_service& io_service)
+      /// @see create(ASIO::io_context& io_context)
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }

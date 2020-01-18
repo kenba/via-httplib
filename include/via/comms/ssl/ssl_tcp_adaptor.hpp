@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -44,8 +44,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        /// The asio io_service.
-        ASIO::io_service& io_service_;
+        /// The asio io_context.
+        ASIO::io_context& io_context_;
         /// The asio SSL TCP socket.
         ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
         /// The host iterator used by the resolver.
@@ -94,10 +94,10 @@ namespace via
         }
 
         /// The ssl_tcp_adaptor constructor.
-        /// @param io_service the asio io_service associted with this connection
-        explicit ssl_tcp_adaptor(ASIO::io_service& io_service) :
-          io_service_(io_service),
-          socket_(io_service_, ssl_context()),
+        /// @param io_context the asio io_context associted with this connection
+        explicit ssl_tcp_adaptor(ASIO::io_context& io_context) :
+          io_context_(io_context),
+          socket_(io_context_, ssl_context()),
           host_iterator_()
         {}
 
@@ -139,7 +139,7 @@ namespace via
             (bool preverified, ASIO::ssl::verify_context& ctx)
               { return verify_certificate(preverified, ctx); });
 
-          host_iterator_ = resolve_host(io_service_, host_name, port_name);
+          host_iterator_ = resolve_host(io_context_, host_name, port_name);
           if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
             return false;
 

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2015 Ken Barker
+// Copyright (c) 2014-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -115,12 +115,12 @@ int main(int argc, char *argv[])
             << " uri: " << uri << std::endl;
   try
   {
-    // The asio io_service.
-    boost::asio::io_service io_service;
+    // The asio io_context.
+    boost::asio::io_context io_context;
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
-        http_client_type::create(io_service, response_handler, chunk_handler);
+        http_client_type::create(io_context, response_handler, chunk_handler);
 
     // attach the optional handlers
     http_client->invalid_response_event(invalid_response_handler);
@@ -144,12 +144,12 @@ int main(int argc, char *argv[])
       return 1;
     }
 
-    // run the io_service to start communications
-    io_service.run();
+    // run the io_context to start communications
+    io_context.run();
 
     http_client.reset();
 
-    std::cout << "io_service.run complete, shutdown successful" << std::endl;
+    std::cout << "io_context.run complete, shutdown successful" << std::endl;
   }
   catch (std::exception& e)
   {

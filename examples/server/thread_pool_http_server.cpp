@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2017 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -8,7 +8,7 @@
 //////////////////////////////////////////////////////////////////////////////
 /// @file thread_pool_http_server.cpp
 /// @brief An example HTTP server containing all of the callbacks using
-/// a single io_service and a thread pool calling io_service::run().
+/// a single io_context and a thread pool calling io_context::run().
 //////////////////////////////////////////////////////////////////////////////
 #define HTTP_THREAD_SAFE
 #include "via/comms/tcp_adaptor.hpp"
@@ -26,7 +26,7 @@ typedef http_server_type::chunk_type http_chunk_type;
 namespace
 {
   /// The stop callback function.
-  /// Closes the server and all it's connections leaving io_service.run
+  /// Closes the server and all it's connections leaving io_context.run
   /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(boost::system::error_code const&, // error,
@@ -213,11 +213,11 @@ int main(int argc, char *argv[])
 
   try
   {
-    // create an io_service for the server
-    boost::asio::io_service io_service;
+    // create an io_context for the server
+    boost::asio::io_context io_context;
 
     // create an http_server and connect the request handler
-    http_server_type http_server(io_service);
+    http_server_type http_server(io_context);
     http_server.request_received_event(request_handler);
 
     // connect the handler callback functions
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     }
 
     // The signal set is used to register for termination notifications
-    boost::asio::signal_set signals_(io_service);
+    boost::asio::signal_set signals_(io_context);
     signals_.add(SIGINT);
     signals_.add(SIGTERM);
 #if defined(SIGQUIT)
@@ -255,13 +255,13 @@ int main(int argc, char *argv[])
 
     if (no_of_threads > 0)
     {
-      // Create a thread pool for the threads and run the asio io_service
+      // Create a thread pool for the threads and run the asio io_context
       // in each of the threads.
       std::vector<std::shared_ptr<std::thread> > threads;
       for (std::size_t i = 0; i < no_of_threads; ++i)
       {
         std::shared_ptr<std::thread> thread(std::make_shared<std::thread>
-                             ([&io_service](){ io_service.run(); }));
+                             ([&io_context](){ io_context.run(); }));
         threads.push_back(thread);
       }
 
@@ -270,9 +270,9 @@ int main(int argc, char *argv[])
         threads[i]->join();
     }
     else
-      io_service.run();
+      io_context.run();
 
-    std::cout << "io_service.run, all work has finished" << std::endl;
+    std::cout << "io_context.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {

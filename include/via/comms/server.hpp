@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -72,8 +72,8 @@ namespace via
       typedef typename connection_type::error_callback_type error_callback_type;
 
     private:
-      /// The asio::io_service to use.
-      ASIO::io_service& io_service_;
+      /// The asio::io_context to use.
+      ASIO::io_context& io_context_;
 
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
@@ -176,7 +176,7 @@ namespace via
       /// Wait for connections.
       void start_accept()
       {
-        next_connection_ = connection_type::create(io_service_,
+        next_connection_ = connection_type::create(io_context_,
           [this](int event, std::weak_ptr<connection_type> ptr)
             { event_handler(event, ptr); },
           [this](ASIO_ERROR_CODE const& error,
@@ -206,12 +206,12 @@ namespace via
       /// AFTER this constructor has been called.
       /// @see set_event_callback
       /// @see set_error_callback
-      /// @param io_service the boost asio io_service used by the acceptor
+      /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
-      explicit server(ASIO::io_service& io_service) :
-        io_service_(io_service),
-        acceptor_v6_(io_service),
-        acceptor_v4_(io_service),
+      explicit server(ASIO::io_context& io_context) :
+        io_context_(io_context),
+        acceptor_v6_(io_context),
+        acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
         password_(),
@@ -229,16 +229,16 @@ namespace via
       /// @pre the event_callback and error_callback functions must exist.
       /// E.g. if either of them are class member functions then the class
       /// MUST have been constructed BEFORE this constructor is called.
-      /// @param io_service the boost asio io_service used by the acceptor
+      /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
-      explicit server(ASIO::io_service& io_service,
+      explicit server(ASIO::io_context& io_context,
                       event_callback_type event_callback,
                       error_callback_type error_callback) :
-        io_service_(io_service),
-        acceptor_v6_(io_service),
-        acceptor_v4_(io_service),
+        io_context_(io_context),
+        acceptor_v6_(io_context),
+        acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
         password_(),
@@ -257,8 +257,8 @@ namespace via
       /// Set the event_callback function.
       /// For use with the Constructor or create function that doesn't take
       /// an event_callback parameter.
-      /// @see server(ASIO::io_service& io_service)
-      /// @see create(ASIO::io_service& io_service)
+      /// @see server(ASIO::io_context& io_context)
+      /// @see create(ASIO::io_context& io_context)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback) noexcept
       { event_callback_ = event_callback; }
@@ -267,8 +267,8 @@ namespace via
       /// Set the error_callback function.
       /// For use with the Constructor or create function that doesn't take
       /// an error_callback parameter.
-      /// @see server(ASIO::io_service& io_service)
-      /// @see create(ASIO::io_service& io_service)
+      /// @see server(ASIO::io_context& io_context)
+      /// @see create(ASIO::io_context& io_context)
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback) noexcept
       { error_callback_ = error_callback; }

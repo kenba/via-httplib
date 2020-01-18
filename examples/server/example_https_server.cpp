@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2016 Ken Barker
+// Copyright (c) 2014-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -25,7 +25,7 @@ typedef https_server_type::chunk_type http_chunk_type;
 namespace
 {
   /// The stop callback function.
-  /// Closes the server and all it's connections leaving io_service.run
+  /// Closes the server and all it's connections leaving io_context.run
   /// with no more work to do.
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(ASIO_ERROR_CODE const&, // error,
@@ -212,11 +212,11 @@ int main(int argc, char *argv[])
 
   try
   {
-    // create an io_service for the server
-    ASIO::io_service io_service;
+    // create an io_context for the server
+    ASIO::io_context io_context;
 
     // create an https_server and connect the request handler
-    https_server_type https_server(io_service);
+    https_server_type https_server(io_context);
     https_server.request_received_event(request_handler);
 
     // connect the optional handler callback functions
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
     }
 
     // The signal set is used to register for termination notifications
-    ASIO::signal_set signals_(io_service);
+    ASIO::signal_set signals_(io_context);
     signals_.add(SIGINT);
     signals_.add(SIGTERM);
 #if defined(SIGQUIT)
@@ -271,10 +271,10 @@ int main(int argc, char *argv[])
       (ASIO_ERROR_CODE const& error, int signal_number)
     { handle_stop(error, signal_number, https_server); });
 
-    // run the io_service to start communications
-    io_service.run();
+    // run the io_context to start communications
+    io_context.run();
 
-    std::cout << "io_service.run complete, shutdown successful." << std::endl;
+    std::cout << "io_context.run complete, shutdown successful." << std::endl;
   }
   catch (std::exception& e)
   {

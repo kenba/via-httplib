@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -420,10 +420,10 @@ namespace via
     http_server& operator=(http_server) = delete;
 
     /// Constructor.
-    /// @param io_service a reference to the ASIO::io_service.
+    /// @param io_context a reference to the ASIO::io_context.
     /// @param auth_ptr a shared pointer to an authentication.
-    explicit http_server(ASIO::io_service& io_service) :
-      server_(new server_type(io_service)),
+    explicit http_server(ASIO::io_context& io_context) :
+      server_(new server_type(io_context)),
       http_connections_(),
       request_router_(),
       shutting_down_(false),

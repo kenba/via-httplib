@@ -92,3 +92,4 @@ SOURCES += \
 #  $${VIAHTTPLIB}/examples/client/chunked_http_client.cpp
 #  $${VIAHTTPLIB}/examples/client/simple_http_client.cpp
 #  $${VIAHTTPLIB}/examples/client/simple_https_client.cpp
+#  $${VIAHTTPLIB}/examples/client/timer_http_client.cpp

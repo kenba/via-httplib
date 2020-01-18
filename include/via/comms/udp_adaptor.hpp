@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2018 Ken Barker
+// Copyright (c) 2015-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -32,7 +32,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class udp_adaptor
     {
-      ASIO::io_service& io_service_;        ///< The asio io_service.
+      ASIO::io_context& io_context_;        ///< The asio io_context.
       ASIO::ip::udp::socket socket_;        ///< The asio UDP socket.
       ASIO::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
       ASIO::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
@@ -92,10 +92,10 @@ namespace via
       }
 
       /// The udp_adaptor constructor.
-      /// @param io_service the asio io_service associted with this connection
-      explicit udp_adaptor(ASIO::io_service& io_service)
-        : io_service_(io_service)
-        , socket_(io_service_)
+      /// @param io_context the asio io_context associted with this connection
+      explicit udp_adaptor(ASIO::io_context& io_context)
+        : io_context_(io_context)
+        , socket_(io_context_)
         , rx_endpoint_(ASIO::ip::address_v4::any(), 0)
         , tx_endpoint_(ASIO::ip::address_v4::broadcast(), 0)
         , is_connected_(false)
@@ -264,7 +264,7 @@ namespace via
                    ConnectHandler connectHandler)
       {
         // resolve the port on the local host
-        ASIO::ip::udp::resolver resolver(io_service_);
+        ASIO::ip::udp::resolver resolver(io_context_);
         ASIO::ip::udp::resolver::query query(host_name, port );
         ASIO::ip::udp::resolver::iterator iterator(resolver.resolve(query));
 

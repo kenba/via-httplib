@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -262,17 +262,17 @@ namespace via
     }
 
     /// Constructor.
-    /// @param io_service the asio io_service to use.
+    /// @param io_context the asio io_context to use.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    explicit http_client(ASIO::io_service& io_service,
+    explicit http_client(ASIO::io_context& io_context,
                          ResponseHandler response_handler,
                          ChunkHandler    chunk_handler,
                          size_t          rx_buffer_size) :
-      connection_(connection_type::create(io_service, rx_buffer_size)),
-      timer_(io_service),
+      connection_(connection_type::create(io_context, rx_buffer_size)),
+      timer_(io_context),
       rx_(),
       host_name_(),
       tx_header_(),
@@ -296,18 +296,18 @@ namespace via
 
     /// @fn create
     /// The factory function to create connections.
-    /// @param io_service the boost asio io_service used by the underlying
+    /// @param io_context the boost asio io_context used by the underlying
     /// connection.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    static shared_pointer create(ASIO::io_service& io_service,
+    static shared_pointer create(ASIO::io_context& io_context,
                                  ResponseHandler response_handler,
                                  ChunkHandler    chunk_handler,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
     {
-      shared_pointer client_ptr(new http_client(io_service, response_handler,
+      shared_pointer client_ptr(new http_client(io_context, response_handler,
                                             chunk_handler, rx_buffer_size));
       weak_pointer ptr(client_ptr);
       client_ptr->connection_->set_error_callback([]

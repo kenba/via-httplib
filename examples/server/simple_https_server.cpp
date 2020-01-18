@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2016 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -59,11 +59,11 @@ int main(int /* argc */, char *argv[])
 
   try
   {
-    // The asio io_service.
-    ASIO::io_service io_service;
+    // The asio io_context.
+    ASIO::io_context io_context;
 
     // Create the HTTP server and attach the request handler
-    https_server_type https_server(io_service);
+    https_server_type https_server(io_context);
     https_server.request_received_event(request_handler);
 
     // Set up SSL
@@ -85,7 +85,7 @@ int main(int /* argc */, char *argv[])
     }
 
     // Start the server
-    io_service.run();
+    io_context.run();
   }
   catch (std::exception& e)
   {

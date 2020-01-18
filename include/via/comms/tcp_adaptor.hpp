@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2020 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -23,16 +23,16 @@ namespace via
   {
     /// @fn resolve_host
     /// resolves the host name and port.
-    /// @param io_service the asio io_service associted with the connection.
+    /// @param io_context the asio io_context associted with the connection.
     /// @param host_name the host name.
     /// @param port_name the host port.
     /// @return a TCP resolver::iterator
     inline ASIO::ip::tcp::resolver::iterator resolve_host
-                      (ASIO::io_service& io_service,
+                      (ASIO::io_context& io_context,
                        std::string_view host_name, std::string_view port_name)
     {
       ASIO_ERROR_CODE ignoredEc;
-      ASIO::ip::tcp::resolver resolver(io_service);
+      ASIO::ip::tcp::resolver resolver(io_context);
       ASIO::ip::tcp::resolver::query query(host_name.data(), port_name.data());
       return resolver.resolve(query, ignoredEc);
     }
@@ -47,7 +47,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
-      ASIO::io_service& io_service_; ///< The asio io_service.
+      ASIO::io_context& io_context_; ///< The asio io_context.
       ASIO::ip::tcp::socket socket_; ///< The asio TCP socket.
       /// The host iterator used by the resolver.
       ASIO::ip::tcp::resolver::iterator host_iterator_;
@@ -75,10 +75,10 @@ namespace via
       { ASIO::async_connect(socket_, host_iterator, connect_handler); }
 
       /// The tcp_adaptor constructor.
-      /// @param io_service the asio io_service associted with this connection
-      explicit tcp_adaptor(ASIO::io_service& io_service) :
-        io_service_(io_service),
-        socket_(io_service_),
+      /// @param io_context the asio io_context associted with this connection
+      explicit tcp_adaptor(ASIO::io_context& io_context) :
+        io_context_(io_context),
+        socket_(io_context_),
         host_iterator_()
       {}
 
@@ -104,7 +104,7 @@ namespace via
       bool connect(std::string_view host_name, std::string_view port_name,
                    ConnectHandler connectHandler)
       {
-        host_iterator_ = resolve_host(io_service_, host_name, port_name);
+        host_iterator_ = resolve_host(io_context_, host_name, port_name);
         if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
           return false;
 
