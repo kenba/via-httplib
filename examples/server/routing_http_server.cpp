@@ -19,6 +19,24 @@ namespace
 {
   using namespace via::http;
 
+  void connected_handler(std::weak_ptr<http_connection> weak_ptr)
+  {
+    http_connection::shared_pointer connection(weak_ptr.lock());
+    if (connection)
+      std::cout << "Connected to: "
+                << connection->remote_address()
+                << std::endl;
+  }
+
+  void disconnected_handler(std::weak_ptr<http_connection> weak_ptr)
+  {
+    http_connection::shared_pointer connection(weak_ptr.lock());
+    if (connection)
+      std::cout << "Disconnected from: "
+                << connection->remote_address()
+                << std::endl;
+  }
+
   tx_response get_hello_handler(rx_request const&, //request,
                                 Parameters const&, //parameters,
                                 std::string const&, // data,
@@ -55,6 +73,9 @@ int main(int /* argc */, char *argv[])
 
     // Create the HTTP server, attach the request method handlers
     http_server_type http_server(io_context);
+
+    http_server.socket_connected_event(connected_handler);
+    http_server.socket_disconnected_event(disconnected_handler);
 
     http_server.request_router().add_method("GET", "/hello", get_hello_handler);
     http_server.request_router().add_method

@@ -93,10 +93,11 @@ HEADERS += \
 SOURCES += \
   $${VIAHTTPLIB}/examples/cacert.cpp \
   $${VIAHTTPLIB}/examples/privkey.cpp \
-  $${VIAHTTPLIB}/examples/server/thread_pool_http_server.cpp
+  $${VIAHTTPLIB}/examples/server/routing_http_server.cpp
 
 #  $${VIAHTTPLIB}/examples/server/example_http_server.cpp
 #  $${VIAHTTPLIB}/examples/server/chunked_http_server.cpp
 #  $${VIAHTTPLIB}/examples/server/example_https_server.cpp
 #  $${VIAHTTPLIB}/examples/server/simple_http_server.cpp
 #  $${VIAHTTPLIB}/examples/server/simple_https_server.cpp
+#  $${VIAHTTPLIB}/examples/server/thread_pool_http_server.cpp
