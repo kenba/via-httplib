@@ -31,8 +31,8 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: ./via-httplib_test
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        base-path: ${{github.workspace}}
+    # - name: Coveralls
+    #   uses: coverallsapp/github-action@master
+    #   with:
+    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+    #     base-path: ${{github.workspace}}
