@@ -1,8 +1,10 @@
 # via-httplib: A C++ HTTP Library
 
-[![Build Status](https://travis-ci.org/kenba/via-httplib.svg?branch=master)](https://travis-ci.org/kenba/via-httplib)
-[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
+[![C/C++ CI](https://github.com/kenba/via-httplib/workflows/C/C++%20CI/badge.svg)](https://github.com/kenba/via-httplib/actions)
 [![Build status](https://ci.appveyor.com/api/projects/status/jfc8gvnncfnr18fs?svg=true)](https://ci.appveyor.com/project/kenba/via-httplib)
+[![Build Status](https://travis-ci.com/kenba/via-httplib.svg?branch=master)](https://travis-ci.com/kenba/via-httplib)
+[![License](https://img.shields.io/badge/License-Boost%201.0-blue)](https://opensource.org/licenses/BSL-1.0)
+[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
 
 A header-only library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
@@ -158,6 +160,11 @@ The following code implements an HTTP server that responds to GET requests to th
 | [tests](tests)       | Unit tests for the HTTP parsers and encoders.                            |
 | [docs](docs)         | The User Guides and design documents.                                    |
 | `docs/html`          | [Doxygen](http://www.stack.nl/~dimitri/doxygen/) output directory. Created by running `doxygen Doxyfile` in the [docs](docs) directory. | 
+
+## License
+
+Licensed under the Boost License, Version 1.0, as per Boost.  
+You may obtain a copy of the License at: https://www.boost.org/LICENSE_1_0.txt
 
 ## Acknowledgements
 
