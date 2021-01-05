@@ -16,7 +16,6 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get install libboost-thread-dev libboost-system-dev libboost-test-dev
-        sudo pip install --user cpp-coveralls
     - uses: actions/checkout@v2
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
@@ -34,4 +33,6 @@ jobs:
       run: ./via-httplib_test
     - name: Coveralls
       working-directory: ${{github.workspace}}
-      run: coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
