@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016 Ken Barker
+# Copyright (c) 2014-2021 Ken Barker
 # (ken dot barker at via-technology dot co dot uk)
 #
 # Distributed under the Boost Software License, Version 1.0.
@@ -18,15 +18,17 @@ win32 {
   *-g++* {
     message(MinGW boost libs)
 
-    # Read BOOST_VERSION and MINGW_VERSION environment variables
-    BOOST_VERSION = $$(BOOST_VERSION)
-    isEmpty(BOOST_VERSION) {
-      error("Please set BOOST_VERSION to the version of the boost libraries")
+    # Read boost library version environment variables
+    Boost_LIB_VERSION = $$(Boost_LIB_VERSION)
+    isEmpty(Boost_LIB_VERSION) {
+      error("Please set Boost_LIB_VERSION to the version string of the boost libraries")
     }
-    BOOST_LIB_SIZE = $$(BOOST_LIB_SIZE)
-    isEmpty(BOOST_VERSION) {
-      error("Please set BOOST_LIB_SIZE to the size of the boost libraries: -x64 or -x32")
+
+    Boost_ARCHITECTURE = $$(Boost_ARCHITECTURE)
+    isEmpty(Boost_ARCHITECTURE) {
+      error("Please set Boost_ARCHITECTURE to: -x64 or -x32")
     }
+
     MINGW_VERSION = $$(MINGW_VERSION)
     isEmpty(MINGW_VERSION) {
       error("Please set MINGW_VERSION to the version of the MinGW compiler")
@@ -35,10 +37,10 @@ win32 {
     BOOST_LIB_PREFIX = boost_
 
     CONFIG(release, debug|release){
-      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt$${BOOST_LIB_SIZE}$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt$${Boost_ARCHITECTURE}$${Boost_LIB_VERSION}
     }
     CONFIG(debug, debug|release){
-      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt-d$${BOOST_LIB_SIZE}$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MINGW_VERSION}-mt-d$${Boost_ARCHITECTURE}$${Boost_LIB_VERSION}
     }
   }
 
@@ -51,10 +53,10 @@ win32 {
     BOOST_LIB_PREFIX = libboost_
 
     CONFIG(release, debug|release){
-      BOOST_LIB_SUFFIX = $${MSVC_VERSION}-mt$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MSVC_VERSION}-mt$${Boost_LIB_VERSION}
     }
     CONFIG(debug, debug|release){
-      BOOST_LIB_SUFFIX = $${MSVC_VERSION}-mt-gd$${BOOST_VERSION}
+      BOOST_LIB_SUFFIX = $${MSVC_VERSION}-mt-gd$${Boost_LIB_VERSION}
     }
 
     # The following macro disables autolinking when uncommented
