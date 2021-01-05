@@ -34,4 +34,4 @@ jobs:
       run: ./via-httplib_test
     - name: Coveralls
       working-directory: ${{github.workspace}}
-      run: coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp
+      run: coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp'
