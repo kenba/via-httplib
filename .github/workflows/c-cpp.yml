@@ -12,10 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install Boost
+    - name: Install Boost and Coveralls
       run: |
         sudo apt-get update -qq
         sudo apt-get install libboost-thread-dev libboost-system-dev libboost-test-dev
+        sudo pip install --user cpp-coveralls
     - uses: actions/checkout@v2
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
@@ -31,9 +32,9 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: ./via-httplib_test
-#     - name: Coveralls
-#       working-directory: ${{github.workspace}}
-#       uses: coverallsapp/github-action@master
-#       with:
-#         github-token: ${{ secrets.GITHUB_TOKEN }}
-#       run: coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp
+    - name: Coveralls
+      working-directory: ${{github.workspace}}
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+      run: coveralls --root . -e build/CMakeFiles -E "test_*.o" --gcov-options '\-lp
