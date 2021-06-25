@@ -28,13 +28,13 @@ namespace via
 
     /// @enum Rx is the receiver parsing state and is valid for both the
     /// request and response receivers.
-    enum Rx
+    enum class Rx
     {
-      RX_INVALID,         ///< the message is invalid
-      RX_EXPECT_CONTINUE, ///< the client expects a 100 Continue response
-      RX_INCOMPLETE,      ///< the message requires more data
-      RX_VALID,           ///< a valid request or response
-      RX_CHUNK            ///< a valid chunk received
+      INVALID,         ///< the message is invalid
+      EXPECT_CONTINUE, ///< the client expects a 100 Continue response
+      INCOMPLETE,      ///< the message requires more data
+      VALID,           ///< a valid request or response
+      CHUNK            ///< a valid chunk received
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -45,31 +45,31 @@ namespace via
     {
     public:
       /// @enum Header the state of the header field line parser
-      enum Header
+      enum class Header
       {
-        HEADER_NAME,         ///< the header name field
-        HEADER_VALUE_LS,     ///< the header value leading white space
-        HEADER_VALUE,        ///< the header value
-        HEADER_LF,           ///< the line feed (if any)
-        HEADER_VALID,        ///< the header line is valid
-        HEADER_ERROR_LENGTH, ///< the header line is longer than max_line_length_
-        HEADER_ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
-        HEADER_ERROR_WS      ///< the whitespace is longer than max_whitespace_
+        NAME,         ///< the header name field
+        VALUE_LS,     ///< the header value leading white space
+        VALUE,        ///< the header value
+        LF,           ///< the line feed (if any)
+        VALID,        ///< the header line is valid
+        ERROR_LENGTH, ///< the header line is longer than max_line_length_
+        ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
+        ERROR_WS      ///< the whitespace is longer than max_whitespace_
       };
 
     private:
 
       /// Parser parameters
-      bool           strict_crlf_;     ///< enforce strict parsing of CRLF
-      unsigned char  max_whitespace_;  ///< the max no of consectutive whitespace characters.
-      unsigned short max_line_length_; ///< the max length of a field line
+      bool           strict_crlf_ { false };    ///< enforce strict parsing of CRLF
+      unsigned char  max_whitespace_ { 8u };     ///< the max no of consectutive whitespace characters.
+      unsigned short max_line_length_ { 1024u }; ///< the max length of a field line
 
       /// Field information
-      std::string   name_;     ///< the field name (lower case)
-      std::string   value_;    ///< the field value
-      size_t        length_;   ///< the length of the header line in bytes
-      size_t        ws_count_; ///< the current whitespace count
-      Header        state_;    ///< the current parsing state
+      std::string   name_ {};     ///< the field name (lower case)
+      std::string   value_ {};    ///< the field value
+      size_t        length_ { 0u };   ///< the length of the header line in bytes
+      size_t        ws_count_ { 0u }; ///< the current whitespace count
+      Header        state_ { Header::NAME };    ///< the current parsing state
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -78,55 +78,55 @@ namespace via
       {
         // Ensure that the overall header length is within limits
         if (++length_ > max_line_length_)
-          state_ = HEADER_ERROR_LENGTH;
+          state_ = Header::ERROR_LENGTH;
 
         switch (state_)
         {
-        case HEADER_NAME:
+        case Header::NAME:
           if (std::isalpha(c) || ('-' == c))
             name_.push_back(static_cast<char>(std::tolower(c)));
           else if (':' == c)
-            state_ = HEADER_VALUE_LS;
+            state_ = Header::VALUE_LS;
           else
             return false;
           break;
 
-        case HEADER_VALUE_LS:
+        case Header::VALUE_LS:
           // Ignore leading whitespace
           if (std::isblank(c))
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
             {
-              state_ = HEADER_ERROR_WS;
+              state_ = Header::ERROR_WS;
               return false;
             }
             else
               break;
           else
-            state_ = HEADER_VALUE;
+            state_ = Header::VALUE;
           [[fallthrough]]; // intentional fall-through
 
-        case HEADER_VALUE:
+        case Header::VALUE:
           // The header line should end with an \r\n...
           if (!is_end_of_line(c))
             value_.push_back(c);
           else if ('\r' == c)
-            state_ = HEADER_LF;
+            state_ = Header::LF;
           else // ('\n' == c)
           {
             if (strict_crlf_)
             {
-              state_ = HEADER_ERROR_CRLF;
+              state_ = Header::ERROR_CRLF;
               return false;
             }
             else
-              state_ = HEADER_VALID;
+              state_ = Header::VALID;
           }
           break;
 
-        case HEADER_LF:
+        case Header::LF:
           if ('\n' == c)
-            state_ = HEADER_VALID;
+            state_ = Header::VALID;
           else
             return false;
           break;
@@ -140,6 +140,9 @@ namespace via
 
     public:
 
+      /// Default Constructor.
+      field_line() = default;
+
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
       /// state.
@@ -148,17 +151,12 @@ namespace via
       /// characters allowed in a request: min 1, max 254.
       /// @param max_line_length the maximum length of an HTTP header field line:
       /// max 65534.
-      explicit field_line(bool           strict_crlf,
-                          unsigned char  max_whitespace,
-                          unsigned short max_line_length) :
+      field_line(bool           strict_crlf,
+                  unsigned char  max_whitespace,
+                  unsigned short max_line_length) :
         strict_crlf_(strict_crlf),
         max_whitespace_(max_whitespace),
-        max_line_length_(max_line_length),
-        name_(""),
-        value_(""),
-        length_(0),
-        ws_count_(0),
-        state_(HEADER_NAME)
+        max_line_length_(max_line_length)
       {}
 
       /// clear the field_line.
@@ -167,9 +165,9 @@ namespace via
       {
         name_.clear();
         value_.clear();
-        length_ = 0;
-        ws_count_ = 0;
-        state_ = HEADER_NAME;
+        length_ = 0u;
+        ws_count_ = 0u;
+        state_ = Header::NAME;
       }
 
       /// swap member variables with another field_line.
@@ -192,22 +190,22 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (HEADER_VALID != state_))
+        while ((iter != end) && (Header::VALID != state_))
         {
           char c(static_cast<char>(*iter++));
           if (!parse_char(c))
             return false;
-          else if (HEADER_VALID == state_)
+          else if (Header::VALID == state_)
           { // determine whether the next line is a continuation header
             if ((iter != end) && std::isblank(*iter))
             {
               value_.push_back(' ');
-              state_ = HEADER_VALUE_LS;
+              state_ = Header::VALUE_LS;
             }
           }
         }
 
-        return (HEADER_VALID == state_);
+        return (Header::VALID == state_);
       }
 
       /// Accessor for the field name.
@@ -238,16 +236,19 @@ namespace via
     class message_headers
     {
       /// Parser parameters
-      unsigned short max_header_number_; ///< the max no of header fields
-      size_t         max_header_length_; ///< the max cumulative length
+      unsigned short max_header_number_ { 8u };    ///< the max no of header fields
+      size_t         max_header_length_ { 1024u }; ///< the max cumulative length
 
       /// The HTTP message header fields.
-      std::unordered_map<std::string, std::string> fields_;
-      field_line field_; ///< the current field being parsed
-      bool       valid_; ///< true if the headers are valid
-      size_t     length_; ///< the length of the message headers
+      std::unordered_map<std::string, std::string> fields_ {};
+      field_line field_ {};        ///< the current field being parsed
+      bool       valid_ { false }; ///< true if the headers are valid
+      size_t     length_ { 0u };   ///< the length of the message headers
 
     public:
+
+      /// Default Constructor.
+      message_headers() = default;
 
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
@@ -268,7 +269,6 @@ namespace via
                                size_t         max_header_length) :
         max_header_number_(max_header_number),
         max_header_length_(max_header_length),
-        fields_(),
         field_(strict_crlf, max_whitespace, max_line_length),
         valid_(false),
         length_(0)
@@ -339,8 +339,7 @@ namespace via
       /// @param value the field value.
       void add(std::string_view name, std::string_view value)
       {
-        std::unordered_map<std::string, std::string>::iterator iter
-          (fields_.find(name.data()));
+        auto iter(fields_.find(name.data()));
         // if the field name was found previously
         if (iter != fields_.end())
         {
@@ -359,8 +358,7 @@ namespace via
       /// @return the value, blank if not found
       std::string_view find(std::string_view name) const
       {
-        std::unordered_map<std::string, std::string>::const_iterator iter
-          (fields_.find(name.data()));
+        const auto iter(fields_.find(name.data()));
         return (iter != fields_.end()) ? iter->second : std::string_view();
       }
 

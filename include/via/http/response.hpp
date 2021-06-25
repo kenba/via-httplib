@@ -32,48 +32,48 @@ namespace via
     {
     public:
       /// @enum Response the state of the response line parser.
-      enum Response
+      enum class Response
       {
-        RESP_HTTP_H,             ///< HTTP/ H
-        RESP_HTTP_T1,            ///< HTTP/ first T
-        RESP_HTTP_T2,            ///< HTTP/ second T
-        RESP_HTTP_P,             ///< HTTP/ P
-        RESP_HTTP_SLASH,         ///< HTTP/ slash
-        RESP_HTTP_MAJOR,         ///< HTTP major version number
-        RESP_HTTP_DOT,           ///< HTTP . between major and minor versions
-        RESP_HTTP_MINOR,         ///< HTTP minor version number
-        RESP_HTTP_WS,            ///< HTTP space of tab before status
-        RESP_STATUS,             ///< response status code
-        RESP_REASON,             ///< response reason
-        RESP_CR,                 ///< the carriage return (if any)
-        RESP_LF,                 ///< the line feed
-        RESP_VALID,              ///< the response line is valid
-        RESP_ERROR_CRLF,         ///< strict_crlf_ is true and LF was received without CR
-        RESP_ERROR_WS,           ///< the whitespace is longer than max_whitespace_
-        RESP_ERROR_STATUS_VALUE, ///< the method name is longer than max_method_length_s
-        RESP_ERROR_REASON_LENGTH ///< then uri is longer than max_uri_length_s
+        HTTP_H,             ///< HTTP/ H
+        HTTP_T1,            ///< HTTP/ first T
+        HTTP_T2,            ///< HTTP/ second T
+        HTTP_P,             ///< HTTP/ P
+        HTTP_SLASH,         ///< HTTP/ slash
+        HTTP_MAJOR,         ///< HTTP major version number
+        HTTP_DOT,           ///< HTTP . between major and minor versions
+        HTTP_MINOR,         ///< HTTP minor version number
+        HTTP_WS,            ///< HTTP space of tab before status
+        STATUS,             ///< response status code
+        REASON,             ///< response reason
+        CR,                 ///< the carriage return (if any)
+        LF,                 ///< the line feed
+        VALID,              ///< the response line is valid
+        ERROR_CRLF,         ///< strict_crlf_ is true and LF was received without CR
+        ERROR_WS,           ///< the whitespace is longer than max_whitespace_
+        ERROR_STATUS_VALUE, ///< the method name is longer than max_method_length_s
+        ERROR_REASON_LENGTH ///< then uri is longer than max_uri_length_s
       };
 
     private:
 
       // Parser parameters
-      bool           strict_crlf_;       ///< enforce strict parsing of CRLF
-      unsigned char  max_whitespace_;    ///< the max no of consectutive whitespace characters.
-      unsigned short max_status_no_;     ///< the maximum number of a response status
-      size_t         max_reason_length_; ///< the maximum length of a response reason
+      bool           strict_crlf_ { false };        ///< enforce strict parsing of CRLF
+      unsigned char  max_whitespace_ { 254u };        ///< the max no of consectutive whitespace characters.
+      unsigned short max_status_no_ { 65534u };     ///< the maximum number of a response status
+      size_t         max_reason_length_ { 65534u }; ///< the maximum length of a response reason
 
       // Response information
-      int status_;                ///< the response status code
-      std::string reason_phrase_; ///< the response reason phrase
-      char major_version_;        ///< the HTTP major version number
-      char minor_version_;        ///< the HTTP minor version number
+      int status_ { 0 };                ///< the response status code
+      std::string reason_phrase_ {}; ///< the response reason phrase
+      char major_version_ { 0 };        ///< the HTTP major version number
+      char minor_version_ { 0 };        ///< the HTTP minor version number
 
       // Parser state
-      Response state_;            ///< the current parsing state
-      unsigned short ws_count_;   ///< the current whitespace count
-      bool status_read_;          ///< true if status code was read
-      bool valid_;                ///< true if the response line is valid
-      bool fail_;                 ///< true if the response line failed validation
+      Response state_ { Response::HTTP_H }; ///< the current parsing state
+      unsigned short ws_count_ { 0u };      ///< the current whitespace count
+      bool status_read_ { false };          ///< true if status code was read
+      bool valid_ { false };                ///< true if the response line is valid
+      bool fail_ { false };                 ///< true if the response line failed validation
 
       /// Parse an individual character.
       /// @param c the character to be parsed.
@@ -82,93 +82,93 @@ namespace via
       {
         switch (state_)
         {
-        case RESP_HTTP_H:
+        case Response::HTTP_H:
           // Ignore leading whitespace
           if (std::isblank(c))
           {
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
             {
-              state_ = RESP_ERROR_WS;
+              state_ = Response::ERROR_WS;
               return false;
             }
           }
           else
           {
             if ('H' == c)
-              state_ = RESP_HTTP_T1;
+              state_ = Response::HTTP_T1;
             else
               return false;
           }
           break;
 
-        case RESP_HTTP_T1:
+        case Response::HTTP_T1:
           if ('T' == c)
-            state_ = RESP_HTTP_T2;
+            state_ = Response::HTTP_T2;
           else
             return false;
           break;
 
-        case RESP_HTTP_T2:
+        case Response::HTTP_T2:
           if ('T' == c)
-            state_ = RESP_HTTP_P;
+            state_ = Response::HTTP_P;
           else
             return false;
           break;
 
-        case RESP_HTTP_P:
+        case Response::HTTP_P:
           if ('P' == c)
-            state_ = RESP_HTTP_SLASH;
+            state_ = Response::HTTP_SLASH;
           else
             return false;
           break;
 
-        case RESP_HTTP_SLASH:
+        case Response::HTTP_SLASH:
           if ('/' == c)
-            state_ = RESP_HTTP_MAJOR;
+            state_ = Response::HTTP_MAJOR;
           else
             return false;
           break;
 
-        case RESP_HTTP_MAJOR:
+        case Response::HTTP_MAJOR:
           if (std::isdigit(c))
           {
             major_version_ = c;
-            state_ = RESP_HTTP_DOT;
+            state_ = Response::HTTP_DOT;
           }
           else
             return false;
           break;
 
-        case RESP_HTTP_DOT:
+        case Response::HTTP_DOT:
           if ('.' == c)
-            state_ = RESP_HTTP_MINOR;
+            state_ = Response::HTTP_MINOR;
           else
             return false;
           break;
 
-        case RESP_HTTP_MINOR:
+        case Response::HTTP_MINOR:
           if (std::isdigit(c))
           {
             minor_version_ = c;
             // must be at least one whitespace before status
-            state_ = RESP_HTTP_WS;
+            state_ = Response::HTTP_WS;
           }
           else
             return false;
           break;
 
-        case RESP_HTTP_WS:
+        case Response::HTTP_WS:
           if (std::isblank(c))
           {
             ws_count_ = 1;
-            state_ = RESP_STATUS;
+            state_ = Response::STATUS;
           }
           else
             return false;
           break;
 
-        case RESP_STATUS:
+        case Response::STATUS:
           if (std::isdigit(c))
           {
             status_read_ = true;
@@ -176,7 +176,7 @@ namespace via
             status_ += read_digit(c);
             if (status_ > max_status_no_)
             {
-              state_ = RESP_ERROR_STATUS_VALUE;
+              state_ = Response::ERROR_STATUS_VALUE;
               return false;
             }
           }
@@ -185,14 +185,14 @@ namespace via
             if (status_read_)
             {
               ws_count_ = 1;
-              state_ = RESP_REASON;
+              state_ = Response::REASON;
             }
             else // Ignore extra leading whitespace
             {
               // but only upto to a limit!
               if (++ws_count_ > max_whitespace_)
               {
-                state_ = RESP_ERROR_WS;
+                state_ = Response::ERROR_WS;
                 return false;
               }
             }
@@ -201,7 +201,7 @@ namespace via
             return false;
           break;
 
-        case RESP_REASON:
+        case Response::REASON:
           if (!is_end_of_line(c))
           {
             // Ignore leading whitespace
@@ -210,7 +210,7 @@ namespace via
               // but only upto to a limit!
               if (++ws_count_ > max_whitespace_)
               {
-                state_ = RESP_ERROR_WS;
+                state_ = Response::ERROR_WS;
                 return false;
               }
             }
@@ -219,7 +219,7 @@ namespace via
               reason_phrase_.push_back(c);
               if (reason_phrase_.size() > max_reason_length_)
               {
-                state_ = RESP_ERROR_REASON_LENGTH;
+                state_ = Response::ERROR_REASON_LENGTH;
                 return false;
               }
             }
@@ -227,27 +227,27 @@ namespace via
           }
           [[fallthrough]]; // intentional fall-through
 
-        case RESP_CR:
+        case Response::CR:
           // The HTTP line should end with a \r\n...
           if ('\r' == c)
-            state_ = RESP_LF;
+            state_ = Response::LF;
           else
           {
             // but (if not being strict) permit just \n
             if (!strict_crlf_ && ('\n' == c))
-              state_ = RESP_VALID;
+              state_ = Response::VALID;
             else
             {
-              state_ = RESP_ERROR_CRLF;
+              state_ = Response::ERROR_CRLF;
               return false;
             }
           }
           break;
 
-        case RESP_LF:
+        case Response::LF:
           if ('\n' == c)
           {
-            state_ = RESP_VALID;
+            state_ = Response::VALID;
             break;
           }
           [[fallthrough]]; // intentional fall-through (for code coverage)
@@ -260,6 +260,9 @@ namespace via
       }
 
     public:
+
+      /// Default Constructor.
+      response_line() = default;
 
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
@@ -274,25 +277,14 @@ namespace via
       /// max 65534.
       /// @param max_reason_length the maximum length of a response reason
       /// max 65534.
-      explicit response_line(bool           strict_crlf,
-                             unsigned char  max_whitespace,
-                             unsigned short max_status_no,
-                             unsigned short max_reason_length) :
+      response_line(bool           strict_crlf,
+                     unsigned char  max_whitespace,
+                     unsigned short max_status_no,
+                     unsigned short max_reason_length) :
         strict_crlf_(strict_crlf),
         max_whitespace_(max_whitespace),
         max_status_no_(max_status_no),
-        max_reason_length_(max_reason_length),
-
-        status_(0),
-        reason_phrase_(""),
-        major_version_(0),
-        minor_version_(0),
-
-        state_(RESP_HTTP_H),
-        ws_count_(0),
-        status_read_(false),
-        valid_(false),
-        fail_(false)
+        max_reason_length_(max_reason_length)
       {}
 
       /// Clear the response_line.
@@ -304,7 +296,7 @@ namespace via
         major_version_ = 0;
         minor_version_ = 0;
 
-        state_ = RESP_HTTP_H;
+        state_ = Response::HTTP_H;
         ws_count_ = 0;
         status_read_ = false;
         valid_ =  false;
@@ -343,13 +335,13 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (RESP_VALID != state_))
+        while ((iter != end) && (Response::VALID != state_))
         {
           char c(*iter++);
           if ((fail_ = !parse_char(c))) // Note: deliberate assignment
             return false;
         }
-        valid_ = (RESP_VALID == state_);
+        valid_ = (Response::VALID == state_);
         return valid_;
       }
 #ifdef _MSC_VER
@@ -411,21 +403,14 @@ namespace via
       explicit response_line(response_status::code status_code,
                              char major_version = '1',
                              char minor_version = '1') :
-        strict_crlf_(false),
-        max_whitespace_(254),
-        max_status_no_(65534),
-        max_reason_length_(65534),
-
         status_(static_cast<int>(status_code)),
         reason_phrase_(response_status::reason_phrase(status_code)),
         major_version_(major_version),
         minor_version_(minor_version),
 
-        state_(RESP_VALID),
-        ws_count_(0),
+        state_(Response::VALID),
         status_read_(true),
-        valid_(true),
-        fail_(false)
+        valid_(true)
       {}
 
       /// Constructor for creating a non-standard response.
@@ -433,15 +418,10 @@ namespace via
       /// @param reason_phrase the reason phrase for the response status.
       /// @param major_version default '1'
       /// @param minor_version default '1'
-      explicit response_line(int status,
-                               std::string_view reason_phrase,
-                               char major_version = '1',
-                               char minor_version = '1') :
-        strict_crlf_(false),
-        max_whitespace_(254),
-        max_status_no_(65534),
-        max_reason_length_(65534),
-
+      response_line(int status,
+                     std::string_view reason_phrase,
+                     char major_version = '1',
+                     char minor_version = '1') :
         status_(status),
         reason_phrase_(!reason_phrase.empty() ? reason_phrase :
                response_status::reason_phrase
@@ -449,11 +429,9 @@ namespace via
         major_version_(major_version),
         minor_version_(minor_version),
 
-        state_(RESP_VALID),
-        ws_count_(0),
+        state_(Response::VALID),
         status_read_(true),
-        valid_(true),
-        fail_(false)
+        valid_(true)
       {}
 
       /// Set the response status for standard responses.
@@ -501,10 +479,13 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class rx_response : public response_line
     {
-      message_headers headers_; ///< the HTTP headers for the response
-      bool valid_;              ///< true if the response is valid
+      message_headers headers_ {}; ///< the HTTP headers for the response
+      bool valid_ { false };       ///< true if the response is valid
 
     public:
+
+      /// Default Constructor.
+      rx_response() = default;
 
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
@@ -522,18 +503,17 @@ namespace via
       /// max 65534.
       /// @param max_header_length the maximum cumulative length the HTTP header
       /// fields: max 4 billion.
-      explicit rx_response(bool           strict_crlf,
-                           unsigned char  max_whitespace,
-                           unsigned short max_status_no,
-                           unsigned short max_reason_length,
-                           unsigned short max_line_length,
-                           unsigned short max_header_number,
-                           size_t         max_header_length) :
+      rx_response(bool           strict_crlf,
+                   unsigned char  max_whitespace,
+                   unsigned short max_status_no,
+                   unsigned short max_reason_length,
+                   unsigned short max_line_length,
+                   unsigned short max_header_number,
+                   size_t         max_header_length) :
         response_line(strict_crlf, max_whitespace,
                       max_status_no, max_reason_length),
         headers_(strict_crlf, max_whitespace, max_line_length,
-                 max_header_number, max_header_length),
-        valid_(false)
+                 max_header_number, max_header_length)
       {}
 
       virtual ~rx_response() {}
@@ -615,9 +595,12 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tx_response : public response_line
     {
-      std::string header_string_; ///< The headers as a string.
+      std::string header_string_ {}; ///< The headers as a string.
 
     public:
+
+      /// Default Constructor.
+      tx_response() = default;
 
       /// Constructor for creating a response for one of the standard
       /// responses defined in RFC2616.
@@ -625,7 +608,7 @@ namespace via
       /// @param status_code the response status code
       /// @param header_string default blank
       explicit tx_response(response_status::code status_code,
-                            std::string header_string = "") :
+                           std::string_view header_string = std::string_view()) :
         response_line(status_code),
         header_string_(header_string)
       {}
@@ -699,7 +682,7 @@ namespace via
         output += header_string_;
 
         // Ensure that it's got a content length header unless
-        // a tranfer encoding is being applied or content is not permitted
+        // a transfer encoding is being applied or content is not permitted
         bool no_content_length(std::string::npos == header_string_.find
               (header_field::HEADER_CONTENT_LENGTH));
         bool no_transfer_encoding(std::string::npos == header_string_.find
@@ -721,40 +704,40 @@ namespace via
     class response_receiver
     {
       /// Parser parameters
-      size_t max_body_size_;      ///< the maximum size of a response body.
+      size_t max_body_size_ { LONG_MAX }; ///< the maximum size of a response body.
 
       /// Response information
-      rx_response response_;      ///< the received response
-      rx_chunk<Container> chunk_; ///< the received chunk
-      Container   body_;          ///< the response body or data for the last chunk
+      rx_response response_ {};      ///< the received response
+      rx_chunk<Container> chunk_ {}; ///< the received chunk
+      Container   body_ {};          ///< the response body or data for the last chunk
 
     public:
 
       /// The default maximum number of consectutive whitespace characters
       /// allowed in a response header.
-      static const unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 254;
+      static constexpr unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 254;
 
       /// The default maximum number of a response status.
-      static const unsigned short DEFAULT_MAX_STATUS_NUMBER    = 65534;
+      static constexpr unsigned short DEFAULT_MAX_STATUS_NUMBER    = 65534;
 
       /// The default maximum number of characters allowed in a response reason.
-      static const unsigned short DEFAULT_MAX_REASON_LENGTH    = 65534;
+      static constexpr unsigned short DEFAULT_MAX_REASON_LENGTH    = 65534;
 
       /// The default maximum number of characters allowed in a response header
       /// line.
-      static const unsigned short DEFAULT_MAX_LINE_LENGTH      = 65534;
+      static constexpr unsigned short DEFAULT_MAX_LINE_LENGTH      = 65534;
 
       /// The default maximum number of fields allowed in the response headers.
-      static const unsigned short DEFAULT_MAX_HEADER_NUMBER    = 65534;
+      static constexpr unsigned short DEFAULT_MAX_HEADER_NUMBER    = 65534;
 
       /// The default maximum number of characters allowed in the response headers.
-      static const size_t         DEFAULT_MAX_HEADER_LENGTH    = LONG_MAX;
+      static constexpr size_t         DEFAULT_MAX_HEADER_LENGTH    = LONG_MAX;
 
       /// The default maximum size of a response body.
-      static const size_t         DEFAULT_MAX_BODY_SIZE        = LONG_MAX;
+      static constexpr size_t         DEFAULT_MAX_BODY_SIZE        = LONG_MAX;
 
       /// The default maximum size of a response chunk.
-      static const size_t         DEFAULT_MAX_CHUNK_SIZE       = LONG_MAX;
+      static constexpr size_t         DEFAULT_MAX_CHUNK_SIZE       = LONG_MAX;
 
       /// Constructor.
       /// Sets the parser parameters and all member variables to their initial
@@ -776,7 +759,7 @@ namespace via
       /// default LONG_MAX, max LONG_MAX.
       /// @param max_chunk_size the maximum size of a response chunk:
       /// default LONG_MAX, max LONG_MAX.
-      explicit response_receiver(
+      response_receiver(
           bool           strict_crlf       = false,
           unsigned char  max_whitespace    = DEFAULT_MAX_WHITESPACE_CHARS,
           unsigned short max_status_no     = DEFAULT_MAX_STATUS_NUMBER,
@@ -835,10 +818,10 @@ namespace via
             if ((iter != end) || response_.fail())
             {
               clear();
-              return RX_INVALID;
+              return Rx::INVALID;
             }
             else
-              return RX_INCOMPLETE;
+              return Rx::INCOMPLETE;
           }
         }
 
@@ -850,7 +833,7 @@ namespace via
           if (content_length < 0)
           {
             clear();
-            return RX_INVALID;
+            return Rx::INVALID;
           }
 
           // if there's a message body without on a content length header
@@ -881,7 +864,7 @@ namespace via
 
           // return whether the body is complete
           if (body_.size() == static_cast<size_t>(response_.content_length()))
-            return RX_VALID;
+            return Rx::VALID;
         }
         else // response_.is_chunked()
         {
@@ -892,7 +875,7 @@ namespace via
 
           // If parsed the response header, pass it to the application
           if (response_parsed)
-            return RX_VALID;
+            return Rx::VALID;
 
           // parse the chunk
           if (!chunk_.parse(iter, end))
@@ -901,16 +884,16 @@ namespace via
             if (iter != end)
             {
               clear();
-              return RX_INVALID;
+              return Rx::INVALID;
             }
           }
 
           // A complete chunk has been parsed..
           if (chunk_.valid())
-            return RX_CHUNK;
+            return Rx::CHUNK;
         }
 
-        return RX_INCOMPLETE;
+        return Rx::INCOMPLETE;
       }
 
     };

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -681,13 +681,13 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string response_data2("ontent-Length: 4\r\n\r\nabcd");
   next = response_data2.begin();
   rx_state = the_response_receiver.receive(next, response_data2.end());
-  bool complete (rx_state == RX_VALID);
+  bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
 
   BOOST_CHECK_EQUAL(200, the_response_receiver.response().status());
@@ -710,7 +710,7 @@ BOOST_AUTO_TEST_CASE(ValidOK2)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_VALID);
+  bool ok (rx_state == Rx::VALID);
   BOOST_CHECK(ok);
 
   std::string body(the_response_receiver.body());
@@ -724,7 +724,7 @@ BOOST_AUTO_TEST_CASE(InValidOK1)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(ValidOKChunked1)
@@ -734,7 +734,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string response_data("TTP/1.0 200 OK\r\n");
   response_data += "Content-Type: application/json\r\n";
@@ -744,7 +744,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
   next = response_data.begin();
 
   rx_state = the_response_receiver.receive(next, response_data.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
   BOOST_CHECK_EQUAL(200, the_response_receiver.response().status());
   BOOST_CHECK_EQUAL("OK", the_response_receiver.response().reason_phrase().data());
   BOOST_CHECK_EQUAL('1', the_response_receiver.response().major_version());
@@ -755,18 +755,18 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_CHUNK);
+  bool complete (rx_state == Rx::CHUNK);
   BOOST_CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
   rx_state = the_response_receiver.receive(next, body_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_response_receiver.receive(next, body_data3.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 }
 
 BOOST_AUTO_TEST_CASE(ValidOKChunked2)
@@ -779,13 +779,13 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string response_data("\r\n");
   next = response_data.begin();
 
   rx_state = the_response_receiver.receive(next, response_data.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
   BOOST_CHECK_EQUAL(200, the_response_receiver.response().status());
   BOOST_CHECK_EQUAL("OK", the_response_receiver.response().reason_phrase().data());
   BOOST_CHECK_EQUAL('1', the_response_receiver.response().major_version());
@@ -796,7 +796,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
   std::string body_data("15\r\nHTTP chunk number: 1\n\r\n");
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_CHUNK);
+  bool complete (rx_state == Rx::CHUNK);
   BOOST_CHECK(complete);
   BOOST_CHECK(!the_response_receiver.chunk().is_last());
 
@@ -806,12 +806,12 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
   std::string body_data2("16\r\nHTTP chunk ");
   next = body_data2.begin();
   rx_state = the_response_receiver.receive(next, body_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string body_data3("number: 21\n\r\n");
   next = body_data3.begin();
   rx_state = the_response_receiver.receive(next, body_data3.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
   BOOST_CHECK(!the_response_receiver.chunk().is_last());
   BOOST_CHECK_EQUAL(the_response_receiver.chunk().size(),
                     the_response_receiver.chunk().data().size());
@@ -819,7 +819,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
   rx_state = the_response_receiver.receive(next, body_data4.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
   BOOST_CHECK(the_response_receiver.chunk().is_last());
 }
 
@@ -832,7 +832,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK2)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_INVALID);
+  bool ok (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
 }
 
@@ -846,7 +846,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK3)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 }
 
@@ -860,18 +860,18 @@ BOOST_AUTO_TEST_CASE(InValidOKChunked4)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string response_data("\r\n15");
   next = response_data.begin();
 
   rx_state = the_response_receiver.receive(next, response_data.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   std::string body_data("\r\nHTTP chunk number: 1\n\r\r");
   next = body_data.begin();
   rx_state = the_response_receiver.receive(next, body_data.end());
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk1)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
@@ -910,7 +910,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
   BOOST_CHECK(iter == response_data1.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
@@ -921,7 +921,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   iter = response_body1.begin();
   rx_state = the_response_receiver.receive(iter, response_body1.end());
   BOOST_CHECK(iter == response_body1.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   // The second response
   std::string response_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
@@ -934,12 +934,12 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   the_response_receiver.clear();
   rx_state = the_response_receiver.receive(iter, response_data2.end());
   BOOST_CHECK(iter == response_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = response_body2.begin();
   rx_state = the_response_receiver.receive(iter, response_body2.end());
   BOOST_CHECK(iter == response_body2.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackOk3)
@@ -963,7 +963,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk3)
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
   BOOST_CHECK(iter != response_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   rx_response const& the_response(the_response_receiver.response());
   BOOST_CHECK_EQUAL(static_cast<int>(response_status::code::OK),
@@ -975,7 +975,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk3)
   the_response_receiver.clear();
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
   BOOST_CHECK(iter == response_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
@@ -988,7 +988,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
 
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
   chunk_header chunk_header1(chunk_body1.size());
@@ -998,12 +998,12 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   iter = http_chunk_1.begin();
   rx_state = the_response_receiver.receive(iter, http_chunk_1.end());
   BOOST_CHECK(iter == http_chunk_1.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = chunk_body1.begin();
   rx_state = the_response_receiver.receive(iter, chunk_body1.end());
   BOOST_CHECK(iter == chunk_body1.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
   chunk_header chunk_header2(chunk_body2.size());
@@ -1013,12 +1013,12 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   iter = http_chunk_2.begin();
   rx_state = the_response_receiver.receive(iter, http_chunk_2.end());
   BOOST_CHECK(iter == http_chunk_2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = chunk_body2.begin();
   rx_state = the_response_receiver.receive(iter, chunk_body2.end());
   BOOST_CHECK(iter == chunk_body2.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_ext("chunk extension");
   std::string chunk_trailer("chunk: trailer");
@@ -1029,7 +1029,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   iter = http_chunk_3.begin();
   rx_state = the_response_receiver.receive(iter, http_chunk_3.end());
   BOOST_CHECK(iter == http_chunk_3.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
@@ -1065,24 +1065,24 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
   response_receiver<std::string> the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
   BOOST_CHECK(iter != response_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
   BOOST_CHECK(iter != response_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
   BOOST_CHECK(iter != response_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
   BOOST_CHECK(iter != response_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   the_response_receiver.clear();
   rx_state = the_response_receiver.receive(iter, response_buffer.end());
   BOOST_CHECK(iter == response_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

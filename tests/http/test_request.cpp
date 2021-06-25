@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(InValidMethod2)
   request_line the_request(true, 1, 2, 1024); // set max_method_length to 2
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
 
-  BOOST_CHECK(via::http::request_line::REQ_ERROR_METHOD_LENGTH ==
+  BOOST_CHECK(via::http::request_line::Request::ERROR_METHOD_LENGTH ==
               the_request.state());
 }
 
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(InValidUri4)
   BOOST_CHECK(!the_request.parse(next, request_data.end()));
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
 
-  BOOST_CHECK(via::http::request_line::REQ_ERROR_URI_LENGTH ==
+  BOOST_CHECK(via::http::request_line::Request::ERROR_URI_LENGTH ==
               the_request.state());
 }
 
@@ -637,7 +637,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  bool complete (rx_state == RX_VALID);
+  bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -655,13 +655,13 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data2("ET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   next = request_data2.begin();
   rx_state = the_request_receiver.receive(next, request_data2.end());
-  bool complete (rx_state == RX_VALID);
+  bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -679,7 +679,7 @@ BOOST_AUTO_TEST_CASE(InValidGet1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(ValidPostQt1)
@@ -690,7 +690,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -704,13 +704,13 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_INCOMPLETE);
+  ok = (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string body_data("abcdefghijklmnopqrstuvwxyz");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_VALID);
+  bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -729,7 +729,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -743,7 +743,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_INCOMPLETE);
+  ok = (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -754,23 +754,23 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_INCOMPLETE);
+  bool complete (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
   rx_state = the_request_receiver.receive(next, body_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
   rx_state = the_request_receiver.receive(next, body_data4.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_CASE(ValidPostChunk2)
@@ -783,7 +783,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -797,7 +797,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_VALID);
+  ok = (rx_state == Rx::VALID);
   BOOST_CHECK(ok);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -808,23 +808,23 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  bool complete (rx_state == RX_CHUNK);
+  bool complete (rx_state == Rx::CHUNK);
   BOOST_CHECK(complete);
 
   std::string body_data2("24\r\n0123456789abcdefghijkl");
   next = body_data2.begin();
   rx_state = the_request_receiver.receive(next, body_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   std::string body_data3("mnopqrstuvwxyz\r\n");
   next = body_data3.begin();
   rx_state = the_request_receiver.receive(next, body_data3.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string body_data4("0\r\n\r\n");
   next = body_data4.begin();
   rx_state = the_request_receiver.receive(next, body_data4.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 }
 
 BOOST_AUTO_TEST_CASE(ValidPostChunk3)
@@ -838,7 +838,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state
       (the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -853,7 +853,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_EXPECT_CONTINUE);
+  ok = (rx_state == Rx::EXPECT_CONTINUE);
   BOOST_CHECK(ok);
   BOOST_CHECK(!the_request_receiver.is_head());
 
@@ -863,7 +863,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\n");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   rx_chunk<std::string> chunk(the_request_receiver.chunk());
   BOOST_CHECK_EQUAL(chunk_tx_data, chunk.data());
@@ -877,7 +877,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -885,7 +885,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
   request_data += "Content-Length: 4z\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_INVALID);
+  ok = (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
 }
 
@@ -897,7 +897,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -911,7 +911,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_INVALID);
+  ok = (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
 }
 
@@ -923,7 +923,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -937,7 +937,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   request_data += "User-Agent: Mozilla/5.0\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  ok = (rx_state == RX_VALID);
+  ok = (rx_state == Rx::VALID);
   BOOST_CHECK(ok);
 
   BOOST_CHECK_EQUAL(the_request_receiver.body().size(),
@@ -950,7 +950,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
   // std::cout << "rx_state: " << rx_state;
-  ok = (rx_state == RX_INVALID);
+  ok = (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
 }
 
@@ -962,7 +962,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   // invalid character in Content-Length
@@ -977,7 +977,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
@@ -989,7 +989,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 25, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -1003,7 +1003,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(InValidPostChunk1)
@@ -1016,7 +1016,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
-  bool ok (rx_state == RX_INCOMPLETE);
+  bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
 
   std::string request_data
@@ -1030,7 +1030,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   next = request_data.begin();
   rx_state = the_request_receiver.receive(next, request_data.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   rx_request const& the_request(the_request_receiver.request());
   BOOST_CHECK_EQUAL("POST", the_request.method().c_str());
@@ -1040,7 +1040,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   std::string body_data("1a\r\nabcdefghijklmnopqrstuvwxyz\r\r");
   next = body_data.begin();
   rx_state = the_request_receiver.receive(next, body_data.end());
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(InValidPostChunk2)
@@ -1078,11 +1078,11 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
       (true, 8, 8, 1024, 1024, 100, 8190, 40, 1048576);
   the_request_receiver.set_concatenate_chunks(true);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::PAYLOAD_TOO_LARGE);
 }
@@ -1097,7 +1097,7 @@ BOOST_AUTO_TEST_CASE(ValidHeadRequest1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   BOOST_CHECK_EQUAL("GET", the_request_receiver.request().method());
   BOOST_CHECK(the_request_receiver.is_head());
@@ -1114,7 +1114,7 @@ BOOST_AUTO_TEST_CASE(ValidHeadRequest2)
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   the_request_receiver.set_translate_head(false);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   BOOST_CHECK_EQUAL("HEAD", the_request_receiver.request().method());
   BOOST_CHECK(the_request_receiver.is_head());
@@ -1130,7 +1130,7 @@ BOOST_AUTO_TEST_CASE(InValidUriLength1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 16, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::REQUEST_URI_TOO_LONG);
@@ -1146,7 +1146,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::LENGTH_REQUIRED);
@@ -1162,7 +1162,7 @@ BOOST_AUTO_TEST_CASE(ValidTrace1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::METHOD_NOT_ALLOWED);
@@ -1177,7 +1177,7 @@ BOOST_AUTO_TEST_CASE(ValidTrace2)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::METHOD_NOT_ALLOWED);
@@ -1193,7 +1193,7 @@ BOOST_AUTO_TEST_CASE(InValidTrace1)
   request_receiver<std::string> the_request_receiver
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
-  BOOST_CHECK(rx_state == RX_INVALID);
+  BOOST_CHECK(rx_state == Rx::INVALID);
 
   BOOST_CHECK(the_request_receiver.response_code() ==
               via::http::response_status::code::BAD_REQUEST);
@@ -1219,7 +1219,7 @@ BOOST_AUTO_TEST_CASE(LoopbackGet1)
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
 
-  bool ok (rx_state == RX_VALID);
+  bool ok (rx_state == Rx::VALID);
   BOOST_CHECK(ok);
 
   rx_request const& the_request(the_request_receiver.request());
@@ -1242,12 +1242,12 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = request_body1.begin();
   rx_state = the_request_receiver.receive(iter, request_body1.end());
   BOOST_CHECK(iter == request_body1.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   // The second request
   std::string request_body2("9876543210abcdefghijklmnopqrstuvwxyz0123456789");
@@ -1262,12 +1262,12 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
   the_request_receiver.clear();
   rx_state = the_request_receiver.receive(iter, request_data2.end());
   BOOST_CHECK(iter == request_data2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = request_body2.begin();
   rx_state = the_request_receiver.receive(iter, request_body2.end());
   BOOST_CHECK(iter == request_body2.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackPut2)
@@ -1295,13 +1295,13 @@ BOOST_AUTO_TEST_CASE(LoopbackPut2)
       (true, 8, 8, 1024, 1024, 100, 8190, 1048576, 1048576);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   // reset the receiver
   the_request_receiver.clear();
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter == request_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackPost1)
@@ -1320,7 +1320,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
   chunk_header chunk_header1(chunk_body1.size());
@@ -1330,12 +1330,12 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   iter = http_chunk_1.begin();
   rx_state = the_request_receiver.receive(iter, http_chunk_1.end());
   BOOST_CHECK(iter == http_chunk_1.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = chunk_body1.begin();
   rx_state = the_request_receiver.receive(iter, chunk_body1.end());
   BOOST_CHECK(iter == chunk_body1.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
   chunk_header chunk_header2(chunk_body2.size());
@@ -1345,12 +1345,12 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   iter = http_chunk_2.begin();
   rx_state = the_request_receiver.receive(iter, http_chunk_2.end());
   BOOST_CHECK(iter == http_chunk_2.end());
-  BOOST_CHECK(rx_state == RX_INCOMPLETE);
+  BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
   iter = chunk_body2.begin();
   rx_state = the_request_receiver.receive(iter, chunk_body2.end());
   BOOST_CHECK(iter == chunk_body2.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_ext("chunk extension");
   std::string chunk_trailer("chunk: trailer");
@@ -1362,7 +1362,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   rx_state = the_request_receiver.receive(iter, http_chunk_3.end());
   BOOST_CHECK(iter == http_chunk_3.end());
 //  std::cout << "rx_state; " << rx_state << std::endl;
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 }
 
 BOOST_AUTO_TEST_CASE(LoopbackPost2)
@@ -1401,24 +1401,24 @@ BOOST_AUTO_TEST_CASE(LoopbackPost2)
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter != request_buffer.end());
-  BOOST_CHECK(rx_state == RX_CHUNK);
+  BOOST_CHECK(rx_state == Rx::CHUNK);
 
   the_request_receiver.clear();
   rx_state = the_request_receiver.receive(iter, request_buffer.end());
   BOOST_CHECK(iter == request_buffer.end());
-  BOOST_CHECK(rx_state == RX_VALID);
+  BOOST_CHECK(rx_state == Rx::VALID);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
