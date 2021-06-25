@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2019 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -84,7 +84,7 @@ namespace via
         {
         case RESP_HTTP_H:
           // Ignore leading whitespace
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
           {
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
@@ -159,7 +159,7 @@ namespace via
           break;
 
         case RESP_HTTP_WS:
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
           {
             ws_count_ = 1;
             state_ = RESP_STATUS;
@@ -180,7 +180,7 @@ namespace via
               return false;
             }
           }
-          else if (is_space_or_tab(c))
+          else if (std::isblank(c))
           {
             if (status_read_)
             {
@@ -205,7 +205,7 @@ namespace via
           if (!is_end_of_line(c))
           {
             // Ignore leading whitespace
-            if (reason_phrase_.empty() && is_space_or_tab(c))
+            if (reason_phrase_.empty() && std::isblank(c))
             {
               // but only upto to a limit!
               if (++ws_count_ > max_whitespace_)
@@ -488,7 +488,7 @@ namespace via
       std::string to_string() const
       {
         std::string output(http_version(major_version_, minor_version_));
-        output += ' ' + to_dec_string(status_)
+        output += ' ' + std::to_string(status_)
                 + ' ' + reason_phrase_
                 + CRLF;
         return output;

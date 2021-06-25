@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2013-2021 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -21,13 +21,6 @@ BOOST_AUTO_TEST_CASE(EndOfLine)
   BOOST_CHECK(is_end_of_line('\r'));
   BOOST_CHECK(is_end_of_line('\n'));
   BOOST_CHECK(!is_end_of_line('\t'));
-}
-
-BOOST_AUTO_TEST_CASE(SpaceOrTab)
-{
-  BOOST_CHECK(is_space_or_tab(' '));
-  BOOST_CHECK(is_space_or_tab('\t'));
-  BOOST_CHECK(!is_space_or_tab('\r'));
 }
 
 BOOST_AUTO_TEST_CASE(ValidSeparators1)

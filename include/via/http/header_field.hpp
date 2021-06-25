@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2019 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -150,7 +150,7 @@ namespace via
       /// The header field seperator, colon space.
       constexpr char SEPARATOR[] {": "};
 
-      /// The value to use for chunked tranfer encoding.
+      /// The value to use for chunked transfer encoding.
       constexpr char CHUNKED[] {"Chunked"};
 
       /// Ids for the standard headers defined in RFC2616.
@@ -395,7 +395,7 @@ namespace via
       inline std::string content_length(size_t size)
       {
         return std::string(HEADER_CONTENT_LENGTH) + SEPARATOR
-             + to_dec_string(size) + CRLF;
+             + std::to_string(size) + CRLF;
       }
 
       /// An http transfer encoding header line containing "Chunked".

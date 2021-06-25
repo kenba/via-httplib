@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2019 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -57,7 +57,7 @@ namespace via
       size_t length_;         ///< the length of the chunk header in bytes
       size_t ws_count_;       ///< the current whitespace count
       std::string hex_size_;  ///< the chunk size hex string
-      std::string extension_; ///< the chunk extesion (if any)
+      std::string extension_; ///< the chunk extension (if any)
       Chunk state_;           ///< the current parsing state
       bool size_read_;        ///< true if the chunk size was read
       bool valid_;            ///< true if a chunk header is valid
@@ -77,7 +77,7 @@ namespace via
         {
         case CHUNK_SIZE_LS:
           // Ignore leading whitespace
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
           {
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
@@ -90,7 +90,7 @@ namespace via
           }
           else
             state_ = CHUNK_SIZE;
-          [[fallthrough]]; // intentional fall-through
+          [[fallthrough]];
 
         case CHUNK_SIZE:
           if (std::isxdigit (c))
@@ -140,7 +140,7 @@ namespace via
 
         case CHUNK_EXTENSION_LS:
           // Ignore leading whitespace
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
           {
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
@@ -150,7 +150,7 @@ namespace via
           }
           else
             state_ = CHUNK_EXTENSION;
-          [[fallthrough]]; // intentional fall-through
+          [[fallthrough]];
 
         case CHUNK_EXTENSION:
           if (!is_end_of_line(c))
@@ -247,7 +247,7 @@ namespace via
 
       /// Parse an http 1.1 chunk size line
       /// @retval iter to an iterator to the start of the http chunk.
-      /// If parsed sucessfully, it will refer to the start of the data.
+      /// If parsed successfully, it will refer to the start of the data.
       /// @param end the end of the buffer.
       /// @return true if parsed ok false otherwise.
       template<typename ForwardIterator>

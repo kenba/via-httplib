@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2019 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -35,19 +35,6 @@ namespace via
     /// @return true if character is CR or LF, false otherwise.
     constexpr bool is_end_of_line(char c) noexcept
     { return ('\r' == c) || ('\n' == c); }
-
-    /// Test whether a character is a space or tab character.
-    /// Note: equivalent to C++11 std::isblank in <cctype>
-    /// @param c the character
-    /// @return true if character is space or tab, false otherwise.
-    constexpr bool is_space_or_tab(char c) noexcept
-    { return (' ' == c) || ('\t' == c); }
-
-    /// Test whether a character is a control character.
-    /// @param c the character
-    /// @return true if character is control character, false otherwise.
-    constexpr bool is_ctl(char c) noexcept
-    { return ((0 <= c) && (31 >= c)) || (127 ==c); }
 
     /// Test whether a character is a separator character.
     /// @param c the character
@@ -129,13 +116,13 @@ namespace via
     }
 
     /// Test whether a character is a token character.
-    /// i.e. not a control or separator character.
+    /// i.e. not a control or a separator character.
     /// @param c the character
     /// @return true if character is a token character, false otherwise.
     inline bool is_token(char c) noexcept
-    { return !is_ctl(c) && !is_separator(c); }
+    { return !std::iscntrl(c) && !is_separator(c); }
 
-    /// Convert a digit charcter to an integer.
+    /// Convert a digit character to an integer.
     /// @pre the character must be a valid digit character.
     /// @param c the character
     /// @return the integer equivalent of the character
@@ -148,15 +135,14 @@ namespace via
     /// @return the http string for the given version.
     inline std::string http_version(char major_version, char minor_version)
     {
-      std::string output("HTTP/");
-      output.push_back(major_version);
-      output.push_back('.');
-      output.push_back(minor_version);
+      std::string output("HTTP/0.0");
+      output[5] = major_version;
+      output[7] = minor_version;
       return output;
     }
 
     /// Convert a string representing a hexadecimal number to an unsigned int.
-    /// @param hex_string the string containing a vald hexadecimal number
+    /// @param hex_string the string containing a valid hexadecimal number
     /// @return the number represented by the string, -1 if invalid.
     inline std::ptrdiff_t from_hex_string(std::string_view hex_string) noexcept
     {
@@ -191,7 +177,7 @@ namespace via
     }
 
     /// Convert a string representing a decimal number to an unsigned int.
-    /// @param dec_string the string containing a vald decimal number
+    /// @param dec_string the string containing a valid decimal number
     /// @return the number represented by the string, -1 if invalid.
     inline std::ptrdiff_t from_dec_string(std::string_view dec_string) noexcept
     {
@@ -214,12 +200,6 @@ namespace via
       else
         return -1;
     }
-
-    /// Convert an int into a decimal string.
-    /// @param number to be represented
-    /// @return the string containing the number in decimal.
-    inline std::string to_dec_string(size_t number)
-    { return std::to_string(number); }
   }
 }
 

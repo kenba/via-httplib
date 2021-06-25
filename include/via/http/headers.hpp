@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2019 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -76,7 +76,7 @@ namespace via
       /// @retval state the current state of the parser.
       bool parse_char(char c)
       {
-        // Ensure that the overall header length is within limitts
+        // Ensure that the overall header length is within limits
         if (++length_ > max_line_length_)
           state_ = HEADER_ERROR_LENGTH;
 
@@ -93,7 +93,7 @@ namespace via
 
         case HEADER_VALUE_LS:
           // Ignore leading whitespace
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
             {
@@ -199,7 +199,7 @@ namespace via
             return false;
           else if (HEADER_VALID == state_)
           { // determine whether the next line is a continuation header
-            if ((iter != end) && is_space_or_tab(*iter))
+            if ((iter != end) && std::isblank(*iter))
             {
               value_.push_back(' ');
               state_ = HEADER_VALUE_LS;

@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2018 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -92,7 +92,7 @@ namespace via
             }
           }
           // If this char is whitespace and method has been read
-          else if (is_space_or_tab(c) && !method_.empty())
+          else if (std::isblank(c) && !method_.empty())
           {
             ws_count_ = 1;
             state_ = REQ_URI;
@@ -104,7 +104,7 @@ namespace via
         case REQ_URI:
           if (is_end_of_line(c))
             return false;
-          else if (is_space_or_tab(c))
+          else if (std::isblank(c))
           {
             // Ignore leading whitespace
             // but only upto to a limit!
@@ -133,7 +133,7 @@ namespace via
 
         case REQ_HTTP_H:
           // Ignore leading whitespace
-          if (is_space_or_tab(c))
+          if (std::isblank(c))
           {
             // but only upto to a limit!
             if (++ws_count_ > max_whitespace_)
