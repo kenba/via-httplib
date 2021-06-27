@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2015-2021 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -49,7 +49,7 @@ namespace
     return output;
   }
 
-  tx_response test_route1(rx_request const&, //request,
+  tx_response test_route1(rx_request<> const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -62,7 +62,7 @@ namespace
     return tx_response(response_status::code::OK);
   }
 
-  tx_response test_route2(rx_request const&, //request,
+  tx_response test_route2(rx_request<> const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -75,7 +75,7 @@ namespace
     return tx_response(response_status::code::OK);
   }
 
-  tx_response test_route3(rx_request const&, //request,
+  tx_response test_route3(rx_request<> const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -88,7 +88,7 @@ namespace
     return tx_response(response_status::code::NOT_IMPLEMENTED);
   }
 
-  tx_response test_route4(rx_request const&, //request,
+  tx_response test_route4(rx_request<> const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(FailedRouteTest1)
   std::string request_data(get_bad_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(FailedRouteTest2)
   std::string request_data(post_name_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(SimpleRouteTest1)
   std::string request_data(get_name_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(SimpleRouteTest2)
   std::string request_data(put_name_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(SimpleRouteTest3)
   std::string request_data(get_customer_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(ComplexRouteTest1)
   std::string request_data(get_customer_name_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(ComplexRouteTest2)
   std::string request_data(get_name_address_request);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string data;

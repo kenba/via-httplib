@@ -24,43 +24,47 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class chunk_header
     /// The HTTP header for a data chunk.
+    /// @tparam MAX_CHUNK_SIZE the maximum size of a response chunk:
+    /// default LONG_MAX, max LONG_MAX.
+    /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
+    /// default 65534, min 1, max 65534.
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
+    /// whitespace characters allowed in a request: default 254, min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
     //////////////////////////////////////////////////////////////////////////
+    template <size_t         MAX_CHUNK_SIZE       = 1048576,
+              unsigned short MAX_LINE_LENGTH      = 1024,              
+              unsigned char  MAX_WHITESPACE_CHARS = 8,
+              bool           STRICT_CRLF          = true>
     class chunk_header
     {
     public:
 
       /// @enum Chunk the parsing state of the chunk header parser.
-      enum Chunk
+      enum class Chunk
       {
-        CHUNK_SIZE_LS,      ///< leading white space
-        CHUNK_SIZE,         ///< the chunk size hex text
-        CHUNK_EXTENSION_LS, ///< chunk extension leading white space
-        CHUNK_EXTENSION,    ///< the chunk extension
-        CHUNK_LF,           ///< the line feed
-        CHUNK_VALID,        ///< the chunk header is valid
-        CHUNK_ERROR_LENGTH, ///< the header is longer than max_line_length_
-        CHUNK_ERROR_CRLF,   ///< strict_crlf_ is true and LF was received without CR
-        CHUNK_ERROR_WS,     ///< the whitespace is longer than max_whitespace_
-        CHUNK_ERROR_SIZE    ///< the chunk size is greater than max_chunk_size_
+        SIZE_LS,      ///< leading white space
+        SIZE,         ///< the chunk size hex text
+        EXTENSION_LS, ///< chunk extension leading white space
+        EXTENSION,    ///< the chunk extension
+        LF,           ///< the line feed
+        VALID,        ///< the chunk header is valid
+        ERROR_LENGTH, ///< the header is longer than MAX_LINE_LENGTH
+        ERROR_CRLF,   ///< STRICT_CRLF is true and LF was received without CR
+        ERROR_WS,     ///< the whitespace is longer than MAX_WHITESPACE_CHARS
+        ERROR_SIZE    ///< the chunk size is greater than MAX_CHUNK_SIZE
       };
 
     private:
 
-      /// Parser parameters
-      bool           strict_crlf_;     ///< enforce strict parsing of CRLF
-      unsigned char  max_whitespace_;  ///< the max no of consectutive whitespace characters.
-      unsigned short max_line_length_; ///< the max length of a field line
-      size_t         max_chunk_size_;  ///< the maximum size of a chunk body
-
-      /// Chunk information
-      size_t size_;           ///< the size of the chunk in bytes
-      size_t length_;         ///< the length of the chunk header in bytes
-      size_t ws_count_;       ///< the current whitespace count
-      std::string hex_size_;  ///< the chunk size hex string
-      std::string extension_; ///< the chunk extension (if any)
-      Chunk state_;           ///< the current parsing state
-      bool size_read_;        ///< true if the chunk size was read
-      bool valid_;            ///< true if a chunk header is valid
+      size_t size_ { 0 };              ///< the size of the chunk in bytes
+      size_t length_ { 0 };            ///< the length of the chunk header in bytes
+      size_t ws_count_ { 0 };          ///< the current whitespace count
+      std::string hex_size_ {};        ///< the chunk size hex string
+      std::string extension_ {};       ///< the chunk extension (if any)
+      Chunk state_ { Chunk::SIZE_LS }; ///< the current parsing state
+      bool size_read_ { false };       ///< true if the chunk size was read
+      bool valid_ { false };           ///< true if a chunk header is valid
 
       /// Parse an individual character.
       /// @param c the current character to be parsed.
@@ -70,36 +74,36 @@ namespace via
         static constexpr size_t MAX_SIZE_DIGITS(16); // enough for a 64 bit number
 
         // Ensure that the overall header length is within limits
-        if (++length_ > max_line_length_)
-          state_ = CHUNK_ERROR_LENGTH;
+        if (++length_ > MAX_LINE_LENGTH)
+          state_ = Chunk::ERROR_LENGTH;
 
         switch (state_)
         {
-        case CHUNK_SIZE_LS:
+        case Chunk::SIZE_LS:
           // Ignore leading whitespace
           if (std::isblank(c))
           {
             // but only upto to a limit!
-            if (++ws_count_ > max_whitespace_)
+            if (++ws_count_ > MAX_WHITESPACE_CHARS)
             {
-              state_ = CHUNK_ERROR_WS;
+              state_ = Chunk::ERROR_WS;
               return false;
             }
             else
               break;
           }
           else
-            state_ = CHUNK_SIZE;
+            state_ = Chunk::SIZE;
           [[fallthrough]];
 
-        case CHUNK_SIZE:
+        case Chunk::SIZE:
           if (std::isxdigit (c))
           {
             hex_size_.push_back(c);
             // limit the length of the hex string
             if (hex_size_.size() > MAX_SIZE_DIGITS)
             {
-              state_ = CHUNK_ERROR_SIZE;
+              state_ = Chunk::ERROR_SIZE;
               return false;
             }
           }
@@ -109,27 +113,27 @@ namespace via
             {
               size_ = from_hex_string(hex_size_);
               size_read_ = true;
-              if (size_ > max_chunk_size_)
+              if (size_ > MAX_CHUNK_SIZE)
               {
-                state_ = CHUNK_ERROR_SIZE;
+                state_ = Chunk::ERROR_SIZE;
                 return false;
               }
 
               if (';' == c)
               {
                 ws_count_ = 0;
-                state_ = CHUNK_EXTENSION_LS;
+                state_ = Chunk::EXTENSION_LS;
               }
               else
               {
                 if ('\r' == c)
-                  state_ = CHUNK_LF;
+                  state_ = Chunk::LF;
                 else // ('\n' == c)
                 {
-                  if (strict_crlf_)
+                  if (STRICT_CRLF)
                     return false;
                   else
-                    state_ = CHUNK_VALID;
+                    state_ = Chunk::VALID;
                 }
               }
             }
@@ -138,40 +142,40 @@ namespace via
           }
           break;
 
-        case CHUNK_EXTENSION_LS:
+        case Chunk::EXTENSION_LS:
           // Ignore leading whitespace
           if (std::isblank(c))
           {
             // but only upto to a limit!
-            if (++ws_count_ > max_whitespace_)
+            if (++ws_count_ > MAX_WHITESPACE_CHARS)
               return false;
             else
               break;
           }
           else
-            state_ = CHUNK_EXTENSION;
+            state_ = Chunk::EXTENSION;
           [[fallthrough]];
 
-        case CHUNK_EXTENSION:
+        case Chunk::EXTENSION:
           if (!is_end_of_line(c))
             extension_.push_back(c);
           else if ('\r' == c)
-            state_ = CHUNK_LF;
+            state_ = Chunk::LF;
           else // ('\n' == c)
           {
-            if (strict_crlf_)
+            if (STRICT_CRLF)
             {
-              state_ = CHUNK_ERROR_CRLF;
+              state_ = Chunk::ERROR_CRLF;
               return false;
             }
             else
-              state_ = CHUNK_VALID;
+              state_ = Chunk::VALID;
           }
           break;
 
-        case CHUNK_LF:
+        case Chunk::LF:
           if ('\n' == c)
-            state_ = CHUNK_VALID;
+            state_ = Chunk::VALID;
           else
             return false;
           break;
@@ -188,34 +192,8 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Constructor.
-      /// Sets the parser parameters and all member variables to their initial
-      /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF.
-      /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request: min 1, max 254.
-      /// @param max_line_length the maximum length of an HTTP chunk header
-      /// field line: max 65534.
-      /// @param max_chunk_size the maximum size of the chunk data:
-      /// max 4 billion
-      explicit chunk_header(bool           strict_crlf,
-                            unsigned char  max_whitespace,
-                            unsigned short max_line_length,
-                            size_t         max_chunk_size) :
-        strict_crlf_(strict_crlf),
-        max_whitespace_(max_whitespace),
-        max_line_length_(max_line_length),
-        max_chunk_size_(max_chunk_size),
-
-        size_(0),
-        length_(0),
-        ws_count_(0),
-        hex_size_(""),
-        extension_(""),
-        state_(CHUNK_SIZE_LS),
-        size_read_(false),
-        valid_(false)
-      {}
+      /// Default Constructor.
+      chunk_header() = default;
 
       /// Clear the chunk_header.
       /// Sets all member variables to their initial state.
@@ -226,7 +204,7 @@ namespace via
         ws_count_ = 0;
         hex_size_.clear();
         extension_.clear();
-        state_ = CHUNK_SIZE_LS;
+        state_ = Chunk::SIZE_LS;
         size_read_ =  false;
         valid_ =  false;
       }
@@ -253,21 +231,16 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        while ((iter != end) && (CHUNK_VALID != state_))
+        while ((iter != end) && (Chunk::VALID != state_))
         {
           char c(*iter++);
           if (!parse_char(c))
             return false;
         }
 
-        valid_ = (CHUNK_VALID == state_);
+        valid_ = (Chunk::VALID == state_);
         return valid_;
       }
-
-      /// Accessor for the strict crlf parsing state.
-      /// @return the strict_crlf_ state.
-      bool strict_crlf() const noexcept
-      { return strict_crlf_; }
 
       /// Accessor for the chunk size.
       /// @return the chunk size in bytes.
@@ -337,49 +310,55 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class rx_chunk
     /// A class to receive an HTTP chunk.
+    /// @tparam MAX_CHUNK_SIZE the maximum size of the chunk data:
+    /// max 4 billion
+    /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
+    /// max 65534.
+    /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+    /// fields: max 4 billion.
+    /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP chunk header
+    /// field line: max 65534.
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container>
-    class rx_chunk : public chunk_header
+    template <typename Container,
+              size_t         MAX_CHUNK_SIZE,
+              unsigned short MAX_HEADER_NUMBER,
+              size_t         MAX_HEADER_LENGTH,
+              unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
+    class rx_chunk : public chunk_header<MAX_CHUNK_SIZE,
+                                          MAX_LINE_LENGTH,
+                                          MAX_WHITESPACE_CHARS,
+                                          STRICT_CRLF>
     {
-      Container data_;           ///< the data contained in the chunk
-      message_headers trailers_; ///< the HTTP field headers for the last chunk
-      bool valid_;               ///< true if the chunk is valid
+      using MessageHeaders = message_headers<MAX_HEADER_NUMBER,
+                                             MAX_HEADER_LENGTH,
+                                             MAX_LINE_LENGTH,
+                                             MAX_WHITESPACE_CHARS,
+                                             STRICT_CRLF>;
+
+      using ChunkHeader = chunk_header<MAX_CHUNK_SIZE,
+                                       MAX_LINE_LENGTH,
+                                       MAX_WHITESPACE_CHARS,
+                                       STRICT_CRLF>;
+
+      Container data_ {};           ///< the data contained in the chunk
+      MessageHeaders trailers_ {}; ///< the HTTP field headers for the last chunk
+      bool valid_ { false };        ///< true if the chunk is valid
 
     public:
 
-      /// Constructor.
-      /// Sets the parser parameters and all member variables to their initial
-      /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF.
-      /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request: min 1, max 254.
-      /// @param max_line_length the maximum length of an HTTP chunk header
-      /// field line: max 65534.
-      /// @param max_chunk_size the maximum size of the chunk data:
-      /// max 4 billion
-      /// @param max_header_number the maximum number of HTTP header field lines:
-      /// max 65534.
-      /// @param max_header_length the maximum cumulative length the HTTP header
-      /// fields: max 4 billion.
-      explicit rx_chunk(bool           strict_crlf,
-                        unsigned char  max_whitespace,
-                        unsigned short max_line_length,
-                        size_t         max_chunk_size,
-                        unsigned short max_header_number,
-                        size_t         max_header_length) :
-        chunk_header(strict_crlf, max_whitespace, max_line_length,
-                     max_chunk_size),
-        data_(),
-        trailers_(strict_crlf, max_whitespace, max_line_length,
-                  max_header_number, max_header_length),
-        valid_(false)
-      {}
+      /// Default Constructor.
+      rx_chunk() = default;
 
       /// clear the rx_chunk.
       /// Sets all member variables to their initial state.
       void clear() noexcept
       {
-        chunk_header::clear();
+        ChunkHeader::clear();
         data_.clear();
         trailers_.clear();
         valid_ =  false;
@@ -389,7 +368,7 @@ namespace via
       /// @param other the other rx_chunk
       void swap(rx_chunk& other) noexcept
       {
-        chunk_header::swap(other);
+        ChunkHeader::swap(other);
         data_.swap(other.data_);
         trailers_.swap(other.trailers_);
         std::swap(valid_, other.valid_);
@@ -406,11 +385,11 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        if (!chunk_header::valid() && !chunk_header::parse(iter, end))
+        if (!ChunkHeader::valid() && !ChunkHeader::parse(iter, end))
           return false;
 
         // Only the last chunk has a trailer.
-        if (chunk_header::is_last())
+        if (ChunkHeader::is_last())
         {
           if (!trailers_.parse(iter, end))
             return false;
@@ -418,7 +397,7 @@ namespace via
         else
         {
           // get the data and the CRLF after it
-          std::ptrdiff_t data_required(static_cast<std::ptrdiff_t>(size()) -
+          std::ptrdiff_t data_required(static_cast<std::ptrdiff_t>(ChunkHeader::size()) -
                                        static_cast<std::ptrdiff_t>(data_.size()));
           std::ptrdiff_t rx_size(std::distance(iter, end));
 
@@ -437,7 +416,7 @@ namespace via
               ++iter;
             else
             { // enforce if strict
-              if (strict_crlf())
+              if (STRICT_CRLF)
                 return false;
             }
 
@@ -461,7 +440,7 @@ namespace via
 
       /// Accessor for the chunk message trailers.
       /// @return a constant reference to the trailer message_headers
-      const message_headers& trailers() const noexcept
+      const MessageHeaders& trailers() const noexcept
       { return trailers_; }
 
       /// Accessor for the chunk message data.

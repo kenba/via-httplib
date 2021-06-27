@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Via Technology Ltd. All Rights Reserved.
+// Copyright (c) 2015-2021 Via Technology Ltd. All Rights Reserved.
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(FailAuthentication1)
   std::string request_data(request_header);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(FailAuthentication2)
   std::string request_data(request_header);
   request_data += basic_auth + CRLF + CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(FailAuthentication3)
   std::string request_data(request_header);
   request_data += basic_auth + credentials3 + CRLF + CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(FailAuthentication4)
   std::string request_data(request_header);
   request_data += basic_auth + credentials_bad + CRLF + CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(FailAuthentication5)
   std::string request_data(request_header);
   request_data += CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication3.authenticate(request));
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(PassAuthentication1)
   std::string request_data(request_header);
   request_data += basic_auth + credentials1 + CRLF + CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(PassAuthentication2)
   request_data.append(CRLF);
   request_data.append(CRLF);
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication1.authenticate(request));
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(PassAuthentication3)
   std::string request_data(request_header);
   request_data += basic_auth + credentials3 + CRLF + CRLF;
   std::string::iterator next(request_data.begin());
-  rx_request request(false, 8, 8, 1024, 1024, 100, 8190);
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> request;
   BOOST_CHECK(request.parse(next, request_data.end()));
 
   std::string response(basic_authentication2.authenticate(request));

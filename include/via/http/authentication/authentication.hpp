@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -39,9 +39,9 @@ namespace via
       protected:
 
         /// Pure virtual function to authenticate a request
-        /// @param headers the request message_headers.
+        /// @param header_fields the request message header fields.
         /// @return true if valid, false otherwise.
-        virtual bool is_valid(message_headers const& headers) const = 0;
+        virtual bool is_valid(StringMap const& header_fields) const = 0;
 
         /// The value to be sent in the authenticate response header.
         /// @return the authenticate string.
@@ -65,9 +65,10 @@ namespace via
         /// value for the authenticate response header.
         /// @param request the input request to be authenticated.
         /// @return an empty string if valid or authenticate_value() if invalid.
-        std::string authenticate(rx_request const& request) const
+        template <typename R>
+        std::string authenticate(R const& request) const
         {
-          if (is_valid(request.headers()))
+          if (is_valid(request.headers().fields()))
             return std::string("");
           else
             return authenticate_value();

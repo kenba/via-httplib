@@ -27,7 +27,18 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class request_line
     /// The HTTP request start line.
+    /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
+    /// default 1024, min 1, max 4 billion.
+    /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
+    /// default 8, min 1, max 254.
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// characters allowed in a request: default 8, min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
     //////////////////////////////////////////////////////////////////////////
+    template <size_t         MAX_URI_LENGTH,
+              unsigned char  MAX_METHOD_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class request_line
     {
     public:
@@ -47,23 +58,17 @@ namespace via
         CR,                  ///< the carriage return (if any)
         LF,                  ///< the line feed
         VALID,               ///< the request line is valid
-        ERROR_CRLF,          ///< strict_crlf_ is true and LF was received without CR
-        ERROR_WS,            ///< the whitespace is longer than max_whitespace_
-        ERROR_METHOD_LENGTH, ///< the method name is longer than max_method_length_
-        ERROR_URI_LENGTH     ///< then uri is longer than max_uri_length_
+        ERROR_CRLF,          ///< STRICT_CRLF is true and LF was received without CR
+        ERROR_WS,            ///< the whitespace is longer than MAX_WHITESPACE_CHARS
+        ERROR_METHOD_LENGTH, ///< the method name is longer than MAX_METHOD_LENGTH
+        ERROR_URI_LENGTH     ///< then uri is longer than MAX_URI_LENGTH
       };
 
     private:
 
-      // Parser parameters
-      bool          strict_crlf_ { false };    ///< enforce strict parsing of CRLF
-      unsigned char max_whitespace_ { 8u };    ///< the max no of consectutive whitespace characters.
-      unsigned char max_method_length_ { 8u }; ///< the maximum length of a request method
-      size_t        max_uri_length_ { 1024 };  ///< the maximum length of a uri.
-
       // Request information
-      std::string method_ {};      ///< the request method
-      std::string uri_ {};         ///< the request uri
+      std::string method_ {};    ///< the request method
+      std::string uri_ {};       ///< the request uri
       char major_version_ { 0 }; ///< the HTTP major version character
       char minor_version_ { 0 }; ///< the HTTP minor version character
 
@@ -85,7 +90,7 @@ namespace via
           if (std::isupper(c))
           {
             method_.push_back(c);
-            if (method_.size() > max_method_length_)
+            if (method_.size() > MAX_METHOD_LENGTH)
             {
               state_ = Request::ERROR_METHOD_LENGTH;
               return false;
@@ -108,7 +113,7 @@ namespace via
           {
             // Ignore leading whitespace
             // but only upto to a limit!
-            if (++ws_count_ > max_whitespace_)
+            if (++ws_count_ > MAX_WHITESPACE_CHARS)
             {
               state_ = Request::ERROR_WS;
               return false;
@@ -123,7 +128,7 @@ namespace via
           else
           {
             uri_.push_back(c);
-            if (uri_.size() > max_uri_length_)
+            if (uri_.size() > MAX_URI_LENGTH)
             {
               state_ = Request::ERROR_URI_LENGTH;
               return false;
@@ -136,7 +141,7 @@ namespace via
           if (std::isblank(c))
           {
             // but only upto to a limit!
-            if (++ws_count_ > max_whitespace_)
+            if (++ws_count_ > MAX_WHITESPACE_CHARS)
             {
               state_ = Request::ERROR_WS;
               return false;
@@ -213,7 +218,7 @@ namespace via
           else
           {
             // but (if not being strict) permit just \n
-            if (!strict_crlf_ && ('\n' == c))
+            if (!STRICT_CRLF && ('\n' == c))
               state_ = Request::VALID;
             else
             {
@@ -240,31 +245,11 @@ namespace via
 
     public:
 
-      /// Default Constructor.
-      request_line() = default;
-
       ////////////////////////////////////////////////////////////////////////
       // Parsing interface.
 
-      /// Constructor.
-      /// Sets the parser parameters and all member variables to their initial
-      /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF.
-      /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request: min 1, max 254.
-      /// @param max_method_length the maximum length of an HTTP request method:
-      /// max 254.
-      /// @param max_uri_length the maximum length of an HTTP request uri:
-      /// max 4 billion.
-      request_line(bool          strict_crlf,
-                    unsigned char  max_whitespace,
-                    unsigned char  max_method_length,
-                    size_t         max_uri_length) :
-        strict_crlf_(strict_crlf),
-        max_whitespace_(max_whitespace),
-        max_method_length_(max_method_length),
-        max_uri_length_(max_uri_length)
-      {}
+      /// Default Constructor.
+      request_line() = default;
 
       /// Clear the request_line.
       /// Sets all member variables to their initial state.
@@ -298,7 +283,7 @@ namespace via
 
       /// Virtual destructor.
       /// Since the class is inherited...
-      virtual ~request_line() {}
+      virtual ~request_line() = default;
 
 #ifdef _MSC_VER
 #pragma warning( push )
@@ -395,10 +380,10 @@ namespace via
       /// @param uri the HTTP uri, default blank
       /// @param major_version default '1'
       /// @param minor_version default '1'
-      explicit request_line(std::string_view method,
-                             std::string_view uri,
-                             char major_version = '1',
-                             char minor_version = '1') :
+       request_line(std::string_view method,
+                     std::string_view uri,
+                     char major_version = '1',
+                     char minor_version = '1') :
         method_(method),
         uri_(uri),
         major_version_(major_version),
@@ -443,46 +428,50 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class rx_request
     /// A class to receive an HTTP request.
+    /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
+    /// default 1024, min 1, max 4 billion.
+    /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
+    /// default 8, min 1, max 254.
+    /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
+    /// default 100, max 65534.
+    /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+    /// fields: default 8190, max 4 billion.
+    /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
+    /// default 1024, min 1, max 65534.
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// characters allowed in a request: default 8, min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
     //////////////////////////////////////////////////////////////////////////
-    class rx_request : public request_line
+    template <size_t         MAX_URI_LENGTH       = 1024,
+              unsigned char  MAX_METHOD_LENGTH    = 8,
+              unsigned short MAX_HEADER_NUMBER    = 100,
+              size_t         MAX_HEADER_LENGTH    = 8190,
+              unsigned short MAX_LINE_LENGTH      = 1024,
+              unsigned char  MAX_WHITESPACE_CHARS = 8,
+              bool           STRICT_CRLF = true>
+    class rx_request : public request_line<MAX_URI_LENGTH,
+                                            MAX_METHOD_LENGTH,
+                                            MAX_WHITESPACE_CHARS,
+                                            STRICT_CRLF>
     {
-      message_headers headers_ {}; ///< the HTTP headers for the request
-      bool valid_ { false };              ///< true if the request is valid
+      using MessageHeaders = message_headers<MAX_HEADER_NUMBER,
+                                             MAX_HEADER_LENGTH,
+                                             MAX_LINE_LENGTH,
+                                             MAX_WHITESPACE_CHARS,
+                                             STRICT_CRLF>;
+
+      using request_ln = request_line<MAX_URI_LENGTH,
+                                      MAX_METHOD_LENGTH,                                      
+                                      MAX_WHITESPACE_CHARS,
+                                      STRICT_CRLF>;
+
+      MessageHeaders headers_ {}; ///< the HTTP headers for the request
+      bool valid_ { false };       ///< true if the request is valid
 
     public:
 
       /// Default Constructor.
       rx_request() = default;
-
-      /// Constructor.
-      /// Sets the parser parameters and all member variables to their initial
-      /// state.
-      /// @param strict_crlf enforce strict parsing of CRLF.
-      /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request:min 1, max 254.
-      /// @param max_method_length the maximum length of an HTTP request method:
-      /// min 1, max 254.
-      /// @param max_uri_length the maximum length of an HTTP request uri:
-      /// min 1, max 4 billion.
-      /// @param max_line_length the maximum length of an HTTP header field line:
-      /// min 1, max 65534.
-      /// @param max_header_number the maximum number of HTTP header field lines:
-      /// max 65534.
-      /// @param max_header_length the maximum cumulative length the HTTP header
-      /// fields: max 4 billion.
-      rx_request(bool           strict_crlf,
-                  unsigned char  max_whitespace,
-                  unsigned char  max_method_length,
-                  size_t         max_uri_length,
-                  unsigned short max_line_length,
-                  unsigned short max_header_number,
-                  size_t         max_header_length) :
-        request_line(strict_crlf, max_whitespace,
-                     max_method_length, max_uri_length),
-        headers_(strict_crlf, max_whitespace, max_line_length,
-                 max_header_number, max_header_length),
-        valid_(false)
-      {}
 
       virtual ~rx_request() {}
 
@@ -490,7 +479,7 @@ namespace via
       /// Sets all member variables to their initial state.
       void clear() noexcept
       {
-        request_line::clear();
+        request_ln::clear();
         headers_.clear();
         valid_ =  false;
       }
@@ -499,7 +488,7 @@ namespace via
       /// @param other the other rx_request
       void swap(rx_request& other) noexcept
       {
-        request_line::swap(other);
+        request_ln::swap(other);
         headers_.swap(other.headers_);
         std::swap(valid_, other.valid_);
       }
@@ -516,7 +505,7 @@ namespace via
       template<typename ForwardIterator>
       bool parse(ForwardIterator& iter, ForwardIterator end)
       {
-        if (!request_line::valid() && !request_line::parse(iter, end))
+        if (!request_ln::valid() && !request_ln::parse(iter, end))
           return false;
 
         if (!headers_.valid() && !headers_.parse(iter, end))
@@ -528,7 +517,7 @@ namespace via
 
       /// Accessor for the request message headers.
       /// @return a constant reference to the message_headers
-      const message_headers& headers() const noexcept
+      const MessageHeaders& headers() const noexcept
       { return headers_; }
 
       /// The size in the content_length header (if there is one)
@@ -552,7 +541,7 @@ namespace via
       /// @return true if it should be kept alive, false otherwise.
       bool keep_alive() const noexcept
       {
-        return !is_http_1_0_or_earlier() &&
+        return !request_ln::is_http_1_0_or_earlier() &&
                !headers_.close_connection();
       }
 
@@ -563,8 +552,8 @@ namespace via
       /// otherwise
       bool missing_host_header() const
       {
-        return major_version() == '1' &&
-               minor_version() == '1' &&
+        return request_ln::major_version() == '1' &&
+               request_ln::minor_version() == '1' &&
                headers_.find(header_field::LC_HOST).empty();
       }
 
@@ -573,27 +562,29 @@ namespace via
       /// otherwise
       bool expect_continue() const
       {
-        return !is_http_1_0_or_earlier() &&
+        return !request_ln::is_http_1_0_or_earlier() &&
                headers_.expect_continue();
       }
 
       /// Whether the request is "HEAD"
       /// @return true if the request is "HEAD"
       bool is_head() const noexcept
-      { return request_method::HEAD == method(); }
+      { return request_method::HEAD == request_ln::method(); }
 
       /// Whether the request is "TRACE"
       /// @return true if the request is "TRACE"
       bool is_trace() const noexcept
-      { return request_method::TRACE == method(); }
+      { return request_method::TRACE == request_ln::method(); }
     }; // class rx_request
 
     //////////////////////////////////////////////////////////////////////////
     /// @class tx_request
     /// A class to encode an HTTP request.
     //////////////////////////////////////////////////////////////////////////
-    class tx_request : public request_line
+    class tx_request : public request_line<1024, 8, 8, true>
     {
+      using request_ln = request_line<1024, 8, 8, true>;
+
       std::string header_string_ {}; ///< The headers as a string.
 
     public:
@@ -610,11 +601,11 @@ namespace via
       /// @param major_version default 1
       /// @param minor_version default 1
       tx_request(request_method::id method_id,
-                 std::string_view uri,
-                 std::string_view header_string = std::string_view(),
-                 char major_version = '1',
-                 char minor_version = '1') :
-        request_line(method_id, uri, major_version, minor_version),
+                  std::string_view uri,
+                  std::string_view header_string = std::string_view(),
+                  char major_version = '1',
+                  char minor_version = '1') :
+        request_ln(method_id, uri, major_version, minor_version),
         header_string_(header_string)
       {}
 
@@ -629,7 +620,7 @@ namespace via
                   std::string_view header_string = std::string_view(),
                   char major_version = '1',
                   char minor_version = '1') :
-        request_line(method, uri, major_version, minor_version),
+        request_ln(method, uri, major_version, minor_version),
         header_string_(header_string)
       {}
 
@@ -666,7 +657,7 @@ namespace via
       /// @return The http message header as a std:string.
       std::string message(size_t content_length = 0) const
       {
-        std::string output(request_line::to_string());
+        std::string output(request_ln::to_string());
         output += header_string_;
 
         // Ensure that it's got a content length header unless
@@ -686,22 +677,66 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class request_receiver
     /// A template class to receive HTTP requests and any associated data.
-    /// @param Container the type of container in which the request is held.
+    /// @tparam Container the type of container in which the request is held.
+    /// @tparam MAX_CONTENT_LENGTH the maximum size of an HTTP request body
+    /// including any chunks: default 1M, max 4 billion.
+    /// @tparam MAX_CHUNK_SIZE the maximum size of an HTTP request chunk:
+    /// default 1M, max 4 billion.
+    /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
+    /// default 1024, min 1, max 4 billion.
+    /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
+    /// default 8, min 1, max 254.
+    /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
+    /// default 100, max 65534.
+    /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+    /// fields: default 8190, max 4 billion.
+    /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
+    /// default 1024, min 1, max 65534.
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// characters allowed in a request: default 8, min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
     //////////////////////////////////////////////////////////////////////////
-    template <typename Container>
+    template <typename Container,
+              size_t         MAX_CONTENT_LENGTH   = 1048576,
+              size_t         MAX_CHUNK_SIZE       = 1048576,
+              size_t         MAX_URI_LENGTH       = 1024,
+              unsigned char  MAX_METHOD_LENGTH    = 8,
+              unsigned short MAX_HEADER_NUMBER    = 100,
+              size_t         MAX_HEADER_LENGTH    = 8190,
+              unsigned short MAX_LINE_LENGTH      = 1024,
+              unsigned char  MAX_WHITESPACE_CHARS = 8,
+              bool           STRICT_CRLF          = true>
     class request_receiver
     {
-      /// Parser parameters
-      size_t max_body_size_ { 1048576u };       ///< the maximum size of a request body.
+      using request_ln = request_line<MAX_URI_LENGTH,
+                                      MAX_METHOD_LENGTH,
+                                      MAX_WHITESPACE_CHARS,
+                                      STRICT_CRLF>;
+
+      using Request = rx_request<MAX_URI_LENGTH,
+                                 MAX_METHOD_LENGTH,
+                                 MAX_HEADER_NUMBER,
+                                 MAX_HEADER_LENGTH,
+                                 MAX_LINE_LENGTH,
+                                 MAX_WHITESPACE_CHARS,
+                                 STRICT_CRLF>;
+
+      using Chunk = rx_chunk<Container,
+                             MAX_CHUNK_SIZE,
+                             MAX_HEADER_NUMBER,
+                             MAX_HEADER_LENGTH,
+                             MAX_LINE_LENGTH,
+                             MAX_WHITESPACE_CHARS,
+                             STRICT_CRLF>;
 
       /// Behaviour
       bool   translate_head_ { true };      ///< pass a HEAD request as a GET request.
       bool   concatenate_chunks_ { true };  ///< concatenate chunk data into the body
 
       /// Request information
-      rx_request request_ {};         ///< the received request
-      rx_chunk<Container> chunk_ {};  ///< the received chunk
-      Container  body_ {};    ///< the request body or data for the last chunk
+      Request   request_ {}; ///< the received request
+      Chunk     chunk_ {};   ///< the received chunk
+      Container body_ {};    ///< the request body or data for the last chunk
       /// the appropriate response to the request:
       /// either an error code or 100 Continue.
       response_status::code response_code_{ response_status::code::NO_CONTENT };
@@ -736,44 +771,8 @@ namespace via
       /// The default maximum size of a request chunk.
       static constexpr size_t         DEFAULT_MAX_CHUNK_SIZE       = 1048576;
 
+      /// Default Constructor
       request_receiver() = default;
-
-      /// Constructor.
-      /// Sets all member variables to their initial state.
-      /// @param strict_crlf enforce strict parsing of CRLF.
-      /// @param max_whitespace the maximum number of consectutive whitespace
-      /// characters allowed in a request:min 1, max 254.
-      /// @param max_method_length the maximum length of an HTTP request method:
-      /// min 1, max 254.
-      /// @param max_uri_length the maximum length of an HTTP request uri:
-      /// min 1, max 4 billion.
-      /// @param max_line_length the maximum length of an HTTP header field line:
-      /// min 1, max 65534.
-      /// @param max_header_number the maximum number of HTTP header field lines:
-      /// max 65534.
-      /// @param max_header_length the maximum cumulative length the HTTP header
-      /// fields: max 4 billion.
-      /// @param max_body_size the maximum size of an HTTP request body:
-      /// max 4 billion.
-      /// @param max_chunk_size the maximum size of an HTTP request chunk:
-      /// max 4 billion.
-      request_receiver(bool           strict_crlf,
-                         unsigned char  max_whitespace,
-                         unsigned char  max_method_length,
-                         size_t         max_uri_length,
-                         unsigned short max_line_length,
-                         unsigned short max_header_number,
-                         size_t         max_header_length,
-                         size_t         max_body_size,
-                         size_t         max_chunk_size) :
-        max_body_size_(max_body_size),
-        translate_head_(true),
-        concatenate_chunks_(true),
-        request_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
-                 max_line_length, max_header_number, max_header_length),
-        chunk_(strict_crlf, max_whitespace, max_line_length, max_chunk_size,
-               max_header_number, max_header_length)
-      {}
 
       /// Enable whether HEAD requests are translated into GET
       /// requests for the application.
@@ -807,13 +806,13 @@ namespace via
       { return is_head_; }
 
       /// Accessor for the HTTP request header.
-      /// @return a constant reference to an rx_request.
-      rx_request const& request() const noexcept
+      /// @return a constant reference to an Request.
+      Request const& request() const noexcept
       { return request_; }
 
       /// Accessor for the received chunk.
       /// @return a constant reference to the received chunk.
-      rx_chunk<Container> const& chunk() const noexcept
+      Chunk const& chunk() const noexcept
       { return chunk_; }
 
       /// Accessor for the request body / last chunk data.
@@ -852,10 +851,10 @@ namespace via
             {
               switch (request_.state())
               {
-              case request_line::Request::ERROR_METHOD_LENGTH:
+              case request_ln::Request::ERROR_METHOD_LENGTH:
                 response_code_ = response_status::code::NOT_IMPLEMENTED;
                 break;
-              case request_line::Request::ERROR_URI_LENGTH:
+              case request_ln::Request::ERROR_URI_LENGTH:
                 response_code_ = response_status::code::REQUEST_URI_TOO_LONG;
                 break;
               default:
@@ -911,7 +910,7 @@ namespace via
             if (content_length > 0)
             {
               // test the size
-              if (content_length > static_cast<std::ptrdiff_t>(max_body_size_))
+              if (content_length > static_cast<std::ptrdiff_t>(MAX_CONTENT_LENGTH))
               {
                 response_code_ = response_status::code::PAYLOAD_TOO_LARGE;
                 clear();
@@ -1000,7 +999,7 @@ namespace via
               {
                 // Determine whether the total size of the concatenated chunks
                 // is within the maximum body size.
-                if ((body_.size() + chunk_.data().size()) > max_body_size_)
+                if ((body_.size() + chunk_.data().size()) > MAX_CONTENT_LENGTH)
                 {
                   response_code_ = response_status::code::PAYLOAD_TOO_LARGE;
                   clear();

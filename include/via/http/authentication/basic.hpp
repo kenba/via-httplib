@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2019 Ken Barker
+// Copyright (c) 2015-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -34,27 +34,22 @@ namespace via
       /// https://tools.ietf.org/html/rfc7235
       class basic : public authentication
       {
-      public:
-
-        /// A map of strings for username/password lookup
-        typedef std::unordered_map<std::string, std::string> UserPasswords;
-
-      private:
-
         /// The map of users and passwords.
-        UserPasswords user_passwords_;
+        StringMap user_passwords_;
 
       protected:
 
         /// Function to authenticate a request.
-        /// @param headers the request message_headers.
+        /// @param header_fields the request message header fields.
         /// @return true if valid, false otherwise.
-        virtual bool is_valid(message_headers const& headers) const override
+        virtual bool is_valid(StringMap const& header_fields) const override
         {
           // Does the request contain an AUTHORIZATION header?
-          std::string authorization(headers.find(header_field::id::AUTHORIZATION));
-          if (authorization.empty())
+          const auto h_iter(header_fields.find(header_field::LC_AUTHORIZATION));
+          if (h_iter == header_fields.end())
             return false;
+
+          std::string authorization(h_iter->second);
 
           // Is it Basic?
           auto basic_pos(authorization.find(BASIC));
@@ -109,12 +104,12 @@ namespace via
         /// Add a user and password to the user_passwords_ collection.
         void add_user(std::string user, std::string password)
         {
-          user_passwords_.insert(UserPasswords::value_type
+          user_passwords_.insert(StringMap::value_type
                                  (std::move(user), std::move(password)));
         }
 
         /// Accessor for the user_passwords_ collection.
-        UserPasswords const& user_passwords() const
+        StringMap const& user_passwords() const
         { return user_passwords_; }
       };
     }

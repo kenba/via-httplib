@@ -30,7 +30,7 @@ namespace via
     /// provided by HTTP request handlers.
     /// The handle_request function is the pure virtual function that must be
     /// implemented by the derived classes.
-    template <typename Container>
+    template <typename Container, typename R = rx_request<>>
     class request_handler
         : public std::enable_shared_from_this<request_handler<Container>>
     {
@@ -69,7 +69,7 @@ namespace via
       /// @param request_body the body of the HTTP request.
       /// @retval response_body the body for the HTTP response.
       /// @return the response header.
-      virtual tx_response handle_request(rx_request const& request,
+      virtual tx_response handle_request(R const& request,
                                          Container const& request_body,
                                          Container& response_body) const = 0;
 

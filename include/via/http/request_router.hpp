@@ -86,12 +86,12 @@ namespace via
     /// @class request_router
     /// The class contains the route paths to search in HTTP requests.
     /// Note: the routes are searched in the order that they are added.
-    template <typename Container>
+    template <typename Container, typename R = rx_request<>>
     class request_router : public request_handler<Container>
     {
     public:
       /// An HTTP request handler function.
-      typedef std::function<tx_response (rx_request const& request,
+      typedef std::function<tx_response (R const& request,
                                          Parameters const& parameters,
                                          Container const& data,
                                          Container& response_body)> Handler;
@@ -250,7 +250,7 @@ namespace via
       /// @retval response_body the body for the HTTP response.
       /// @return the response header from the handler or NOT_FOUND if it could
       /// not find a handler for the request.
-      virtual tx_response handle_request(rx_request const& request,
+      virtual tx_response handle_request(R const& request,
                                          Container const& request_body,
                                          Container& response_body) const
       {
