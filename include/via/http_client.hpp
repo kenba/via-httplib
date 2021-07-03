@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -33,37 +33,78 @@ namespace via
   /// @tparam Container the container to use for the tx buffer:
   /// std::vector<char> or std::string, default std::vector<char>.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char>>
+  template <typename SocketAdaptor,
+            typename Container                  = std::vector<char>,
+            size_t         MAX_BODY_SIZE        = LONG_MAX,
+            size_t         MAX_CHUNK_SIZE       = LONG_MAX,
+            unsigned short MAX_STATUS_NUMBER    = 65534,
+            unsigned short MAX_REASON_LENGTH    = 65534,
+            unsigned short MAX_HEADER_NUMBER    = 65534,
+            size_t         MAX_HEADER_LENGTH    = LONG_MAX,
+            unsigned short MAX_LINE_LENGTH      = 65534,
+            unsigned char  MAX_WHITESPACE_CHARS = 254,
+            bool           STRICT_CRLF          = false>
   class http_client : public std::enable_shared_from_this
-                                       <http_client<SocketAdaptor, Container>>
+                                       <http_client<SocketAdaptor,
+                                        Container,
+                                        MAX_BODY_SIZE,
+                                        MAX_CHUNK_SIZE,
+                                        MAX_STATUS_NUMBER,
+                                        MAX_REASON_LENGTH,
+                                        MAX_HEADER_NUMBER,
+                                        MAX_HEADER_LENGTH,
+                                        MAX_LINE_LENGTH,
+                                        MAX_WHITESPACE_CHARS,
+                                        STRICT_CRLF>>
   {
   public:
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
+    typedef http_client<SocketAdaptor,
+                            Container,
+                            MAX_BODY_SIZE,
+                            MAX_CHUNK_SIZE,
+                            MAX_STATUS_NUMBER,
+                            MAX_REASON_LENGTH,
+                            MAX_HEADER_NUMBER,
+                            MAX_HEADER_LENGTH,
+                            MAX_LINE_LENGTH,
+                            MAX_WHITESPACE_CHARS,
+                            STRICT_CRLF> this_type;
+
     /// A weak pointer to this type.
-    typedef typename std::weak_ptr<http_client<SocketAdaptor, Container>>
-                                                 weak_pointer;
+    typedef typename std::weak_ptr<this_type> weak_pointer;
 
     /// A shared pointer to this type.
-    typedef typename std::shared_ptr<http_client<SocketAdaptor, Container>>
-                                                 shared_pointer;
+    typedef typename std::shared_ptr<this_type> shared_pointer;
 
     /// The enable_shared_from_this type of this class.
-    typedef typename std::enable_shared_from_this
-                               <http_client<SocketAdaptor, Container>> enable;
+    typedef typename std::enable_shared_from_this<this_type> enable;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
     /// The type of the response_receiver.
-    typedef typename http::response_receiver<Container> http_response;
+    typedef typename http::response_receiver<Container,
+                                             MAX_BODY_SIZE,
+                                             MAX_CHUNK_SIZE,
+                                             MAX_STATUS_NUMBER,
+                                             MAX_REASON_LENGTH,
+                                             MAX_HEADER_NUMBER,
+                                             MAX_HEADER_LENGTH,
+                                             MAX_LINE_LENGTH,
+                                             MAX_WHITESPACE_CHARS,
+                                             STRICT_CRLF> http_response_rx;
+
+    /// The response type
+    typedef typename http_response_rx::Response http_response;
 
     /// The chunk type
-    typedef typename http::rx_chunk<Container> chunk_type;
+    typedef typename http_response_rx::Chunk chunk_type;
 
     /// The ResponseHandler type.
-    typedef std::function <void (http::rx_response const&, Container const&)>
+    typedef std::function <void (http_response const&, Container const&)>
       ResponseHandler;
 
     /// The ChunkHandler type.
@@ -142,22 +183,22 @@ namespace via
       Container_const_iterator end(rx_buffer_.end());
 
       // Get the receive parser for this connection
-      http::Rx rx_state(http::RX_VALID);
+      http::Rx rx_state(http::Rx::VALID);
 
       // Loop around the received buffer while there's valid data to read
-      while ((iter != end) && (rx_state != http::RX_INVALID))
+      while ((iter != end) && (rx_state != http::Rx::INVALID))
       {
         rx_state = rx_.receive(iter, end);
 
         switch (rx_state)
         {
-        case http::RX_VALID:
+        case http::Rx::VALID:
           http_response_handler_(rx_.response(), rx_.body());
           if (!rx_.response().is_chunked())
             rx_.clear();
           break;
 
-        case http::RX_CHUNK:
+        case http::Rx::CHUNK:
           if (http_chunk_handler_)
             http_chunk_handler_(rx_.chunk(), rx_.chunk().data());
 
@@ -165,7 +206,7 @@ namespace via
             rx_.clear();
           break;
 
-        case http::RX_INVALID:
+        case http::Rx::INVALID:
           if (http_invalid_handler_)
             http_invalid_handler_(rx_.response(), rx_.body());
 
@@ -378,12 +419,12 @@ namespace via
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.
-    http::rx_response const& response() const noexcept
+    http_response const& response() const noexcept
     { return rx_.response(); }
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const noexcept
+    chunk_type const& chunk() const noexcept
     { return rx_.chunk(); }
 
     /// Accessor for the body.

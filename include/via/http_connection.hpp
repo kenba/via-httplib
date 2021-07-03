@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -32,31 +32,87 @@ namespace via
   /// @see comms::connection
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor
-  /// @tparam Container the container to use for the tx buffer, default
-  /// std::vector<char>.
-  /// It must contain a contiguous array of bytes. E.g. std::string or
-  /// std::array<char, size>
+  /// @tparam SocketAdaptor the type of socket.
+  /// @tparam Container the type of container in which the request is held.
+  /// @tparam MAX_CONTENT_LENGTH the maximum size of an HTTP request body
+  /// including any chunks.
+  /// @tparam MAX_CHUNK_SIZE the maximum size of an HTTP request chunk.
+  /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri.
+  /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method.
+  /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines.
+  /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+  /// fields.
+  /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line.
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+  /// characters allowed in a request.
+  /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container>
+  template <typename SocketAdaptor,
+            typename Container,
+            size_t         MAX_CONTENT_LENGTH,
+            size_t         MAX_CHUNK_SIZE,
+            size_t         MAX_URI_LENGTH,
+            unsigned char  MAX_METHOD_LENGTH,
+            unsigned short MAX_HEADER_NUMBER,
+            size_t         MAX_HEADER_LENGTH,
+            unsigned short MAX_LINE_LENGTH,
+            unsigned char  MAX_WHITESPACE_CHARS,
+            bool           STRICT_CRLF>
   class http_connection : public std::enable_shared_from_this
-                                   <http_connection<SocketAdaptor, Container>>
+                                   <http_connection<SocketAdaptor,
+                                                    Container,
+                                                    MAX_CONTENT_LENGTH,
+                                                    MAX_CHUNK_SIZE,
+                                                    MAX_URI_LENGTH,
+                                                    MAX_METHOD_LENGTH,
+                                                    MAX_HEADER_NUMBER,
+                                                    MAX_HEADER_LENGTH,
+                                                    MAX_LINE_LENGTH,
+                                                    MAX_WHITESPACE_CHARS,
+                                                    STRICT_CRLF>>
   {
   public:
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
-    /// A weak pointer to this type.
-    typedef typename std::weak_ptr<http_connection<SocketAdaptor, Container>>
-                                                     weak_pointer;
+    typedef http_connection<SocketAdaptor,
+                            Container,
+                            MAX_CONTENT_LENGTH,
+                            MAX_CHUNK_SIZE,
+                            MAX_URI_LENGTH,
+                            MAX_METHOD_LENGTH,
+                            MAX_HEADER_NUMBER,
+                            MAX_HEADER_LENGTH,
+                            MAX_LINE_LENGTH,
+                            MAX_WHITESPACE_CHARS,
+                            STRICT_CRLF> this_type;
 
-    /// A strong pointer to this type.
-    typedef typename std::shared_ptr<http_connection<SocketAdaptor, Container>>
-                                                     shared_pointer;
+    /// A weak pointer to this type.
+    typedef typename std::weak_ptr<this_type> weak_pointer;
+
+    /// A shared pointer to this type.
+    typedef typename std::shared_ptr<this_type> shared_pointer;
 
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
+
+    /// The type of the request_receiver.
+    typedef typename http::request_receiver<Container,
+                                            MAX_CONTENT_LENGTH,
+                                            MAX_CHUNK_SIZE,
+                                            MAX_URI_LENGTH,
+                                            MAX_METHOD_LENGTH,
+                                            MAX_HEADER_NUMBER,
+                                            MAX_HEADER_LENGTH,
+                                            MAX_LINE_LENGTH,
+                                            MAX_WHITESPACE_CHARS,
+                                            STRICT_CRLF> http_request_rx;
+
+    /// The type of the http rx_request.
+    typedef typename http_request_rx::Request http_request;
+
+    /// The chunk type
+    typedef typename http_request_rx::Chunk chunk_type;
 
   private:
 
@@ -70,7 +126,7 @@ namespace via
     std::string remote_address_;
 
     /// The request receiver for this connection.
-    http::request_receiver<Container> rx_;
+    http_request_rx rx_;
 
     /// A buffer for the HTTP header of the response message.
     std::string tx_header_;
@@ -132,39 +188,11 @@ namespace via
     /// Constructor.
     /// Note: only a shared pointer to this type should be created.
     /// @param connection a weak pointer to the underlying connection.
-    /// @param strict_crlf enforce strict parsing of CRLF.
-    /// @param max_whitespace the maximum number of consectutive whitespace
-    /// characters allowed in a request:min 1, max 254.
-    /// @param max_method_length the maximum length of an HTTP request method:
-    /// min 1, max 254.
-    /// @param max_uri_length the maximum length of an HTTP request uri:
-    /// min 1, max 4 billion.
-    /// @param max_line_length the maximum length of an HTTP header field line:
-    /// min 1, max 65534.
-    /// @param max_header_number the maximum number of HTTP header field lines:
-    /// max 65534.
-    /// @param max_header_length the maximum cumulative length the HTTP header
-    /// fields: max 4 billion.
-    /// @param max_body_size the maximum size of an HTTP request body:
-    /// max 4 billion.
-    /// @param max_chunk_size the maximum size of an HTTP request chunk:
-    /// max 4 billion.
-    http_connection(typename connection_type::weak_pointer connection,
-                    bool           strict_crlf,
-                    unsigned char  max_whitespace,
-                    unsigned char  max_method_length,
-                    size_t         max_uri_length,
-                    unsigned short max_line_length,
-                    unsigned short max_header_number,
-                    size_t         max_header_length,
-                    size_t         max_body_size,
-                    size_t         max_chunk_size) :
+    http_connection(typename connection_type::weak_pointer connection) :
       connection_(connection),
       remote_address_(connection_.lock()->socket().
                       remote_endpoint().address().to_string()),
-      rx_(strict_crlf, max_whitespace, max_method_length, max_uri_length,
-          max_line_length, max_header_number, max_header_length,
-          max_body_size, max_chunk_size),
+      rx_(),
       tx_header_(),
       tx_body_(),
       rx_buffer_()
@@ -217,12 +245,12 @@ namespace via
     { return remote_address_; }
 
     /// The request receiver for this connection.
-    http::request_receiver<Container>& rx() noexcept
+    http_request_rx& rx() noexcept
     { return rx_; }
 
     /// Accessor for the HTTP request header.
     /// @return a constant reference to an rx_request.
-    http::rx_request const& request() const noexcept
+    http_request const& request() const noexcept
     { return rx_.request(); }
 
     /// Accessor for the body.
@@ -232,7 +260,7 @@ namespace via
 
     /// Accessor for the received HTTP chunk.
     /// @return a constant reference to an rx_chunk.
-    http::rx_chunk<Container> const& chunk() const noexcept
+    chunk_type const& chunk() const noexcept
     { return rx_.chunk(); }
 
     ////////////////////////////////////////////////////////////////////////

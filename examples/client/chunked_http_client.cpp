@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,6 +16,7 @@
 
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::http_response http_response;
 typedef http_client_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -81,7 +82,7 @@ namespace
   /// Prints the response nd determines whether the response is continue.
   /// If so it sends chunks, otherwise it disconnects the connection unless
   /// the response is chunked.
-  void response_handler(via::http::rx_response const& response,
+  void response_handler(http_response const& response,
                         std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string();

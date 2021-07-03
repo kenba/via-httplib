@@ -723,6 +723,7 @@ namespace via
               bool           STRICT_CRLF = false>
     class response_receiver
     {
+    public:
       using Response = rx_response<MAX_STATUS_NUMBER,
                                    MAX_REASON_LENGTH,                           
                                    MAX_HEADER_NUMBER,
@@ -744,6 +745,7 @@ namespace via
                              MAX_LINE_LENGTH,
                              MAX_WHITESPACE_CHARS,
                              STRICT_CRLF>;
+    private:
 
       /// Response information
       Response  response_ {}; ///< the received response

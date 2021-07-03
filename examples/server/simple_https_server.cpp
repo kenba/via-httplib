@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,6 +14,7 @@
 typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
                                                             https_server_type;
 typedef https_server_type::http_connection_type http_connection;
+typedef https_server_type::http_request http_request;
 
 namespace
 {
@@ -21,7 +22,7 @@ namespace
   /// Outputs the request.
   /// Responds with 200 OK with the client address in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
-                       via::http::rx_request const& request,
+                       http_request const& request,
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -14,6 +14,7 @@
 /// Define an HTTP server using std::string to store message bodies
 typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
+typedef http_server_type::http_request http_request;
 
 namespace
 {
@@ -37,7 +38,7 @@ namespace
                 << std::endl;
   }
 
-  tx_response get_hello_handler(rx_request const&, //request,
+  tx_response get_hello_handler(http_request const&, //request,
                                 Parameters const&, //parameters,
                                 std::string const&, // data,
                                 std::string &response_body)
@@ -46,7 +47,7 @@ namespace
     return tx_response(response_status::code::OK);
   }
 
-  tx_response get_hello_name_handler(rx_request const&, //request,
+  tx_response get_hello_name_handler(http_request const&, //request,
                                      Parameters const& parameters,
                                      std::string const&, // data,
                                      std::string &response_body)

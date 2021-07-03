@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,6 +16,7 @@
 /// Define an HTTPS client using std::string to store message bodies
 typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
                                                             https_client_type;
+typedef https_client_type::http_response http_response;
 typedef https_client_type::chunk_type http_chunk_type;
 
 namespace
@@ -40,7 +41,7 @@ namespace
 
   /// The handler for incoming HTTP requests.
   /// Prints the response.
-  void response_handler(via::http::rx_response const& response,
+  void response_handler(http_response const& response,
                         std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string()

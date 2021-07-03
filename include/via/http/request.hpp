@@ -708,6 +708,7 @@ namespace via
               bool           STRICT_CRLF          = true>
     class request_receiver
     {
+    public:
       using request_ln = request_line<MAX_URI_LENGTH,
                                       MAX_METHOD_LENGTH,
                                       MAX_WHITESPACE_CHARS,
@@ -728,6 +729,8 @@ namespace via
                              MAX_LINE_LENGTH,
                              MAX_WHITESPACE_CHARS,
                              STRICT_CRLF>;
+
+    private:
 
       /// Behaviour
       bool   translate_head_ { true };      ///< pass a HEAD request as a GET request.

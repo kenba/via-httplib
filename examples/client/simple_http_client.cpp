@@ -15,6 +15,7 @@
 
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::http_response http_response;
 typedef http_client_type::chunk_type http_chunk_type;
 
 namespace
@@ -39,7 +40,7 @@ namespace
 
   /// The handler for incoming HTTP requests.
   /// Prints the response.
-  void response_handler(via::http::rx_response const& response,
+  void response_handler(http_response const& response,
                         std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string()

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2020 Ken Barker
+// Copyright (c) 2014-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,6 +16,7 @@
 /// Define an HTTP server using std::string to store message bodies
 typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
+typedef http_server_type::http_request http_request;
 typedef http_server_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -47,7 +48,7 @@ namespace
     if (connection)
     {
       // Get the last request on this connection.
-      via::http::rx_request const& request(connection->request());
+      http_request const& request(connection->request());
 
       // Set the default response to 404 Not Found
       via::http::tx_response response(via::http::response_status::code::NOT_FOUND);
@@ -88,7 +89,7 @@ namespace
   /// Prints the request and determines whether the request is chunked.
   /// If not, it responds with a 200 OK response with some HTML in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
-                       via::http::rx_request const& request,
+                       http_request const& request,
                        std::string const& body)
   {
     std::cout << "Rx request: " << request.to_string();
@@ -124,7 +125,7 @@ namespace
   /// It either responds with a 100 CONTINUE or a 413 REQUEST_ENTITY_TOO_LARGE
   /// response.
   void expect_continue_handler(http_connection::weak_pointer weak_ptr,
-                               via::http::rx_request const& request,
+                               http_request const& request,
                                std::string const& /* body */)
   {
     static const auto MAX_LENGTH(1024);
@@ -147,7 +148,7 @@ namespace
 
   /// A handler for the signal sent when an invalid HTTP mesasge is received.
   void invalid_request_handler(http_connection::weak_pointer weak_ptr,
-                               via::http::rx_request const&, // request,
+                               http_request const&, // request,
                                std::string const& /* body */)
   {
     std::cout << "Invalid request from: ";

@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -79,8 +79,35 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
+  /// @tparam MAX_CONTENT_LENGTH the maximum size of an HTTP request body
+  /// including any chunks: default 1M, max 4 billion.
+  /// @tparam MAX_CHUNK_SIZE the maximum size of an HTTP request chunk:
+  /// default 1M, max 4 billion.
+  /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
+  /// default 1024, min 1, max 4 billion.
+  /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
+  /// default 8, min 1, max 254.
+  /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
+  /// default 100, max 65534.
+  /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+  /// fields: default 8190, max 4 billion.
+  /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
+  /// default 1024, min 1, max 65534.
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+  /// characters allowed in a request: default 8, min 1, max 254.
+  /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor, typename Container = std::vector<char>>
+  template <typename SocketAdaptor,
+            typename Container                  = std::vector<char>,
+            size_t         MAX_CONTENT_LENGTH   = 1048576,
+            size_t         MAX_CHUNK_SIZE       = 1048576,
+            size_t         MAX_URI_LENGTH       = 1024,
+            unsigned char  MAX_METHOD_LENGTH    = 8,
+            unsigned short MAX_HEADER_NUMBER    = 100,
+            size_t         MAX_HEADER_LENGTH    = 8190,
+            unsigned short MAX_LINE_LENGTH      = 1024,
+            unsigned char  MAX_WHITESPACE_CHARS = 8,
+            bool           STRICT_CRLF          = true>
   class http_server
   {
   public:
@@ -89,8 +116,17 @@ namespace via
     typedef comms::server<SocketAdaptor, Container> server_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor, Container>
-      http_connection_type;
+    typedef http_connection<SocketAdaptor,
+                            Container,
+                            MAX_CONTENT_LENGTH,
+                            MAX_CHUNK_SIZE,
+                            MAX_URI_LENGTH,
+                            MAX_METHOD_LENGTH,
+                            MAX_HEADER_NUMBER,
+                            MAX_HEADER_LENGTH,
+                            MAX_LINE_LENGTH,
+                            MAX_WHITESPACE_CHARS,
+                            STRICT_CRLF> http_connection_type;
 
     /// The underlying comms connection, TCP or SSL.
     typedef typename http_connection_type::connection_type connection_type;
@@ -107,15 +143,18 @@ namespace via
     /// The template requires a typename to access the iterator.
     typedef typename Container::const_iterator Container_const_iterator;
 
-    /// The type of the request_receiver.
-    typedef typename http::request_receiver<Container> http_request;
+    /// The type of the http request.
+    typedef typename http_connection_type::http_request http_request;
+
+    /// The type of the http request_receiver.
+    typedef typename http_connection_type::http_request_rx http_request_rx;
 
     /// The chunk type
-    typedef typename http::rx_chunk<Container> chunk_type;
+    typedef typename http_connection_type::chunk_type chunk_type;
 
     /// The RequestHandler type.
     typedef std::function <void (std::weak_ptr<http_connection_type>,
-                                 http::rx_request const&, Container const&)>
+                                 http_request const&, Container const&)>
       RequestHandler;
 
     /// The ChunkHandler type.
@@ -142,17 +181,6 @@ namespace via
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
-
-    // Request parser parameters
-    bool           strict_crlf_;       ///< enforce strict parsing of CRLF
-    unsigned char  max_whitespace_;    ///< the max no of consectutive whitespace characters.
-    unsigned char  max_method_length_; ///< the maximum length of a request method
-    size_t         max_uri_length_;    ///< the maximum length of a uri.
-    unsigned short max_line_length_;   ///< the max length of a field line
-    unsigned short max_header_number_; ///< the max no of header fields
-    size_t         max_header_length_; ///< the max cumulative length
-    size_t         max_body_size_;     ///< the maximum size of a request body
-    size_t         max_chunk_size_;    ///< the maximum size of a request chunk
 
     // HTTP server options
     bool require_host_header_; ///< whether the http server requires a host header
@@ -198,17 +226,7 @@ namespace via
       if (iter_not_found)
       {
         // Create and configure a new http_connection_type.
-        http_connection = std::make_shared<http_connection_type>(connection,
-                                      strict_crlf_,
-                                      max_whitespace_,
-                                      max_method_length_,
-                                      max_uri_length_,
-                                      max_line_length_,
-                                      max_header_number_,
-                                      max_header_length_,
-                                      max_body_size_,
-                                      max_chunk_size_);
-
+        http_connection = std::make_shared<http_connection_type>(connection);
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
         http_connections_.emplace(pointer, http_connection);
@@ -227,7 +245,7 @@ namespace via
     /// @param request the received request.
     /// @param body the received request body.
     void route_request(std::weak_ptr<http_connection_type> weak_ptr,
-                       http::rx_request const& request,
+                       http_request const& request,
                        Container const& body)
     {
       std::shared_ptr<http_connection_type> connection(weak_ptr.lock());
@@ -252,16 +270,16 @@ namespace via
       Container_const_iterator end(rx_buffer.end());
 
       // Get the receive parser for this connection
-      http::Rx rx_state(http::RX_VALID);
+      auto rx_state(http::Rx::VALID);
 
       // Loop around the received buffer while there's valid data to read
-      while ((iter != end) && (rx_state != http::RX_INVALID))
+      while ((iter != end) && (rx_state != http::Rx::INVALID))
       {
         rx_state = http_connection->rx().receive(iter, end);
 
         switch (rx_state)
         {
-        case http::RX_VALID:
+        case http::Rx::VALID:
           // If it's NOT a TRACE request
           if (!http_connection->request().is_trace())
           {
@@ -285,7 +303,7 @@ namespace via
           }
           // intentional fall through
 
-        case http::RX_INVALID:
+        case http::Rx::INVALID:
           if (http_invalid_handler_)
             http_invalid_handler_(http_connection,
                                   http_connection->request(),
@@ -299,7 +317,7 @@ namespace via
           http_connection->rx().clear();
           break;
 
-        case http::RX_EXPECT_CONTINUE:
+        case http::Rx::EXPECT_CONTINUE:
           if (http_continue_handler_)
             http_continue_handler_(http_connection,
                                    http_connection->request(),
@@ -308,7 +326,7 @@ namespace via
             http_connection->send_response();
           break;
 
-        case http::RX_CHUNK:
+        case http::Rx::CHUNK:
           if (http_chunk_handler_)
             http_chunk_handler_(http_connection,
                                 http_connection->chunk(),
@@ -428,17 +446,6 @@ namespace via
       request_router_(),
       shutting_down_(false),
 
-      // Set request parser parameters to default values
-      strict_crlf_        (false),
-      max_whitespace_     (http_request::DEFAULT_MAX_WHITESPACE_CHARS),
-      max_method_length_  (http_request::DEFAULT_MAX_METHOD_LENGTH),
-      max_uri_length_     (http_request::DEFAULT_MAX_URI_LENGTH),
-      max_line_length_    (http_request::DEFAULT_MAX_LINE_LENGTH),
-      max_header_number_  (http_request::DEFAULT_MAX_HEADER_NUMBER),
-      max_header_length_  (http_request::DEFAULT_MAX_HEADER_LENGTH),
-      max_body_size_      (http_request::DEFAULT_MAX_BODY_SIZE),
-      max_chunk_size_     (http_request::DEFAULT_MAX_CHUNK_SIZE),
-
       require_host_header_(true),
       translate_head_     (true),
       trace_enabled_      (false),
@@ -485,7 +492,7 @@ namespace via
       if (!http_request_handler_)
         http_request_handler_ =
             [this](std::weak_ptr<http_connection_type> weak_ptr,
-                   http::rx_request const& request, Container const& body)
+                   http_request const& request, Container const& body)
         { route_request(weak_ptr, request, body); };
 
       return server_->accept_connections(port, ipv4_only);
@@ -550,62 +557,6 @@ namespace via
     /// @param handler the handler for the message sent signal.
     void message_sent_event(ConnectionHandler handler) noexcept
     { message_sent_handler_= handler; }
-
-    ////////////////////////////////////////////////////////////////////////
-    // HTTP Request Parser Parameter set functions
-
-    /// Set whether to require strict CRLF HTTP request checking.
-    /// @param enable strict CRLF HTTP checking
-    void set_strict_crlf(bool enable) noexcept
-    { strict_crlf_ = enable; }
-
-    /// Set the maximum number of consecutive whitespace characters to allow.
-    /// @param max_length default http_request::DEFAULT_MAX_WHITESPACE_CHARS.
-    void set_max_whitespace(unsigned char max_length =
-        http_request::DEFAULT_MAX_WHITESPACE_CHARS) noexcept
-    { max_whitespace_ = max_length; }
-
-    /// Set the maximum HTTP request method length to allow.
-    /// @param max_length default http_request::DEFAULT_MAX_METHOD_LENGTH.
-    void set_max_method_length(unsigned char max_length =
-        http_request::DEFAULT_MAX_METHOD_LENGTH) noexcept
-    { max_method_length_ = max_length; }
-
-    /// Set the maximum HTTP request uri length to allow.
-    /// @param max_length default http_request::DEFAULT_MAX_URI_LENGTH.
-    void set_max_uri_length(size_t max_length =
-        http_request::DEFAULT_MAX_URI_LENGTH) noexcept
-    { max_uri_length_ = max_length; }
-
-    /// Set the maximum HTTP request header line length to allow.
-    /// @param max_length default http_request::DEFAULT_MAX_LINE_LENGTH.
-    void set_max_header_line_length(unsigned short max_length =
-        http_request::DEFAULT_MAX_LINE_LENGTH) noexcept
-    { max_line_length_ = max_length; }
-
-    /// Set the maximum number of HTTP request header fields to allow.
-    /// @param max_number default http_request::DEFAULT_MAX_HEADER_NUMBER.
-    void set_max_number_of_headers(unsigned short max_number =
-        http_request::DEFAULT_MAX_HEADER_NUMBER) noexcept
-    { max_header_number_ = max_number; }
-
-    /// Set the maximum total length of HTTP request headers to allow.
-    /// @param max_length default http_request::DEFAULT_MAX_HEADER_LENGTH.
-    void set_max_headers_length(size_t max_length =
-        http_request::DEFAULT_MAX_HEADER_LENGTH) noexcept
-    { max_header_length_ = max_length; }
-
-    /// Set the maximum HTTP request body size to allow.
-    /// @param max_size default http_request::DEFAULT_MAX_BODY_SIZE.
-    void set_max_body_size(size_t max_size =
-        http_request::DEFAULT_MAX_BODY_SIZE) noexcept
-    { max_body_size_ = max_size; }
-
-    /// Set the maximum HTTP request chunk size to allow.
-    /// @param max_size default http_request::DEFAULT_MAX_CHUNK_SIZE.
-    void set_max_chunk_size(size_t max_size =
-        http_request::DEFAULT_MAX_CHUNK_SIZE) noexcept
-    { max_chunk_size_ = max_size; }
 
     ////////////////////////////////////////////////////////////////////////
     // HTTP server options set functions

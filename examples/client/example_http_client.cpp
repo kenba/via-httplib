@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2020 Ken Barker
+// Copyright (c) 2014-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,6 +15,7 @@
 
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef http_client_type::http_response http_response;
 typedef http_client_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -43,8 +44,8 @@ namespace
 
   /// The handler for incoming HTTP requests.
   /// Prints the response.
-  void response_handler(via::http::rx_response const& response,
-                        std::string const& body)
+  void response_handler(http_response const& response,
+                          std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string()
               << response.headers().to_string();
@@ -71,8 +72,8 @@ namespace
 
   /// The handler for invalid HTTP requests.
   /// Outputs the last receive buffer contents
-  void invalid_response_handler(via::http::rx_response const&, // response,
-                                std::string const&) // body)
+  void invalid_response_handler(http_response const&, // response,
+                                   std::string const&) // body)
   {
     std::cout << "Invalid response: "
               << http_client->rx_buffer() << std::endl;
