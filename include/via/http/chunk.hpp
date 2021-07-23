@@ -21,21 +21,21 @@ namespace via
 {
   namespace http
   {
+    /// The default maximum size of an HTTP chunk, 1M.
+    constexpr size_t DEFAULT_MAX_CHUNK_SIZE = 1048576U;
+
     //////////////////////////////////////////////////////////////////////////
     /// @class chunk_header
     /// The HTTP header for a data chunk.
-    /// @tparam MAX_CHUNK_SIZE the maximum size of a response chunk:
-    /// default LONG_MAX, max LONG_MAX.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
-    /// default 65534, min 1, max 65534.
+    /// min 1, max 65534.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
-    /// whitespace characters allowed in a request: default 254, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
+    /// whitespace characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
-    template <size_t         MAX_CHUNK_SIZE       = 1048576,
-              unsigned short MAX_LINE_LENGTH      = 1024,              
-              unsigned char  MAX_WHITESPACE_CHARS = 8,
-              bool           STRICT_CRLF          = true>
+    template <unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class chunk_header
     {
     public:
@@ -52,11 +52,13 @@ namespace via
         ERROR_LENGTH, ///< the header is longer than MAX_LINE_LENGTH
         ERROR_CRLF,   ///< STRICT_CRLF is true and LF was received without CR
         ERROR_WS,     ///< the whitespace is longer than MAX_WHITESPACE_CHARS
-        ERROR_SIZE    ///< the chunk size is greater than MAX_CHUNK_SIZE
+        ERROR_SIZE    ///< the chunk size is greater than max_chunk_size_
       };
 
     private:
 
+      /// the maximum size of a chunk body
+      size_t max_chunk_size_ { DEFAULT_MAX_CHUNK_SIZE };
       size_t size_ { 0 };              ///< the size of the chunk in bytes
       size_t length_ { 0 };            ///< the length of the chunk header in bytes
       size_t ws_count_ { 0 };          ///< the current whitespace count
@@ -113,7 +115,7 @@ namespace via
             {
               size_ = from_hex_string(hex_size_);
               size_read_ = true;
-              if (size_ > MAX_CHUNK_SIZE)
+              if (size_ > max_chunk_size_)
               {
                 state_ = Chunk::ERROR_SIZE;
                 return false;
@@ -213,6 +215,7 @@ namespace via
       /// @param other the other chunk_header
       void swap(chunk_header& other) noexcept
       {
+        std::swap(max_chunk_size_, other.max_chunk_size_);
         std::swap(size_, other.size_);
         std::swap(length_, other.length_);
         std::swap(ws_count_, other.ws_count_);
@@ -270,13 +273,14 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       // Encoding interface.
 
-      /// Encoding constructor.
+      /// Constructor.
       /// Set the chunk size and optionally the extension.
       /// @param size the size of the chunk in bytes.
       /// @param extension the chunk extension (default blank).
       explicit chunk_header(size_t size,
                              std::string_view extension = std::string_view())
-        : size_(size)
+        : max_chunk_size_(size)
+        , size_(size)
         , hex_size_(to_hex_string(size))
         , extension_(extension)
       {}
@@ -310,8 +314,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class rx_chunk
     /// A class to receive an HTTP chunk.
-    /// @tparam MAX_CHUNK_SIZE the maximum size of the chunk data:
-    /// max 4 billion
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
     /// max 65534.
     /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
@@ -323,14 +325,12 @@ namespace via
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              size_t         MAX_CHUNK_SIZE,
               unsigned short MAX_HEADER_NUMBER,
               size_t         MAX_HEADER_LENGTH,
               unsigned short MAX_LINE_LENGTH,
               unsigned char  MAX_WHITESPACE_CHARS,
               bool           STRICT_CRLF>
-    class rx_chunk : public chunk_header<MAX_CHUNK_SIZE,
-                                          MAX_LINE_LENGTH,
+    class rx_chunk : public chunk_header<MAX_LINE_LENGTH,
                                           MAX_WHITESPACE_CHARS,
                                           STRICT_CRLF>
     {
@@ -340,8 +340,7 @@ namespace via
                                              MAX_WHITESPACE_CHARS,
                                              STRICT_CRLF>;
 
-      using ChunkHeader = chunk_header<MAX_CHUNK_SIZE,
-                                       MAX_LINE_LENGTH,
+      using ChunkHeader = chunk_header<MAX_LINE_LENGTH,
                                        MAX_WHITESPACE_CHARS,
                                        STRICT_CRLF>;
 
@@ -353,6 +352,13 @@ namespace via
 
       /// Default Constructor.
       rx_chunk() = default;
+
+      /// Constructor.
+      /// Set the chunk maximum size.
+      /// @param max_chunk_size the maximum size of the chunk in bytes.
+      explicit rx_chunk(size_t max_chunk_size)
+        : ChunkHeader(max_chunk_size)
+      { clear(); }
 
       /// clear the rx_chunk.
       /// Sets all member variables to their initial state.

@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(ValidGetVectorChar1)
   std::vector<char> request_data(REQUEST_LINE.begin(), REQUEST_LINE.end());
   std::vector<char>::iterator next(request_data.begin());
 
-  rx_request the_request;
+  rx_request<1024, 8, 100, 8190, 1024, 8, true> the_request;
   BOOST_CHECK(the_request.parse(next, request_data.end()));
   BOOST_CHECK(request_data.end() == next);
   BOOST_CHECK_EQUAL("GET", the_request.method().c_str());
@@ -973,7 +973,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
   std::string::iterator next(request_data1.begin());
 
   // set request_receiver max_content_length to 25 to fail
-  request_receiver<std::string, 25> the_request_receiver;
+  request_receiver<std::string> the_request_receiver(25, DEFAULT_MAX_CHUNK_SIZE);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -1037,12 +1037,12 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
   std::string request_data1(client_request.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
-  chunk_header chunk_header1(chunk_body1.size());
+  chunk_header<1024, 8, true> chunk_header1(chunk_body1.size());
   std::string  http_chunk_1(chunk_header1.to_string());
   chunk_body1 += CRLF;
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
-  chunk_header chunk_header2(chunk_body2.size());
+  chunk_header<1024, 8, true> chunk_header2(chunk_body2.size());
   std::string  http_chunk_2(chunk_header2.to_string());
   chunk_body2 += CRLF;
 
@@ -1059,7 +1059,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
                              request_data1);
   std::string::iterator iter(request_buffer.begin());
 
-  request_receiver<std::string, 40> the_request_receiver;
+  request_receiver<std::string> the_request_receiver(40, DEFAULT_MAX_CHUNK_SIZE);
   the_request_receiver.set_concatenate_chunks(true);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
@@ -1109,7 +1109,7 @@ BOOST_AUTO_TEST_CASE(InValidUriLength1)
   request_data += "Content-Length: 0\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string, 1024, 1024, 16> the_request_receiver;
+  request_receiver<std::string, 16> the_request_receiver(1024, 1024);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 
@@ -1294,7 +1294,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   BOOST_CHECK(rx_state == Rx::VALID);
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
-  chunk_header chunk_header1(chunk_body1.size());
+  chunk_header<1024, 8, true> chunk_header1(chunk_body1.size());
   std::string  http_chunk_1(chunk_header1.to_string());
   chunk_body1 += CRLF;
 
@@ -1309,7 +1309,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
   BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
-  chunk_header chunk_header2(chunk_body2.size());
+  chunk_header<1024, 8, true> chunk_header2(chunk_body2.size());
   std::string  http_chunk_2(chunk_header2.to_string());
   chunk_body2 += CRLF;
 
@@ -1345,12 +1345,12 @@ BOOST_AUTO_TEST_CASE(LoopbackPost2)
   std::string request_data1(client_request.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
-  chunk_header chunk_header1(chunk_body1.size());
+  chunk_header<1024, 8, true> chunk_header1(chunk_body1.size());
   std::string  http_chunk_1(chunk_header1.to_string());
   chunk_body1 += CRLF;
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
-  chunk_header chunk_header2(chunk_body2.size());
+  chunk_header<1024, 8, true> chunk_header2(chunk_body2.size());
   std::string  http_chunk_2(chunk_header2.to_string());
   chunk_body2 += CRLF;
 

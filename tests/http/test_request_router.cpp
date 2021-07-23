@@ -12,7 +12,8 @@
 
 using namespace via::http;
 
-typedef request_router<std::string> string_router;
+typedef rx_request<1024, 8, 100, 8190, 1024, 8, true> http_request;
+typedef request_router<std::string, http_request> string_router;
 
 namespace
 {
@@ -49,7 +50,7 @@ namespace
     return output;
   }
 
-  tx_response test_route1(rx_request<> const&, //request,
+  tx_response test_route1(http_request const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -62,7 +63,7 @@ namespace
     return tx_response(response_status::code::OK);
   }
 
-  tx_response test_route2(rx_request<> const&, //request,
+  tx_response test_route2(http_request const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -75,7 +76,7 @@ namespace
     return tx_response(response_status::code::OK);
   }
 
-  tx_response test_route3(rx_request<> const&, //request,
+  tx_response test_route3(http_request const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)
@@ -88,7 +89,7 @@ namespace
     return tx_response(response_status::code::NOT_IMPLEMENTED);
   }
 
-  tx_response test_route4(rx_request<> const&, //request,
+  tx_response test_route4(http_request const&, //request,
                           Parameters const& parameters,
                           std::string const& data,
                           std::string &response_body)

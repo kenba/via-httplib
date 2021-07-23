@@ -28,17 +28,17 @@ namespace via
     /// @class request_line
     /// The HTTP request start line.
     /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
-    /// default 1024, min 1, max 4 billion.
+    /// min 1, max 4 billion.
     /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
-    /// default 8, min 1, max 254.
+    /// min 1, max 254.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
-    /// characters allowed in a request: default 8, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
+    /// characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
-    template <size_t         MAX_URI_LENGTH,
-              unsigned char  MAX_METHOD_LENGTH,
-              unsigned char  MAX_WHITESPACE_CHARS,
-              bool           STRICT_CRLF>
+    template <size_t        MAX_URI_LENGTH,
+              unsigned char MAX_METHOD_LENGTH,
+              unsigned char MAX_WHITESPACE_CHARS,
+              bool          STRICT_CRLF>
     class request_line
     {
     public:
@@ -429,26 +429,26 @@ namespace via
     /// @class rx_request
     /// A class to receive an HTTP request.
     /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
-    /// default 1024, min 1, max 4 billion.
+    /// min 1, max 4 billion.
     /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
-    /// default 8, min 1, max 254.
+    /// min 1, max 254.
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
-    /// default 100, max 65534.
+    /// max 65534.
     /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
-    /// fields: default 8190, max 4 billion.
+    /// fields: max 4 billion.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
-    /// default 1024, min 1, max 65534.
+    /// min 1, max 65534.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
-    /// characters allowed in a request: default 8, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
+    /// characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
-    template <size_t         MAX_URI_LENGTH       = 1024,
-              unsigned char  MAX_METHOD_LENGTH    = 8,
-              unsigned short MAX_HEADER_NUMBER    = 100,
-              size_t         MAX_HEADER_LENGTH    = 8190,
-              unsigned short MAX_LINE_LENGTH      = 1024,
-              unsigned char  MAX_WHITESPACE_CHARS = 8,
-              bool           STRICT_CRLF = true>
+    template <size_t         MAX_URI_LENGTH,
+              unsigned char  MAX_METHOD_LENGTH,
+              unsigned short MAX_HEADER_NUMBER,
+              size_t         MAX_HEADER_LENGTH,
+              unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class rx_request : public request_line<MAX_URI_LENGTH,
                                             MAX_METHOD_LENGTH,
                                             MAX_WHITESPACE_CHARS,
@@ -678,10 +678,6 @@ namespace via
     /// @class request_receiver
     /// A template class to receive HTTP requests and any associated data.
     /// @tparam Container the type of container in which the request is held.
-    /// @tparam MAX_CONTENT_LENGTH the maximum size of an HTTP request body
-    /// including any chunks: default 1M, max 4 billion.
-    /// @tparam MAX_CHUNK_SIZE the maximum size of an HTTP request chunk:
-    /// default 1M, max 4 billion.
     /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
     /// default 1024, min 1, max 4 billion.
     /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
@@ -694,18 +690,16 @@ namespace via
     /// default 1024, min 1, max 65534.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
     /// characters allowed in a request: default 8, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              size_t         MAX_CONTENT_LENGTH   = 1048576,
-              size_t         MAX_CHUNK_SIZE       = 1048576,
               size_t         MAX_URI_LENGTH       = 1024,
               unsigned char  MAX_METHOD_LENGTH    = 8,
               unsigned short MAX_HEADER_NUMBER    = 100,
               size_t         MAX_HEADER_LENGTH    = 8190,
               unsigned short MAX_LINE_LENGTH      = 1024,
               unsigned char  MAX_WHITESPACE_CHARS = 8,
-              bool           STRICT_CRLF          = true>
+              bool           STRICT_CRLF          = false>
     class request_receiver
     {
     public:
@@ -723,18 +717,22 @@ namespace via
                                  STRICT_CRLF>;
 
       using Chunk = rx_chunk<Container,
-                             MAX_CHUNK_SIZE,
                              MAX_HEADER_NUMBER,
                              MAX_HEADER_LENGTH,
                              MAX_LINE_LENGTH,
                              MAX_WHITESPACE_CHARS,
                              STRICT_CRLF>;
 
+      /// The default maximum size of request content, 1M.
+      static constexpr size_t DEFAULT_MAX_CONTENT_LENGTH = 1048576u;
+
     private:
 
       /// Behaviour
-      bool   translate_head_ { true };      ///< pass a HEAD request as a GET request.
-      bool   concatenate_chunks_ { true };  ///< concatenate chunk data into the body
+      /// the maximum request content size.
+      size_t max_content_length_ { DEFAULT_MAX_CONTENT_LENGTH };
+      bool translate_head_ { true };     ///< pass a HEAD request as a GET request.
+      bool concatenate_chunks_ { true }; ///< concatenate chunk data into the body
 
       /// Request information
       Request   request_ {}; ///< the received request
@@ -748,34 +746,22 @@ namespace via
 
     public:
 
-      /// The default maximum number of consectutive whitespace characters
-      /// allowed in a request header.
-      static constexpr unsigned char  DEFAULT_MAX_WHITESPACE_CHARS = 8;
-
-      /// The default maximum number of characters allowed in a request method.
-      static constexpr unsigned char  DEFAULT_MAX_METHOD_LENGTH    = 8;
-
-      /// The default maximum number of characters allowed in a request uri.
-      static constexpr size_t         DEFAULT_MAX_URI_LENGTH       = 1024;
-
-      /// The default maximum number of characters allowed in a request header
-      /// line.
-      static constexpr unsigned short DEFAULT_MAX_LINE_LENGTH      = 1024;
-
-      /// The default maximum number of fields allowed in the request headers.
-      static constexpr unsigned short DEFAULT_MAX_HEADER_NUMBER    = 100;
-
-      /// The default maximum number of characters allowed in the request headers.
-      static constexpr size_t         DEFAULT_MAX_HEADER_LENGTH    = 8190;
-
-      /// The default maximum size of a request body.
-      static constexpr size_t         DEFAULT_MAX_BODY_SIZE        = 1048576;
-
-      /// The default maximum size of a request chunk.
-      static constexpr size_t         DEFAULT_MAX_CHUNK_SIZE       = 1048576;
-
       /// Default Constructor
       request_receiver() = default;
+
+      /// Constructor.
+      /// Sets all member variables to their initial state.
+      /// @param max_content_length the maximum size of HTTP request content:
+      /// max 4 billion.
+      /// @param max_chunk_size the maximum size of an HTTP request chunk:
+      /// max 4 billion.
+      request_receiver(size_t max_content_length, size_t max_chunk_size) :
+        max_content_length_(max_content_length),
+        translate_head_(true),
+        concatenate_chunks_(true),
+        request_(),
+        chunk_(max_chunk_size)
+      {}
 
       /// Enable whether HEAD requests are translated into GET
       /// requests for the application.
@@ -913,7 +899,7 @@ namespace via
             if (content_length > 0)
             {
               // test the size
-              if (content_length > static_cast<std::ptrdiff_t>(MAX_CONTENT_LENGTH))
+              if (content_length > static_cast<std::ptrdiff_t>(max_content_length_))
               {
                 response_code_ = response_status::code::PAYLOAD_TOO_LARGE;
                 clear();
@@ -1002,7 +988,7 @@ namespace via
               {
                 // Determine whether the total size of the concatenated chunks
                 // is within the maximum body size.
-                if ((body_.size() + chunk_.data().size()) > MAX_CONTENT_LENGTH)
+                if ((body_.size() + chunk_.data().size()) > max_content_length_)
                 {
                   response_code_ = response_status::code::PAYLOAD_TOO_LARGE;
                   clear();

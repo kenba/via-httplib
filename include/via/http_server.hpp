@@ -79,10 +79,6 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
-  /// @tparam MAX_CONTENT_LENGTH the maximum size of an HTTP request body
-  /// including any chunks: default 1M, max 4 billion.
-  /// @tparam MAX_CHUNK_SIZE the maximum size of an HTTP request chunk:
-  /// default 1M, max 4 billion.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
   /// default 1024, min 1, max 4 billion.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
@@ -95,19 +91,17 @@ namespace via
   /// default 1024, min 1, max 65534.
   /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
   /// characters allowed in a request: default 8, min 1, max 254.
-  /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
+  /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container                  = std::vector<char>,
-            size_t         MAX_CONTENT_LENGTH   = 1048576,
-            size_t         MAX_CHUNK_SIZE       = 1048576,
             size_t         MAX_URI_LENGTH       = 1024,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
             size_t         MAX_HEADER_LENGTH    = 8190,
             unsigned short MAX_LINE_LENGTH      = 1024,
             unsigned char  MAX_WHITESPACE_CHARS = 8,
-            bool           STRICT_CRLF          = true>
+            bool           STRICT_CRLF          = false>
   class http_server
   {
   public:
@@ -118,8 +112,6 @@ namespace via
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor,
                             Container,
-                            MAX_CONTENT_LENGTH,
-                            MAX_CHUNK_SIZE,
                             MAX_URI_LENGTH,
                             MAX_METHOD_LENGTH,
                             MAX_HEADER_NUMBER,
@@ -167,7 +159,7 @@ namespace via
       ConnectionHandler;
 
     /// The built-in request_router type.
-    typedef typename http::request_router<Container> request_router_type;
+    typedef typename http::request_router<Container, http_request> request_router_type;
 
     /// The built-in request_router Handler type.
     typedef typename request_router_type::Handler request_router_handler_type;
@@ -181,6 +173,10 @@ namespace via
     connection_collection http_connections_; ///< the communications channels
     request_router_type   request_router_;   ///< the built-in request_router
     bool                  shutting_down_;    ///< the server is shutting down
+
+    // Request parser parameters
+    size_t max_content_length_; ///< the maximum request body content length
+    size_t max_chunk_size_;     ///< the maximum size of a request chunk
 
     // HTTP server options
     bool require_host_header_; ///< whether the http server requires a host header
@@ -226,7 +222,8 @@ namespace via
       if (iter_not_found)
       {
         // Create and configure a new http_connection_type.
-        http_connection = std::make_shared<http_connection_type>(connection);
+        http_connection = std::make_shared<http_connection_type>
+                          (connection, max_content_length_, max_chunk_size_);
         http_connection->set_translate_head(translate_head_);
         http_connection->set_concatenate_chunks(!http_chunk_handler_);
         http_connections_.emplace(pointer, http_connection);
@@ -439,12 +436,20 @@ namespace via
 
     /// Constructor.
     /// @param io_context a reference to the ASIO::io_context.
-    /// @param auth_ptr a shared pointer to an authentication.
-    explicit http_server(ASIO::io_context& io_context) :
+    /// @param max_content_length the maximum size of HTTP request content:
+    /// max 4 billion.
+    /// @param max_chunk_size the maximum size of an HTTP request chunk:
+    /// max 4 billion.
+    explicit http_server(ASIO::io_context& io_context,
+                          size_t max_content_length = http_request_rx::DEFAULT_MAX_CONTENT_LENGTH,
+                          size_t max_chunk_size = http::DEFAULT_MAX_CHUNK_SIZE) :
       server_(new server_type(io_context)),
       http_connections_(),
       request_router_(),
       shutting_down_(false),
+
+      max_content_length_(max_content_length),
+      max_chunk_size_(max_chunk_size),
 
       require_host_header_(true),
       translate_head_     (true),

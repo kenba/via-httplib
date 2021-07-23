@@ -990,7 +990,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   BOOST_CHECK(rx_state == Rx::VALID);
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
-  chunk_header chunk_header1(chunk_body1.size());
+  chunk_header<1024, 8, false> chunk_header1(chunk_body1.size());
   std::string  http_chunk_1(chunk_header1.to_string());
   chunk_body1 += CRLF;
 
@@ -1005,7 +1005,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   BOOST_CHECK(rx_state == Rx::CHUNK);
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
-  chunk_header chunk_header2(chunk_body2.size());
+  chunk_header<1024, 8, false> chunk_header2(chunk_body2.size());
   std::string  http_chunk_2(chunk_header2.to_string());
   chunk_body2 += CRLF;
 
@@ -1039,12 +1039,12 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
   std::string response_data1(server_response1.message());
 
   std::string  chunk_body1("abcdefghijklmnopqrstuvwxyz0123456789");
-  chunk_header chunk_header1(chunk_body1.size());
+  chunk_header<1024, 8, false> chunk_header1(chunk_body1.size());
   std::string  http_chunk_1(chunk_header1.to_string());
   chunk_body1 += CRLF;
 
   std::string chunk_body2("9876543210abcdefghijklmnopqrstuvwxyz");
-  chunk_header chunk_header2(chunk_body2.size());
+  chunk_header<1024, 8, false> chunk_header2(chunk_body2.size());
   std::string  http_chunk_2(chunk_header2.to_string());
   chunk_body2 += CRLF;
 

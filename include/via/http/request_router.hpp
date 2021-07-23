@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2019 Ken Barker
+// Copyright (c) 2015-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -86,8 +86,8 @@ namespace via
     /// @class request_router
     /// The class contains the route paths to search in HTTP requests.
     /// Note: the routes are searched in the order that they are added.
-    template <typename Container, typename R = rx_request<>>
-    class request_router : public request_handler<Container>
+    template <typename Container, typename R> // = rx_request<>>
+    class request_router : public request_handler<Container, R>
     {
     public:
       /// An HTTP request handler function.
@@ -199,7 +199,7 @@ namespace via
       /// Constructor
       /// @param auth_ptr a shared pointer to an authentication.
       explicit request_router()
-        : request_handler<Container>()
+        : request_handler<Container, R>()
         , routes_()
       {}
 

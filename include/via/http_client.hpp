@@ -32,11 +32,22 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
   /// @tparam Container the container to use for the tx buffer:
   /// std::vector<char> or std::string, default std::vector<char>.
+  /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:
+  /// default 65534, max 65534.
+  /// @tparam MAX_REASON_LENGTH the maximum length of a response reason string
+  /// default 65534, max 65534.
+  /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
+  /// default 65534, min 1, max 65534.
+  /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
+  /// default 65534, max 65534.
+  /// @param MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
+  /// fields: default LONG_MAX, max LONG_MAX.
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
+  /// whitespace characters allowed in a response: default 254, min 1, max 254.
+  /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container                  = std::vector<char>,
-            size_t         MAX_BODY_SIZE        = LONG_MAX,
-            size_t         MAX_CHUNK_SIZE       = LONG_MAX,
             unsigned short MAX_STATUS_NUMBER    = 65534,
             unsigned short MAX_REASON_LENGTH    = 65534,
             unsigned short MAX_HEADER_NUMBER    = 65534,
@@ -47,8 +58,6 @@ namespace via
   class http_client : public std::enable_shared_from_this
                                        <http_client<SocketAdaptor,
                                         Container,
-                                        MAX_BODY_SIZE,
-                                        MAX_CHUNK_SIZE,
                                         MAX_STATUS_NUMBER,
                                         MAX_REASON_LENGTH,
                                         MAX_HEADER_NUMBER,
@@ -63,8 +72,6 @@ namespace via
 
     typedef http_client<SocketAdaptor,
                             Container,
-                            MAX_BODY_SIZE,
-                            MAX_CHUNK_SIZE,
                             MAX_STATUS_NUMBER,
                             MAX_REASON_LENGTH,
                             MAX_HEADER_NUMBER,
@@ -87,8 +94,6 @@ namespace via
 
     /// The type of the response_receiver.
     typedef typename http::response_receiver<Container,
-                                             MAX_BODY_SIZE,
-                                             MAX_CHUNK_SIZE,
                                              MAX_STATUS_NUMBER,
                                              MAX_REASON_LENGTH,
                                              MAX_HEADER_NUMBER,
@@ -97,8 +102,14 @@ namespace via
                                              MAX_WHITESPACE_CHARS,
                                              STRICT_CRLF> http_response_rx;
 
+    /// The request type
+    typedef typename http::tx_request<> http_request;
+
     /// The response type
     typedef typename http_response_rx::Response http_response;
+
+    /// The chunk header type
+    typedef typename http_response_rx::ChunkHeader chunk_header_type;
 
     /// The chunk type
     typedef typename http_response_rx::Chunk chunk_type;
@@ -308,13 +319,17 @@ namespace via
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// @param max_body_size the maximum size of a response body.
+    /// @param max_chunk_size the maximum size of a response chunk.
     explicit http_client(ASIO::io_context& io_context,
-                         ResponseHandler response_handler,
-                         ChunkHandler    chunk_handler,
-                         size_t          rx_buffer_size) :
+                           ResponseHandler response_handler,
+                           ChunkHandler    chunk_handler,
+                           size_t          rx_buffer_size,
+                           size_t          max_body_size,
+                           size_t          max_chunk_size) :
       connection_(connection_type::create(io_context, rx_buffer_size)),
       timer_(io_context),
-      rx_(),
+      rx_(max_body_size, max_chunk_size),
       host_name_(),
       tx_header_(),
       tx_body_(),
@@ -343,13 +358,18 @@ namespace via
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
     /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// @param max_body_size the maximum size of a response body: default LONG_MAX.
+    /// @param max_chunk_size the maximum size of a response chunk: default LONG_MAX.
     static shared_pointer create(ASIO::io_context& io_context,
                                  ResponseHandler response_handler,
                                  ChunkHandler    chunk_handler,
-               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE,
+               size_t max_body_size  = LONG_MAX,
+               size_t max_chunk_size = LONG_MAX)
     {
       shared_pointer client_ptr(new http_client(io_context, response_handler,
-                                            chunk_handler, rx_buffer_size));
+                                            chunk_handler, rx_buffer_size,
+                                            max_body_size, max_chunk_size));
       weak_pointer ptr(client_ptr);
       client_ptr->connection_->set_error_callback([]
         (const ASIO_ERROR_CODE &error,
@@ -447,7 +467,7 @@ namespace via
 
     /// Send an HTTP request without a body.
     /// @param request the request to send.
-    bool send(http::tx_request request)
+    bool send(http_request request)
     {
       if (!is_connected())
         return false;
@@ -460,7 +480,7 @@ namespace via
     /// Send an HTTP request with a body.
     /// @param request the request to send.
     /// @param body the body to send
-    bool send(http::tx_request request, Container body)
+    bool send(http_request request, Container body)
     {
       if (!is_connected())
         return false;
@@ -479,7 +499,7 @@ namespace via
     /// Their lifetime MUST exceed that of the write
     /// @param request the request to send.
     /// @param buffers the body to send
-    bool send(http::tx_request request, comms::ConstBuffers buffers)
+    bool send(http_request request, comms::ConstBuffers buffers)
     {
       if (!is_connected())
         return false;
@@ -534,7 +554,7 @@ namespace via
         return false;
 
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
+      chunk_header_type chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
       tx_body_.swap(chunk);
 
@@ -558,7 +578,7 @@ namespace via
       // Calculate the overall size of the data in the buffers
       size_t size(ASIO::buffer_size(buffers));
 
-      http::chunk_header chunk_header(size, extension);
+      chunk_header_type chunk_header(size, extension);
       tx_header_ = chunk_header.to_string();
       buffers.push_front(ASIO::buffer(tx_header_));
       buffers.push_back(ASIO::buffer(http::CRLF));

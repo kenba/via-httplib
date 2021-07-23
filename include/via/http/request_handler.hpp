@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2015-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -30,9 +30,9 @@ namespace via
     /// provided by HTTP request handlers.
     /// The handle_request function is the pure virtual function that must be
     /// implemented by the derived classes.
-    template <typename Container, typename R = rx_request<>>
+    template <typename Container, typename R>
     class request_handler
-        : public std::enable_shared_from_this<request_handler<Container>>
+        : public std::enable_shared_from_this<request_handler<Container, R>>
     {
     public:
 

@@ -692,10 +692,6 @@ namespace via
     /// @class response_receiver
     /// A template class to receive HTTP responses and any associated data.
     /// @tparam Container std::string or std::vector<char>
-    /// @tparam MAX_BODY_SIZE the maximum size of a response body:
-    /// default LONG_MAX, max LONG_MAX.
-    /// @tparam MAX_CHUNK_SIZE the maximum size of a response chunk:
-    /// default LONG_MAX, max LONG_MAX.
     /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:
     /// default 65534, max 65534.
     /// @tparam MAX_REASON_LENGTH the maximum length of a response reason string
@@ -706,14 +702,11 @@ namespace via
     /// default 65534, max 65534.
     /// @param MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
     /// fields: default LONG_MAX, max LONG_MAX.
-
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
-    /// whitespace characters allowed in a request: default 254, min 1, max 254.
+    /// whitespace characters allowed in a response: default 254, min 1, max 254.
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              size_t         MAX_BODY_SIZE        = LONG_MAX,
-              size_t         MAX_CHUNK_SIZE       = LONG_MAX,
               unsigned short MAX_STATUS_NUMBER    = 65534,
               unsigned short MAX_REASON_LENGTH    = 65534,
               unsigned short MAX_HEADER_NUMBER    = 65534,
@@ -738,14 +731,22 @@ namespace via
                                              MAX_WHITESPACE_CHARS,
                                              STRICT_CRLF>;
 
+      using ChunkHeader = chunk_header<MAX_LINE_LENGTH,
+                                       MAX_WHITESPACE_CHARS,
+                                       STRICT_CRLF>;
+
       using Chunk = rx_chunk<Container,
-                             MAX_CHUNK_SIZE,
                              MAX_HEADER_NUMBER,
                              MAX_HEADER_LENGTH,
                              MAX_LINE_LENGTH,
                              MAX_WHITESPACE_CHARS,
                              STRICT_CRLF>;
+
     private:
+
+      /// Behaviour
+      /// the maximum size of a response body.
+      size_t max_body_size_ { LONG_MAX };
 
       /// Response information
       Response  response_ {}; ///< the received response
@@ -756,6 +757,20 @@ namespace via
 
       /// Default Constructor.
       response_receiver() = default;
+
+      /// Constructor.
+      /// Sets the parser parameters and all member variables to their initial
+      /// state.
+      /// @param max_body_size the maximum size of a response body: max LONG_MAX.
+      /// @param max_chunk_size the maximum size of a response chunk:
+      /// default LONG_MAX, max LONG_MAX.
+      explicit response_receiver(size_t max_body_size,
+                                   size_t max_chunk_size = LONG_MAX) :
+        max_body_size_(max_body_size),
+        response_(),
+        chunk_(max_chunk_size),
+        body_()
+      {}
 
       /// clear the response_receiver.
       /// Sets all member variables to their initial state.
@@ -817,12 +832,12 @@ namespace via
           }
 
           // if there's a message body without a content length header
-          // then allow upto MAX_BODY_SIZE
+          // then allow upto max_body_size_
           // The server can disconnect after it's finished sending the body
           std::ptrdiff_t rx_size(std::distance(iter, end));
           if ((rx_size > 0) && (content_length == 0) &&
               response_.headers().find(header_field::LC_CONTENT_LENGTH).empty())
-            content_length = MAX_BODY_SIZE;
+            content_length = max_body_size_;
 
           // received buffer contains more than the required data
           std::ptrdiff_t required(content_length -
