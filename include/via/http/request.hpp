@@ -581,9 +581,9 @@ namespace via
     /// @class tx_request
     /// A class to encode an HTTP request.
     //////////////////////////////////////////////////////////////////////////
-    class tx_request : public request_line<1024, 8, 8, true>
+    class tx_request : public request_line<8190, 8, 8, true>
     {
-      using request_ln = request_line<1024, 8, 8, true>;
+      using request_ln = request_line<8190, 8, 8, true>;
 
       std::string header_string_ {}; ///< The headers as a string.
 
@@ -679,7 +679,7 @@ namespace via
     /// A template class to receive HTTP requests and any associated data.
     /// @tparam Container the type of container in which the request is held.
     /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
-    /// default 1024, min 1, max 4 billion.
+    /// default 8190, min 1, max 4 billion.
     /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
     /// default 8, min 1, max 254.
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
@@ -693,7 +693,7 @@ namespace via
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              size_t         MAX_URI_LENGTH       = 1024,
+              size_t         MAX_URI_LENGTH       = 8190,
               unsigned char  MAX_METHOD_LENGTH    = 8,
               unsigned short MAX_HEADER_NUMBER    = 100,
               size_t         MAX_HEADER_LENGTH    = 8190,

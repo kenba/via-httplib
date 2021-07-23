@@ -80,7 +80,7 @@ namespace via
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
-  /// default 1024, min 1, max 4 billion.
+  /// default 8190, min 1, max 4 billion.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
   /// default 8, min 1, max 254.
   /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
@@ -95,7 +95,7 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container                  = std::vector<char>,
-            size_t         MAX_URI_LENGTH       = 1024,
+            size_t         MAX_URI_LENGTH       = 8190,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
             size_t         MAX_HEADER_LENGTH    = 8190,
