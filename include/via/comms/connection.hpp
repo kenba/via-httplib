@@ -714,13 +714,16 @@ namespace via
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.
       /// @param packet the data packet to write.
-      void send_data(Container packet)
+      /// @return true if the packet is being sent, false otherwise.
+      bool send_data(Container packet)
       {
         bool was_empty(tx_queue_->empty());
         tx_queue_->push_back(std::move(packet));
 
         if (!transmitting_ && was_empty)
-          write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
+          transmitting_ = write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
+
+        return transmitting_;
       }
 
       /// Send the data in the buffers.
