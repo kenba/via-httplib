@@ -408,7 +408,8 @@ namespace via
       bool valid() const noexcept
       { return valid_; }
 
-      // @return headers as a map
+      /// Accessor for the header fields.
+      /// @return headers as a map
       const StringMap& fields() const
       { return fields_; }
       

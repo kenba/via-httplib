@@ -86,7 +86,7 @@ namespace via
     /// @class request_router
     /// The class contains the route paths to search in HTTP requests.
     /// Note: the routes are searched in the order that they are added.
-    template <typename Container, typename R> // = rx_request<>>
+    template <typename Container, typename R>
     class request_router : public request_handler<Container, R>
     {
     public:
@@ -197,11 +197,7 @@ namespace via
     public:
 
       /// Constructor
-      /// @param auth_ptr a shared pointer to an authentication.
-      explicit request_router()
-        : request_handler<Container, R>()
-        , routes_()
-      {}
+      request_router() = default;
 
       /// Destructor
       virtual ~request_router()
@@ -213,6 +209,7 @@ namespace via
       /// @param path the uri path. Note: it may contain ':' characters to
       /// capture paramters from the uri path like Node.js.
       /// @param handler the request handler to be called.
+      /// @param auth_ptr a shared pointer to an authentication, default nullptr.
       /// @return true if the path is new, false otherwise.
       bool add_method(std::string_view method, std::string_view path,
                       Handler handler,
@@ -237,6 +234,7 @@ namespace via
       /// @param path the uri path. Note: it may contain ':' characters to
       /// capture paramters from the uri path like Node.js.
       /// @param handler the request handler to be called.
+      /// @param auth_ptr a shared pointer to an authentication, default nullptr.
       /// @return true if the path is new, false otherwise.
       bool add_method(request_method::id method_id, std::string_view path,
                       Handler handler,

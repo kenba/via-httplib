@@ -717,6 +717,7 @@ namespace via
     class response_receiver
     {
     public:
+      /// The rx_response for this response_receiver.
       using Response = rx_response<MAX_STATUS_NUMBER,
                                    MAX_REASON_LENGTH,                           
                                    MAX_HEADER_NUMBER,
@@ -725,16 +726,19 @@ namespace via
                                    MAX_WHITESPACE_CHARS,
                                    STRICT_CRLF>;
 
+      /// The message_headers for this response_receiver.
       using MessageHeaders = message_headers<MAX_HEADER_NUMBER,
                                              MAX_HEADER_LENGTH,
                                              MAX_LINE_LENGTH,
                                              MAX_WHITESPACE_CHARS,
                                              STRICT_CRLF>;
 
+      /// The chunk_header for this response_receiver.
       using ChunkHeader = chunk_header<MAX_LINE_LENGTH,
                                        MAX_WHITESPACE_CHARS,
                                        STRICT_CRLF>;
 
+      /// The rx_chunk for this response_receiver.
       using Chunk = rx_chunk<Container,
                              MAX_HEADER_NUMBER,
                              MAX_HEADER_LENGTH,

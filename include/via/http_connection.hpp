@@ -68,6 +68,7 @@ namespace via
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
+    /// This type.
     typedef http_connection<SocketAdaptor,
                             Container,
                             MAX_URI_LENGTH,

@@ -709,7 +709,6 @@ namespace via
       void set_connected(bool enable) noexcept
       { connected_ = enable; }
 
-      /// @fn send_data(Container const& packet)
       /// Send a packet of data.
       /// The packet is added to the back of the transmit queue and sent if
       /// the queue was empty.

@@ -70,15 +70,16 @@ namespace via
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
+    /// This type.
     typedef http_client<SocketAdaptor,
-                            Container,
-                            MAX_STATUS_NUMBER,
-                            MAX_REASON_LENGTH,
-                            MAX_HEADER_NUMBER,
-                            MAX_HEADER_LENGTH,
-                            MAX_LINE_LENGTH,
-                            MAX_WHITESPACE_CHARS,
-                            STRICT_CRLF> this_type;
+                        Container,
+                        MAX_STATUS_NUMBER,
+                        MAX_REASON_LENGTH,
+                        MAX_HEADER_NUMBER,
+                        MAX_HEADER_LENGTH,
+                        MAX_LINE_LENGTH,
+                        MAX_WHITESPACE_CHARS,
+                        STRICT_CRLF> this_type;
 
     /// A weak pointer to this type.
     typedef typename std::weak_ptr<this_type> weak_pointer;

@@ -703,11 +703,13 @@ namespace via
     class request_receiver
     {
     public:
+      /// The request_line for this request_receiver.
       using request_ln = request_line<MAX_URI_LENGTH,
                                       MAX_METHOD_LENGTH,
                                       MAX_WHITESPACE_CHARS,
                                       STRICT_CRLF>;
 
+      /// The rx_request for this request_receiver.
       using Request = rx_request<MAX_URI_LENGTH,
                                  MAX_METHOD_LENGTH,
                                  MAX_HEADER_NUMBER,
@@ -716,6 +718,7 @@ namespace via
                                  MAX_WHITESPACE_CHARS,
                                  STRICT_CRLF>;
 
+      /// The rx_chunk for this request_receiver.
       using Chunk = rx_chunk<Container,
                              MAX_HEADER_NUMBER,
                              MAX_HEADER_LENGTH,

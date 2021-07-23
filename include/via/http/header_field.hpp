@@ -214,7 +214,7 @@ namespace via
       };
 
       /// Lookup the RFC2616 standard name for the given header field.
-      /// @param id the header field id.
+      /// @param field_id the header field id.
       /// @return the field name from RFC2616.
       constexpr std::string_view standard_name(id field_id) noexcept
       {
@@ -281,7 +281,7 @@ namespace via
       }
 
       /// Lookup the lowercase name for the given header field.
-      /// @param id the header field id.
+      /// @param field_id the header field id.
       /// @return the field name from RFC2616 converted to lowercase.
       constexpr std::string_view lowercase_name(id field_id) noexcept
       {
@@ -354,7 +354,7 @@ namespace via
       { return std::string(name) + SEPARATOR + std::string(value) + CRLF; }
 
       /// Format the field id and value into an http header line.
-      /// @param id header field id.
+      /// @param field_id header field id.
       /// @param value header field value.
       inline std::string to_header(id field_id, std::string_view value)
       { return to_header(standard_name(field_id), value); }
