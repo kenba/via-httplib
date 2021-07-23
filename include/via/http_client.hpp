@@ -103,7 +103,7 @@ namespace via
                                              STRICT_CRLF> http_response_rx;
 
     /// The request type
-    typedef typename http::tx_request<> http_request;
+    typedef typename http::tx_request http_request;
 
     /// The response type
     typedef typename http_response_rx::Response http_response;
