@@ -16,6 +16,9 @@
 
 using namespace via::http;
 
+typedef response_receiver<std::string, 65534, 65534, 65534, LONG_MAX, 65534, 254, false>
+    http_response_receiver;
+
 //////////////////////////////////////////////////////////////////////////////
 BOOST_AUTO_TEST_SUITE(TestResponseStatus)
 
@@ -678,7 +681,7 @@ BOOST_AUTO_TEST_CASE(ValidOK1)
   std::string response_data("HTTP/1.0 200 OK\r\nC");
   std::string::iterator next(response_data.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -707,7 +710,7 @@ BOOST_AUTO_TEST_CASE(ValidOK2)
   response_data += "\r\nabcd\r\n"; // extra chars at end of body
   std::string::iterator next(response_data.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
   bool ok (rx_state == Rx::VALID);
   BOOST_CHECK(ok);
@@ -721,7 +724,7 @@ BOOST_AUTO_TEST_CASE(InValidOK1)
   std::string response_data("P");
   std::string::iterator next(response_data.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 }
@@ -731,7 +734,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked1)
   std::string response_data1("H");
   std::string::iterator next(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
@@ -776,7 +779,7 @@ BOOST_AUTO_TEST_CASE(ValidOKChunked2)
 
   std::string::iterator next(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
@@ -829,7 +832,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK2)
   response_data += "\r\nabcd";
   std::string::iterator next(response_data.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
   bool ok (rx_state == Rx::INVALID);
   BOOST_CHECK(ok);
@@ -843,7 +846,7 @@ BOOST_AUTO_TEST_CASE(InvalidOK3)
   response_data += "\r\nabcd";
   std::string::iterator next(response_data.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -857,7 +860,7 @@ BOOST_AUTO_TEST_CASE(InValidOKChunked4)
 
   std::string::iterator next(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(next, response_data1.end()));
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
 
@@ -886,7 +889,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk1)
   std::string response_data1(server_response.message());
   std::string::iterator iter(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
 
@@ -906,7 +909,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk2)
   std::string response_data1(server_response1.message(response_body1.size()));
   std::string::iterator iter(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
   BOOST_CHECK(iter == response_data1.end());
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
@@ -959,7 +962,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOk3)
                               response_data2 + response_body2);
 
   std::string::iterator iter(response_buffer.begin());
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
   BOOST_CHECK(iter != response_buffer.end());
   BOOST_CHECK(rx_state == Rx::VALID);
@@ -985,7 +988,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked1)
   std::string response_data1(server_response1.message());
   std::string::iterator iter(response_data1.begin());
 
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_data1.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
 
@@ -1061,7 +1064,7 @@ BOOST_AUTO_TEST_CASE(LoopbackOkChunked2)
                               response_data1);
 
   std::string::iterator iter(response_buffer.begin());
-  response_receiver<std::string> the_response_receiver;
+  http_response_receiver the_response_receiver;
   Rx rx_state(the_response_receiver.receive(iter, response_buffer.end()));
   BOOST_CHECK(iter != response_buffer.end());
   BOOST_CHECK(rx_state == Rx::VALID);

@@ -679,27 +679,27 @@ namespace via
     /// A template class to receive HTTP requests and any associated data.
     /// @tparam Container the type of container in which the request is held.
     /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
-    /// default 8190, min 1, max 4 billion.
+    /// min 1, max 4 billion.
     /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
-    /// default 8, min 1, max 254.
+    /// min 1, max 254.
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
-    /// default 100, max 65534.
+    /// max 65534.
     /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
-    /// fields: default 8190, max 4 billion.
+    /// fields: max 4 billion.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
-    /// default 1024, min 1, max 65534.
+    /// min 1, max 65534.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
-    /// characters allowed in a request: default 8, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
+    /// characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              size_t         MAX_URI_LENGTH       = 8190,
-              unsigned char  MAX_METHOD_LENGTH    = 8,
-              unsigned short MAX_HEADER_NUMBER    = 100,
-              size_t         MAX_HEADER_LENGTH    = 8190,
-              unsigned short MAX_LINE_LENGTH      = 1024,
-              unsigned char  MAX_WHITESPACE_CHARS = 8,
-              bool           STRICT_CRLF          = false>
+              size_t         MAX_URI_LENGTH,
+              unsigned char  MAX_METHOD_LENGTH,
+              unsigned short MAX_HEADER_NUMBER,
+              size_t         MAX_HEADER_LENGTH,
+              unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class request_receiver
     {
     public:

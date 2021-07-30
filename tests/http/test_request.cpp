@@ -17,6 +17,9 @@
 
 using namespace via::http;
 
+typedef request_receiver<std::string, 8190, 8, 100, 16384, 1024, 8, false>
+  http_request_receiver;
+
 //////////////////////////////////////////////////////////////////////////////
 BOOST_AUTO_TEST_SUITE(TestRequestMethod)
 
@@ -632,7 +635,7 @@ BOOST_AUTO_TEST_CASE(ValidGet1)
   std::string request_data("GET abcdefghijklmnopqrstuvwxyz HTTP/1.0\r\n\r\n");
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   bool complete (rx_state == Rx::VALID);
   BOOST_CHECK(complete);
@@ -649,7 +652,7 @@ BOOST_AUTO_TEST_CASE(ValidGet2)
   std::string request_data1("G");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -672,7 +675,7 @@ BOOST_AUTO_TEST_CASE(InValidGet1)
   std::string request_data1("g");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 }
@@ -682,7 +685,7 @@ BOOST_AUTO_TEST_CASE(ValidPostQt1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -720,7 +723,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk1)
   std::string::iterator next(request_data1.begin());
 
   // Receiver concatenates chunks
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -772,7 +775,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk2)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
@@ -825,7 +828,7 @@ BOOST_AUTO_TEST_CASE(ValidPostChunk3)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state
       (the_request_receiver.receive(next, request_data1.end()));
@@ -865,7 +868,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -884,7 +887,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader2)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -909,7 +912,7 @@ BOOST_AUTO_TEST_CASE(InvalidPostHeader3)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -947,7 +950,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength1)
   std::string request_data1("P");
   std::string::iterator next(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -973,7 +976,7 @@ BOOST_AUTO_TEST_CASE(InValidPostBodyLength2)
   std::string::iterator next(request_data1.begin());
 
   // set request_receiver max_content_length to 25 to fail
-  request_receiver<std::string> the_request_receiver(25, DEFAULT_MAX_CHUNK_SIZE);
+  http_request_receiver the_request_receiver(25, DEFAULT_MAX_CHUNK_SIZE);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
   BOOST_CHECK(ok);
@@ -998,7 +1001,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk1)
   std::string::iterator next(request_data1.begin());
 
   // Receiver does NOT concatenate_chunks
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(next, request_data1.end()));
   bool ok (rx_state == Rx::INCOMPLETE);
@@ -1059,7 +1062,7 @@ BOOST_AUTO_TEST_CASE(InValidPostChunk2)
                              request_data1);
   std::string::iterator iter(request_buffer.begin());
 
-  request_receiver<std::string> the_request_receiver(40, DEFAULT_MAX_CHUNK_SIZE);
+  http_request_receiver the_request_receiver(40, DEFAULT_MAX_CHUNK_SIZE);
   the_request_receiver.set_concatenate_chunks(true);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
@@ -1078,7 +1081,7 @@ BOOST_AUTO_TEST_CASE(ValidHeadRequest1)
   request_data += "Content-Length: 0\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
 
@@ -1093,7 +1096,7 @@ BOOST_AUTO_TEST_CASE(ValidHeadRequest2)
   request_data += "Content-Length: 0\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_translate_head(false);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
@@ -1109,7 +1112,7 @@ BOOST_AUTO_TEST_CASE(InValidUriLength1)
   request_data += "Content-Length: 0\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string, 16> the_request_receiver(1024, 1024);
+  request_receiver<std::string, 16, 8, 100, 16384, 1024, 8, false> the_request_receiver(1024, 1024);
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 
@@ -1124,7 +1127,7 @@ BOOST_AUTO_TEST_CASE(InValidContentLength1)
   request_data += "Body without a Content-Length header";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 
@@ -1139,7 +1142,7 @@ BOOST_AUTO_TEST_CASE(ValidTrace1)
   request_data += "Content-Length: 0\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
 
@@ -1153,7 +1156,7 @@ BOOST_AUTO_TEST_CASE(ValidTrace2)
   request_data += "Host: 172.16.0.126:3456\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::VALID);
 
@@ -1168,7 +1171,7 @@ BOOST_AUTO_TEST_CASE(InValidTrace1)
   request_data += "Content-Length: 1\r\n\r\n";
   std::string::iterator next(request_data.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(next, request_data.end()));
   BOOST_CHECK(rx_state == Rx::INVALID);
 
@@ -1189,7 +1192,7 @@ BOOST_AUTO_TEST_CASE(LoopbackGet1)
   std::string request_data1(client_request.message());
   std::string::iterator iter(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
 
@@ -1212,7 +1215,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPut1)
   std::string request_data1(client_request.message(request_body1.size()));
   std::string::iterator iter(request_data1.begin());
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
   BOOST_CHECK(rx_state == Rx::INCOMPLETE);
@@ -1264,7 +1267,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPut2)
                              request_data2 + request_body2);
 
   std::string::iterator iter(request_buffer.begin());
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(iter != request_buffer.end());
   BOOST_CHECK(rx_state == Rx::VALID);
@@ -1287,7 +1290,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost1)
 
 //  std::cout << "request_data1: " << request_data1 << std::endl;
 
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(iter, request_data1.end()));
   BOOST_CHECK(iter == request_data1.end());
@@ -1367,7 +1370,7 @@ BOOST_AUTO_TEST_CASE(LoopbackPost2)
                              request_data1);
 
   std::string::iterator iter(request_buffer.begin());
-  request_receiver<std::string> the_request_receiver;
+  http_request_receiver the_request_receiver;
   the_request_receiver.set_concatenate_chunks(false);
   Rx rx_state(the_request_receiver.receive(iter, request_buffer.end()));
   BOOST_CHECK(iter != request_buffer.end());

@@ -693,27 +693,27 @@ namespace via
     /// A template class to receive HTTP responses and any associated data.
     /// @tparam Container std::string or std::vector<char>
     /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:
-    /// default 65534, max 65534.
+    /// max 65534.
     /// @tparam MAX_REASON_LENGTH the maximum length of a response reason string
-    /// default 65534, max 65534.
+    /// max 65534.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
-    /// default 65534, min 1, max 65534.
+    /// min 1, max 65534.
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
-    /// default 65534, max 65534.
+    /// max 65534.
     /// @param MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
-    /// fields: default LONG_MAX, max LONG_MAX.
+    /// fields: max LONG_MAX.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
-    /// whitespace characters allowed in a response: default 254, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
+    /// whitespace characters allowed in a response: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
     template <typename Container,
-              unsigned short MAX_STATUS_NUMBER    = 65534,
-              unsigned short MAX_REASON_LENGTH    = 65534,
-              unsigned short MAX_HEADER_NUMBER    = 65534,
-              size_t         MAX_HEADER_LENGTH    = LONG_MAX,
-              unsigned short MAX_LINE_LENGTH      = 65534,
-              unsigned char  MAX_WHITESPACE_CHARS = 254,
-              bool           STRICT_CRLF = false>
+              unsigned short MAX_STATUS_NUMBER,
+              unsigned short MAX_REASON_LENGTH,
+              unsigned short MAX_HEADER_NUMBER,
+              size_t         MAX_HEADER_LENGTH,
+              unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class response_receiver
     {
     public:

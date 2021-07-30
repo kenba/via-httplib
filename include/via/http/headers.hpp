@@ -219,23 +219,23 @@ namespace via
     /// Note: the parse function converts the received field names into lower
     /// case before storing them in a unordered_map for efficient access.
     /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
-    /// default 100, max 65534.
+    /// max 65534.
     /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
-    /// fields: default 8190, max 4 billion.
+    /// fields: max 4 billion.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
-    /// default 1024, min 1, max 65534.
+    /// min 1, max 65534.
     /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
-    /// characters allowed in a request: default 8, min 1, max 254.
-    /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default true.
+    /// characters allowed in a request: min 1, max 254.
+    /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     /// @see rx_request
     /// @see rx_response
     /// @see rx_chunk
     //////////////////////////////////////////////////////////////////////////
-    template <unsigned short MAX_HEADER_NUMBER    = 100,
-              size_t         MAX_HEADER_LENGTH    = 8190,
-              unsigned short MAX_LINE_LENGTH      = 1024,
-              unsigned char  MAX_WHITESPACE_CHARS = 8,
-              bool           STRICT_CRLF          = true>
+    template <unsigned short MAX_HEADER_NUMBER,
+              size_t         MAX_HEADER_LENGTH,
+              unsigned short MAX_LINE_LENGTH,
+              unsigned char  MAX_WHITESPACE_CHARS,
+              bool           STRICT_CRLF>
     class message_headers
     {
       /// Parser parameters
