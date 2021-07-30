@@ -86,11 +86,11 @@ namespace via
   /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines:
   /// default 100, max 65534.
   /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
-  /// fields: default 8190, max 4 billion.
+  /// fields: default 65534, max 4 billion.
   /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
   /// default 1024, min 1, max 65534.
-  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
-  /// characters allowed in a request: default 8, min 1, max 254.
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive whitespace
+  /// characters permitted in a request: default 8, min 1, max 254.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
@@ -98,7 +98,7 @@ namespace via
             size_t         MAX_URI_LENGTH       = 8190,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
-            size_t         MAX_HEADER_LENGTH    = 8190,
+            size_t         MAX_HEADER_LENGTH    = 65534,
             unsigned short MAX_LINE_LENGTH      = 1024,
             unsigned char  MAX_WHITESPACE_CHARS = 8,
             bool           STRICT_CRLF          = false>
