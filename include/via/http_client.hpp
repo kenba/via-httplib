@@ -134,7 +134,7 @@ namespace via
 
     std::shared_ptr<connection_type> connection_; ///< the comms connection
     ASIO_TIMER timer_;                            ///< a deadline timer
-    http::response_receiver<Container> rx_;       ///< the response receiver
+    http_response_rx rx_;                         ///< the response receiver
     std::string host_name_;                       ///< the name of the host
     std::string port_name_;                       ///< the port name / number
     unsigned long period_;                        ///< the reconnection period
