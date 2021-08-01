@@ -1,66 +1,90 @@
-# HTTP Server Configuration #
+# HTTP Server Configuration
 
-All of the parameters can be set by calling the function with the name of the
-parameter preceded by `set_`, e.g.:
+Much of the behaviour of an http_server is determined by the `via::http_server`
+class template parameters.
 
-    http_server.set_max_body_size(40000000);
+```C++
+namespace via
+{
+  template <typename SocketAdaptor,
+            typename Container                  = std::vector<char>,
+            bool           IPV4_ONLY            = false,
+            size_t         MAX_URI_LENGTH       = 8190,
+            unsigned char  MAX_METHOD_LENGTH    = 8,
+            unsigned short MAX_HEADER_NUMBER    = 100,
+            size_t         MAX_HEADER_LENGTH    = 65534,
+            unsigned short MAX_LINE_LENGTH      = 1024,
+            unsigned char  MAX_WHITESPACE_CHARS = 8,
+            bool           STRICT_CRLF          = false>
+    class http_server
+    {
+    ...
+    }
+}
+```
 
-## Request Parser Parameters
+## SSL / TLS Configuration
 
-These parameters affect how the parser identifies invalid HTTP requests.
+The `via::http_server` template class requires a `SocketAdaptor` to instantiate it:
+
++ a `tcp_adaptor` for a plain **HTTP** server/client
++ an `ssl_tcp_adaptor` for an **HTTPS** server/client
+
+## Data / Text Configuration
+
+The `via::http_server` template class also takes a template parameter to configure
+the type of container used to pass HTTP message bodies, e.g.:
+
++ `std::vector<char>` (the default) for handing binary data, e.g. images, files, etc.
++ `std::string` for handing textural data, e.g. HTML, JSON, etc.
+
+| Socket Adaptor    | Container         | Description                   |
+|-------------------|-------------------|-------------------------------|
+| `tcp_adaptor`     | `std::vector<char>`   | An HTTP data server/client.  |
+| `tcp_adaptor`     | `std::string`     | An HTTP text server/client.          |
+| `ssl_tcp_adaptor` | `std::vector<char>`   | An HTTPS data server/client. |
+| `ssl_tcp_adaptor` | `std::string`     | An HTTPS text server/client.         |
+
+E.g.
+
+```C++
+// An HTTP data server.
+typedef via::http_server<via::comms::tcp_adaptor> http_data_server_type;
+
+// An HTTP text server.
+typedef via::http_server<via::comms::tcp_adaptor, std::string> http_text_server_type;
+
+// An HTTPS data server.
+typedef via::http_server<via::comms::ssl_tcp_adaptor> https_data_server_type;
+
+// An HTTPS text server.
+typedef via::http_server<via::comms::ssl_tcp_adaptor, std::string> https_text_server_type;
+```
+
+## IPV6 / IPV4 Configuration
+
+Whether a server accepts IPV6 and IPV4 connections or just IPV4 connections
+depends upon the `IPV4_ONLY` template parameter:
+
++ **false**, (the default) the server accepts both IPV6 and IPV4 connections
++ **true**, the server only accepts IPV4 connections.
+
+## HTTP Request Parser Parameters
+
+The other integer (and boolean) template parameters are the permitted HTTP request
+parameters for an `http_server`, see [HTTP Parser Configuration](Configuration.md).
+
+## Request Size Parameters
+
+These parameters may be set when constructing an `http_server`, they affect the
+sizes of request bodies and chunks that the parser identifies as invalid HTTP requests.
 The default values are relatively tolerant, stricter values would be required
 for security.
 
 | Parameter         | Default | Description                                         |
 |-------------------|---------|-----------------------------------------------------|
-| strict_crlf       | false   | Enforce strict parsing of CRLF.                     |
-| max_whitespace    | 8       | The maximum number of consectutive whitespace characters. |
-| max_method_length | 8       | The maximum length of a request method.             |
-| max_uri_length    | 1024    | The maximum length of a request URI.                |
-| max_line_length   | 1024    | The maximum length of a header field line.          |
-| max_header_number | 100     | The maximum number of header fields in a request.   |
-| max_header_length | 8190    | The maximum length of characters in the headers.    |
-| max_body_size     | 1Mb     | The maximum size of a request body.                 |
+| max_content_length| 1Mb     | The maximum size of a request body and chunks.      |
 | max_chunk_size    | 1Mb     | The maximum size of each request chunk.             |
-
-### strict_crlf
-
-A strictly valid HTTP line must end with CRLF pair, however rfc7230 recommends
-that servers are tolerant so allow an LF without the CR (the default).
-
-Enabling this value enforces strict CRLF parsing.
-
-### max_whitespace
-
-rfc7230 allows "optional" whitespace characters, see: [rfc7230](https://tools.ietf.org/html/rfc7230) section 3.2.3.  
-This value sets the maximum number of optional whitespace characters between HTTP elements: 
-default 8, 1 is the minimum.
-
-### max_method_length
-
-rfc7230 does not specify the length of the method names, however the longest
-rfc7231 name is 7 characters long (OPTIONS).  
-Change this value if using non-standard names longer than 8 characters.
-
-### max_uri_length
-
-rfc7230 does not specify the maximum length of the uri, but it does provide a
-response if it's too long.  
-The default is a compromise value, change it if using uris that are known to be
-much shorter or longer.
-
-### max_line_length
-
-This is the maximum length of a header field line, the default is 1024.  
-Note: cookie field lines may be longer than this.
-
-### max_header_number
-
-The maximum number of header fields allowed in a request
-
-### max_header_length
-
-The maximum total size of the header fields for each request message.
 
 ### max_body_size
 
@@ -73,6 +97,70 @@ for your application.
 The maximum size of a request chunk.  
 It is set to a default of 1Mb, it is highly recommended to set it to specific value
 for your application.
+
+## HTTPS Server Configuration
+
+The following functions can be called to set up the SSL/TLS parameters:
+
+| Function      | Description                                          |
+|---------------|------------------------------------------------------|
+| set_password  | Sets the SSL/TLS password. |
+| set_ssl_files | Sets the SSL/TLS files: certificate_file, key file and dh_file. |
+
+Note: only valid for servers using `via::comms::ssl::ssl_tcp_adaptor` as a template parameter.  
+
+E.g:
+
+```C++
+// Set up SSL
+https_server.set_password(password);
+boost::system::error_code error
+    (https_server_type::set_ssl_files(certificate_file, private_key_file));
+if (error)
+{
+    std::cerr << "Error, set_ssl_files: "  << error.message() << std::endl;
+    return 1;
+}
+```
+
+Other SSL/TLS options can be set via the ssl_context, e.g.:
+
+```C++
+boost::asio::ssl::context& ssl_context
+    (https_server_type::connection_type::ssl_context());
+    
+ssl_context.set_options(boost::asio::ssl::context_base::default_workarounds);
+```
+
+See: [asio ssl context base](http://www.boost.org/doc/libs/1_76_0/doc/html/boost_asio/reference/ssl__context_base.html)
+for options.
+
+## Multithreading Configuration
+
+An HTTP server can be configured to use run the `asio::io_context` in multiple threads
+(in a thread pool) by setting the macro `HTTP_THREAD_SAFE`, e.g.:
+
+```C++
+// A multithreading HTTP text server.
+typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
+.
+.
+.
+
+// Create a thread pool for the threads and run the asio io_context
+// in each of the threads.
+std::vector<std::shared_ptr<std::thread>> threads;
+for (std::size_t i = 0; i < no_of_threads; ++i)
+{
+  std::shared_ptr<std::thread> thread(std::make_shared<std::thread>
+                        ([&io_context](){ io_context.run(); }));
+  threads.push_back(thread);
+}
+
+// Wait for all threads in the pool to exit.
+for (std::size_t i(0); i < threads.size(); ++i)
+  threads[i]->join();
+```
 
 ## HTTP Server Option Parameters
 
@@ -109,7 +197,9 @@ Note: the server **never** sends a body in a response to a HEAD request.
 
 Access using `tcp_server().set_`, e.g.:
 
-    http_server.tcp_server().set_timeout(1000);
+```C++
+http_server.tcp_server().set_timeout(1000);
+```
 
 | Parameter           | Description                                         |
 |---------------------|-----------------------------------------------------|

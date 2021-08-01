@@ -18,7 +18,7 @@ HTTP/HTTPS servers to be built that comply with
 
 + A C++17 compliant compiler.  
 This version requires a complier that supports string_view.
-It's been tested with `MSVC 2019`, `Clang 7.0.1`, `GCC 8.2` and `MinGw 7.3.0`.  
+It's been tested with `MSVC 2019`, `Clang 7.0.1`, `GCC 9.3.0` and `MinGw 8.1.0`.  
 C++11 versions are available in tags `1.6.0` and lower.  
 
 + The `asio` C++ library.  
@@ -147,7 +147,6 @@ int main(int /* argc */, char *argv[])
 | Document | Description |
 |----------|-------------|
 | [Build Guide](docs/MAKE.md) | How to build the library. |
-| [Configuration](docs/Configuration.md) | How to configure the library. |
 | [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
 | [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
 | [Security Guide](docs/Server_Security.md) | HTTP Server secruity considerations. |
