@@ -79,6 +79,7 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
+  /// @tparam IPV4_ONLY whether an IPV4 only server is required, default false.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
   /// default 8190, min 1, max 4 billion.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
@@ -95,6 +96,7 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename SocketAdaptor,
             typename Container                  = std::vector<char>,
+            bool           IPV4_ONLY            = false,
             size_t         MAX_URI_LENGTH       = 8190,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
@@ -339,7 +341,7 @@ namespace via
     }
 
     /// Handle a disconnected signal from an underlying comms connection.
-    /// Noitfy the handler and erase the connection from the collection.
+    /// Notify the handler and erase the connection from the collection.
     /// @param iter a valid iterator into the connection collection.
     void disconnected_handler(void* pointer,
                         std::shared_ptr<http_connection_type> http_connection)
@@ -401,7 +403,7 @@ namespace via
           receive_handler(http_connection);
           break;
         case via::comms::SENT:
-          // Noitfy the sent handler if one exists
+          // Notify the sent handler if one exists
           if (message_sent_handler_)
             message_sent_handler_(http_connection);
           break;
@@ -416,7 +418,7 @@ namespace via
 
     /// Receive an error from the underlying comms connection.
     /// @param error the boost error_code.
-    // @param connection a weak ponter to the underlying comms connection.
+    // @param connection a weak pointer to the underlying comms connection.
     void error_handler(const ASIO_ERROR_CODE &error,
                        std::weak_ptr<connection_type>) // connection)
     {
@@ -487,11 +489,9 @@ namespace via
     /// before this function.
     /// @param port the port number to serve:
     /// default 80 for HTTP or 443 for HTTPS.
-    /// @param ipv4_only whether an IPV4 only server is required, default false.
     /// @return the boost error code, false if no error occured
     ASIO_ERROR_CODE accept_connections
-                      (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT,
-                       bool ipv4_only = false)
+                      (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT)
     {
       // If a request handler's not been registered, use the request_router
       if (!http_request_handler_)
@@ -500,7 +500,7 @@ namespace via
                    http_request const& request, Container const& body)
         { route_request(weak_ptr, request, body); };
 
-      return server_->accept_connections(port, ipv4_only);
+      return server_->accept_connections(port, IPV4_ONLY);
     }
 
     /// Accessor for the request_router_
