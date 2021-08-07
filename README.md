@@ -24,7 +24,7 @@ C++11 versions are available in tags `1.6.0` and lower.
 + The `asio` C++ library.  
 Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
 
-+ For: mutithreading, authentication and/or the request router, the relevant [boost](http://www.boost.org/) libraries are required.  
++ For: multithreading, authentication and/or the request router, the relevant [boost](http://www.boost.org/) libraries are required.  
 However, if they are not required, the library can use [standalone asio](http://think-async.com/) on its own.
 
 + For HTTPS: the `OpenSSL` library, see [openssl](http://www.openssl.org/).  
@@ -149,7 +149,7 @@ int main(int /* argc */, char *argv[])
 | [Build Guide](docs/MAKE.md) | How to build the library. |
 | [Server User Guide](docs/Server.md) | How to use the library to create HTTP servers. |
 | [Client User Guide](docs/Client.md) | How to use the library to create HTTP clients. |
-| [Security Guide](docs/Server_Security.md) | HTTP Server secruity considerations. |
+| [Security Guide](docs/Server_Security.md) | HTTP Server security considerations. |
 | [Design](docs/Design_Top.md) | The library design. |
 | [examples/server](examples/server) | Example HTTP & HTTPS servers. |
 | [examples/client](examples/client) | Example HTTP & HTTPS clients. |

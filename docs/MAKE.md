@@ -1,5 +1,8 @@
 # Build Guide
 
+The library is header only, so the library `include` directory just needs to be
+added to the include path.
+
 ## Boost / Standalone `asio` Library
 
 The library uses [boost asio](http://www.boost.org/doc/libs/1_76_0/doc/html/boost_asio.html) by default.  
@@ -37,21 +40,20 @@ They are defined in [socket_adaptor.hpp](include/via/comms/socket_adaptor.hpp):
 It is hoped that they can continue to provide portability when `asio` becomes a standard C++ library:
 see: [Networking Library Proposal](http://open-std.org/JTC1/SC22/WG21/docs/papers/2015/n4478.html).
 
-## Recommended build steps
+## Recommended Windows build steps
 
 Set the environment variable OPENSSL\_ROOT\_DIR to the location of where **OpenSSL** has been installed.
 
-Set the environment variable BOOST\_ROOT to the location of where **Boost** has been installed.
+Set the environment variable BOOST\_ROOT to the location of where **Boost** has been installed,  
+or set the environment variable ASIO\_ROOT to the location of where **Asio** has been installed.
 
 Set the environment variable VIAHTTPLIB to the location of where **via-httplib** has been installed.
-
-The library is header only, so the library `include` directory just needs to be
-added to the include path.
 
 ## Tools, and their versions, currently built against
 
 + CMake version 3.20.1
 + OpenSSL version 1.1.1
 + Boost version 1.76.0
++ GCC version 9.3.0
 + MinGW version 8.1.0
 + Visual Studio 2019
