@@ -438,20 +438,14 @@ namespace via
 
     /// Constructor.
     /// @param io_context a reference to the ASIO::io_context.
-    /// @param max_content_length the maximum size of HTTP request content:
-    /// max 4 billion.
-    /// @param max_chunk_size the maximum size of an HTTP request chunk:
-    /// max 4 billion.
-    explicit http_server(ASIO::io_context& io_context,
-                          size_t max_content_length = http_request_rx::DEFAULT_MAX_CONTENT_LENGTH,
-                          size_t max_chunk_size = http::DEFAULT_MAX_CHUNK_SIZE) :
+    explicit http_server(ASIO::io_context& io_context) :
       server_(new server_type(io_context)),
       http_connections_(),
       request_router_(),
       shutting_down_(false),
 
-      max_content_length_(max_content_length),
-      max_chunk_size_(max_chunk_size),
+      max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
+      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE),
 
       require_host_header_(true),
       translate_head_     (true),
@@ -565,6 +559,18 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // HTTP server options set functions
+
+    /// Set the maximum HTTP request body content length to allow.
+    /// @param max_length default http_request_rx::DEFAULT_MAX_CONTENT_LENGTH.
+    void set_max_content_length(size_t max_length =
+        http_request_rx::DEFAULT_MAX_CONTENT_LENGTH) noexcept
+    { max_content_length_ = max_length; }
+
+    /// Set the maximum HTTP request chunk size to allow.
+    /// @param max_size default http_request::DEFAULT_MAX_CHUNK_SIZE.
+    void set_max_chunk_size(size_t max_size =
+        http_request::DEFAULT_MAX_CHUNK_SIZE) noexcept
+    { max_chunk_size_ = max_size; }
 
     /// Enable whether the http server translates HEAD requests into GET
     /// requests for the application.

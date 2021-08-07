@@ -74,30 +74,6 @@ depends upon the `IPV4_ONLY` template parameter:
 The other integer (and boolean) template parameters are the permitted HTTP request
 parameters for an `http_server`, see [HTTP Parser Configuration](Configuration.md).
 
-## Request Size Parameters
-
-These parameters may be set when constructing an `http_server`, they affect the
-sizes of request bodies and chunks that the parser identifies as invalid HTTP requests.
-The default values are relatively tolerant, stricter values would be required
-for security.
-
-| Parameter         | Default | Description                                         |
-|-------------------|---------|-----------------------------------------------------|
-| max_content_length| 1Mb     | The maximum size of a request body and chunks.      |
-| max_chunk_size    | 1Mb     | The maximum size of each request chunk.             |
-
-### max_body_size
-
-The maximum size of a request body or a body created by concatenating request chunks.  
-It is set to a default of 1Mb, it is highly recommended to set it to specific value
-for your application.
-
-### max_chunk_size
-
-The maximum size of a request chunk.  
-It is set to a default of 1Mb, it is highly recommended to set it to specific value
-for your application.
-
 ## HTTPS Server Configuration
 
 The following functions can be called to set up the SSL/TLS parameters:
@@ -166,9 +142,23 @@ for (std::size_t i(0); i < threads.size(); ++i)
 
 | Parameter       | Default | Description                                         |
 |-----------------|---------|-----------------------------------------------------|
+| max_content_length| 1Mb     | The maximum size of a request body and chunks.      |
+| max_chunk_size    | 1Mb     | The maximum size of each request chunk.             |
 | trace_enabled   | false   | Echo back a TRACE request as per rfc7231.           |
 | auto_disconnect | false   | Disconnect a connection after sending a response to an invalid request. |
 | translate_head  | true    | Translate a HEAD request into a GET request.        |
+
+### max_content_length
+
+The maximum size of a request body or a body created by concatenating request chunks.  
+It is set to a default of 1Mb, it is highly recommended to set it to specific value
+for your application.
+
+### max_chunk_size
+
+The maximum size of a request chunk.  
+It is set to a default of 1Mb, it is highly recommended to set it to specific value
+for your application.
 
 ### trace_enabled
 
