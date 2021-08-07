@@ -130,7 +130,7 @@ int main(int /* argc */, char *argv[])
     }
 
     // Start the server
-    io_service.run();
+    io_context.run();
   }
   catch (std::exception& e)
   {
