@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -79,7 +79,6 @@ namespace via
       size_t rx_buffer_size_;              ///< The receive buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
       std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
-      ConstBuffers tx_buffers_;            ///< The transmit buffers.
       event_callback_type event_callback_; ///< The event callback function.
       error_callback_type error_callback_; ///< The error callback function.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
@@ -104,23 +103,21 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers buffers)
+      bool write_data(ConstBuffers const& buffers)
       {
-        tx_buffers_.swap(buffers);
-
         if (connected_)
         {
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
 #ifdef HTTP_THREAD_SAFE
-          SocketAdaptor::write(tx_buffers_,
+          SocketAdaptor::write(buffers,
              strand_.wrap([weak_ptr, tx_queue]
                           (ASIO_ERROR_CODE const& error,
                            size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
 #else
-          SocketAdaptor::write(tx_buffers_,
+          SocketAdaptor::write(buffers,
             [weak_ptr, tx_queue](ASIO_ERROR_CODE const& error,
                                  size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
@@ -138,13 +135,13 @@ namespace via
         weak_pointer weak_ptr(weak_from_this());
         std::shared_ptr<Container> rx_buffer(rx_buffer_);
 #ifdef HTTP_THREAD_SAFE
-        SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
+        SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
             strand_.wrap([weak_ptr, rx_buffer]
                          (ASIO_ERROR_CODE const& error,
                           size_t bytes_transferred)
          { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
 #else
-        SocketAdaptor::read(&(*rx_buffer_)[0], rx_buffer_->size(),
+        SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
           [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                 size_t bytes_transferred)
          { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
@@ -403,7 +400,6 @@ namespace via
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
-        tx_buffers_(),
         event_callback_(event_callback),
         error_callback_(error_callback),
         timeout_(0),
@@ -434,7 +430,6 @@ namespace via
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
-        tx_buffers_(),
         event_callback_(),
         error_callback_(),
         timeout_(0),

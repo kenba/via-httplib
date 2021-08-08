@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2020 Ken Barker
+// Copyright (c) 2015-2021 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -70,20 +70,19 @@ namespace via
       /// @param ptr pointer to the receive buffer.
       /// @param size the size of the receive buffer.
       /// @param read_handler the handler for received messages.
-      void read(void* ptr, size_t size, CommsHandler read_handler)
+      void read(ASIO::mutable_buffer const& buffer, CommsHandler read_handler)
       {
         if (is_connected_)
-          socket_.async_receive(ASIO::buffer(ptr, size), read_handler);
+          socket_.async_receive(buffer, read_handler);
         else
-          socket_.async_receive_from(ASIO::buffer(ptr, size),
-                                     rx_endpoint_, read_handler);
+          socket_.async_receive_from(buffer, rx_endpoint_, read_handler);
       }
 
       /// @fn write
       /// The udp socket write function.
       /// @param buffers the buffer(s) containing the message.
       /// @param write_handler the handler called after a message is sent.
-      void write(ConstBuffers& buffers, CommsHandler write_handler)
+      void write(ConstBuffers const& buffers, CommsHandler write_handler)
       {
         if (is_connected_)
           socket_.async_send(buffers, write_handler);
