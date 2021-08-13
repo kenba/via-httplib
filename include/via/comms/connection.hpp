@@ -76,22 +76,22 @@ namespace via
       /// Strand to ensure the connection's handlers are not called concurrently.
       ASIO::io_context::strand strand_;
 #endif
-      size_t rx_buffer_size_;              ///< The receive buffer size.
+      size_t rx_buffer_size_{ SocketAdaptor::DEFAULT_RX_BUFFER_SIZE }; ///< The receive buffer size.
       std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
-      std::shared_ptr<std::deque<Container> > tx_queue_; ///< The transmit queue.
-      event_callback_type event_callback_; ///< The event callback function.
-      error_callback_type error_callback_; ///< The error callback function.
+      std::shared_ptr<std::deque<Container>> tx_queue_; ///< The transmit queue.
+      event_callback_type event_callback_{ nullptr }; ///< The event callback function.
+      error_callback_type error_callback_{ nullptr }; ///< The error callback function.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
-      int timeout_;
-      int receive_buffer_size_; ///< The socket receive buffer size.
-      int send_buffer_size_;    ///< The socket send buffer size.
-      bool receiving_;          ///< Whether a read's in progress
-      bool transmitting_;       ///< Whether a write's in progress
-      bool no_delay_;           ///< The tcp no delay status.
-      bool keep_alive_;         ///< The tcp keep alive status.
-      bool connected_;          ///< If the socket is connected.
-      bool disconnect_pending_; ///< Shutdown the socket after the next write.
-      bool shutdown_sent_;      ///< The SSL shutdown signal has been sent.
+      int timeout_{ 0 };
+      int receive_buffer_size_{ 0 };     ///< The socket receive buffer size.
+      int send_buffer_size_{ 0 };        ///< The socket send buffer size.
+      bool receiving_{ false };          ///< Whether a read's in progress
+      bool transmitting_{ false };       ///< Whether a write's in progress
+      bool no_delay_{ false };           ///< The tcp no delay status.
+      bool keep_alive_{ false };         ///< The tcp keep alive status.
+      bool connected_{ false };          ///< If the socket is connected.
+      bool disconnect_pending_{ false }; ///< Shutdown the socket after the next write.
+      bool shutdown_sent_{ false };      ///< The SSL shutdown signal has been sent.
 
       /// @fn weak_from_this
       /// Get a weak_pointer to this instance.
@@ -401,17 +401,7 @@ namespace via
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>()),
         event_callback_(event_callback),
-        error_callback_(error_callback),
-        timeout_(0),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        receiving_(false),
-        transmitting_(false),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false),
-        disconnect_pending_(false),
-        shutdown_sent_(false)
+        error_callback_(error_callback)
       {}
 
       /// Constructor for client connections.
@@ -429,19 +419,7 @@ namespace via
 #endif
         rx_buffer_size_(rx_buffer_size),
         rx_buffer_(new Container(rx_buffer_size_, 0)),
-        tx_queue_(new std::deque<Container>()),
-        event_callback_(),
-        error_callback_(),
-        timeout_(0),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        receiving_(false),
-        transmitting_(false),
-        no_delay_(false),
-        keep_alive_(false),
-        connected_(false),
-        disconnect_pending_(false),
-        shutdown_sent_(false)
+        tx_queue_(new std::deque<Container>())
       {}
 
       /// Set the socket's tcp no delay status.

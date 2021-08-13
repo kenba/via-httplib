@@ -49,8 +49,6 @@ namespace via
     {
       ASIO::io_context& io_context_; ///< The asio io_context.
       ASIO::ip::tcp::socket socket_; ///< The asio TCP socket.
-      /// The host iterator used by the resolver.
-      ASIO::ip::tcp::resolver::iterator host_iterator_;
 
     protected:
 
@@ -78,8 +76,7 @@ namespace via
       /// @param io_context the asio io_context associted with this connection
       explicit tcp_adaptor(ASIO::io_context& io_context) :
         io_context_(io_context),
-        socket_(io_context_),
-        host_iterator_()
+        socket_(io_context_)
       {}
 
     public:
@@ -104,11 +101,11 @@ namespace via
       bool connect(std::string_view host_name, std::string_view port_name,
                    ConnectHandler connectHandler)
       {
-        host_iterator_ = resolve_host(io_context_, host_name, port_name);
-        if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
+        auto host_iterator{resolve_host(io_context_, host_name, port_name)};
+        if (host_iterator == ASIO::ip::tcp::resolver::iterator())
           return false;
 
-        connect_socket(connectHandler, host_iterator_);
+        connect_socket(connectHandler, host_iterator);
         return true;
       }
 

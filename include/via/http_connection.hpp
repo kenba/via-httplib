@@ -104,6 +104,11 @@ namespace via
     /// The chunk type
     typedef typename http_request_rx::Chunk chunk_type;
 
+    /// The chunk_header type
+    typedef typename http::chunk_header<MAX_LINE_LENGTH,
+                                        MAX_WHITESPACE_CHARS,
+                                        STRICT_CRLF> chunk_header;
+
   private:
 
     ////////////////////////////////////////////////////////////////////////
@@ -351,8 +356,8 @@ namespace via
                      std::string_view extension = std::string_view())
     {
       size_t size(chunk.size());
-      http::chunk_header chunk_header(size, extension);
-      tx_header_ = chunk_header.to_string();
+      chunk_header header(size, extension);
+      tx_header_ = header.to_string();
       tx_body_.swap(chunk);
 
       comms::ConstBuffers buffers(1, ASIO::buffer(tx_header_));
@@ -372,8 +377,8 @@ namespace via
       // Calculate the overall size of the data in the buffers
       size_t size(ASIO::buffer_size(buffers));
 
-      http::chunk_header chunk_header(size, extension);
-      tx_header_ = chunk_header.to_string();
+      chunk_header header(size, extension);
+      tx_header_ = header.to_string();
       buffers.push_front(ASIO::buffer(tx_header_));
       buffers.push_back(ASIO::buffer(http::CRLF));
       return send(std::move(buffers));

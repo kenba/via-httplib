@@ -48,8 +48,6 @@ namespace via
         ASIO::io_context& io_context_;
         /// The asio SSL TCP socket.
         ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
-        /// The host iterator used by the resolver.
-        ASIO::ip::tcp::resolver::iterator host_iterator_;
 
         /// @fn verify_certificate
         /// The verify callback function.
@@ -97,8 +95,7 @@ namespace via
         /// @param io_context the asio io_context associted with this connection
         explicit ssl_tcp_adaptor(ASIO::io_context& io_context) :
           io_context_(io_context),
-          socket_(io_context_, ssl_context()),
-          host_iterator_()
+          socket_(io_context_, ssl_context())
         {}
 
       public:
@@ -139,11 +136,11 @@ namespace via
             (bool preverified, ASIO::ssl::verify_context& ctx)
               { return verify_certificate(preverified, ctx); });
 
-          host_iterator_ = resolve_host(io_context_, host_name, port_name);
-          if (host_iterator_ == ASIO::ip::tcp::resolver::iterator())
+          auto host_iterator{resolve_host(io_context_, host_name, port_name)};
+          if (host_iterator == ASIO::ip::tcp::resolver::iterator())
             return false;
 
-          connect_socket(connect_handler, host_iterator_);
+          connect_socket(connect_handler, host_iterator);
           return true;
         }
 

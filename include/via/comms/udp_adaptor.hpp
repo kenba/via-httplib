@@ -36,7 +36,7 @@ namespace via
       ASIO::ip::udp::socket socket_;        ///< The asio UDP socket.
       ASIO::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
       ASIO::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
-      bool is_connected_; ///< The socket is connected (i.e. not bound).
+      bool is_connected_{ false }; ///< The socket is connected (i.e. not bound).
 
     protected:
 
@@ -97,7 +97,6 @@ namespace via
         , socket_(io_context_)
         , rx_endpoint_(ASIO::ip::address_v4::any(), 0)
         , tx_endpoint_(ASIO::ip::address_v4::broadcast(), 0)
-        , is_connected_(false)
       {}
 
     public:
