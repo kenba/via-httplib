@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2019 Ken Barker
+# Copyright (c) 2018-2021 Ken Barker
 
-FROM alpine:3.10 AS build
+FROM alpine:3.13 AS build
 
 LABEL maintainer="ken.barker@via-technology.aero"
 
@@ -38,7 +38,7 @@ RUN cmake \
  && make
 
 # Create a clean alpine image and copy the server to it
-FROM alpine:3.10
+FROM alpine:3.13
 
 RUN apk --update add --no-cache \
   openssl \
