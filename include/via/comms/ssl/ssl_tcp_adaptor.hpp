@@ -129,8 +129,8 @@ namespace via
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
         /// @param connectHandler the handler to call when connected.
-        bool connect(ASIO::io_context& io_context, std::string_view host_name,
-                      std::string_view port_name, ConnectHandler connectHandler)
+        bool connect(ASIO::io_context& io_context, const char* host_name,
+                      const char* port_name, ConnectHandler connectHandler)
         {
           ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
           socket_.set_verify_callback([]

@@ -20,7 +20,6 @@
 #endif
 #include <memory>
 #include <vector>
-#include <string_view>
 
 namespace via
 {
@@ -571,7 +570,7 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       bool connect(ASIO::io_context& io_context,
-                    std::string_view host_name, std::string_view port_name)
+                    const char* host_name, const char* port_name)
       {
         weak_pointer ptr(weak_from_this());
 #ifdef HTTP_THREAD_SAFE

@@ -15,7 +15,6 @@
 /// @brief Contains the tcp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
-#include <string_view>
 
 namespace via
 {
@@ -29,11 +28,11 @@ namespace via
     /// @return a TCP resolver::iterator
     inline ASIO::ip::tcp::resolver::iterator resolve_host
                       (ASIO::io_context& io_context,
-                       std::string_view host_name, std::string_view port_name)
+                       const char* host_name, const char* port_name)
     {
       ASIO_ERROR_CODE ignoredEc;
       ASIO::ip::tcp::resolver resolver(io_context);
-      ASIO::ip::tcp::resolver::query query(host_name.data(), port_name.data());
+      ASIO::ip::tcp::resolver::query query(host_name, port_name);
       return resolver.resolve(query, ignoredEc);
     }
 
@@ -97,8 +96,8 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       /// @param connectHandler the handler to call when connected.
-      bool connect(ASIO::io_context& io_context, std::string_view host_name,
-                    std::string_view port_name, ConnectHandler connectHandler)
+      bool connect(ASIO::io_context& io_context, const char* host_name,
+                    const char* port_name, ConnectHandler connectHandler)
       {
         auto host_iterator{resolve_host(io_context, host_name, port_name)};
         if (host_iterator == ASIO::ip::tcp::resolver::iterator())
