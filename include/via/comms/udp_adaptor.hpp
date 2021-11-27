@@ -112,13 +112,12 @@ namespace via
       /// @param listen_address the local address for the local endpoint.
       /// @return true if successful, false otherwise.
       bool receive_multicast(unsigned short port_number,
-                             std::string const& multicast_address,
-                             std::string listen_address = "")
+                               const char* multicast_address,
+                               const char* listen_address = nullptr)
       {
         // Get the address
         ASIO_ERROR_CODE error;
-        ASIO::ip::address ip_address
-            (ASIO::ip::address::from_string(multicast_address, error));
+        auto ip_address{ASIO::ip::make_address(multicast_address, error)};
         if (error)
           return false;
 
@@ -128,10 +127,9 @@ namespace via
 
         // if a listen_address is given then use it
         ASIO::ip::address local_address;
-        if (!listen_address.empty())
+        if (listen_address != nullptr)
         {
-          local_address = ASIO::ip::address
-              (ASIO::ip::address::from_string(listen_address, error));
+          local_address = ASIO::ip::make_address(listen_address, error);
           // Ensure that the listen_address is valid and the same protocol as
           // the multicast_address
           if (error || (local_address.is_v6() != ip_address.is_v6()))
@@ -161,7 +159,7 @@ namespace via
         if (error)
           return false;
 
-        if (!listen_address.empty())
+        if (listen_address != nullptr)
           // Note: asio supports only v4 at the moment.
           socket_.set_option(ASIO::ip::multicast::join_group
                                (ip_address.to_v4(), local_address.to_v4()));
@@ -181,8 +179,7 @@ namespace via
       {
         // Get the address
         ASIO_ERROR_CODE error;
-        ASIO::ip::address ip_address
-            (ASIO::ip::address::from_string(multicast_address, error));
+        auto ip_address{ASIO::ip::make_address(multicast_address, error)};
         if (error)
           return false;
 
