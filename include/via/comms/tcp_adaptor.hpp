@@ -23,7 +23,7 @@ namespace via
   {
     /// @fn resolve_host
     /// resolves the host name and port.
-    /// @param io_context the asio io_context associted with the connection.
+    /// @param io_context the asio io_context associated with the connection.
     /// @param host_name the host name.
     /// @param port_name the host port.
     /// @return a TCP resolver::iterator
@@ -47,7 +47,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class tcp_adaptor
     {
-      ASIO::io_context& io_context_; ///< The asio io_context.
       ASIO::ip::tcp::socket socket_; ///< The asio TCP socket.
 
     protected:
@@ -73,10 +72,9 @@ namespace via
       { ASIO::async_connect(socket_, host_iterator, connect_handler); }
 
       /// The tcp_adaptor constructor.
-      /// @param io_context the asio io_context associted with this connection
+      /// @param io_context the asio io_context associated with this connection
       explicit tcp_adaptor(ASIO::io_context& io_context) :
-        io_context_(io_context),
-        socket_(io_context_)
+        socket_(io_context)
       {}
 
     public:
@@ -95,13 +93,14 @@ namespace via
       /// Connect the tcp socket to the given host name and port.
       /// @pre To be called by "client" connections only.
       /// Server connections are accepted by the server instead.
+      /// @param io_context the asio io_context associated with this connection
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
       /// @param connectHandler the handler to call when connected.
-      bool connect(std::string_view host_name, std::string_view port_name,
-                   ConnectHandler connectHandler)
+      bool connect(ASIO::io_context& io_context, std::string_view host_name,
+                    std::string_view port_name, ConnectHandler connectHandler)
       {
-        auto host_iterator{resolve_host(io_context_, host_name, port_name)};
+        auto host_iterator{resolve_host(io_context, host_name, port_name)};
         if (host_iterator == ASIO::ip::tcp::resolver::iterator())
           return false;
 

@@ -92,7 +92,7 @@ namespace via
         }
 
         /// The ssl_tcp_adaptor constructor.
-        /// @param io_context the asio io_context associted with this connection
+        /// @param io_context the asio io_context associated with this connection
         explicit ssl_tcp_adaptor(ASIO::io_context& io_context) :
           io_context_(io_context),
           socket_(io_context_, ssl_context())
@@ -125,22 +125,23 @@ namespace via
         /// Connect the ssl tcp socket to the given host name and port.
         /// @pre To be called by "client" connections only.
         /// Server connections are accepted by the server instead.
+        /// @param io_context the asio io_context associated with this connection
         /// @param host_name the host to connect to.
         /// @param port_name the port to connect to.
-        /// @param connect_handler the handler to call when connected.
-        bool connect(std::string_view host_name, std::string_view port_name,
-                     ConnectHandler connect_handler)
+        /// @param connectHandler the handler to call when connected.
+        bool connect(ASIO::io_context& io_context, std::string_view host_name,
+                      std::string_view port_name, ConnectHandler connectHandler)
         {
           ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
           socket_.set_verify_callback([]
             (bool preverified, ASIO::ssl::verify_context& ctx)
               { return verify_certificate(preverified, ctx); });
 
-          auto host_iterator{resolve_host(io_context_, host_name, port_name)};
+          auto host_iterator{resolve_host(io_context, host_name, port_name)};
           if (host_iterator == ASIO::ip::tcp::resolver::iterator())
             return false;
 
-          connect_socket(connect_handler, host_iterator);
+          connect_socket(connectHandler, host_iterator);
           return true;
         }
 

@@ -132,6 +132,7 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Variables
 
+    ASIO::io_context& io_context_;                ///< The asio io_context.
     std::shared_ptr<connection_type> connection_; ///< the comms connection
     ASIO_TIMER timer_;                            ///< a deadline timer
     http_response_rx rx_;                         ///< the response receiver
@@ -164,7 +165,7 @@ namespace via
     {
       if (connection_->connected())
         return true;
-      return connection_->connect(host_name_.c_str(), port_name_.c_str());
+      return connection_->connect(io_context_, host_name_.c_str(), port_name_.c_str());
     }
 
     /// The callback function for the timer_.
@@ -328,6 +329,7 @@ namespace via
                            size_t          rx_buffer_size,
                            size_t          max_body_size,
                            size_t          max_chunk_size) :
+      io_context_(io_context),
       connection_(connection_type::create(io_context, rx_buffer_size)),
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),

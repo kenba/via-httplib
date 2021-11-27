@@ -24,7 +24,7 @@ namespace via
     /// @class udp_adaptor
     /// This class enables the connection class to use udp sockets.
     /// This class together with tcp_adaptor and ssl_tcp_adaptor provide a
-    /// copmmon interface that enables connection to be configured for udp,
+    /// common interface that enables connection to be configured for udp,
     /// tcp or ssl sockets.
     /// @see connection
     /// @see tcp_adaptor
@@ -32,7 +32,6 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     class udp_adaptor
     {
-      ASIO::io_context& io_context_;        ///< The asio io_context.
       ASIO::ip::udp::socket socket_;        ///< The asio UDP socket.
       ASIO::ip::udp::endpoint rx_endpoint_; ///< The receive endpoint.
       ASIO::ip::udp::endpoint tx_endpoint_; ///< The transmit endpoint.
@@ -91,10 +90,9 @@ namespace via
       }
 
       /// The udp_adaptor constructor.
-      /// @param io_context the asio io_context associted with this connection
+      /// @param io_context the asio io_context associated with this connection
       explicit udp_adaptor(ASIO::io_context& io_context)
-        : io_context_(io_context)
-        , socket_(io_context_)
+        : socket_(io_context)
         , rx_endpoint_(ASIO::ip::address_v4::any(), 0)
         , tx_endpoint_(ASIO::ip::address_v4::broadcast(), 0)
       {}
@@ -258,11 +256,11 @@ namespace via
       /// @param host_name the host to connect to.
       /// @param port the port to connect to.
       /// @param connectHandler the handler to call when connected.
-      bool connect(const char* host_name, const char* port ,
-                   ConnectHandler connectHandler)
+      bool connect(ASIO::io_context& io_context, const char* host_name,
+                   const char* port, ConnectHandler connectHandler)
       {
         // resolve the port on the local host
-        ASIO::ip::udp::resolver resolver(io_context_);
+        ASIO::ip::udp::resolver resolver(io_context);
         ASIO::ip::udp::resolver::query query(host_name, port );
         ASIO::ip::udp::resolver::iterator iterator(resolver.resolve(query));
 

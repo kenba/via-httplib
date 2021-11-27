@@ -567,17 +567,19 @@ namespace via
       /// @pre To be called by "client" connections only after the event
       /// callbacks have been set.
       /// Server connections are accepted by the server instead.
+      /// @param io_context the asio io_context associated with this connection.
       /// @param host_name the host to connect to.
       /// @param port_name the port to connect to.
-      bool connect(std::string_view host_name, std::string_view port_name)
+      bool connect(ASIO::io_context& io_context,
+                    std::string_view host_name, std::string_view port_name)
       {
         weak_pointer ptr(weak_from_this());
 #ifdef HTTP_THREAD_SAFE
-        return SocketAdaptor::connect(host_name, port_name, strand_.wrap(
+        return SocketAdaptor::connect(io_context, host_name, port_name, strand_.wrap(
           [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
             { connect_callback(ptr, error, itr); }));
 #else
-        return SocketAdaptor::connect(host_name, port_name,
+        return SocketAdaptor::connect(io_context, host_name, port_name,
           [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
             { connect_callback(ptr, error, itr); });
 #endif
