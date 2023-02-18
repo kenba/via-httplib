@@ -1,10 +1,10 @@
-# Copyright (c) 2013-2019 Louis Henry Nayegon.
+# Copyright (c) 2013-2023 Louis Henry Nayegon.
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 # The software should be used for Good, not Evil.
 
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.13)
 cmake_policy(SET CMP0074 NEW)
 project (via-httplib)
 
@@ -15,15 +15,26 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
-find_package(Boost REQUIRED COMPONENTS system)
+if (DEFINED ENV{Asio_DIR})
+  target_compile_definitions(${PROJECT_NAME} INTERFACE ASIO_STANDALONE)
+  target_include_directories(${PROJECT_NAME} INTERFACE $ENV{Asio_DIR}/include)
+endif()
+
+if (WIN32)
+  # Boost_ARCHITECTURE not defined for mingw on Windows
+  if(MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(Boost_ARCHITECTURE "-x32")
+  else()
+    set(Boost_ARCHITECTURE "-x64")
+  endif()
+endif(WIN32)
+
+find_package(Boost COMPONENTS system)
 if(Boost_FOUND)
   target_include_directories(${PROJECT_NAME} INTERFACE ${Boost_INCLUDE_DIRS})
 
   # Boost::asio is header only but it requires Boost::system
   target_link_libraries(${PROJECT_NAME} INTERFACE Boost::system)
-else()
-  find_package(Asio)
-  target_compile_definitions(${PROJECT_NAME} INTERFACE ASIO_STANDALONE)
 endif(Boost_FOUND)
 
 target_include_directories(${PROJECT_NAME} INTERFACE

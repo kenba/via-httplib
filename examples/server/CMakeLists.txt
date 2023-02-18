@@ -1,11 +1,12 @@
-# Copyright (c) 2017-2019 Ken Barker
+# Copyright (c) 2017-2023 Ken Barker
 # (ken dot barker at via-technology dot aero)
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.13)
+cmake_policy(SET CMP0074 NEW)
 project (HttpServer)
 
 add_executable(${PROJECT_NAME} 
@@ -21,32 +22,50 @@ add_executable(${PROJECT_NAME}
 	# simple_https_server.cpp
 )
 
-if (WIN32)
-  # Set the minimum target Windows version to Windows 7
-  target_compile_definitions(${PROJECT_NAME} PUBLIC NTDDI_VERSION=NTDDI_WIN7)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC _WIN32_WINNT=_WIN32_WINNT_WIN7)
-endif()
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
+# Get the via-httplib code and examples
+target_include_directories(${PROJECT_NAME} PRIVATE ../../include)
 target_include_directories(${PROJECT_NAME} PRIVATE ../../examples)
 
-find_package(ViaHttpLib REQUIRED via-httplib)
-if(ViaHttpLib_FOUND)
-  target_include_directories(${PROJECT_NAME} PUBLIC ${ViaHttpLib_INCLUDE_DIRS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE ViaHttpLib::via-httplib)
-endif()
+if (WIN32)
+  # Boost_ARCHITECTURE not defined for mingw on Windows
+  if(MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(Boost_ARCHITECTURE "-x32")
+  else()
+    set(Boost_ARCHITECTURE "-x64")
+  endif()
 
-find_package(OpenSSL REQUIRED SSL)
+  # Set the minimum target Windows version to Windows 10
+  target_compile_definitions(${PROJECT_NAME} PUBLIC NTDDI_VERSION=NTDDI_WIN10)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC _WIN32_WINNT=_WIN32_WINNT_WIN10)
+
+  # Get the windows socket libraries
+  target_link_libraries(${PROJECT_NAME} PRIVATE gdi32 wsock32 ws2_32)
+else()
+  target_link_libraries(${PROJECT_NAME} PRIVATE pthread)
+endif(WIN32)
+
+# OpenSLL is required for HTTPS examples
+find_package(OpenSSL COMPONENTS SSL)
 if(OpenSSL_FOUND)
   target_include_directories(${PROJECT_NAME} PUBLIC ${OpenSSL_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
+endif(OpenSSL_FOUND)
+
+if (DEFINED ENV{Asio_DIR})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE ASIO_STANDALONE)
+  target_include_directories(${PROJECT_NAME} PRIVATE $ENV{Asio_DIR}/include)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_ALL_DYN_LINK)
 
-find_package(Boost REQUIRED COMPONENTS system date_time regex)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}
-  PRIVATE
-  Boost::system
-  Boost::date_time
-  Boost::regex)
+find_package(Boost COMPONENTS system date_time regex)
+if(Boost_FOUND)
+  target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    Boost::system
+    Boost::date_time
+    Boost::regex)
+endif(Boost_FOUND)
