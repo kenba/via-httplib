@@ -18,6 +18,7 @@
 #include <string>
 #include <string_view>
 #include <algorithm>
+#include <vector>
 #include <sstream>
 #include <cstdlib>
 #include <cerrno>
@@ -199,6 +200,28 @@ namespace via
       }
       else
         return -1;
+    }
+
+    /// Get the string values between the delimiters.
+    /// @param input the input string.
+    /// @param delimiter the delimiter.
+    /// @return the vector of values not including the delimiters.
+    inline std::vector<std::string> split(const std::string& input, const char delimiter)
+    {
+      std::vector<std::string> output;
+
+      size_t last_pos{0};
+      size_t pos{input.find(delimiter)};
+      while (pos != std::string::npos)
+      {
+          output.emplace_back(input.substr(last_pos, pos));
+          last_pos = pos + 1;
+          pos = input.find(delimiter, last_pos);
+      }
+
+      output.emplace_back(input.substr(last_pos));
+
+      return output;
     }
   }
 }
