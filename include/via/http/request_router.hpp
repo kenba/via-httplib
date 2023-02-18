@@ -17,8 +17,8 @@
 #include "via/http/request_handler.hpp"
 #include "via/http/request_uri.hpp"
 #include "via/http/authentication/authentication.hpp"
-#include <boost/algorithm/string.hpp>
 #include <map>
+#include <iostream>
 
 namespace via
 {
@@ -45,11 +45,8 @@ namespace via
         uri_path   = uri_path.substr(param_start);
 
         // get the strings between the '/'s
-        std::vector<std::string> names;
-        boost::split(names, route_path, boost::is_any_of("/"));
-
-        std::vector<std::string> values;
-        boost::split(values, uri_path, boost::is_any_of("/"));
+        const std::vector<std::string> names{split(route_path, '/')};
+        const std::vector<std::string> values{split(uri_path, '/')};
 
         // get the route_parameter name value pairs
         if (names.size() == values.size())
