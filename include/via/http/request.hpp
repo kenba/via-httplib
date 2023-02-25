@@ -217,13 +217,21 @@ namespace via
             state_ = Request::LF;
           else
           {
-            // but (if not being strict) permit just \n
-            if (!STRICT_CRLF && ('\n' == c))
-              state_ = Request::VALID;
-            else
+            if constexpr (STRICT_CRLF)
             {
               state_ = Request::ERROR_CRLF;
               return false;
+            }
+            else
+            {
+              // but (if not being strict) permit just \n
+              if ('\n' == c)
+                state_ = Request::VALID;
+              else
+              {
+                state_ = Request::ERROR_CRLF;
+                return false;
+              }
             }
           }
           break;

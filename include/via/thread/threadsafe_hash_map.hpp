@@ -52,6 +52,10 @@ namespace via
              unsigned cache_line_size = 64u>
     class threadsafe_hash_map
     {
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4324 ) // MSVC warns about padding from alignas
+#endif
       /// @class bucket_type
       /// Each bucket is a std::vector of Key, Value std::pair's sorted by Key
       /// and protected by a shared_mutex.
@@ -142,6 +146,9 @@ namespace via
             data_.erase(iter);
         }
       };
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
       ////////////////////////////////////////////////////////////////////////
       // Data
