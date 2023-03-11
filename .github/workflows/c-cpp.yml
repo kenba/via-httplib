@@ -36,3 +36,4 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         base-path: ${{github.workspace}}
+      run: mkdir coverage; lcov -c -d . -o coverage/lcov.info
