@@ -83,11 +83,22 @@ if (VIA_HTTPLIB_UNIT_TESTS)
       if (VIA_HTTPLIB_COVERAGE)
         target_compile_options(${PROJECT_NAME}_test PRIVATE --coverage)
         target_link_libraries(${PROJECT_NAME}_test PRIVATE --coverage)
+
+        find_program(LCOV lcov REQUIRED)
+        find_program(GENHTML genhtml REQUIRED)
+
+        add_custom_target(coverage
+          COMMAND ${LCOV} --directory . --capture --output-file lcov.info
+          COMMAND ${GENHTML} --demangle-cpp -o coverage lcov.info
+          COMMAND mv lcov.info coverage/lcov.info
+          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        )
       endif()
 
     endif()
 
-    add_test(NAME via_http_Parsers.test COMMAND ${PROJECT_NAME}_test)
+    enable_testing()
+    add_test(NAME via_http_parsers.test COMMAND ${PROJECT_NAME}_test)
 
   endif()
 endif(VIA_HTTPLIB_UNIT_TESTS)

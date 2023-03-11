@@ -29,22 +29,20 @@ jobs:
     - name: Make
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: make
+      run: cmake --build .
 
     - name: Test
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ./via-httplib_test
+      run: ctest
 
     - name: Coverage
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: |
-        mkdir coverage
-        lcov -c -d . -o coverage/lcov.info
+      run: make coverage
 
-    # - name: Coveralls
-    #   uses: coverallsapp/github-action@v2
-    #   with:
-    #     github-token: ${{ secrets.GITHUB_TOKEN }}
-    #     base-path: ${{github.workspace}}
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        base-path: ${{github.workspace}}
