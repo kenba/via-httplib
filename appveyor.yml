@@ -1,13 +1,16 @@
-version: '1.0.{build}'
-
-image: Visual Studio 2017
+version: '{build}'
+branches:
+  only:
+  - main
+  
+image: Visual Studio 2022
 
 platform:
   - x64
 
 environment:
-  BOOST_ROOT: C:\Libraries\boost_1_69_0
-  BOOST_LIBRARYDIR: C:\Libraries\boost_1_6790\lib64-msvc-14.1
+  BOOST_ROOT: C:\Libraries\boost_1_77_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_77_0\lib64-msvc-14.3
 
 configuration:
   - Release

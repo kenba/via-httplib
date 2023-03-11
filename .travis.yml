@@ -1,11 +1,11 @@
 language: cpp
 os: linux
-dist: bionic
+dist: jammy
 sudo: false
 
 branches:
   only:
-  - master
+  - main
   - develop
 
 matrix:
