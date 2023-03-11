@@ -1,10 +1,9 @@
 # via-httplib: A C++ HTTP Library
 
 [![C/C++ CI](https://github.com/kenba/via-httplib/workflows/C/C++%20CI/badge.svg)](https://github.com/kenba/via-httplib/actions)
-[![Build status](https://ci.appveyor.com/api/projects/status/jfc8gvnncfnr18fs?svg=true)](https://ci.appveyor.com/project/kenba/via-httplib)
-[![Build Status](https://travis-ci.com/kenba/via-httplib.svg?branch=master)](https://travis-ci.com/kenba/via-httplib)
+[![Build Status](https://travis-ci.com/kenba/via-httplib.svg?branch=main)](https://travis-ci.com/kenba/via-httplib)
 [![License](https://img.shields.io/badge/License-Boost%201.0-blue)](https://opensource.org/licenses/BSL-1.0)
-[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=master)](https://coveralls.io/github/kenba/via-httplib?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=main)](https://coveralls.io/github/kenba/via-httplib?branch=main)
 
 A header-only library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
@@ -17,8 +16,8 @@ HTTP/HTTPS servers to be built that comply with
 ## Requirements
 
 + A C++17 compliant compiler.  
-This version requires a complier that supports string_view.
-It's been tested with `MSVC 2019`, `Clang 7.0.1`, `GCC 9.3.0` and `MinGw 8.1.0`.  
+This version requires a complier that supports string_view.  
+It's been tested with `MSVC 2022`, `Clang 14.0.0`, `GCC 11.3.0` and `MinGw 11.2.0`.  
 C++11 versions are available in tags `1.6.0` and lower.  
 
 + The `asio` C++ library.  
@@ -54,7 +53,7 @@ An example https server [docker](https://www.docker.com/) image can be built
 using the following commands from this directory:
 
 ```shell
-docker build . -t via-http-server:1.9.0
+docker build . -t via-http-server:1.10.0
 ```
 
 ## Example HTTP Server
@@ -168,7 +167,7 @@ int main(int /* argc */, char *argv[])
 ## License
 
 Licensed under the Boost License, Version 1.0, as per Boost.  
-You may obtain a copy of the License at: https://www.boost.org/LICENSE_1_0.txt
+You may obtain a copy of the License at: <https://www.boost.org/LICENSE_1_0.txt>
 
 ## Acknowledgements
 
