@@ -2,7 +2,6 @@
 
 [![C/C++ CI](https://github.com/kenba/via-httplib/workflows/C/C++%20CI/badge.svg)](https://github.com/kenba/via-httplib/actions)
 [![License](https://img.shields.io/badge/License-Boost%201.0-blue)](https://opensource.org/licenses/BSL-1.0)
-[![Coverage Status](https://coveralls.io/repos/github/kenba/via-httplib/badge.svg?branch=main)](https://coveralls.io/github/kenba/via-httplib?branch=main)
 
 A header-only library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4** servers in C++ applications.
 
