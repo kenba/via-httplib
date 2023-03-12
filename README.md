@@ -48,8 +48,8 @@ Please note that a plain **HTTP** server does **not** require `OpenSLL`.
 The [Server User Guide](docs/Server.md) explains how to use the library to create HTTP servers and
 the [Client User Guide](docs/Client.md) explains how to use the library to create HTTP clients.
 
-An example https server [docker](https://www.docker.com/) image can be built
-using the following commands from this directory:
+An example https server [docker](https://www.docker.com/) image can be built using
+the following commands from this directory:
 
 ```shell
 docker build . -t via-http-server:1.10.0
