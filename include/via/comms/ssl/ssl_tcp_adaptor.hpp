@@ -49,23 +49,6 @@ namespace via
         /// The asio SSL TCP socket.
         ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
 
-        /// @fn verify_certificate
-        /// The verify callback function.
-        /// The verify callback can be used to check whether the certificate
-        /// that is being presented is valid for the peer. For example,
-        /// RFC 2818 describes the steps involved in doing this for HTTPS.
-        /// Consult the OpenSSL documentation for more details.
-        /// Note that the callback is called once for each certificate in the
-        /// certificate chain, starting from the root certificate authority.
-        static bool verify_certificate(bool preverified,
-                                       ASIO::ssl::verify_context& ctx)
-        {
-          char subject_name[256];
-          X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
-          X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-          return preverified;
-        }
-
       protected:
 
         /// @fn handshake
@@ -133,9 +116,7 @@ namespace via
                       const char* port_name, ConnectHandler connectHandler)
         {
           ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
-          socket_.set_verify_callback([]
-            (bool preverified, ASIO::ssl::verify_context& ctx)
-              { return verify_certificate(preverified, ctx); });
+          socket_.set_verify_callback(ASIO::ssl::host_name_verification(host_name));
 
           auto host_iterator{resolve_host(io_context, host_name, port_name)};
           if (host_iterator == ASIO::ip::tcp::resolver::iterator())
