@@ -100,7 +100,7 @@ namespace via
         static ASIO::ssl::context& ssl_context()
         {
           static ASIO::ssl::context context_
-              (ASIO::ssl::context::tlsv12);
+              (ASIO::ssl::context::tlsv13);
           return context_;
         }
 
