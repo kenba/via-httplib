@@ -214,10 +214,14 @@ int main(int argc, char *argv[])
   try
   {
     // create an io_context for the server
-    ASIO::io_context io_context;
+    ASIO::io_context io_context(1);
+
+    ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+    ssl_context.set_options(ASIO::ssl::context_base::default_workarounds);
+    ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
 
     // create an https_server and connect the request handler
-    https_server_type https_server(io_context);
+    https_server_type https_server(io_context, ssl_context);
     https_server.request_received_event(request_handler);
 
     // connect the optional handler callback functions
@@ -239,17 +243,13 @@ int main(int argc, char *argv[])
     // Set up SSL/TLS
     https_server.set_password(password);
     ASIO_ERROR_CODE error
-        (https_server_type::set_ssl_certificates(CACERT, PRIVKEY));
+        (https_server.set_ssl_certificates(CACERT, PRIVKEY));
     if (error)
     {
       std::cerr << "Error, set_ssl_certificates: "
                 << error.message() << std::endl;
       return 1;
     }
-
-    ASIO::ssl::context& ssl_context
-       (https_server_type::connection_type::ssl_context());
-    ssl_context.set_options(ASIO::ssl::context_base::default_workarounds);
 
     // start accepting http connections on the given port
     error = https_server.accept_connections(port_number);

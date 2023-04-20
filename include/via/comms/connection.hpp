@@ -379,12 +379,64 @@ namespace via
         }
       }
 
+#ifdef HTTP_SSL
+
       /// Constructor for server connections.
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
-      /// @param io_context the boost asio io_context used by the underlying
-      /// socket adaptor.
+      /// @param io_context the asio io_context used by the underlying socket
+      /// adaptor.
+      /// @param ssl_context the asio ssl::context used by the underlying socket
+      /// adaptor.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      /// @param rx_buffer_size the size of the receive_buffer.
+      explicit connection(ASIO::io_context& io_context,
+                          ASIO::ssl::context& ssl_context,
+                          event_callback_type event_callback,
+                          error_callback_type error_callback,
+                          size_t rx_buffer_size) :
+        SocketAdaptor(io_context, ssl_context),
+#ifdef HTTP_THREAD_SAFE
+        strand_(io_context),
+#endif
+        rx_buffer_size_(rx_buffer_size),
+        rx_buffer_(new Container(rx_buffer_size_, 0)),
+        tx_queue_(new std::deque<Container>()),
+        event_callback_(event_callback),
+        error_callback_(error_callback)
+      {}
+
+      /// Constructor for client connections.
+      /// The constructor is private to ensure that it instances of the class
+      /// can only be created as shared pointers by calling the create
+      /// function below.
+      /// @param io_context the asio io_context used by the underlying socket
+      /// adaptor.
+      /// @param ssl_context the asio ssl::context used by the underlying socket
+      /// adaptor.
+      /// @param rx_buffer_size the size of the receive_buffer.
+      explicit connection(ASIO::io_context& io_context,
+                          ASIO::ssl::context& ssl_context,
+                          size_t rx_buffer_size) :
+        SocketAdaptor(io_context, ssl_context),
+#ifdef HTTP_THREAD_SAFE
+        strand_(io_context),
+#endif
+        rx_buffer_size_(rx_buffer_size),
+        rx_buffer_(new Container(rx_buffer_size_, 0)),
+        tx_queue_(new std::deque<Container>())
+      {}
+
+#else
+
+      /// Constructor for server connections.
+      /// The constructor is private to ensure that it instances of the class
+      /// can only be created as shared pointers by calling the create
+      /// function below.
+      /// @param io_context the asio io_context used by the underlying socket
+      /// adaptor.
       /// @param event_callback the event callback function.
       /// @param error_callback the error callback function.
       /// @param rx_buffer_size the size of the receive_buffer.
@@ -407,8 +459,8 @@ namespace via
       /// The constructor is private to ensure that it instances of the class
       /// can only be created as shared pointers by calling the create
       /// function below.
-      /// @param io_context the boost asio io_context used by the underlying
-      /// socket adaptor.
+      /// @param io_context the asio io_context used by the underlying socket
+      /// adaptor.
       /// @param rx_buffer_size the size of the receive_buffer.
       explicit connection(ASIO::io_context& io_context,
                           size_t rx_buffer_size) :
@@ -420,6 +472,8 @@ namespace via
         rx_buffer_(new Container(rx_buffer_size_, 0)),
         tx_queue_(new std::deque<Container>())
       {}
+
+#endif
 
       /// Set the socket's tcp no delay status.
       /// If no_delay_ is set it disables the Nagle algorithm on the socket.
@@ -514,6 +568,40 @@ namespace via
       ~connection()
       { close(); }
 
+#ifdef HTTP_SSL
+
+      /// The factory function to create server connections.
+      /// @pre the event_callback and error_callback functions must exist.
+      /// E.g. if either of them are class member functions then the class
+      /// MUST have been constructed BEFORE this function is called.
+      /// @param io_context the asio io_context for the socket adaptor.
+      /// @param ssl_context the asio ssl::context for the socket adaptor.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      /// @param rx_buffer_size the size of the receive_buffer,
+      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
+      static shared_pointer create(ASIO::io_context& io_context,
+                                   ASIO::ssl::context& ssl_context,
+                                   event_callback_type event_callback,
+                                   error_callback_type error_callback,
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+      {
+        return shared_pointer(new connection(io_context, ssl_context, event_callback,
+                                             error_callback, rx_buffer_size));
+      }
+
+      /// The factory function to create client connections.
+      /// @param io_context the asio io_context for the socket adaptor.
+      /// @param ssl_context the asio ssl::context for the socket adaptor.
+      /// @param rx_buffer_size the size of the receive_buffer,
+      /// default SocketAdaptor::DEFAULT_RX_BUFFER_SIZE.
+      static shared_pointer create(ASIO::io_context& io_context,
+                                   ASIO::ssl::context& ssl_context,
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
+      { return shared_pointer(new connection(io_context, ssl_context, rx_buffer_size)); }
+
+#else
+
       /// The factory function to create server connections.
       /// @pre the event_callback and error_callback functions must exist.
       /// E.g. if either of them are class member functions then the class
@@ -539,6 +627,8 @@ namespace via
       static shared_pointer create(ASIO::io_context& io_context,
                size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE)
       { return shared_pointer(new connection(io_context, rx_buffer_size)); }
+
+#endif
 
       /// @fn set_event_callback
       /// Function to set the event callback function.

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -94,21 +94,21 @@ int main(int argc, char *argv[])
   try
   {
     // The asio io_context.
-    ASIO::io_context io_context;
+    ASIO::io_context io_context(1);
+
+    // Set up SSL
+    ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);
+    std::string certificate_file = "ca-crt.pem";
+    ssl_context.load_verify_file(certificate_file);
+    ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
-        https_client_type::create(io_context, response_handler, chunk_handler);
+        https_client_type::create(io_context, ssl_context, response_handler, chunk_handler);
 
     // attach optional handlers
     http_client->connected_event(connected_handler);
     http_client->disconnected_event(disconnected_handler);
-
-    // Set up SSL
-    std::string certificate_file = "cacert.pem";
-    ASIO::ssl::context& ssl_context
-       (https_client_type::connection_type::ssl_context());
-    ssl_context.load_verify_file(certificate_file);
 
     // attempt to connect to the host on the standard https port (443)
     if (!http_client->connect(host_name, "https"))

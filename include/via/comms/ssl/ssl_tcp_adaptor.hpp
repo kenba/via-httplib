@@ -76,9 +76,10 @@ namespace via
 
         /// The ssl_tcp_adaptor constructor.
         /// @param io_context the asio io_context associated with this connection
-        explicit ssl_tcp_adaptor(ASIO::io_context& io_context) :
+        /// @param ssl_context the asio ssl::context associated with the socket.
+        ssl_tcp_adaptor(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
           io_context_(io_context),
-          socket_(io_context_, ssl_context())
+          socket_(io_context_, ssl_context)
         {}
 
       public:
@@ -93,17 +94,6 @@ namespace via
         /// The default size of the receive buffer.
         static const size_t DEFAULT_RX_BUFFER_SIZE = 8192;
 
-        /// @fn ssl_context
-        /// A static function to manage the ssl context for the ssl
-        /// connections.
-        /// @return ssl_context the ssl context.
-        static ASIO::ssl::context& ssl_context()
-        {
-          static ASIO::ssl::context context_
-              (ASIO::ssl::context::tlsv13);
-          return context_;
-        }
-
         /// @fn connect
         /// Connect the ssl tcp socket to the given host name and port.
         /// @pre To be called by "client" connections only.
@@ -115,7 +105,6 @@ namespace via
         bool connect(ASIO::io_context& io_context, const char* host_name,
                       const char* port_name, ConnectHandler connectHandler)
         {
-          ssl_context().set_verify_mode(ASIO::ssl::verify_peer);
           socket_.set_verify_callback(ASIO::ssl::host_name_verification(host_name));
 
           auto host_iterator{resolve_host(io_context, host_name, port_name)};

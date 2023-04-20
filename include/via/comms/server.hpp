@@ -75,6 +75,11 @@ namespace via
       /// The asio::io_context to use.
       ASIO::io_context& io_context_;
 
+#ifdef HTTP_SSL
+      /// The ssl::context for ssl_tcp_adaptor
+      ASIO::ssl::context& ssl_context_;
+#endif
+
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
 
@@ -176,13 +181,21 @@ namespace via
       /// Wait for connections.
       void start_accept()
       {
+#ifdef HTTP_SSL
+        next_connection_ = connection_type::create(io_context_, ssl_context_,
+          [this](int event, std::weak_ptr<connection_type> ptr)
+            { event_handler(event, ptr); },
+          [this](ASIO_ERROR_CODE const& error,
+                 std::weak_ptr<connection_type> ptr)
+            { error_handler(error, ptr); });
+#else
         next_connection_ = connection_type::create(io_context_,
           [this](int event, std::weak_ptr<connection_type> ptr)
             { event_handler(event, ptr); },
           [this](ASIO_ERROR_CODE const& error,
                  std::weak_ptr<connection_type> ptr)
             { error_handler(error, ptr); });
-
+#endif
         if (acceptor_v6_.is_open())
           acceptor_v6_.async_accept(next_connection_->socket(),
             [this](ASIO_ERROR_CODE const& error)
@@ -200,6 +213,69 @@ namespace via
 
       /// Assignment operator deleted to disable copying.
       server& operator=(server) = delete;
+
+#ifdef HTTP_SSL
+
+      /// The server constructor.
+      /// @post the event_callback and error_callback functions MUST be set
+      /// AFTER this constructor has been called.
+      /// @see set_event_callback
+      /// @see set_error_callback
+      /// @param io_context the boost asio io_context used by the acceptor
+      /// and connections.
+      server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
+        io_context_(io_context),
+        ssl_context_(ssl_context),
+        acceptor_v6_(io_context),
+        acceptor_v4_(io_context),
+        next_connection_(),
+        connections_(),
+        password_(),
+        event_callback_(),
+        error_callback_(),
+        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
+        receive_buffer_size_(0),
+        send_buffer_size_(0),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false)
+      {}
+
+      /// The server constructor.
+      /// @pre the event_callback and error_callback functions must exist.
+      /// E.g. if either of them are class member functions then the class
+      /// MUST have been constructed BEFORE this constructor is called.
+      /// @param io_context the boost asio io_context used by the acceptor
+      /// and connections.
+      /// @param event_callback the event callback function.
+      /// @param error_callback the error callback function.
+      server(ASIO::io_context& io_context,
+             ASIO::ssl::context& ssl_context,
+             event_callback_type event_callback,
+             error_callback_type error_callback) :
+        io_context_(io_context),
+        ssl_context_(ssl_context),
+        acceptor_v6_(io_context),
+        acceptor_v4_(io_context),
+        next_connection_(),
+        connections_(),
+        password_(),
+        event_callback_(event_callback),
+        error_callback_(error_callback),
+        timeout_(0),
+        no_delay_(false),
+        keep_alive_(false)
+      {}
+
+      /// @fn ssl_context
+      /// A function to manage the ssl context for the ssl connections.
+      /// @return ssl_context the ssl context.
+      ASIO::ssl::context& ssl_context() noexcept
+      {
+        return ssl_context_;
+      }
+
+#else
 
       /// The server constructor.
       /// @post the event_callback and error_callback functions MUST be set
@@ -248,6 +324,8 @@ namespace via
         no_delay_(false),
         keep_alive_(false)
       {}
+
+#endif
 
       /// Destructor, close the connections.
       ~server()
@@ -336,7 +414,7 @@ namespace via
       void set_password(std::string_view password)
       {
         password_ = password;
-        connection_type::ssl_context().set_password_callback
+        ssl_context_.set_password_callback
             ([this](std::size_t max_length,
                     ASIO::ssl::context::password_purpose purpose)
         { return server::password(max_length, purpose); });

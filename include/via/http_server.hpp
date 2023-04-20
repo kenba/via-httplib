@@ -436,6 +436,47 @@ namespace via
     /// Assignment operator deleted to disable copying.
     http_server& operator=(http_server) = delete;
 
+#ifdef HTTP_SSL
+
+    /// Constructor.
+    /// @param io_context a reference to the ASIO::io_context.
+    /// @param ssl_context a reference to the asio ssl::context.
+    explicit http_server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
+      server_(new server_type(io_context, ssl_context)),
+      http_connections_(),
+      request_router_(),
+      shutting_down_(false),
+
+      max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
+      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE),
+
+      require_host_header_(true),
+      translate_head_     (true),
+      trace_enabled_      (false),
+      auto_disconnect_    (false),
+
+      http_request_handler_ (),
+      http_chunk_handler_   (),
+      http_continue_handler_(),
+      http_invalid_handler_ (),
+      connected_handler_    (),
+      disconnected_handler_ (),
+      message_sent_handler_ ()
+    {
+      server_->set_event_callback([this]
+        (int event, std::weak_ptr<connection_type> connection)
+          { event_handler(event, connection); });
+      server_->set_error_callback([this]
+        (ASIO_ERROR_CODE const& error,
+         std::weak_ptr<connection_type> connection)
+          { error_handler(error, connection); });
+      // Set no delay, i.e. disable the Nagle algorithm
+      // An http_server will want to send messages immediately
+      server_->set_no_delay(true);
+    }
+
+#else
+
     /// Constructor.
     /// @param io_context a reference to the ASIO::io_context.
     explicit http_server(ASIO::io_context& io_context) :
@@ -472,6 +513,7 @@ namespace via
       server_->set_no_delay(true);
     }
 
+#endif
     /// Destructor, close the connections.
     ~http_server()
     { close(); }
@@ -630,21 +672,21 @@ namespace via
     /// @param certificate the server SSL certificate.
     /// @param private_key the private key.
     /// @param tmp_dh the tmp_dh, default blank.
-    static ASIO_ERROR_CODE set_ssl_certificates
+    ASIO_ERROR_CODE set_ssl_certificates
                        (std::string_view certificate,
                         std::string_view private_key,
                         std::string_view tmp_dh = std::string_view())
     {
       ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
-      server_type::connection_type::ssl_context().
+      server_->ssl_context().
           use_certificate(ASIO::const_buffer(certificate.data(),
                                              certificate.size()),
                           ASIO::ssl::context::pem, error);
       if (error)
         return error;
 
-      server_type::connection_type::ssl_context().
+      server_->ssl_context().
           use_private_key(ASIO::const_buffer(private_key.data(),
                                              private_key.size()),
                           ASIO::ssl::context::pem, error);
@@ -652,17 +694,17 @@ namespace via
         return error;
 
       if (tmp_dh.empty())
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
            set_options(ASIO::ssl::context::default_workarounds |
                        ASIO::ssl::context::no_sslv2);
       else
       {
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
             use_tmp_dh(ASIO::const_buffer(tmp_dh.data(), tmp_dh.size()), error);
         if (error)
           return error;
 
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
            set_options(ASIO::ssl::context::default_workarounds |
                        ASIO::ssl::context::no_sslv2 |
                        ASIO::ssl::context::single_dh_use,
@@ -677,37 +719,37 @@ namespace via
     /// @param certificate_file the server SSL certificate file.
     /// @param key_file the private key file
     /// @param dh_file the dh file, default blank.
-    static ASIO_ERROR_CODE set_ssl_files
+    ASIO_ERROR_CODE set_ssl_files
                        (std::string_view certificate_file,
                         std::string_view key_file,
                         std::string_view dh_file = std::string_view())
     {
       ASIO_ERROR_CODE error;
 #ifdef HTTP_SSL
-      server_type::connection_type::ssl_context().
+      server_->ssl_context().
           use_certificate_file(certificate_file.data(),
                                ASIO::ssl::context::pem, error);
       if (error)
         return error;
 
-      server_type::connection_type::ssl_context().
+      server_->ssl_context().
           use_private_key_file(key_file.data(), ASIO::ssl::context::pem,
                                error);
       if (error)
         return error;
 
       if (dh_file.empty())
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
            set_options(ASIO::ssl::context::default_workarounds |
                        ASIO::ssl::context::no_sslv2);
       else
       {
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
             use_tmp_dh_file(dh_file.data(), error);
         if (error)
           return error;
 
-        server_type::connection_type::ssl_context().
+        server_->ssl_context().
            set_options(ASIO::ssl::context::default_workarounds |
                        ASIO::ssl::context::no_sslv2 |
                        ASIO::ssl::context::single_dh_use,

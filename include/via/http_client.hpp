@@ -315,6 +315,46 @@ namespace via
       std::cerr << error <<  std::endl;
     }
 
+#ifdef HTTP_SSL
+
+    /// Constructor.
+    /// @param io_context the asio io_context to use.
+    /// @param ssl_context the asio ssl::context for the socket adaptor.
+    /// @param response_handler the handler for received HTTP responses.
+    /// @param chunk_handler the handler for received HTTP chunks.
+    /// @param rx_buffer_size the size of the receive_buffer, default
+    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// @param max_body_size the maximum size of a response body.
+    /// @param max_chunk_size the maximum size of a response chunk.
+    explicit http_client(ASIO::io_context& io_context,
+                          ASIO::ssl::context& ssl_context,
+                           ResponseHandler response_handler,
+                           ChunkHandler    chunk_handler,
+                           size_t          rx_buffer_size,
+                           size_t          max_body_size,
+                           size_t          max_chunk_size) :
+      io_context_(io_context),
+      connection_(connection_type::create(io_context, ssl_context, rx_buffer_size)),
+      timer_(io_context),
+      rx_(max_body_size, max_chunk_size),
+      host_name_(),
+      tx_header_(),
+      tx_body_(),
+      rx_buffer_(),
+      http_response_handler_(response_handler),
+      http_chunk_handler_(chunk_handler),
+      http_invalid_handler_(),
+      connected_handler_(),
+      disconnected_handler_(),
+      message_sent_handler_()
+    {
+      // Set no delay, i.e. disable the Nagle algorithm
+      // An http_client will want to send messages immediately
+      connection_->set_no_delay(true);
+    }
+
+#else
+
     /// Constructor.
     /// @param io_context the asio io_context to use.
     /// @param response_handler the handler for received HTTP responses.
@@ -349,9 +389,48 @@ namespace via
       connection_->set_no_delay(true);
     }
 
+#endif
+
     ////////////////////////////////////////////////////////////////////////
 
   public:
+
+#ifdef HTTP_SSL
+
+    /// @fn create
+    /// The factory function to create connections.
+    /// @param io_context the boost asio io_context used by the underlying
+    /// connection.
+    /// @param ssl_context the asio ssl::context for the socket adaptor.
+    /// @param response_handler the handler for received HTTP responses.
+    /// @param chunk_handler the handler for received HTTP chunks.
+    /// @param rx_buffer_size the size of the receive_buffer, default
+    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// @param max_body_size the maximum size of a response body: default LONG_MAX.
+    /// @param max_chunk_size the maximum size of a response chunk: default LONG_MAX.
+    static shared_pointer create(ASIO::io_context& io_context,
+                                 ASIO::ssl::context& ssl_context,
+                                 ResponseHandler response_handler,
+                                 ChunkHandler    chunk_handler,
+               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE,
+               size_t max_body_size  = LONG_MAX,
+               size_t max_chunk_size = LONG_MAX)
+    {
+      shared_pointer client_ptr(new http_client(io_context, ssl_context, response_handler,
+                                            chunk_handler, rx_buffer_size,
+                                            max_body_size, max_chunk_size));
+      weak_pointer ptr(client_ptr);
+      client_ptr->connection_->set_error_callback([]
+        (const ASIO_ERROR_CODE &error,
+         typename connection_type::weak_pointer weak_ptr)
+           { error_handler(error, weak_ptr); });
+      client_ptr->connection_->set_event_callback([ptr]
+        (int event, typename connection_type::weak_pointer weak_ptr)
+           { event_callback(ptr, event, weak_ptr); });
+      return client_ptr;
+    }
+
+#else
 
     /// @fn create
     /// The factory function to create connections.
@@ -383,6 +462,8 @@ namespace via
            { event_callback(ptr, event, weak_ptr); });
       return client_ptr;
     }
+
+#endif
 
     /// Destructor
     /// Close the socket and cancel the timer.
