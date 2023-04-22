@@ -107,11 +107,11 @@ namespace via
         {
           socket_.set_verify_callback(ASIO::ssl::host_name_verification(host_name));
 
-          auto host_iterator{resolve_host(io_context, host_name, port_name)};
-          if (host_iterator == ASIO::ip::tcp::resolver::iterator())
+          auto endpoints{resolve_host(io_context, host_name, port_name)};
+          if (endpoints.empty())
             return false;
 
-          connect_socket(connectHandler, host_iterator);
+          connect_socket(connectHandler, endpoints);
           return true;
         }
 

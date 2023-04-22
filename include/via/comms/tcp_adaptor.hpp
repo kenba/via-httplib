@@ -25,15 +25,14 @@ namespace via
     /// @param io_context the asio io_context associated with the connection.
     /// @param host_name the host name.
     /// @param port_name the host port.
-    /// @return a TCP resolver::iterator
-    inline ASIO::ip::tcp::resolver::iterator resolve_host
+    /// @return a TCP resolver::results_type collection
+    inline ASIO::ip::tcp::resolver::results_type resolve_host
                       (ASIO::io_context& io_context,
                        const char* host_name, const char* port_name)
     {
       ASIO_ERROR_CODE ignoredEc;
       ASIO::ip::tcp::resolver resolver(io_context);
-      ASIO::ip::tcp::resolver::query query(host_name, port_name);
-      return resolver.resolve(query, ignoredEc);
+      return resolver.resolve(host_name, port_name, ignoredEc);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -99,11 +98,11 @@ namespace via
       bool connect(ASIO::io_context& io_context, const char* host_name,
                     const char* port_name, ConnectHandler connectHandler)
       {
-        auto host_iterator{resolve_host(io_context, host_name, port_name)};
-        if (host_iterator == ASIO::ip::tcp::resolver::iterator())
+        auto endpoints{resolve_host(io_context, host_name, port_name)};
+        if (endpoints.empty())
           return false;
 
-        connect_socket(connectHandler, host_iterator);
+        connect_socket(connectHandler, endpoints);
         return true;
       }
 
