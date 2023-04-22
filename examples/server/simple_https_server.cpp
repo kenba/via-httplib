@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -58,24 +58,39 @@ int main(int /* argc */, char *argv[])
   std::string certificate_file = "cacert.pem";
   std::string private_key_file = "privkey.pem";
 
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+
+  ASIO_ERROR_CODE error;
+  ssl_context.use_certificate_chain_file(certificate_file, error);
+  if (error)
+  {
+    std::cerr << "Error, use_certificate_chain: " << error.message() << std::endl;
+    return 1;
+  }
+
+  ssl_context.use_private_key_file(private_key_file, asio::ssl::context::pem, error);
+  if (error)
+  {
+    std::cerr << "Error, use_private_key: " << error.message() << std::endl;
+    return 1;
+  }
+
+  ssl_context.set_password_callback([password](std::size_t max_length,
+      ASIO::ssl::context::password_purpose purpose)
+      { return password; });
+
   try
   {
     // The asio io_context.
-    ASIO::io_context io_context;
+    ASIO::io_context io_context(1);
 
     // Create the HTTP server and attach the request handler
-    https_server_type https_server(io_context);
+    https_server_type https_server(io_context, ssl_context);
     https_server.request_received_event(request_handler);
-
-    // Set up SSL
-    https_server.set_password(password);
-    ASIO_ERROR_CODE error
-        (https_server_type::set_ssl_files(certificate_file, private_key_file));
-    if (error)
-    {
-      std::cerr << "Error, set_ssl_files: "  << error.message() << std::endl;
-      return 1;
-    }
 
     // and accept IPV4 connections on the default port (443)
     error = https_server.accept_connections();

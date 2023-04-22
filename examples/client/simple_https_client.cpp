@@ -91,16 +91,19 @@ int main(int argc, char *argv[])
   uri = argv[2];
   std::cout << app_name <<" host: " << host_name
             << " uri: " << uri << std::endl;
+
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+  std::string certificate_file = "ca-crt.pem";
+  ssl_context.load_verify_file(certificate_file);
+
   try
   {
     // The asio io_context.
     ASIO::io_context io_context(1);
-
-    // Set up SSL
-    ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);
-    std::string certificate_file = "ca-crt.pem";
-    ssl_context.load_verify_file(certificate_file);
-    ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
 
     // Create an http_client and attach the response & chunk handlers
     http_client =

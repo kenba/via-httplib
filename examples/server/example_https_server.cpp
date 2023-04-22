@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2021 Ken Barker
+// Copyright (c) 2014-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -208,17 +208,36 @@ int main(int argc, char *argv[])
 
   std::cout << app_name << ": " << port_number << std::endl;
 
-  // The values for the SSL functions
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+
+  ASIO_ERROR_CODE error;
+  ssl_context.use_certificate_chain(ASIO::const_buffer(CACERT.data(), CACERT.size()), error);
+  if (error)
+  {
+    std::cerr << "Error, use_certificate_chain: " << error.message() << std::endl;
+    return 1;
+  }
+
+  ssl_context.use_private_key(ASIO::const_buffer(PRIVKEY.data(), PRIVKEY.size()), asio::ssl::context::pem, error);
+  if (error)
+  {
+    std::cerr << "Error, use_private_key: " << error.message() << std::endl;
+    return 1;
+  }
+
   std::string password = "test";
+  ssl_context.set_password_callback([password](std::size_t max_length,
+      ASIO::ssl::context::password_purpose purpose)
+      { return password; });
 
   try
   {
     // create an io_context for the server
     ASIO::io_context io_context(1);
-
-    ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
-    ssl_context.set_options(ASIO::ssl::context_base::default_workarounds);
-    ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
 
     // create an https_server and connect the request handler
     https_server_type https_server(io_context, ssl_context);
@@ -239,17 +258,6 @@ int main(int argc, char *argv[])
     https_server.set_rx_buffer_size(16384);
     https_server.tcp_server()->set_receive_buffer_size(16384);
     https_server.tcp_server()->set_send_buffer_size(16384);
-
-    // Set up SSL/TLS
-    https_server.set_password(password);
-    ASIO_ERROR_CODE error
-        (https_server.set_ssl_certificates(CACERT, PRIVKEY));
-    if (error)
-    {
-      std::cerr << "Error, set_ssl_certificates: "
-                << error.message() << std::endl;
-      return 1;
-    }
 
     // start accepting http connections on the given port
     error = https_server.accept_connections(port_number);

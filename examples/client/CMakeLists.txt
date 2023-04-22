@@ -15,6 +15,7 @@ add_executable(${PROJECT_NAME}
 	# example_http_client.cpp
 	# chunked_http_client.cpp
 	# simple_http_client.cpp
+	# example_https_client.cpp
 )
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)

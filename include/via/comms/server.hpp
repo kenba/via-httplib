@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -91,9 +91,6 @@ namespace via
 
       /// The connections established with this server.
       connections connections_;
-
-      /// The password. Only used by SSL servers.
-      std::string password_;
 
       event_callback_type event_callback_;   ///< The event callback function.
       error_callback_type error_callback_;   ///< The error callback function.
@@ -230,7 +227,6 @@ namespace via
         acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
-        password_(),
         event_callback_(),
         error_callback_(),
         rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
@@ -259,7 +255,6 @@ namespace via
         acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
-        password_(),
         event_callback_(event_callback),
         error_callback_(error_callback),
         timeout_(0),
@@ -290,7 +285,6 @@ namespace via
         acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
-        password_(),
         event_callback_(),
         error_callback_(),
         rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
@@ -317,7 +311,6 @@ namespace via
         acceptor_v4_(io_context),
         next_connection_(),
         connections_(),
-        password_(),
         event_callback_(event_callback),
         error_callback_(error_callback),
         timeout_(0),
@@ -396,30 +389,6 @@ namespace via
         start_accept();
         return ec;
       }
-
-#ifdef HTTP_SSL
-      /// @fn password
-      /// Get the password.
-      /// @pre It must be an SSL server.
-      /// @return The password.
-      const std::string password(std::size_t, // max_length,
-                       ASIO::ssl::context::password_purpose)// purpose)
-        const noexcept
-      { return password_; }
-
-      /// @fn set_password
-      /// Set the password.
-      /// @pre It must be an SSL server.
-      /// @param password the password
-      void set_password(std::string_view password)
-      {
-        password_ = password;
-        ssl_context_.set_password_callback
-            ([this](std::size_t max_length,
-                    ASIO::ssl::context::password_purpose purpose)
-        { return server::password(max_length, purpose); });
-      }
-#endif
 
       /// Set the size of the receive buffer.
       /// @param size the new size of the receive buffer.

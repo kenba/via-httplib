@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015 Ken Barker
+// Copyright (c) 2015-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -16,6 +16,7 @@
 /// Define an HTTP client using std::string to store message bodies
 typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
                                                             https_client_type;
+typedef https_client_type::http_response http_response;
 typedef https_client_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@ namespace
 
   /// The handler for incoming HTTP requests.
   /// Prints the response.
-  void response_handler(via::http::rx_response const& response,
+  void response_handler(http_response const& response,
                         std::string const& body)
   {
     std::cout << "Rx response: " << response.to_string()
@@ -70,7 +71,7 @@ namespace
 
   /// The handler for invalid HTTP requests.
   /// Outputs the buffer.
-  void invalid_response_handler(via::http::rx_response const& response,
+  void invalid_response_handler(http_response const& response,
                                 std::string const& body)
   {
     std::cout << "Invalid response: "
@@ -112,14 +113,23 @@ int main(int argc, char *argv[])
   std::cout << app_name << " host: " << host_name
             << " method: " << method
             << " uri: " << uri << std::endl;
+
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+  std::string certificate_file = "ca-crt.pem";
+  ssl_context.load_verify_file(certificate_file);
+
   try
   {
-    // The asio io_service.
-    boost::asio::io_service io_service;
+    // The asio io_context.
+    ASIO::io_context io_context(1);
 
     // Create an http_client and attach the response & chunk handlers
     http_client =
-        https_client_type::create(io_service, response_handler, chunk_handler);
+        https_client_type::create(io_context, ssl_context, response_handler, chunk_handler);
 
     // attach the optional handlers
     http_client->invalid_response_event(invalid_response_handler);
@@ -135,14 +145,6 @@ int main(int argc, char *argv[])
     http_client->connection()->set_receive_buffer_size(16384);
     http_client->connection()->set_send_buffer_size(16384);
 
-    // Set up SSL
-    std::string certificate_file = "cacert.pem";
-    boost::asio::ssl::context& ssl_context
-       (https_client_type::connection_type::ssl_context());
-    ssl_context.load_verify_file(certificate_file);
-
-    ssl_context.set_options(boost::asio::ssl::context_base::default_workarounds);
-
     // attempt to connect to the host on the standard https port (443)
     if (!http_client->connect(host_name, "https"))
     {
@@ -150,12 +152,12 @@ int main(int argc, char *argv[])
       return 1;
     }
 
-    // run the io_service to start communications
-    io_service.run();
+    // run the io_context to start communications
+    io_context.run();
 
     http_client.reset();
 
-    std::cout << "io_service.run, all work has finished" << std::endl;
+    std::cout << "io_context.run, all work has finished" << std::endl;
   }
   catch (std::exception& e)
   {

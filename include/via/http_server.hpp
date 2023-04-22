@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -657,107 +657,6 @@ namespace via
     /// @param timeout the timeout in milliseconds.
     void set_timeout(int timeout) noexcept
     { server_->set_timeout(timeout); }
-
-    ////////////////////////////////////////////////////////////////////////
-    // HTTPS set functions
-
-    /// Set the password for an SSL connection.
-    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
-    /// @param password the SSL password
-    void set_password(std::string_view password) noexcept
-    { server_->set_password(password); }
-
-    /// Set the certificates required for an SSL server.
-    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
-    /// @param certificate the server SSL certificate.
-    /// @param private_key the private key.
-    /// @param tmp_dh the tmp_dh, default blank.
-    ASIO_ERROR_CODE set_ssl_certificates
-                       (std::string_view certificate,
-                        std::string_view private_key,
-                        std::string_view tmp_dh = std::string_view())
-    {
-      ASIO_ERROR_CODE error;
-#ifdef HTTP_SSL
-      server_->ssl_context().
-          use_certificate(ASIO::const_buffer(certificate.data(),
-                                             certificate.size()),
-                          ASIO::ssl::context::pem, error);
-      if (error)
-        return error;
-
-      server_->ssl_context().
-          use_private_key(ASIO::const_buffer(private_key.data(),
-                                             private_key.size()),
-                          ASIO::ssl::context::pem, error);
-      if (error)
-        return error;
-
-      if (tmp_dh.empty())
-        server_->ssl_context().
-           set_options(ASIO::ssl::context::default_workarounds |
-                       ASIO::ssl::context::no_sslv2);
-      else
-      {
-        server_->ssl_context().
-            use_tmp_dh(ASIO::const_buffer(tmp_dh.data(), tmp_dh.size()), error);
-        if (error)
-          return error;
-
-        server_->ssl_context().
-           set_options(ASIO::ssl::context::default_workarounds |
-                       ASIO::ssl::context::no_sslv2 |
-                       ASIO::ssl::context::single_dh_use,
-                       error);
-      }
-#endif // HTTP_SSL
-      return error;
-    }
-
-    /// Set the files required for an SSL server.
-    /// @pre http_server derived from via::comms::ssl::ssl_tcp_adaptor.
-    /// @param certificate_file the server SSL certificate file.
-    /// @param key_file the private key file
-    /// @param dh_file the dh file, default blank.
-    ASIO_ERROR_CODE set_ssl_files
-                       (std::string_view certificate_file,
-                        std::string_view key_file,
-                        std::string_view dh_file = std::string_view())
-    {
-      ASIO_ERROR_CODE error;
-#ifdef HTTP_SSL
-      server_->ssl_context().
-          use_certificate_file(certificate_file.data(),
-                               ASIO::ssl::context::pem, error);
-      if (error)
-        return error;
-
-      server_->ssl_context().
-          use_private_key_file(key_file.data(), ASIO::ssl::context::pem,
-                               error);
-      if (error)
-        return error;
-
-      if (dh_file.empty())
-        server_->ssl_context().
-           set_options(ASIO::ssl::context::default_workarounds |
-                       ASIO::ssl::context::no_sslv2);
-      else
-      {
-        server_->ssl_context().
-            use_tmp_dh_file(dh_file.data(), error);
-        if (error)
-          return error;
-
-        server_->ssl_context().
-           set_options(ASIO::ssl::context::default_workarounds |
-                       ASIO::ssl::context::no_sslv2 |
-                       ASIO::ssl::context::single_dh_use,
-                       error);
-      }
-#endif // HTTP_SSL
-      return error;
-    }
 
     ////////////////////////////////////////////////////////////////////////
     // other functions
