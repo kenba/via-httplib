@@ -10,7 +10,7 @@ cmake_policy(SET CMP0074 NEW)
 project (HttpServer)
 
 add_executable(${PROJECT_NAME} 
-    ../cacert.cpp
+  ../cacert.cpp
 	../privkey.cpp
 	example_https_server.cpp
 	
@@ -19,7 +19,8 @@ add_executable(${PROJECT_NAME}
 	# chunked_http_server.cpp
 	# example_https_server.cpp
 	# simple_http_server.cpp
-	# simple_https_server.cpp
+  # simple_https_server.cpp
+  # simple_mutual_authentication_https_server.cpp
 )
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
