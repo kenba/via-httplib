@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2021 Ken Barker
+// Copyright (c) 2015-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -90,14 +90,17 @@ namespace via
       }
 
       /// The udp_adaptor constructor.
-      /// @param io_context the asio io_context associated with this connection
-      explicit udp_adaptor(ASIO::io_context& io_context)
-        : socket_(io_context)
+      /// @param socket the asio socket associated with this adaptor
+      explicit udp_adaptor(ASIO::ip::udp::socket socket)
+        : socket_(std::move(socket))
         , rx_endpoint_(ASIO::ip::address_v4::any(), 0)
         , tx_endpoint_(ASIO::ip::address_v4::broadcast(), 0)
       {}
 
     public:
+
+      /// The underlying socket type.
+      typedef typename ASIO::ip::udp::socket socket_type;
 
       /// A virtual destructor because connection inherits from this class.
       virtual ~udp_adaptor()
@@ -257,17 +260,16 @@ namespace via
                    const char* port, ConnectHandler connectHandler)
       {
         // resolve the port on the local host
+        ASIO_ERROR_CODE error;
         ASIO::ip::udp::resolver resolver(io_context);
-        ASIO::ip::udp::resolver::query query(host_name, port );
-        ASIO::ip::udp::resolver::iterator iterator(resolver.resolve(query));
+        auto endpoints = resolver.resolve(host_name, port_name, ignoredEc);
 
         // Determine whether the host and port was found
-        if (iterator == ASIO::ip::udp::resolver::iterator())
+        if (endpoints.empty())
           return false;
 
         // Attempt to connect to it.
-        ASIO_ERROR_CODE error;
-        socket_.connect(*iterator, error);
+        socket_.connect(endpoints, error);
         if (error)
           return false;
 

@@ -44,8 +44,6 @@ namespace via
       ////////////////////////////////////////////////////////////////////////
       class ssl_tcp_adaptor
       {
-        /// The asio io_context.
-        ASIO::io_context& io_context_;
         /// The asio SSL TCP socket.
         ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_;
 
@@ -75,14 +73,15 @@ namespace via
         }
 
         /// The ssl_tcp_adaptor constructor.
-        /// @param io_context the asio io_context associated with this connection
-        /// @param ssl_context the asio ssl::context associated with the socket.
-        ssl_tcp_adaptor(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
-          io_context_(io_context),
-          socket_(io_context_, ssl_context)
+        /// @param socket the asio socket associated with this adaptor
+        explicit ssl_tcp_adaptor(ASIO::ssl::stream<ASIO::ip::tcp::socket> socket) :
+          socket_(std::move(socket))
         {}
 
       public:
+
+        /// The underlying socket type.
+        typedef typename ASIO::ssl::stream<ASIO::ip::tcp::socket> socket_type;
 
         /// A virtual destructor because connection inherits from this class.
         virtual ~ssl_tcp_adaptor()
@@ -197,8 +196,7 @@ namespace via
         /// @fn socket
         /// Accessor for the underlying tcp socket.
         /// @return a reference to the tcp socket.
-        ASIO::ssl::stream<ASIO::ip::tcp::socket>
-        ::lowest_layer_type& socket() noexcept
+        ASIO::ssl::stream<ASIO::ip::tcp::socket>::lowest_layer_type& socket() noexcept
         { return socket_.lowest_layer(); }
       };
 

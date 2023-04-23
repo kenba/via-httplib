@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-202 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -25,7 +25,7 @@ namespace via
     /// @param io_context the asio io_context associated with the connection.
     /// @param host_name the host name.
     /// @param port_name the host port.
-    /// @return a TCP resolver::results_type collection
+    /// @return a TCP resolver::results_type collection of endpoints
     inline ASIO::ip::tcp::resolver::results_type resolve_host
                       (ASIO::io_context& io_context,
                        const char* host_name, const char* port_name)
@@ -70,12 +70,15 @@ namespace via
       { ASIO::async_connect(socket_, host_iterator, connect_handler); }
 
       /// The tcp_adaptor constructor.
-      /// @param io_context the asio io_context associated with this connection
-      explicit tcp_adaptor(ASIO::io_context& io_context) :
-        socket_(io_context)
+      /// @param socket the asio socket associated with this adaptor
+      explicit tcp_adaptor(ASIO::ip::tcp::socket socket) :
+        socket_(std::move(socket))
       {}
 
     public:
+
+      /// The underlying socket type.
+      typedef typename ASIO::ip::tcp::socket socket_type;
 
       /// A virtual destructor because connection inherits from this class.
       virtual ~tcp_adaptor()

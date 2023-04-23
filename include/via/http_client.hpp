@@ -70,6 +70,8 @@ namespace via
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<SocketAdaptor, Container> connection_type;
 
+    typedef typename connection_type::socket_type socket_type;
+
     /// This type.
     typedef http_client<SocketAdaptor,
                         Container,
@@ -334,7 +336,7 @@ namespace via
                            size_t          max_body_size,
                            size_t          max_chunk_size) :
       io_context_(io_context),
-      connection_(connection_type::create(io_context, ssl_context, rx_buffer_size)),
+      connection_(std::make_shared<connection_type>(socket_type(io_context, ssl_context), rx_buffer_size)),
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),
       host_name_(),
@@ -370,7 +372,7 @@ namespace via
                            size_t          max_body_size,
                            size_t          max_chunk_size) :
       io_context_(io_context),
-      connection_(connection_type::create(io_context, rx_buffer_size)),
+      connection_(std::make_shared<connection_type>(socket_type(io_context), rx_buffer_size)),
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),
       host_name_(),

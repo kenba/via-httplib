@@ -57,6 +57,8 @@ namespace via
       /// The connection type used by this server.
       typedef connection<SocketAdaptor, Container> connection_type;
 
+      typedef typename connection_type::socket_type socket_type;
+
       /// A set of connections.
 #ifdef HTTP_THREAD_SAFE
       typedef thread::threadsafe_hash_map<void *, std::shared_ptr<connection_type>>
@@ -86,26 +88,26 @@ namespace via
       /// The IPv4 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v4_;
 
-      /// The next connection to be accepted.
-      std::shared_ptr<connection_type> next_connection_;
+      /// The next socket to be accepted.
+      ASIO::ip::tcp::socket next_socket_;
 
       /// The connections established with this server.
-      connections connections_;
+      connections connections_{};
 
-      event_callback_type event_callback_;   ///< The event callback function.
-      error_callback_type error_callback_;   ///< The error callback function.
+      event_callback_type event_callback_{nullptr};   ///< The event callback function.
+      error_callback_type error_callback_{nullptr};   ///< The error callback function.
 
-      size_t rx_buffer_size_; ///< The size of the receive buffer.
+      size_t rx_buffer_size_{SocketAdaptor::DEFAULT_RX_BUFFER_SIZE}; ///< The size of the receive buffer.
 
       // Socket parameters
 
-      int receive_buffer_size_; ///< The tcp receive buffer size.
-      int send_buffer_size_;    ///< The tcp send buffer size.
+      int receive_buffer_size_{0}; ///< The tcp receive buffer size.
+      int send_buffer_size_{0};    ///< The tcp send buffer size.
 
       /// The connection timeouts, in milliseconds, zero is disabled.
-      int timeout_;
-      bool no_delay_;         ///< The tcp no delay status.
-      bool keep_alive_;       ///< The tcp keep alive status.
+      int timeout_{0};
+      bool no_delay_{false};         ///< The tcp no delay status.
+      bool keep_alive_{false};       ///< The tcp keep alive status.
 
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
@@ -121,20 +123,35 @@ namespace via
         if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
             (ASIO::error::operation_aborted != error))
         {
-          if (error)
-            error_callback_(error, next_connection_);
-          else
+          if (!error)
           {
-#ifdef HTTP_THREAD_SAFE
-            connections_.emplace(next_connection_.get(), next_connection_);
+            auto next_connection = std::make_shared<connection_type>
+#ifdef HTTP_SSL
+              (socket_type(std::move(next_socket_), ssl_context_),
 #else
-            connections_.emplace(next_connection_);
+              (std::move(next_socket_),
 #endif
-            next_connection_->start(no_delay_, keep_alive_, timeout_,
+#ifdef HTTP_THREAD_SAFE
+              io_context_,
+#endif
+              rx_buffer_size_,
+              [this](int event, std::weak_ptr<connection_type> ptr)
+                { event_handler(event, ptr); },
+              [this](ASIO_ERROR_CODE const& error,
+                    std::weak_ptr<connection_type> ptr)
+                { error_handler(error, ptr); }
+              );
+
+            next_socket_ = ASIO::ip::tcp::socket(io_context_);
+
+#ifdef HTTP_THREAD_SAFE
+            connections_.emplace(next_connection.get(), next_connection);
+#else
+            connections_.emplace(next_connection);
+#endif
+            next_connection->start(no_delay_, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
           }
-
-          next_connection_.reset();
 
           start_accept();
         }
@@ -178,27 +195,12 @@ namespace via
       /// Wait for connections.
       void start_accept()
       {
-#ifdef HTTP_SSL
-        next_connection_ = connection_type::create(io_context_, ssl_context_,
-          [this](int event, std::weak_ptr<connection_type> ptr)
-            { event_handler(event, ptr); },
-          [this](ASIO_ERROR_CODE const& error,
-                 std::weak_ptr<connection_type> ptr)
-            { error_handler(error, ptr); });
-#else
-        next_connection_ = connection_type::create(io_context_,
-          [this](int event, std::weak_ptr<connection_type> ptr)
-            { event_handler(event, ptr); },
-          [this](ASIO_ERROR_CODE const& error,
-                 std::weak_ptr<connection_type> ptr)
-            { error_handler(error, ptr); });
-#endif
         if (acceptor_v6_.is_open())
-          acceptor_v6_.async_accept(next_connection_->socket(),
+          acceptor_v6_.async_accept(next_socket_,
             [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
         if (acceptor_v4_.is_open())
-          acceptor_v4_.async_accept(next_connection_->socket(),
+          acceptor_v4_.async_accept(next_socket_,
             [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
       }
@@ -211,31 +213,6 @@ namespace via
       /// Assignment operator deleted to disable copying.
       server& operator=(server) = delete;
 
-#ifdef HTTP_SSL
-
-      /// The server constructor.
-      /// @post the event_callback and error_callback functions MUST be set
-      /// AFTER this constructor has been called.
-      /// @see set_event_callback
-      /// @see set_error_callback
-      /// @param io_context the boost asio io_context used by the acceptor
-      /// and connections.
-      server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
-        io_context_(io_context),
-        ssl_context_(ssl_context),
-        acceptor_v6_(io_context),
-        acceptor_v4_(io_context),
-        next_connection_(),
-        connections_(),
-        event_callback_(),
-        error_callback_(),
-        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
-      {}
 
       /// The server constructor.
       /// @pre the event_callback and error_callback functions must exist.
@@ -243,24 +220,27 @@ namespace via
       /// MUST have been constructed BEFORE this constructor is called.
       /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
-      /// @param event_callback the event callback function.
-      /// @param error_callback the error callback function.
+      /// @param ssl_context the ssl context, only required for TLS servers.
+      /// @param event_callback the event callback function, default nullptr.
+      /// @param error_callback the error callback function, default nullptr.
       server(ASIO::io_context& io_context,
+#ifdef HTTP_SSL
              ASIO::ssl::context& ssl_context,
-             event_callback_type event_callback,
-             error_callback_type error_callback) :
+#endif
+             event_callback_type event_callback = nullptr,
+             error_callback_type error_callback = nullptr) :
         io_context_(io_context),
+#ifdef HTTP_SSL
         ssl_context_(ssl_context),
+#endif
         acceptor_v6_(io_context),
         acceptor_v4_(io_context),
-        next_connection_(),
-        connections_(),
+        next_socket_(io_context),
         event_callback_(event_callback),
-        error_callback_(error_callback),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
+        error_callback_(error_callback)
       {}
+
+#ifdef HTTP_SSL
 
       /// @fn ssl_context
       /// A function to manage the ssl context for the ssl connections.
@@ -269,54 +249,6 @@ namespace via
       {
         return ssl_context_;
       }
-
-#else
-
-      /// The server constructor.
-      /// @post the event_callback and error_callback functions MUST be set
-      /// AFTER this constructor has been called.
-      /// @see set_event_callback
-      /// @see set_error_callback
-      /// @param io_context the boost asio io_context used by the acceptor
-      /// and connections.
-      explicit server(ASIO::io_context& io_context) :
-        io_context_(io_context),
-        acceptor_v6_(io_context),
-        acceptor_v4_(io_context),
-        next_connection_(),
-        connections_(),
-        event_callback_(),
-        error_callback_(),
-        rx_buffer_size_(SocketAdaptor::DEFAULT_RX_BUFFER_SIZE),
-        receive_buffer_size_(0),
-        send_buffer_size_(0),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
-      {}
-
-      /// The server constructor.
-      /// @pre the event_callback and error_callback functions must exist.
-      /// E.g. if either of them are class member functions then the class
-      /// MUST have been constructed BEFORE this constructor is called.
-      /// @param io_context the boost asio io_context used by the acceptor
-      /// and connections.
-      /// @param event_callback the event callback function.
-      /// @param error_callback the error callback function.
-      explicit server(ASIO::io_context& io_context,
-                      event_callback_type event_callback,
-                      error_callback_type error_callback) :
-        io_context_(io_context),
-        acceptor_v6_(io_context),
-        acceptor_v4_(io_context),
-        next_connection_(),
-        connections_(),
-        event_callback_(event_callback),
-        error_callback_(error_callback),
-        timeout_(0),
-        no_delay_(false),
-        keep_alive_(false)
-      {}
 
 #endif
 
