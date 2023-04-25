@@ -436,51 +436,17 @@ namespace via
     /// Assignment operator deleted to disable copying.
     http_server& operator=(http_server) = delete;
 
-#ifdef HTTP_SSL
-
     /// Constructor.
     /// @param io_context a reference to the ASIO::io_context.
     /// @param ssl_context a reference to the asio ssl::context.
-    explicit http_server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
+    explicit http_server(ASIO::io_context& io_context
+#ifdef HTTP_SSL
+                        ,ASIO::ssl::context& ssl_context) :
       server_(new server_type(io_context, ssl_context)),
-      http_connections_(),
-      request_router_(),
-      shutting_down_(false),
-
-      max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
-      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE),
-
-      require_host_header_(true),
-      translate_head_     (true),
-      trace_enabled_      (false),
-      auto_disconnect_    (false),
-
-      http_request_handler_ (),
-      http_chunk_handler_   (),
-      http_continue_handler_(),
-      http_invalid_handler_ (),
-      connected_handler_    (),
-      disconnected_handler_ (),
-      message_sent_handler_ ()
-    {
-      server_->set_event_callback([this]
-        (int event, std::weak_ptr<connection_type> connection)
-          { event_handler(event, connection); });
-      server_->set_error_callback([this]
-        (ASIO_ERROR_CODE const& error,
-         std::weak_ptr<connection_type> connection)
-          { error_handler(error, connection); });
-      // Set no delay, i.e. disable the Nagle algorithm
-      // An http_server will want to send messages immediately
-      server_->set_no_delay(true);
-    }
-
 #else
-
-    /// Constructor.
-    /// @param io_context a reference to the ASIO::io_context.
-    explicit http_server(ASIO::io_context& io_context) :
+                        ) :
       server_(new server_type(io_context)),
+#endif
       http_connections_(),
       request_router_(),
       shutting_down_(false),
@@ -508,12 +474,8 @@ namespace via
         (ASIO_ERROR_CODE const& error,
          std::weak_ptr<connection_type> connection)
           { error_handler(error, connection); });
-      // Set no delay, i.e. disable the Nagle algorithm
-      // An http_server will want to send messages immediately
-      server_->set_no_delay(true);
     }
 
-#endif
     /// Destructor, close the connections.
     ~http_server()
     { close(); }

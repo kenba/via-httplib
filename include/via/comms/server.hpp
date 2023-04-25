@@ -106,7 +106,6 @@ namespace via
 
       /// The connection timeouts, in milliseconds, zero is disabled.
       int timeout_{0};
-      bool no_delay_{false};         ///< The tcp no delay status.
       bool keep_alive_{false};       ///< The tcp keep alive status.
 
       /// @accept_handler
@@ -149,7 +148,10 @@ namespace via
 #else
             connections_.emplace(next_connection);
 #endif
-            next_connection->start(no_delay_, keep_alive_, timeout_,
+            // Set no delay, i.e. disable the Nagle algorithm
+            // A server will want to send messages immediately
+            bool no_delay{true};
+            next_connection->start(no_delay, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
           }
 
@@ -351,12 +353,6 @@ namespace via
       /// @param size the new size of the socket send buffer, must be > 0.
       void set_send_buffer_size(int size) noexcept
       { send_buffer_size_ = size; }
-
-      /// @fn set_no_delay
-      /// Set the tcp no delay status for all future connections.
-      /// @param enable if true it disables the Nagle algorithm.
-      void set_no_delay(bool enable) noexcept
-      { no_delay_ = enable; }
 
       /// @fn close
       /// Close the server and all of the connections associated with it.
