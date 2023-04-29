@@ -51,7 +51,7 @@ namespace via
       typedef typename SocketAdaptor::socket_type socket_type;
 
       /// This type.
-      typedef typename connection<SocketAdaptor, Container> this_type;
+      typedef connection<SocketAdaptor, Container> this_type;
 
       /// A weak pointer to a connection.
       typedef typename std::weak_ptr<connection<SocketAdaptor, Container>>

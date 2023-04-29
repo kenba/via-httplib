@@ -78,7 +78,7 @@ int main(int /* argc */, char *argv[])
     return 1;
   }
 
-  ssl_context.use_private_key_file(private_key_file, asio::ssl::context::pem, error);
+  ssl_context.use_private_key_file(private_key_file, ASIO::ssl::context::pem, error);
   if (error)
   {
     std::cerr << "Error, use_private_key: " << error.message() << std::endl;

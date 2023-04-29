@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  ssl_context.use_private_key(ASIO::const_buffer(PRIVKEY.data(), PRIVKEY.size()), asio::ssl::context::pem, error);
+  ssl_context.use_private_key(ASIO::const_buffer(PRIVKEY.data(), PRIVKEY.size()), ASIO::ssl::context::pem, error);
   if (error)
   {
     std::cerr << "Error, use_private_key: " << error.message() << std::endl;
