@@ -10,8 +10,6 @@ cmake_policy(SET CMP0074 NEW)
 project (HttpServer)
 
 add_executable(${PROJECT_NAME} 
-  ../cacert.cpp
-	../privkey.cpp
 	example_https_server.cpp
 	
 	# thread_pool_http_server.cpp

@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
 
   // Values for the SSL functions
   std::string password         = "test";
-  std::string verify_file      = "ca-crt.pem";
-  std::string certificate_file = "clientcert.pem";
-  std::string private_key_file = "clientkey.pem";
+  std::string verify_file      = "ca-certificate.pem";
+  std::string certificate_file = "client-certificate.pem";
+  std::string private_key_file = "client-key.pem";
 
   // Set up SSL/TLS
   ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);

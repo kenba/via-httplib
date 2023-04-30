@@ -11,8 +11,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
-#include "../examples/cacert.hpp"
-#include "../examples/privkey.hpp"
+#include "../examples/certificates/server/server_crypto.hpp"
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
@@ -215,21 +214,21 @@ int main(int argc, char *argv[])
   ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
 
   ASIO_ERROR_CODE error;
-  ssl_context.use_certificate_chain(ASIO::const_buffer(CACERT.data(), CACERT.size()), error);
+  ssl_context.use_certificate_chain(SERVER_CERTIFICATE, error);
   if (error)
   {
     std::cerr << "Error, use_certificate_chain: " << error.message() << std::endl;
     return 1;
   }
 
-  ssl_context.use_private_key(ASIO::const_buffer(PRIVKEY.data(), PRIVKEY.size()), ASIO::ssl::context::pem, error);
+  ssl_context.use_private_key(SERVER_KEY, SERVER_KEY_TYPE, error);
   if (error)
   {
     std::cerr << "Error, use_private_key: " << error.message() << std::endl;
     return 1;
   }
 
-  std::string password = "test";
+  std::string password{SERVER_KEY_PASSWORD};
   ssl_context.set_password_callback([password](std::size_t max_length,
       ASIO::ssl::context::password_purpose purpose)
       { return password; });

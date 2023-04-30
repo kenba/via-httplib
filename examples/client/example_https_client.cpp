@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
   ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
                         | ASIO::ssl::context_base::no_sslv2);
   ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
-  std::string certificate_file = "ca-crt.pem";
+  std::string certificate_file = "ca-certificate.pem";
   ssl_context.load_verify_file(certificate_file);
 
   try
