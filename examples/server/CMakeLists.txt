@@ -53,15 +53,15 @@ if(OpenSSL_FOUND)
 endif(OpenSSL_FOUND)
 
 if (DEFINED ENV{Asio_DIR})
+  message("Using ASIO_STANDALONE")
   target_compile_definitions(${PROJECT_NAME} PRIVATE ASIO_STANDALONE)
   target_include_directories(${PROJECT_NAME} PRIVATE $ENV{Asio_DIR}/include)
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_ALL_DYN_LINK)
-
 find_package(Boost COMPONENTS system date_time regex)
 if(Boost_FOUND)
   target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE BOOST_ALL_DYN_LINK)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Boost::system

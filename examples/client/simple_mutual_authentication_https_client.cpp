@@ -105,11 +105,27 @@ int main(int argc, char *argv[])
   
   // Client does NOT need to set verify_fail_if_no_peer_cert for mutual authentication
   ssl_context.set_verify_mode(ASIO::ssl::context::verify_peer);
-  ssl_context.load_verify_file(verify_file);
+  ASIO_ERROR_CODE error;
+  ssl_context.load_verify_file(verify_file, error);
+  if (error)
+  {
+    std::cerr << "Error, verify_file: " << error.message() << std::endl;
+    return 1;
+  }
 
   // Load client certificate and key for mutual authentication
-  ssl_context.use_certificate_file(certificate_file, ASIO::ssl::context::pem);
-  ssl_context.use_private_key_file(private_key_file, ASIO::ssl::context::pem);
+  ssl_context.use_certificate_file(certificate_file, ASIO::ssl::context::pem, error);
+  if (error)
+  {
+    std::cerr << "Error, certificate_file: " << error.message() << std::endl;
+    return 1;
+  }
+  ssl_context.use_private_key_file(private_key_file, ASIO::ssl::context::pem, error);
+  if (error)
+  {
+    std::cerr << "Error, private_key_file: " << error.message() << std::endl;
+    return 1;
+  }
   ssl_context.set_password_callback([password](std::size_t max_length,
       ASIO::ssl::context::password_purpose purpose)
       { return password; });

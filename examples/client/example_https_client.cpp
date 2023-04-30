@@ -120,7 +120,13 @@ int main(int argc, char *argv[])
                         | ASIO::ssl::context_base::no_sslv2);
   ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
   std::string certificate_file = "ca-certificate.pem";
-  ssl_context.load_verify_file(certificate_file);
+  ASIO_ERROR_CODE error;
+  ssl_context.load_verify_file(certificate_file, error);
+  if (error)
+  {
+    std::cerr << "Error, certificate_file: " << error.message() << std::endl;
+    return 1;
+  }
 
   try
   {

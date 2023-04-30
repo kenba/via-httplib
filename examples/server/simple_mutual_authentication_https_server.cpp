@@ -68,9 +68,14 @@ int main(int /* argc */, char *argv[])
   ssl_context.set_verify_mode(ASIO::ssl::context::verify_peer
                             | ASIO::ssl::context::verify_fail_if_no_peer_cert);
   // Load CA certificate as verify file for mutual authentication
-  ssl_context.load_verify_file(verify_file);
-
   ASIO_ERROR_CODE error;
+  ssl_context.load_verify_file(verify_file, error);
+  if (error)
+  {
+    std::cerr << "Error, verify_file: " << error.message() << std::endl;
+    return 1;
+  }
+
   ssl_context.use_certificate_chain_file(certificate_file, error);
   if (error)
   {
