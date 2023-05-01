@@ -2,8 +2,7 @@
 
 ![HTTP Client Class Template](images/http_client_template_class_diagram.png)
 
-An application create an HTTP client type by instantiating the `http_client` class template
-defined in `<via/http_client.hpp>`:
+An application create an HTTP(S) client type by instantiating the `http_client` class template defined in `<via/http_client.hpp>`:
 
 ```C++
 namespace via
@@ -52,13 +51,22 @@ typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
 
 ## Constructing and Configuring a client
 
-The client is constructed with an `asio::io_context`, a `ResponseHandler` and a
+An HTTP client is constructed with an `asio::io_context`, a `ResponseHandler` and a
 `ChunkHandler` e.g.:
 
- ```C++
+```C++
 boost::asio::io_context io_context;
 http_client_type http_client(io_context, response_handler, chunk_handler);
- ```
+```
+
+An HTTPS client is constructed with an `asio::io_context`, an `ASIO::ssl::context`,
+a `ResponseHandler` and a`ChunkHandler` e.g.:
+
+```C++
+ASIO::io_context io_context(1);
+ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+http_client_type http_client(io_context, ssl_context, response_handler, chunk_handler);
+```
 
 Where `response_handler` is an instance of `ResponseHandler`, the event handler
 for incoming HTTP responses, e.g.:
@@ -130,18 +138,24 @@ Some of the more significant parameters (with their default values) are:
 
 ### HTTPS Client Configuration
 
-Note: only valid for clients using `via::comms::ssl::ssl_tcp_adaptor` as a template parameter.
-
-SSL/TLS options can be set via the ssl_context, e.g.:
+The `ASIO::ssl::context` should be configured before constructing the HTTPS client.
+E.g:
 
 ```C++
-std::string certificate_file = "cacert.pem";
-boost::asio::ssl::context& ssl_context(https_client_type::connection_type::ssl_context());
-ssl_context.load_verify_file(certificate_file);
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_client);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+  std::string certificate_file = "ca-certificate.pem";
+  ASIO_ERROR_CODE error;
+  ssl_context.load_verify_file(certificate_file, error);
+  if (error)
+  {
+    std::cerr << "Error, certificate_file: " << error.message() << std::endl;
+    return 1;
+  }
 ```
-
-See: [asio ssl context base](http://www.boost.org/doc/libs/1_57_0/doc/html/boost_asio/reference/ssl__context_base.html)
-for options.
 
 ## Making Connections
 
@@ -235,3 +249,6 @@ A example HTTP Client with all of the handlers defined:
 
 An HTTP Client that sends a chunked request to PUT /hello:
 [`chunked_http_client.cpp`](examples/client/chunked_http_client.cpp)
+
+An HTTPS Client that suports TLS [Mutual Authentication](https://en.wikipedia.org/wiki/Mutual_authentication):
+[`simple_mutual_authentication_https_client.cpp`](../examples/client/simple_mutual_authentication_https_client.cpp)

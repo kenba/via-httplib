@@ -13,16 +13,13 @@ HTTP/HTTPS servers to be built that comply with
 
 ## Requirements
 
-+ A C++17 compliant compiler.  
-This version requires a complier that supports string_view.  
-It's been tested with `MSVC 2022`, `Clang 14.0.0`, `GCC 11.3.0` and `MinGw 11.2.0`.  
++ A C++17 compliant compiler. This version requires a complier that supports string_view.  
+It's been tested with `MSVC 2022`, `GCC 12.1.0` and `MinGw 11.2.0`.  
 C++11 versions are available in tags `1.6.0` and lower.  
 
-+ The `asio` C++ library.  
-Either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
++ The `asio` C++ library, either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
 
 + For: multithreading, authentication and/or the request router, the relevant [boost](http://www.boost.org/) libraries are required.  
-However, if they are not required, the library can use [standalone asio](http://think-async.com/) on its own.
 
 + For HTTPS: the `OpenSSL` library, see [openssl](http://www.openssl.org/).  
 

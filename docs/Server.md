@@ -2,7 +2,7 @@
 
 ![HTTP Server Class Template](images/http_server_template_class_diagram.png)
 
-An application creates an HTTP server type by instantiating the `http_server`
+An application creates an HTTP(S) server type by instantiating the `http_server`
 class template defined in `<via/http_server.hpp>`:
 
 ```C++
@@ -48,12 +48,21 @@ typedef http_server_type::http_request http_request;
 
 ## Constructing a server
 
-The server is constructed with an `asio::io_context` with optional parameters
+An HTTP server is constructed with an `ASIO::io_context` with optional parameters
 for the maximum request body and chunk sizes, e.g.:
 
 ```C++
-boost::asio::io_context io_context;
+ASIO::io_context io_context(1);
 http_server_type http_server(io_context);
+```
+
+An HTTPS server is constructed with an `ASIO::io_context`, and `ASIO::ssl::context`
+and the same optional parameters as an HTTP server, e.g.:
+
+```C++
+ASIO::io_context io_context(1);
+ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+http_server_type http_server(io_context, ssl_context);
 ```
 
 | Parameter         | Description                                    | Default |
@@ -99,20 +108,35 @@ internal `request_router()` is disabled.
 
 ## HTTPS Configuration
 
-The `set_password` and `set_ssl_files` functions can be used to set up SSL/TLS parameters for servers instantiated with `via::comms::ssl::ssl_tcp_adaptor`.
-
+The `ASIO::ssl::context` should be configured before constructing the HTTPS server.
 E.g:
 
 ```C++
-// Set up SSL
-https_server.set_password(password);
-boost::system::error_code error
-    (https_server_type::set_ssl_files(certificate_file, private_key_file));
-if (error)
-{
-    std::cerr << "Error, set_ssl_files: "  << error.message() << std::endl;
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+
+  ASIO_ERROR_CODE error;
+  ssl_context.use_certificate_chain_file(certificate_file, error);
+  if (error)
+  {
+    std::cerr << "Error, use_certificate_chain: " << error.message() << std::endl;
     return 1;
-}
+  }
+
+  ssl_context.use_private_key_file(private_key_file, ASIO::ssl::context::pem, error);
+  if (error)
+  {
+    std::cerr << "Error, use_private_key: " << error.message() << std::endl;
+    return 1;
+  }
+
+  std::string password = "test";
+  ssl_context.set_password_callback([password](std::size_t max_length,
+      ASIO::ssl::context::password_purpose purpose)
+      { return password; });
 ```
 
 ## Accept Connections
@@ -157,3 +181,6 @@ An HTTPS Server that incorporates the example code above:
 [`example_https_server.cpp`](../examples/server/example_https_server.cpp)
 
 An HTTP Server that uses `asio` strand wrapping and a thread pool: [`thread_pool_http_server.cpp`](../examples/server/thread_pool_http_server.cpp)
+
+An HTTPS Server that requires TLS [Mutual Authentication](https://en.wikipedia.org/wiki/Mutual_authentication):
+[`simple_mutual_authentication_https_server.cpp`](../examples/server/simple_mutual_authentication_https_server.cpp)
