@@ -151,7 +151,6 @@ namespace via
 
     std::string tx_header_; /// A buffer for the HTTP request header.
     Container   tx_body_;   /// A buffer for the HTTP request body.
-    Container   rx_buffer_; /// A buffer for the last packet read.
 
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
@@ -197,12 +196,34 @@ namespace via
     }
 
     /// Receive data on the underlying connection.
-    void receive_handler()
+    /// Callback function for a comms::receive event.
+    /// @param ptr a weak pointer to this http_client.
+    /// @param data pointer to the receive buffer.
+    /// @param size the number of bytes received.
+    /// @param weak_ptr a weak pointer to the underlying comms connection.
+    static void receive_callback(weak_pointer ptr, const char* data, size_t size,
+                               typename connection_type::weak_pointer weak_ptr)
     {
+      shared_pointer pointer(ptr.lock());
+      if (pointer)
+        pointer->receive_handler(data, size, weak_ptr);
+    }
+
+    /// Receive data on the underlying connection.
+    /// @param data pointer to the receive buffer.
+    /// @param size the number of bytes received.
+    /// @param weak_ptr a weak pointer to the underlying comms connection.
+    void receive_handler(const char* data, size_t size,
+                         typename connection_type::weak_pointer weak_ptr)
+    {
+      // Use the raw pointer of the connection as the map key.
+      void* pointer(weak_ptr.lock().get());
+      if (!pointer)
+        return;
+
       // Get the receive buffer
-      connection_->read_rx_buffer(rx_buffer_);
-      Container_const_iterator iter(rx_buffer_.begin());
-      Container_const_iterator end(rx_buffer_.end());
+      const char* iter{data};
+      const char* end{data + size};
 
       // Get the receive parser for this connection
       http::Rx rx_state(http::Rx::VALID);
@@ -241,7 +262,7 @@ namespace via
       } // end while
     }
 
-    /// Handle a diconnect on the underlying connection.
+    /// Handle a disconnect on the underlying connection.
     void disconnected_handler()
     {
       if (connection_->connected())
@@ -294,13 +315,9 @@ namespace via
       {
       case via::comms::CONNECTED:
         timer_.cancel();
-        rx_buffer_.clear();
         rx_.clear();
         if (connected_handler_)
           connected_handler_();
-        break;
-      case via::comms::RECEIVED:
-        receive_handler();
         break;
       case via::comms::SENT:
         if (message_sent_handler_)
@@ -353,7 +370,6 @@ namespace via
       host_name_(),
       tx_header_(),
       tx_body_(),
-      rx_buffer_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
       http_invalid_handler_(),
@@ -401,6 +417,9 @@ namespace via
                                             max_body_size, max_chunk_size));
 #endif
       weak_pointer ptr(client_ptr);
+      client_ptr->connection_->set_receive_callback([ptr]
+        (const char* data, size_t size, typename connection_type::weak_pointer weak_ptr)
+           { receive_callback(ptr, data, size, weak_ptr); });
       client_ptr->connection_->set_error_callback([]
         (const ASIO_ERROR_CODE &error,
          typename connection_type::weak_pointer weak_ptr)
@@ -461,11 +480,6 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
-
-    /// Accessor for the receive buffer..
-    /// @return a constant reference to rx_buffer_.
-    Container const& rx_buffer() const
-    { return rx_buffer_; }
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.

@@ -40,7 +40,7 @@ namespace via
   /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
   /// fields.
   /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line.
-  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive whitespace
   /// characters allowed in a request.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
   ////////////////////////////////////////////////////////////////////////////
@@ -129,9 +129,6 @@ namespace via
     /// A buffer for the body of the response message.
     Container tx_body_;
 
-    /// A buffer for the last packet read on the connection.
-    Container rx_buffer_;
-
     ////////////////////////////////////////////////////////////////////////
     // Functions
 
@@ -193,8 +190,7 @@ namespace via
                       remote_endpoint().address().to_string()),
       rx_(max_content_length, max_chunk_size),
       tx_header_(),
-      tx_body_(),
-      rx_buffer_()
+      tx_body_()
     {}
 
     /// The destructor calls close to ensure that all of the socket's
@@ -223,20 +219,6 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
-
-    /// Read the last packet into the receive buffer.
-    /// @post the receive buffer is invalid to read again.
-    /// @return the receive buffer.
-    Container const& read_rx_buffer()
-    {
-      connection_.lock()->read_rx_buffer(rx_buffer_);
-      return rx_buffer_;
-    }
-
-    /// Accessor for the receive buffer.
-    /// @return the receive buffer.
-    Container const& rx_buffer() const noexcept
-    { return rx_buffer_; }
 
     /// Accessor for the remote address of the connection.
     /// @return the remote address of the connection.

@@ -67,6 +67,9 @@ namespace via
       typedef std::set<std::shared_ptr<connection_type> > connections;
 #endif
 
+      /// Receive callback function type.
+      typedef typename connection_type::receive_callback_type receive_callback_type;
+
       /// Event callback function type.
       typedef typename connection_type::event_callback_type event_callback_type;
 
@@ -94,6 +97,7 @@ namespace via
       /// The connections established with this server.
       connections connections_{};
 
+      receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{nullptr};   ///< The event callback function.
       error_callback_type error_callback_{nullptr};   ///< The error callback function.
 
@@ -134,6 +138,8 @@ namespace via
               io_context_,
 #endif
               rx_buffer_size_,
+              [this](const char *data, size_t size, std::weak_ptr<connection_type> ptr)
+                { receive_handler(data, size, ptr); },
               [this](int event, std::weak_ptr<connection_type> ptr)
                 { event_handler(event, ptr); },
               [this](ASIO_ERROR_CODE const& error,
@@ -157,6 +163,16 @@ namespace via
 
           start_accept();
         }
+      }
+
+      /// @fn receive_handler.
+      /// It just forwards the connection's received event signal with the receive buffer.
+      /// @param data pointer to the receive buffer.
+      /// @param size the number of bytes received.
+      /// @param connection a weak_pointer to the connection that received the data.
+      void receive_handler(const char *data, size_t size, std::weak_ptr<connection_type> ptr)
+      {
+        receive_callback_(data, size, ptr);
       }
 
       /// @fn event_handler.
@@ -223,23 +239,18 @@ namespace via
       /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
       /// @param ssl_context the ssl context, only required for TLS servers.
-      /// @param event_callback the event callback function, default nullptr.
-      /// @param error_callback the error callback function, default nullptr.
-      server(ASIO::io_context& io_context,
+      explicit server(ASIO::io_context& io_context
 #ifdef HTTP_SSL
-             ASIO::ssl::context& ssl_context,
+             , ASIO::ssl::context& ssl_context
 #endif
-             event_callback_type event_callback = nullptr,
-             error_callback_type error_callback = nullptr) :
+      ) :
         io_context_(io_context),
 #ifdef HTTP_SSL
         ssl_context_(ssl_context),
 #endif
         acceptor_v6_(io_context),
         acceptor_v4_(io_context),
-        next_socket_(io_context),
-        event_callback_(event_callback),
-        error_callback_(error_callback)
+        next_socket_(io_context)
       {}
 
 #ifdef HTTP_SSL
@@ -258,22 +269,20 @@ namespace via
       ~server()
       { close(); }
 
+      /// @fn set_receive_callback
+      /// Set the receive_callback function.
+      /// @param receive_callback the receive callback function.
+      void set_receive_callback(receive_callback_type receive_callback) noexcept
+      { receive_callback_ = receive_callback; }
+
       /// @fn set_event_callback
       /// Set the event_callback function.
-      /// For use with the Constructor or create function that doesn't take
-      /// an event_callback parameter.
-      /// @see server(ASIO::io_context& io_context)
-      /// @see create(ASIO::io_context& io_context)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback) noexcept
       { event_callback_ = event_callback; }
 
       /// @fn set_error_callback
       /// Set the error_callback function.
-      /// For use with the Constructor or create function that doesn't take
-      /// an error_callback parameter.
-      /// @see server(ASIO::io_context& io_context)
-      /// @see create(ASIO::io_context& io_context)
       /// @param error_callback the error callback function.
       void set_error_callback(error_callback_type error_callback) noexcept
       { error_callback_ = error_callback; }

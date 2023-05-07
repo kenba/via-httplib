@@ -35,10 +35,10 @@ namespace via
   namespace comms
   {
     /// @enum event_type the types of events handled by a socket_adaptor.
+    /// Note: data received is now handled separately.
     enum event_type
     {
       CONNECTED,   ///< The socket is now connected.
-      RECEIVED,    ///< Data received.
       SENT,        ///< Data sent.
       DISCONNECTED ///< The socket is now disconnected.
     };

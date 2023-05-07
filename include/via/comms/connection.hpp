@@ -68,12 +68,14 @@ namespace via
       /// The resolver_iterator type of the SocketAdaptor
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
 
+      /// Receive callback function type.
+      typedef std::function<void (const char *, size_t, weak_pointer)> receive_callback_type;
+
       /// Event callback function type.
-      typedef std::function<void (int, weak_pointer)> event_callback_type;
+      typedef std::function<void (unsigned char, weak_pointer)> event_callback_type;
 
       /// Error callback function type.
-      typedef std::function<void (ASIO_ERROR_CODE const&,
-                                  weak_pointer)> error_callback_type;
+      typedef std::function<void (ASIO_ERROR_CODE const&, weak_pointer)> error_callback_type;
 
     private:
 
@@ -81,9 +83,9 @@ namespace via
       /// Strand to ensure the connection's handlers are not called concurrently.
       ASIO::io_context::strand strand_;
 #endif
-      size_t rx_buffer_size_{ SocketAdaptor::DEFAULT_RX_BUFFER_SIZE }; ///< The receive buffer size.
-      std::shared_ptr<Container> rx_buffer_; ///< The receive buffer.
+      std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
       std::shared_ptr<std::deque<Container>> tx_queue_; ///< The transmit queue.
+      receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
       error_callback_type error_callback_{ nullptr }; ///< The error callback function.
       /// The send and receive timeouts, in milliseconds, zero is disabled.
@@ -114,18 +116,18 @@ namespace via
         {
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
-          std::shared_ptr<std::deque<Container> > tx_queue(tx_queue_);
+          std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 #ifdef HTTP_THREAD_SAFE
           SocketAdaptor::write(buffers,
-             strand_.wrap([weak_ptr, tx_queue]
+             strand_.wrap([weak_ptr, rx_buffer]
                           (ASIO_ERROR_CODE const& error,
                            size_t bytes_transferred)
-          { write_callback(weak_ptr, error, bytes_transferred, tx_queue); }));
+          { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
 #else
           SocketAdaptor::write(buffers,
-            [weak_ptr, tx_queue](ASIO_ERROR_CODE const& error,
-                                 size_t bytes_transferred)
-          { write_callback(weak_ptr, error, bytes_transferred, tx_queue); });
+            [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
+                                  size_t bytes_transferred)
+          { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
 #endif
         }
 
@@ -138,7 +140,7 @@ namespace via
       {
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
-        std::shared_ptr<Container> rx_buffer(rx_buffer_);
+        std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 #ifdef HTTP_THREAD_SAFE
         SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
             strand_.wrap([weak_ptr, rx_buffer]
@@ -212,7 +214,7 @@ namespace via
       static void read_callback(weak_pointer ptr,
                                 ASIO_ERROR_CODE const& error,
                                 size_t bytes_transferred,
-                                std::shared_ptr<Container>) // rx_buffer)
+                                std::shared_ptr<std::vector<char>> rx_buffer)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (ASIO::error::operation_aborted != error))
@@ -220,22 +222,11 @@ namespace via
           if (error)
             pointer->signal_error_or_disconnect(error);
           else
-            pointer->read_handler(bytes_transferred);
+          {
+            pointer->receive_callback_(rx_buffer->data(), bytes_transferred, ptr);
+            pointer->enable_reception();
+          }
         }
-      }
-
-      /// @fn read_handler
-      /// The function called whenever a data packet has been received.
-      /// It resizes the receive buffer to the size of the received packet,
-      /// signals that a packet has been received and then calls
-      /// enable_reception to listen for the next packet.
-      /// @param bytes_transferred the size of the received data packet.
-      void read_handler(size_t bytes_transferred)
-      {
-        receiving_ = false;
-        rx_buffer_->resize(bytes_transferred);
-        event_callback_(RECEIVED, weak_from_this());
-        enable_reception();
       }
 
       /// @fn write_callback
@@ -246,12 +237,12 @@ namespace via
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
       /// @param bytes_transferred the size of the sent data packet.
-      /// @param tx_queue a shared pointer to the transmit buffers to control
+      /// @param rx_buffer a shared pointer to the receive buffer to control
       /// object lifetime.
       static void write_callback(weak_pointer ptr,
                                  ASIO_ERROR_CODE const& error,
                                  size_t bytes_transferred,
-                                 std::shared_ptr<std::deque<Container> >) // tx_queue)
+                                 std::shared_ptr<std::vector<char>>) // rx_buffer)
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (ASIO::error::operation_aborted != error))
@@ -318,7 +309,6 @@ namespace via
             if (!pointer->tx_queue_->empty())
               pointer->write_data
           (ConstBuffers(1, ASIO::buffer(pointer->tx_queue_->front())));
-            pointer->receiving_ = false;
             pointer->enable_reception();
           }
           else
@@ -471,6 +461,7 @@ namespace via
       /// @param socket the asio socket associated with this connection
       /// @param io_context the asio io_context used by the strand adaptor.
       /// @param rx_buffer_size the size of the receive_buffer.
+      /// @param receive_callback the receive callback function, default nullptr.
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
       connection(socket_type socket,
@@ -478,15 +469,16 @@ namespace via
                  ASIO::io_context& io_context,
 #endif
                  size_t rx_buffer_size,
+                 receive_callback_type receive_callback = nullptr,
                  event_callback_type event_callback = nullptr,
                  error_callback_type error_callback = nullptr) :
         SocketAdaptor(std::move(socket)),
 #ifdef HTTP_THREAD_SAFE
         strand_(io_context),
 #endif
-        rx_buffer_size_(rx_buffer_size),
-        rx_buffer_(new Container(rx_buffer_size_, 0)),
+        rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         tx_queue_(new std::deque<Container>()),
+        receive_callback_(receive_callback),
         event_callback_(event_callback),
         error_callback_(error_callback)
       {}
@@ -494,18 +486,17 @@ namespace via
       /// The destructor calls close to ensure that all of the socket's
       /// callback functions are cancelled so that the object can (eventually)
       /// be destroyed.
-      ///
-      /// Note: the constructors are declared as private to ensure that the
-      /// class may only be constructed as a shared pointer via the create
-      /// static functions.
-      /// @see create
       ~connection()
       { close(); }
 
+      /// @fn set_receive_callback
+      /// Function to set the receive callback function.
+      /// @param receive_callback the receive callback function.
+      void set_receive_callback(receive_callback_type receive_callback)
+      { receive_callback_ = receive_callback; }
+
       /// @fn set_event_callback
       /// Function to set the event callback function.
-      /// For use with the client connection factory function.
-      /// @see create(ASIO::io_context& io_context)
       /// @param event_callback the event callback function.
       void set_event_callback(event_callback_type event_callback)
       { event_callback_ = event_callback; }
@@ -518,9 +509,9 @@ namespace via
       void set_error_callback(error_callback_type error_callback)
       { error_callback_ = error_callback; }
 
-      /// Set the connection's rx_buffer_size_.
+      /// Set the connection's rx_buffer_ size.
       void set_rx_buffer_size(size_t rx_buffer_size)
-      { rx_buffer_size_ = rx_buffer_size; }
+      { rx_buffer_.resize(rx_buffer_size, 0); }
 
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
@@ -584,7 +575,7 @@ namespace via
         // If nothing is currently being sent
         if (!transmitting_ && tx_queue_->empty())
           shutdown();
-        else // shutdown the socekt in the write callback
+        else // shutdown the socket in the write callback
           disconnect_pending_ = true;
       }
 
@@ -594,13 +585,13 @@ namespace via
       {
         // local copies for the lambda
         weak_pointer weak_ptr(weak_from_this());
-        std::shared_ptr<std::deque<Container>> tx_queue(tx_queue_);
+        std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 
         // Call shutdown with the callback
         shutdown_sent_ = true;
-        SocketAdaptor::shutdown([weak_ptr, tx_queue]
+        SocketAdaptor::shutdown([weak_ptr, rx_buffer]
                         (ASIO_ERROR_CODE const& error, int bytes)
-                        { write_callback(weak_ptr, error, bytes, tx_queue); });
+                        { write_callback(weak_ptr, error, bytes, rx_buffer); });
       }
 
       /// @fn close
@@ -614,26 +605,7 @@ namespace via
       /// socket adaptor read function to listen for the next data packet.
       void enable_reception()
       {
-        if (!receiving_)
-        {
-          receiving_ = true;
-          rx_buffer_->resize(rx_buffer_size_);
-          read_data();
-        }
-      }
-
-      /// Accessor for the receive buffer.
-      /// Swaps the contents of the receive buffer with the rx_buffer parameter
-      /// and re-enables the receiver.
-      /// This effectively double buffer's rx_buffer_, permitting the
-      /// receiver to be re-enabled without corrupting the data.
-      /// @pre Only valid within the receive event callback function.
-      /// @post receive buffer is invalid to read again.
-      /// @retval the receive buffer.
-      void read_rx_buffer(Container& rx_buffer)
-      {
-        rx_buffer_->swap(rx_buffer);
-        enable_reception();
+        read_data();
       }
 
       /// @fn connected

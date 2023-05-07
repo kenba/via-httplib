@@ -260,13 +260,40 @@ namespace via
     }
 
     /// Receive data packets on an underlying communications connection.
-    /// @param http_connection a shared pointer to an http_connection.
-    void receive_handler(std::shared_ptr<http_connection_type> http_connection)
+    /// @param data pointer to the receive buffer.
+    /// @param size the number of bytes received.
+    /// @param connection a weak pointer to the underlying comms connection.
+    void receive_handler(const char* data, size_t size, std::weak_ptr<connection_type> connection)
     {
+      // Get the raw pointer of the connection
+      void* pointer(connection.lock().get());
+      if (!pointer)
+        return;
+
+      std::shared_ptr<http_connection_type> http_connection;
+#ifdef HTTP_THREAD_SAFE
+      auto value(http_connections_.find(pointer));
+      bool iter_not_found(value.first != pointer);
+      if (!iter_not_found)
+        http_connection = value.second;
+#else
+      // search for the connection in the collection
+      auto connections_iter(http_connections_.find(pointer));
+      bool iter_not_found(connections_iter == http_connections_.end());
+      if (!iter_not_found)
+        http_connection = connections_iter->second;
+#endif
+
+      if (iter_not_found)
+      {
+        std::cerr << "http_server, receive_handler error: connection not found "
+                  << std::endl;
+        return;
+      }
+
       // Get the receive buffer
-      Container const& rx_buffer(http_connection->read_rx_buffer());
-      Container_const_iterator iter(rx_buffer.begin());
-      Container_const_iterator end(rx_buffer.end());
+      const char* iter{data};
+      const char* end{data + size};
 
       // Get the receive parser for this connection
       auto rx_state(http::Rx::VALID);
@@ -364,8 +391,8 @@ namespace via
 
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
-    /// @param connection a weak ponter to the underlying comms connection.
-    void event_handler(int event, std::weak_ptr<connection_type> connection)
+    /// @param connection a weak pointer to the underlying comms connection.
+    void event_handler(unsigned char event, std::weak_ptr<connection_type> connection)
     {
       if (via::comms::CONNECTED == event)
         connected_handler(connection);
@@ -399,9 +426,6 @@ namespace via
 
         switch(event)
         {
-        case via::comms::RECEIVED:
-          receive_handler(http_connection);
-          break;
         case via::comms::SENT:
           // Notify the sent handler if one exists
           if (message_sent_handler_)
@@ -467,6 +491,9 @@ namespace via
       disconnected_handler_ (),
       message_sent_handler_ ()
     {
+      server_->set_receive_callback([this]
+        (const char *data, size_t size, std::weak_ptr<connection_type> connection)
+          { receive_handler(data, size, connection); });
       server_->set_event_callback([this]
         (int event, std::weak_ptr<connection_type> connection)
           { event_handler(event, connection); });
