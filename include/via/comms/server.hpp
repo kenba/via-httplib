@@ -44,18 +44,14 @@ namespace via
     /// @see ssl::ssl_tcp_adaptor
     /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @tparam Container the container to use for the rx & tx buffers,
-    /// std::vector<char> or std::string.
-    /// It must contain a contiguous array of bytes. E.g. std::string or
-    /// std::array<char, size>
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char>>
+    template <typename SocketAdaptor>
     class server
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor, Container> connection_type;
+      typedef connection<SocketAdaptor> connection_type;
 
       typedef typename connection_type::socket_type socket_type;
 

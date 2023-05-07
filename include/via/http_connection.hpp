@@ -66,7 +66,7 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container> connection_type;
+    typedef comms::connection<SocketAdaptor> connection_type;
 
     /// This type.
     typedef http_connection<SocketAdaptor,

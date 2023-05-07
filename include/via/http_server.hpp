@@ -109,7 +109,7 @@ namespace via
   public:
 
     /// The comms server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor, Container> server_type;
+    typedef comms::server<SocketAdaptor> server_type;
 
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor,

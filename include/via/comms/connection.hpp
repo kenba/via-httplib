@@ -31,19 +31,14 @@ namespace via
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor respectively.
-
     /// @see tcp_adaptor
     /// @see ssl::ssl_tcp_adaptor
     /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
     /// ssl::ssl_tcp_adaptor
-    /// @tparam Container the container to use for the rx & tx buffers, default
-    /// std::vector<char> or std::string.
-    /// It must contain a contiguous array of bytes. E.g. std::string or
-    /// std::array<char, size>
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor, typename Container = std::vector<char>>
+    template <typename SocketAdaptor>
     class connection : public SocketAdaptor,
-      public std::enable_shared_from_this<connection<SocketAdaptor, Container>>
+      public std::enable_shared_from_this<connection<SocketAdaptor>>
     {
     public:
 
@@ -51,19 +46,16 @@ namespace via
       typedef typename SocketAdaptor::socket_type socket_type;
 
       /// This type.
-      typedef connection<SocketAdaptor, Container> this_type;
+      typedef connection<SocketAdaptor> this_type;
 
       /// A weak pointer to a connection.
-      typedef typename std::weak_ptr<connection<SocketAdaptor, Container>>
-         weak_pointer;
+      typedef typename std::weak_ptr<connection<SocketAdaptor>> weak_pointer;
 
       /// A shared pointer to a connection.
-      typedef typename std::shared_ptr<connection<SocketAdaptor, Container>>
-         shared_pointer;
+      typedef typename std::shared_ptr<connection<SocketAdaptor>> shared_pointer;
 
       /// The enable_shared_from_this type of this class.
-      typedef typename std::enable_shared_from_this
-                                <connection<SocketAdaptor, Container>> enable;
+      typedef typename std::enable_shared_from_this<connection<SocketAdaptor>> enable;
 
       /// The resolver_iterator type of the SocketAdaptor
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
@@ -84,7 +76,6 @@ namespace via
       ASIO::io_context::strand strand_;
 #endif
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
-      std::shared_ptr<std::deque<Container>> tx_queue_; ///< The transmit queue.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
       error_callback_type error_callback_{ nullptr }; ///< The error callback function.
@@ -92,7 +83,6 @@ namespace via
       int timeout_{ 0 };
       int receive_buffer_size_{ 0 };     ///< The socket receive buffer size.
       int send_buffer_size_{ 0 };        ///< The socket send buffer size.
-      bool receiving_{ false };          ///< Whether a read's in progress
       bool transmitting_{ false };       ///< Whether a write's in progress
       bool no_delay_{ false };           ///< The tcp no delay status.
       bool keep_alive_{ false };         ///< The tcp keep alive status.
@@ -253,7 +243,6 @@ namespace via
             pointer->event_callback_(DISCONNECTED, ptr);
           else if (error)
           {
-            pointer->tx_queue_->clear();
             pointer->signal_error_or_disconnect(error);
           }
           else
@@ -268,20 +257,10 @@ namespace via
 
       /// @fn write_handler
       /// The function called whenever a data packet has been sent.
-      /// It removes the data packet at the front of the transmit queue, sends
-      /// the next packet in the queue (if any) and signals that that a packet
-      /// has been sent.
       /// @param bytes_transferred the size of the sent data packet.
       void write_handler(size_t) // bytes_transferred
       {
-        if (!transmitting_ && !tx_queue_->empty())
-          tx_queue_->pop_front();
-
         transmitting_ = false;
-
-        if (!tx_queue_->empty())
-          write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
-
         event_callback_(SENT, weak_from_this());
       }
 
@@ -306,9 +285,6 @@ namespace via
             pointer->connected_ = true;
             pointer->event_callback_(CONNECTED, ptr);
             pointer->set_socket_options();
-            if (!pointer->tx_queue_->empty())
-              pointer->write_data
-          (ConstBuffers(1, ASIO::buffer(pointer->tx_queue_->front())));
             pointer->enable_reception();
           }
           else
@@ -477,7 +453,6 @@ namespace via
         strand_(io_context),
 #endif
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
-        tx_queue_(new std::deque<Container>()),
         receive_callback_(receive_callback),
         event_callback_(event_callback),
         error_callback_(error_callback)
@@ -573,7 +548,7 @@ namespace via
       void disconnect()
       {
         // If nothing is currently being sent
-        if (!transmitting_ && tx_queue_->empty())
+        if (!transmitting_)
           shutdown();
         else // shutdown the socket in the write callback
           disconnect_pending_ = true;
@@ -617,28 +592,12 @@ namespace via
       void set_connected(bool enable) noexcept
       { connected_ = enable; }
 
-      /// Send a packet of data.
-      /// The packet is added to the back of the transmit queue and sent if
-      /// the queue was empty.
-      /// @param packet the data packet to write.
-      /// @return true if the packet is being sent, false otherwise.
-      bool send_data(Container packet)
-      {
-        bool was_empty(tx_queue_->empty());
-        tx_queue_->push_back(std::move(packet));
-
-        if (!transmitting_ && was_empty)
-          transmitting_ = write_data(ConstBuffers(1, ASIO::buffer(tx_queue_->front())));
-
-        return transmitting_;
-      }
-
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.
       bool send_data(ConstBuffers buffers)
       {
-        if (!transmitting_ && tx_queue_->empty())
+        if (!transmitting_)
         {
           transmitting_ = write_data(std::move(buffers));
           return transmitting_;

@@ -75,7 +75,7 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor, Container> connection_type;
+    typedef comms::connection<SocketAdaptor> connection_type;
 
     typedef typename connection_type::socket_type socket_type;
 
@@ -195,12 +195,6 @@ namespace via
       return connection_->send_data(std::move(buffers));
     }
 
-    /// Receive data on the underlying connection.
-    /// Callback function for a comms::receive event.
-    /// @param ptr a weak pointer to this http_client.
-    /// @param data pointer to the receive buffer.
-    /// @param size the number of bytes received.
-    /// @param weak_ptr a weak pointer to the underlying comms connection.
     static void receive_callback(weak_pointer ptr, const char* data, size_t size,
                                typename connection_type::weak_pointer weak_ptr)
     {
