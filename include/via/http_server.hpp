@@ -495,7 +495,7 @@ namespace via
         (const char *data, size_t size, std::weak_ptr<connection_type> connection)
           { receive_handler(data, size, connection); });
       server_->set_event_callback([this]
-        (int event, std::weak_ptr<connection_type> connection)
+        (unsigned char event, std::weak_ptr<connection_type> connection)
           { event_handler(event, connection); });
       server_->set_error_callback([this]
         (ASIO_ERROR_CODE const& error,

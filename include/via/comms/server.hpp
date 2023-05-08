@@ -136,7 +136,7 @@ namespace via
               rx_buffer_size_,
               [this](const char *data, size_t size, std::weak_ptr<connection_type> ptr)
                 { receive_handler(data, size, ptr); },
-              [this](int event, std::weak_ptr<connection_type> ptr)
+              [this](unsigned char event, std::weak_ptr<connection_type> ptr)
                 { event_handler(event, ptr); },
               [this](ASIO_ERROR_CODE const& error,
                     std::weak_ptr<connection_type> ptr)
@@ -177,7 +177,7 @@ namespace via
       /// @param event the event, @see event_type.
       /// @param connection a weak_pointer to the connection that sent the
       /// event.
-      void event_handler(int event, std::weak_ptr<connection_type> ptr)
+      void event_handler(unsigned char event, std::weak_ptr<connection_type> ptr)
       {
         event_callback_(event, ptr);
         if (event == DISCONNECTED)

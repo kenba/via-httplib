@@ -286,7 +286,7 @@ namespace via
     /// @param ptr a weak pointer to this http_client.
     /// @param event the type of event.
     /// @param weak_ptr a weak ponter to the underlying comms connection.
-    static void event_callback(weak_pointer ptr, int event,
+    static void event_callback(weak_pointer ptr, unsigned char event,
                                typename connection_type::weak_pointer weak_ptr)
     {
       shared_pointer pointer(ptr.lock());
@@ -297,7 +297,7 @@ namespace via
     /// Receive an event from the underlying comms connection.
     /// @param event the type of event.
     /// @param weak_ptr a weak ponter to the underlying comms connection.
-    void event_handler(int event,
+    void event_handler(unsigned char event,
                        typename connection_type::weak_pointer weak_ptr)
     {
       // Use the raw pointer of the connection as the map key.
@@ -419,7 +419,7 @@ namespace via
          typename connection_type::weak_pointer weak_ptr)
            { error_handler(error, weak_ptr); });
       client_ptr->connection_->set_event_callback([ptr]
-        (int event, typename connection_type::weak_pointer weak_ptr)
+        (unsigned char event, typename connection_type::weak_pointer weak_ptr)
            { event_callback(ptr, event, weak_ptr); });
       return client_ptr;
     }
