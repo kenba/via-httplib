@@ -486,7 +486,7 @@ namespace via
 
       /// Set the connection's rx_buffer_ size.
       void set_rx_buffer_size(size_t rx_buffer_size)
-      { rx_buffer_.resize(rx_buffer_size, 0); }
+      { rx_buffer_->resize(rx_buffer_size, 0); }
 
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
