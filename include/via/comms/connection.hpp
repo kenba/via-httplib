@@ -214,7 +214,8 @@ namespace via
           else
           {
             pointer->receive_callback_(rx_buffer->data(), bytes_transferred, ptr);
-            pointer->enable_reception();
+            if (!pointer->shutdown_sent_)
+              pointer->enable_reception();
           }
         }
       }
