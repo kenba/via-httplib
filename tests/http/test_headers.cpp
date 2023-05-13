@@ -325,10 +325,10 @@ BOOST_AUTO_TEST_CASE(InValidMultipleHeaderString2)
   // Two headers in message but parser only accepts one
 
   std::string header_data("Host: localhost\r\n");
-  header_data += ("Transfer-Encoding: Chunked\r\n");
+  header_data += "Transfer-Encoding: Chunked\r\n\r\n";
   std::string::iterator header_next(header_data.begin());
 
-  message_headers<100, 8190, 1024, 8, false> the_headers;
+  message_headers<1, 8190, 1024, 8, false> the_headers;
   BOOST_CHECK(!the_headers.parse(header_next, header_data.end()));
 }
 
@@ -336,7 +336,7 @@ BOOST_AUTO_TEST_CASE(InValidMultipleHeaderString3)
 {
   // Parser set to only parse 32 bytes of header.
   std::string header_data("Host: localhost\r\n");
-  header_data += ("Transfer-Encoding: Chunked\r\n");
+  header_data += "Transfer-Encoding: Chunked\r\n\r\n";
   std::string::iterator header_next(header_data.begin());
 
   message_headers<100, 32, 1024, 8, false> the_headers;
