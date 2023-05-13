@@ -238,10 +238,6 @@ namespace via
               bool           STRICT_CRLF>
     class message_headers
     {
-      /// Parser parameters
-      unsigned short max_header_number_ { 8u };    ///< the max no of header fields
-      size_t         max_header_length_ { 1024u }; ///< the max cumulative length
-
       /// The HTTP message header fields.
       StringMap fields_ {};
       /// The current field being parsed
@@ -292,8 +288,8 @@ namespace via
           add(field_.name(), field_.value());
           field_.clear();
 
-          if ((length_ > max_header_length_)
-           || (fields_.size() > max_header_number_))
+          if ((length_ > MAX_HEADER_LENGTH)
+           || (fields_.size() > MAX_HEADER_NUMBER))
             return false;
         }
 
