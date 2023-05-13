@@ -10,7 +10,7 @@ are as tolerant as they can be.
 | Parameter         | Default | Description                                         |
 |-------------------|---------|-----------------------------------------------------|
 | strict_crlf       | false   | Enforce strict parsing of CRLF.                     |
-| max_whitespace    | 254     | The maximum number of consectutive whitespace characters. |
+| max_whitespace    | 254     | The maximum number of consecutive whitespace characters. |
 | max_status_no     | 65534   | The maximum number of a response status.            |
 | max_reason_length | 65534   | The maximum length of a response reason.            |
 | max_line_length   | 65534   | The maximum length of a response header field line. |

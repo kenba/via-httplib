@@ -40,7 +40,7 @@ namespace via
   /// @tparam MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
   /// fields.
   /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line.
-  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive whitespace
   /// characters allowed in a request.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
   ////////////////////////////////////////////////////////////////////////////

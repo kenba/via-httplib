@@ -31,7 +31,7 @@ namespace via
     /// max 65534.
     /// @tparam max_reason_length the maximum length of a response reason:
     /// max 65534.
-    /// @tparam max_whitespace the maximum number of consectutive whitespace
+    /// @tparam max_whitespace the maximum number of consecutive whitespace
     /// characters allowed in a request: min 1, max 254.
     /// @param strict_crlf enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
@@ -479,7 +479,7 @@ namespace via
     /// fields: max 4 billion.
     /// @tparam max_line_length the maximum length of an HTTP header field line:
     /// max 65534.
-    /// @tparam max_whitespace the maximum number of consectutive whitespace
+    /// @tparam max_whitespace the maximum number of consecutive whitespace
     /// characters allowed in a request: min 1, max 254.
     /// @param strict_crlf enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
@@ -710,7 +710,7 @@ namespace via
     /// max 65534.
     /// @param MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
     /// fields: max LONG_MAX.
-    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive
     /// whitespace characters allowed in a response: min 1, max 254.
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////

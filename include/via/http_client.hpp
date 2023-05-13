@@ -49,7 +49,7 @@ namespace via
   /// default 65534, max 65534.
   /// @param MAX_HEADER_LENGTH the maximum cumulative length the HTTP header
   /// fields: default LONG_MAX, max LONG_MAX.
-  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive
+  /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive
   /// whitespace characters allowed in a response: default 254, min 1, max 254.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////

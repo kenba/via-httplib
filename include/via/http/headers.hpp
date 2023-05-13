@@ -42,7 +42,7 @@ namespace via
     /// An HTTP header field.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
     /// min 1, max 65534.
-    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive whitespace
     /// characters allowed in a request: min 1, max 254.
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     //////////////////////////////////////////////////////////////////////////
@@ -224,7 +224,7 @@ namespace via
     /// fields: max 4 billion.
     /// @tparam MAX_LINE_LENGTH the maximum length of an HTTP header field line:
     /// min 1, max 65534.
-    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consectutive whitespace
+    /// @tparam MAX_WHITESPACE_CHARS the maximum number of consecutive whitespace
     /// characters allowed in a request: min 1, max 254.
     /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
     /// @see rx_request
