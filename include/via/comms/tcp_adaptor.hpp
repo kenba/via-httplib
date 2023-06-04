@@ -62,12 +62,12 @@ namespace via
       }
 
       /// @fn connect_socket
-      /// Attempts to connect to the given resolver iterator.
+      /// Attempts to connect to the host endpoints.
       /// @param connect_handler the connect callback function.
-      /// @param host_iterator the resolver iterator.
+      /// @param endpoints the host endpoints.
       void connect_socket(ConnectHandler connect_handler,
-                          ASIO::ip::tcp::resolver::iterator host_iterator)
-      { ASIO::async_connect(socket_, host_iterator, connect_handler); }
+                          ASIO::ip::tcp::resolver::results_type const& endpoints)
+      { ASIO::async_connect(socket_, endpoints, connect_handler); }
 
       /// The tcp_adaptor constructor.
       /// @param socket the asio socket associated with this adaptor

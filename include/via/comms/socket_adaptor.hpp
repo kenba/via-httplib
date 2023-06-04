@@ -59,9 +59,9 @@ namespace via
     /// @typedef ConnectHandler
     /// A connect hander callback function type.
     /// @param error the (boost) error code.
-    /// @param host_iterator the resolver_iterator
+    /// @param endpoint the host endpoint.
     typedef std::function<void (ASIO_ERROR_CODE const&,
-                                ASIO::ip::tcp::resolver::iterator)>
+                                ASIO::ip::tcp::endpoint const&)>
       ConnectHandler;
 
     /// @typedef ConstBuffers

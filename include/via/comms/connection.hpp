@@ -300,17 +300,15 @@ namespace via
       /// The function called whenever a socket adaptor attempts to connect.
       /// It ensures that the connection still exists and the event is valid.
       /// If there was no error, it attempts to handshake on the connection -
-      /// this shall always be accepted for an unencypted conection.
-      /// If the error was host not found and there are more host to try,
-      /// it attempts to connect to the next host
+      /// this shall always be accepted for an unencrypted connection.
       /// Otherwise it closes the socket, signals an error and disconnects the
       /// connection.
       /// @param ptr a weak pointer to the connection
       /// @param error the boost asio error (if any).
-      /// @param host_iterator an iterator to the host to connect to.
+      /// @param endpoint the host endpoint to connect to.
       static void connect_callback(weak_pointer ptr,
                                    ASIO_ERROR_CODE const& error,
-                                   resolver_iterator host_iterator)
+                                   ASIO::ip::tcp::endpoint const&) // endpoint,
       {
         shared_pointer pointer(ptr.lock());
         if (pointer && (ASIO::error::operation_aborted != error))
@@ -328,26 +326,8 @@ namespace via
           }
           else
           {
-            if ((ASIO::error::host_not_found == error) &&
-                (resolver_iterator() != host_iterator))
-            {
-#ifdef HTTP_THREAD_SAFE
-              pointer->connect_socket(pointer->strand_.wrap([ptr]
-                  (ASIO_ERROR_CODE const& error,
-                   resolver_iterator host_iterator)
-              { connect_callback(ptr, error, host_iterator); }), ++host_iterator);
-#else
-              pointer->connect_socket([ptr]
-                  (ASIO_ERROR_CODE const& error,
-                   resolver_iterator host_iterator)
-              { connect_callback(ptr, error, host_iterator); }, ++host_iterator);
-#endif
-            }
-            else
-            {
-              pointer->close();
-              pointer->error_callback_(error, ptr);
-            }
+            pointer->close();
+            pointer->error_callback_(error, ptr);
           }
         }
       }
@@ -504,12 +484,12 @@ namespace via
         weak_pointer ptr(weak_from_this());
 #ifdef HTTP_THREAD_SAFE
         return SocketAdaptor::connect(io_context, host_name, port_name, strand_.wrap(
-          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
-            { connect_callback(ptr, error, itr); }));
+          [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
+            { connect_callback(ptr, error, endpoint); }));
 #else
         return SocketAdaptor::connect(io_context, host_name, port_name,
-          [ptr](ASIO_ERROR_CODE const& error, resolver_iterator itr)
-            { connect_callback(ptr, error, itr); });
+          [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
+            { connect_callback(ptr, error, endpoint); });
 #endif
       }
 
