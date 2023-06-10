@@ -87,9 +87,6 @@ namespace via
       /// The IPv4 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v4_;
 
-      /// The next socket to be accepted.
-      ASIO::ip::tcp::socket next_socket_;
-
       /// The connections established with this server.
       connections connections_{};
 
@@ -117,7 +114,8 @@ namespace via
       /// - add the new connection to the set
       /// - restart the acceptor to look for new connections.
       /// @param error the error, if any.
-      void accept_handler(const ASIO_ERROR_CODE& error)
+      /// @param socket the peer tcp socket.
+      void accept_handler(const ASIO_ERROR_CODE& error, ASIO::ip::tcp::socket socket)
       {
         if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
             (ASIO::error::operation_aborted != error))
@@ -126,9 +124,9 @@ namespace via
           {
             auto next_connection = std::make_shared<connection_type>
 #ifdef HTTP_SSL
-              (socket_type(std::move(next_socket_), ssl_context_),
+              (socket_type(std::move(socket), ssl_context_),
 #else
-              (std::move(next_socket_),
+              (std::move(socket),
 #endif
 #ifdef HTTP_THREAD_SAFE
               io_context_,
@@ -142,8 +140,6 @@ namespace via
                     std::weak_ptr<connection_type> ptr)
                 { error_handler(error, ptr); }
               );
-
-            next_socket_ = ASIO::ip::tcp::socket(io_context_);
 
 #ifdef HTTP_THREAD_SAFE
             connections_.emplace(next_connection.get(), next_connection);
@@ -210,13 +206,13 @@ namespace via
       void start_accept()
       {
         if (acceptor_v6_.is_open())
-          acceptor_v6_.async_accept(next_socket_,
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+          acceptor_v6_.async_accept(
+            [this](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::socket socket)
+              { accept_handler(error, std::move(socket)); });
         if (acceptor_v4_.is_open())
-          acceptor_v4_.async_accept(next_socket_,
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+          acceptor_v4_.async_accept(
+            [this](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::socket socket)
+              { accept_handler(error, std::move(socket)); });
       }
 
     public:
@@ -245,8 +241,7 @@ namespace via
         ssl_context_(ssl_context),
 #endif
         acceptor_v6_(io_context),
-        acceptor_v4_(io_context),
-        next_socket_(io_context)
+        acceptor_v4_(io_context)
       {}
 
 #ifdef HTTP_SSL
