@@ -124,10 +124,10 @@ namespace via
     http_request_rx rx_;
 
     /// A buffer for the HTTP header of the response message.
-    std::string tx_header_;
+    std::string tx_header_{};
 
     /// A buffer for the body of the response message.
-    Container tx_body_;
+    Container tx_body_{};
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -188,9 +188,7 @@ namespace via
       connection_(connection),
       remote_address_(connection_.lock()->socket().
                       remote_endpoint().address().to_string()),
-      rx_(max_content_length, max_chunk_size),
-      tx_header_(),
-      tx_body_()
+      rx_(max_content_length, max_chunk_size)
     {}
 
     /// The destructor calls close to ensure that all of the socket's

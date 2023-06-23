@@ -145,20 +145,20 @@ namespace via
     std::shared_ptr<connection_type> connection_; ///< the comms connection
     ASIO_TIMER timer_;                            ///< a deadline timer
     http_response_rx rx_;                         ///< the response receiver
-    std::string host_name_;                       ///< the name of the host
-    std::string port_name_;                       ///< the port name / number
-    unsigned long period_;                        ///< the reconnection period
+    std::string host_name_{};                     ///< the name of the host
+    std::string port_name_{};                     ///< the port name / number
+    unsigned long period_{ 0u };                    ///< the reconnection period
 
-    std::string tx_header_; /// A buffer for the HTTP request header.
-    Container   tx_body_;   /// A buffer for the HTTP request body.
-    Container   rx_buffer_; /// A buffer for the response.
+    std::string tx_header_{}; /// A buffer for the HTTP request header.
+    Container   tx_body_{};   /// A buffer for the HTTP request body.
+    Container   rx_buffer_{}; /// A buffer for the response.
 
-    ResponseHandler   http_response_handler_; ///< the response callback function
-    ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
-    ResponseHandler   http_invalid_handler_;  ///< the invalid callback function
-    ConnectionHandler connected_handler_;     ///< the connected callback function
-    ConnectionHandler disconnected_handler_;  ///< the disconnected callback function
-    ConnectionHandler message_sent_handler_;  ///< the message sent callback function
+    ResponseHandler   http_response_handler_{}; ///< the response callback function
+    ChunkHandler      http_chunk_handler_{};    ///< the chunk callback function
+    ResponseHandler   http_invalid_handler_{};  ///< the invalid callback function
+    ConnectionHandler connected_handler_{};     ///< the connected callback function
+    ConnectionHandler disconnected_handler_{};  ///< the disconnected callback function
+    ConnectionHandler message_sent_handler_{};  ///< the message sent callback function
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -367,16 +367,8 @@ namespace via
 #endif
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),
-      host_name_(),
-      tx_header_(),
-      tx_body_(),
-      rx_buffer_(),
       http_response_handler_(response_handler),
-      http_chunk_handler_(chunk_handler),
-      http_invalid_handler_(),
-      connected_handler_(),
-      disconnected_handler_(),
-      message_sent_handler_()
+      http_chunk_handler_(chunk_handler)
     {
       // Set no delay, i.e. disable the Nagle algorithm
       // An http_client will want to send messages immediately

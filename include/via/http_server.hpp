@@ -171,29 +171,30 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Variables
 
-    std::shared_ptr<server_type> server_;    ///< the communications server
-    connection_collection http_connections_; ///< the communications channels
-    request_router_type   request_router_;   ///< the built-in request_router
-    bool                  shutting_down_;    ///< the server is shutting down
+    std::shared_ptr<server_type> server_;          ///< the communications server
+    connection_collection http_connections_{};     ///< the communications channels
+    request_router_type   request_router_{};       ///< the built-in request_router
+    bool                  shutting_down_{ false }; ///< the server is shutting down
 
     // Request parser parameters
-    size_t max_content_length_; ///< the maximum request body content length
-    size_t max_chunk_size_;     ///< the maximum size of a request chunk
+    /// the maximum request body content length
+    size_t max_content_length_{http_request_rx::DEFAULT_MAX_CONTENT_LENGTH};
+    /// the maximum size of a request chunk
+    size_t max_chunk_size_{http::DEFAULT_MAX_CHUNK_SIZE};
 
     // HTTP server options
-    bool require_host_header_; ///< whether the http server requires a host header
-    bool translate_head_;      ///< whether the http server translates HEAD requests
-    bool trace_enabled_;       ///< whether the http server responds to TRACE requests
-    bool auto_disconnect_;     ///< whether the http server disconnects invalid requests
+    bool translate_head_{ true };   ///< whether the http server translates HEAD requests
+    bool trace_enabled_{ false };   ///< whether the http server responds to TRACE requests
+    bool auto_disconnect_{ false }; ///< whether the http server disconnects invalid requests
 
     // callback function pointers
-    RequestHandler    http_request_handler_; ///< the request callback function
-    ChunkHandler      http_chunk_handler_;   ///< the http chunk callback function
-    RequestHandler    http_continue_handler_;///< the continue callback function
-    RequestHandler    http_invalid_handler_; ///< the invalid callback function
-    ConnectionHandler connected_handler_;    ///< the connected callback function
-    ConnectionHandler disconnected_handler_; ///< the disconncted callback function
-    ConnectionHandler message_sent_handler_; ///< the packet sent callback function
+    RequestHandler    http_request_handler_{}; ///< the request callback function
+    ChunkHandler      http_chunk_handler_{};   ///< the http chunk callback function
+    RequestHandler    http_continue_handler_{};///< the continue callback function
+    RequestHandler    http_invalid_handler_{}; ///< the invalid callback function
+    ConnectionHandler connected_handler_{};    ///< the connected callback function
+    ConnectionHandler disconnected_handler_{}; ///< the disconnected callback function
+    ConnectionHandler message_sent_handler_{}; ///< the packet sent callback function
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
@@ -471,25 +472,8 @@ namespace via
                         ) :
       server_(new server_type(io_context)),
 #endif
-      http_connections_(),
-      request_router_(),
-      shutting_down_(false),
-
       max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
-      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE),
-
-      require_host_header_(true),
-      translate_head_     (true),
-      trace_enabled_      (false),
-      auto_disconnect_    (false),
-
-      http_request_handler_ (),
-      http_chunk_handler_   (),
-      http_continue_handler_(),
-      http_invalid_handler_ (),
-      connected_handler_    (),
-      disconnected_handler_ (),
-      message_sent_handler_ ()
+      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE)
     {
       server_->set_receive_callback([this]
         (const char *data, size_t size, std::weak_ptr<connection_type> connection)
