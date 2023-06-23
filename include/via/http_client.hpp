@@ -151,6 +151,7 @@ namespace via
 
     std::string tx_header_; /// A buffer for the HTTP request header.
     Container   tx_body_;   /// A buffer for the HTTP request body.
+    Container   rx_buffer_; /// A buffer for the response.
 
     ResponseHandler   http_response_handler_; ///< the response callback function
     ChunkHandler      http_chunk_handler_;    ///< the chunk callback function
@@ -191,6 +192,7 @@ namespace via
     /// @param buffers the data to write.
     bool send(comms::ConstBuffers buffers)
     {
+      rx_buffer_.clear();
       rx_.clear();
       return connection_->send_data(std::move(buffers));
     }
@@ -221,6 +223,9 @@ namespace via
 
       // Get the receive parser for this connection
       http::Rx rx_state(http::Rx::VALID);
+
+      // Build the receive buffer
+      rx_buffer_.insert(rx_buffer_.end(), iter, end);
 
       // Loop around the received buffer while there's valid data to read
       while ((iter != end) && (rx_state != http::Rx::INVALID))
@@ -309,6 +314,7 @@ namespace via
       {
       case via::comms::CONNECTED:
         timer_.cancel();
+        rx_buffer_.clear();
         rx_.clear();
         if (connected_handler_)
           connected_handler_();
@@ -364,6 +370,7 @@ namespace via
       host_name_(),
       tx_header_(),
       tx_body_(),
+      rx_buffer_(),
       http_response_handler_(response_handler),
       http_chunk_handler_(chunk_handler),
       http_invalid_handler_(),
@@ -474,6 +481,11 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Accessors
+
+    /// Accessor for the receive buffer.
+    /// @return a constant reference to rx_buffer_.
+    Container const& rx_buffer() const noexcept
+    { return rx_buffer_; }
 
     /// Accessor for the HTTP response header.
     /// @return a constant reference to an rx_response.
