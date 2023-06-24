@@ -12,6 +12,7 @@
 #include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include "../examples/certificates/server/server_crypto.hpp"
+#include <set>
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
@@ -34,6 +35,41 @@ namespace
   {
     std::cout << "Shutting down" << std::endl;
     http_server.shutdown();
+  }
+
+  /// An example connection filter function
+  /// @param socket the client socket attempting to connect
+  /// @return true if allowing the connection, false if blocking the connection
+  bool filter_connection(ASIO::ip::tcp::socket const& socket)
+  {
+    // Get the address of the client attempting to connect
+    const auto client_address{socket.remote_endpoint().address()};
+
+    // A list of clients to block
+    const std::set<ASIO::ip::address> blocklist
+    {
+      // Uncomment to block localhost connections
+      // ASIO::ip::address{ASIO::ip::make_address_v4("127.0.0.1")},
+      // ASIO::ip::address{ASIO::ip::make_address_v6("::1")}
+    }; 
+
+    // Reject the connection if the client is in the blocklist
+    if (blocklist.find(client_address) != blocklist.end())
+      return false;
+
+    // A list of clients to allow
+    const std::set<ASIO::ip::address> allowlist
+    {
+      // Uncomment to only permit localhost connections
+      // ASIO::ip::address{ASIO::ip::make_address_v4("127.0.0.1")},
+      // ASIO::ip::address{ASIO::ip::make_address_v6("::1")}
+    };
+
+    // Reject the client if it is NOT in the allowlist
+    if (!allowlist.empty() && (allowlist.find(client_address) == allowlist.end()))
+      return false;
+    
+    return true; 
   }
 
   /// A string to send in responses.
@@ -241,6 +277,9 @@ int main(int argc, char *argv[])
     // create an https_server and connect the request handler
     https_server_type https_server(io_context, ssl_context);
     https_server.request_received_event(request_handler);
+
+    // Set the connection filter
+    https_server.set_connection_filter(filter_connection);
 
     // connect the optional handler callback functions
     https_server.chunk_received_event(chunk_handler);

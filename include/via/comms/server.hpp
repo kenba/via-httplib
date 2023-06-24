@@ -72,6 +72,14 @@ namespace via
       /// Error callback function type.
       typedef typename connection_type::error_callback_type error_callback_type;
 
+      /// Connection filter function type
+      typedef std::function<bool (ASIO::ip::tcp::socket const& socket)> connection_filter_type;
+
+      /// The default connection filter, accepts all incoming connections.
+      /// @param socket the client socket attempting to connect.
+      /// @return true
+      static bool accept_all_connections(ASIO::ip::tcp::socket const& socket){ return true; }
+
     private:
       /// The asio::io_context to use.
       ASIO::io_context& io_context_;
@@ -90,6 +98,7 @@ namespace via
       /// The connections established with this server.
       connections connections_{};
 
+      connection_filter_type accept_connection_{ accept_all_connections }; ///< The connection filter function.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{nullptr};   ///< The event callback function.
       error_callback_type error_callback_{nullptr};   ///< The error callback function.
@@ -120,7 +129,7 @@ namespace via
         if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
             (ASIO::error::operation_aborted != error))
         {
-          if (!error)
+          if (!error && accept_connection_(socket))
           {
             auto next_connection = std::make_shared<connection_type>
 #ifdef HTTP_SSL
@@ -259,6 +268,12 @@ namespace via
       /// Destructor, close the connections.
       ~server()
       { close(); }
+
+      /// @fn set_connection_filter
+      /// Set the accept_connection_ filter function.
+      /// @param filter_function the new connection filter function.
+      void set_connection_filter(connection_filter_type filter_function) noexcept
+      { accept_connection_ = filter_function; }
 
       /// @fn set_receive_callback
       /// Set the receive_callback function.

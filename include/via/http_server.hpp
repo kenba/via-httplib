@@ -111,6 +111,9 @@ namespace via
     /// The comms server for the underlying connections, TCP or SSL.
     typedef comms::server<SocketAdaptor> server_type;
 
+    /// The server connection_filter_type.
+    typedef typename server_type::connection_filter_type connection_filter_type;
+
     /// The http_connections managed by this server.
     typedef http_connection<SocketAdaptor,
                             Container,
@@ -518,6 +521,12 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Event Handlers
+
+    /// @fn set_connection_filter
+    /// Set the connection filter function.
+    /// @param filter_function the new connection filter function.
+    void set_connection_filter(connection_filter_type filter_function) noexcept
+    { server_->set_connection_filter(filter_function); }
 
     /// Connect the request received callback function.
     ///
