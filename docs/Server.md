@@ -157,6 +157,63 @@ By default, `accept_connections` uses the standard port for the server type
 (80 for HTTP, 443 for HTTPS).  
 However, if a different port number is required, it may be passed as a parameter.
 
+### Connection Filtering
+
+By default an `http_server` accepts all incoming connections to the given port.  
+However, incoming connections can be blocked with a connection filter function by calling  `http_server.set_connection_filter()` with a filter function prior to calling
+`accept_connections`.
+
+A connection filter function takes a const reference to a `tcp::socket` as a parameter and returns true if the connection is allowed, false is the connection is blocked.
+The filter function can determine aspects of the client from the `tcp::socket`.  
+For example, the filter function below compares the IP address of the client to
+IP addresses stored in a "blocklist" (a.k.a. "blacklist") and an "allowlist" (a.k.a. "whitelist"), to determine whether to allow or block an incoming connection:
+
+```C++
+/// An example connection filter function
+/// @param socket the client socket attempting to connect
+/// @return true if allowing the connection, false if blocking the connection
+bool filter_connection(ASIO::ip::tcp::socket const& socket)
+{
+  // Get the address of the client attempting to connect
+  const auto client_address{socket.remote_endpoint().address()};
+
+  // A list of clients to block
+  const std::set<ASIO::ip::address> blocklist
+  {
+    // Uncomment to block localhost connections
+    // ASIO::ip::address{ASIO::ip::make_address_v4("127.0.0.1")},
+    // ASIO::ip::address{ASIO::ip::make_address_v6("::1")}
+  }; 
+
+  // Reject the connection if the client is in the blocklist
+  if (blocklist.find(client_address) != blocklist.end())
+    return false;
+
+  // A list of clients to allow
+  const std::set<ASIO::ip::address> allowlist
+  {
+    // Uncomment to only permit localhost connections
+    // ASIO::ip::address{ASIO::ip::make_address_v4("127.0.0.1")},
+    // ASIO::ip::address{ASIO::ip::make_address_v6("::1")}
+  };
+
+  // Reject the client if it is NOT in the allowlist
+  if (!allowlist.empty() && (allowlist.find(client_address) == allowlist.end()))
+    return false;
+  
+  return true; 
+}
+.
+.
+.
+// create an http_server and connect the request handler
+http_server_type http_server(io_context);
+http_server.request_received_event(request_handler);
+
+// Set the connection filter
+http_server.set_connection_filter(filter_connection);
+```
+
 ## Running the Server
 
 The server's communication is handled by the `boost asio` library.  
