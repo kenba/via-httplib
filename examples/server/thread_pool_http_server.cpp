@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -11,17 +11,18 @@
 /// a single io_context and a thread pool calling io_context::run().
 //////////////////////////////////////////////////////////////////////////////
 #define HTTP_THREAD_SAFE
-#include "via/comms/tcp_adaptor.hpp"
+#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
+#include "../examples/certificates/server/server_crypto.hpp"
 #include <thread>
 #include <iostream>
 
-/// Define an HTTP server using std::string to store message bodies and an
-/// asio strand to protect the handlers
-typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
-typedef http_server_type::http_connection_type http_connection;
-typedef http_server_type::http_request http_request;
-typedef http_server_type::chunk_type http_chunk_type;
+/// Define an HTTPS server using std::string to store message bodies
+typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
+                                                            https_server_type;
+typedef https_server_type::http_connection_type http_connection;
+typedef https_server_type::http_request http_request;
+typedef https_server_type::chunk_type http_chunk_type;
 
 //////////////////////////////////////////////////////////////////////////////
 namespace
@@ -32,7 +33,7 @@ namespace
   /// Called whenever a SIGINT, SIGTERM or SIGQUIT signal is received.
   void handle_stop(ASIO_ERROR_CODE const&, // error,
                    int, // signal_number,
-                   http_server_type& http_server)
+                   https_server_type& http_server)
   {
     std::cout << "Shutting down" << std::endl;
     http_server.shutdown();
@@ -105,10 +106,7 @@ namespace
   }
 
   /// The handler for incoming HTTP chunks.
-  /// Prints the chunk header and body to std::cout.
-  /// Defined in case the request is a chunked message.
-  /// @param http_connection
-  /// @param chunk the http chunk
+  /// Outputs the chunk header and body to std::cout.
   void chunk_handler(http_connection::weak_pointer weak_ptr,
                      http_chunk_type const& chunk,
                      std::string const& data)
@@ -194,9 +192,9 @@ namespace
 int main(int argc, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
 
-  // Get a port number from the user (the default is 80)
+  // Get a port number from the user (the default is 443)
   if (argc > 2)
   {
     std::cerr << "Usage: " << app_name << " [port number]\n"
@@ -212,25 +210,55 @@ int main(int argc, char *argv[])
 
   std::cout << app_name << ": " << port_number << std::endl;
 
+  // Set up SSL/TLS
+  ASIO::ssl::context ssl_context(ASIO::ssl::context::tlsv13_server);
+  ssl_context.set_options(ASIO::ssl::context_base::default_workarounds
+                        | ASIO::ssl::context_base::no_sslv2);
+  ssl_context.set_verify_mode(ASIO::ssl::verify_peer);
+
+  ASIO_ERROR_CODE error;
+  ssl_context.use_certificate_chain(SERVER_CERTIFICATE, error);
+  if (error)
+  {
+    std::cerr << "Error, use_certificate_chain: " << error.message() << std::endl;
+    return 1;
+  }
+
+  ssl_context.use_private_key(SERVER_KEY, SERVER_KEY_TYPE, error);
+  if (error)
+  {
+    std::cerr << "Error, use_private_key: " << error.message() << std::endl;
+    return 1;
+  }
+
+  std::string password{SERVER_KEY_PASSWORD};
+  ssl_context.set_password_callback([password](std::size_t max_length,
+      ASIO::ssl::context::password_purpose purpose)
+      { return password; });
+
   try
   {
-    // create an io_context for the server
-    ASIO::io_context io_context;
+    // Determine the number of concurrent threads supported
+    const auto no_of_threads(std::thread::hardware_concurrency());
+    std::cout << "No of threads: " << no_of_threads << std::endl;
 
-    // create an http_server and connect the request handler
-    http_server_type http_server(io_context);
-    http_server.request_received_event(request_handler);
+    // create an io_context for the server
+    ASIO::io_context io_context(no_of_threads);
+
+    // create an https_server and connect the request handler
+    https_server_type https_server(io_context, ssl_context);
+    https_server.request_received_event(request_handler);
 
     // connect the handler callback functions
-    http_server.chunk_received_event(chunk_handler);
-    http_server.request_expect_continue_event(expect_continue_handler);
-    http_server.invalid_request_event(invalid_request_handler);
-    http_server.socket_connected_event(connected_handler);
-    http_server.socket_disconnected_event(disconnected_handler);
-    http_server.message_sent_event(message_sent_handler);
+    https_server.chunk_received_event(chunk_handler);
+    https_server.request_expect_continue_event(expect_continue_handler);
+    https_server.invalid_request_event(invalid_request_handler);
+    https_server.socket_connected_event(connected_handler);
+    https_server.socket_disconnected_event(disconnected_handler);
+    https_server.message_sent_event(message_sent_handler);
 
     // start accepting http connections on the given port
-    ASIO_ERROR_CODE error(http_server.accept_connections(port_number));
+    ASIO_ERROR_CODE error(https_server.accept_connections(port_number));
     if (error)
     {
       std::cerr << "Error: "  << error.message() << std::endl;
@@ -246,13 +274,9 @@ int main(int argc, char *argv[])
 #endif // #if defined(SIGQUIT)
 
     // register the handle_stop callback
-    signals_.async_wait([&http_server]
+    signals_.async_wait([&https_server]
       (ASIO_ERROR_CODE const& error, int signal_number)
-    { handle_stop(error, signal_number, http_server); });
-
-    // Determine the number of concurrent threads supported
-    size_t no_of_threads(std::thread::hardware_concurrency());
-    std::cout << "No of threads: " << no_of_threads << std::endl;
+    { handle_stop(error, signal_number, https_server); });
 
     if (no_of_threads > 0)
     {
