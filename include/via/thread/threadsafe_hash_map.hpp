@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2017-2020 Ken Barker
+// Copyright (c) 2017-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <mutex>
 #include <shared_mutex>
+#include <new>
 
 namespace via
 {
@@ -30,7 +31,7 @@ namespace via
     //////////////////////////////////////////////////////////////////////////
     /// @class threadsafe_hash_map
     ///
-    /// A thread hash map which uses shared_mutex's for thread safety.
+    /// A hash map which uses shared_mutex's for thread safety.
     /// It has a number of data buckets each protected by it's own shared_mutex.
     /// The number of data buckets can be set in the class constructor.
     /// The more buckets, the lower the probability of thread contention...
@@ -42,14 +43,11 @@ namespace via
     /// It should be a prime number, default 19.
     /// @tparam Alloc the allocator for the bucket_data_type.
     /// Default std::allocator.
-    /// @tparam cache_line_size the size of a cache line on the hardware.
-    /// Default 64 bytes.
     //////////////////////////////////////////////////////////////////////////
     template<typename Key, typename Value,
              typename Hash = std::hash<Key>,
              unsigned num_buckets = 19,
-             typename Alloc = std::allocator<std::pair<Key, Value>>,
-             unsigned cache_line_size = 64u>
+             typename Alloc = std::allocator<std::pair<Key, Value>>>
     class threadsafe_hash_map
     {
 #ifdef _MSC_VER
@@ -59,8 +57,8 @@ namespace via
       /// @class bucket_type
       /// Each bucket is a std::vector of Key, Value std::pair's sorted by Key
       /// and protected by a shared_mutex.
-      /// The shared_mutex enables mulutiple simultaneous readers per bucket.
-      struct alignas(cache_line_size) bucket_type
+      /// The shared_mutex enables multiple simultaneous readers per bucket.
+      struct alignas(std::hardware_destructive_interference_size) bucket_type
       {
         /// The underlying data type: a key, value pair.
         typedef std::pair<Key, Value> value_type;
