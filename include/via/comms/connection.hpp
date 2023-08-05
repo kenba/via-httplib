@@ -109,7 +109,7 @@ namespace via
           std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 #ifdef HTTP_THREAD_SAFE
           SocketAdaptor::write(buffers,
-             strand_.wrap([weak_ptr, rx_buffer]
+            ASIO::bind_executor(strand_, [weak_ptr, rx_buffer]
                           (ASIO_ERROR_CODE const& error,
                            size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
@@ -133,7 +133,7 @@ namespace via
         std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 #ifdef HTTP_THREAD_SAFE
         SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
-            strand_.wrap([weak_ptr, rx_buffer]
+            ASIO::bind_executor(strand_, [weak_ptr, rx_buffer]
                          (ASIO_ERROR_CODE const& error,
                           size_t bytes_transferred)
          { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
@@ -317,7 +317,7 @@ namespace via
           {
 #ifdef HTTP_THREAD_SAFE
             pointer->handshake(
-                    pointer->strand_.wrap([ptr](ASIO_ERROR_CODE const& error)
+              ASIO::bind_executor(pointer->strand_, [ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }), false);
 #else
             pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
@@ -483,7 +483,8 @@ namespace via
       {
         weak_pointer ptr(weak_from_this());
 #ifdef HTTP_THREAD_SAFE
-        return SocketAdaptor::connect(io_context, host_name, port_name, strand_.wrap(
+        return SocketAdaptor::connect(io_context, host_name, port_name, 
+        ASIO::bind_executor(strand_,
           [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
             { connect_callback(ptr, error, endpoint); }));
 #else
@@ -516,7 +517,7 @@ namespace via
 
 #ifdef HTTP_THREAD_SAFE
         SocketAdaptor::start(
-                strand_.wrap([weak_ptr](ASIO_ERROR_CODE const& error)
+                ASIO::bind_executor(strand_, [weak_ptr](ASIO_ERROR_CODE const& error)
           { handshake_callback(weak_ptr, error); }));
 #else
         SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
