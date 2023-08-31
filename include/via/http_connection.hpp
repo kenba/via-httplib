@@ -1,10 +1,7 @@
-#ifndef HTTP_CONNECTION_HPP_VIA_HTTPLIB_
-#define HTTP_CONNECTION_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -27,12 +24,10 @@ namespace via
   /// @class http_connection
   /// An HTTP connection.
   /// The class can be configured to use either tcp or ssl sockets depending
-  /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
-  /// ssl::ssl_tcp_adaptor respectively.
+  /// upon which class is provided as the S: tcp_socket or
+  /// ssl::ssl_socket respectively.
   /// @see comms::connection
-  /// @see comms::tcp_adaptor
-  /// @see comms::ssl::ssl_tcp_adaptor
-  /// @tparam SocketAdaptor the type of socket.
+  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
   /// @tparam Container the type of container in which the request is held.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method.
@@ -44,7 +39,7 @@ namespace via
   /// characters allowed in a request.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
+  template <typename S,
             typename Container,
             size_t         MAX_URI_LENGTH,
             unsigned char  MAX_METHOD_LENGTH,
@@ -54,7 +49,7 @@ namespace via
             unsigned char  MAX_WHITESPACE_CHARS,
             bool           STRICT_CRLF>
   class http_connection : public std::enable_shared_from_this
-                                   <http_connection<SocketAdaptor,
+                                   <http_connection<S,
                                                     Container,
                                                     MAX_URI_LENGTH,
                                                     MAX_METHOD_LENGTH,
@@ -66,10 +61,10 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor> connection_type;
+    typedef comms::connection<S> connection_type;
 
     /// This type.
-    typedef http_connection<SocketAdaptor,
+    typedef http_connection<S,
                             Container,
                             MAX_URI_LENGTH,
                             MAX_METHOD_LENGTH,
@@ -394,4 +389,3 @@ namespace via
   };
 
 }
-#endif

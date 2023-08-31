@@ -9,13 +9,12 @@
 /// @file example_http_server.cpp
 /// @brief An example HTTP server containing all of the callbacks.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <set>
 #include <iostream>
 
 /// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
+typedef via::http_server<via::comms::tcp_socket, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::http_request http_request;
 typedef http_server_type::chunk_type http_chunk_type;
@@ -225,7 +224,7 @@ namespace
 int main(int argc, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(http_server_type::connection_type::DEFAULT_HTTP_PORT);
 
   // Get a port number from the user (the default is 80)
   if (argc > 2)

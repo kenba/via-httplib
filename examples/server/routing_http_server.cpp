@@ -1,18 +1,17 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include "via/http/request_router.hpp"
 #include <iostream>
 
 /// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_adaptor, std::string> http_server_type;
+typedef via::http_server<via::comms::tcp_socket, std::string> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::http_request http_request;
 
@@ -64,7 +63,7 @@ namespace
 int main(int /* argc */, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(http_server_type::connection_type::DEFAULT_HTTP_PORT);
   std::cout << app_name << ": " << port_number << std::endl;
 
   try

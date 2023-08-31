@@ -6,12 +6,11 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
-typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
+typedef via::http_server<via::comms::ssl::ssl_socket, std::string>
                                                             https_server_type;
 typedef https_server_type::http_connection_type http_connection;
 typedef https_server_type::http_request http_request;
@@ -50,7 +49,7 @@ namespace
 int main(int /* argc */, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(https_server_type::connection_type::DEFAULT_HTTP_PORT);
   std::cout << app_name << ": " << port_number << std::endl;
 
   // Values for the SSL functions

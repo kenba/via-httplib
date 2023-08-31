@@ -1,6 +1,3 @@
-#ifndef HTTP_CLIENT_HPP_VIA_HTTPLIB_
-#define HTTP_CLIENT_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
@@ -17,13 +14,6 @@
 #include "via/http/request.hpp"
 #include "via/http/response.hpp"
 #include "via/comms/connection.hpp"
-#ifdef HTTP_SSL
-  #ifdef ASIO_STANDALONE
-    #include <asio/ssl/context.hpp>
-  #else
-    #include <boost/asio/ssl/context.hpp>
-  #endif
-#endif
 #include <iostream>
 
 namespace via
@@ -31,12 +21,11 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_client
   /// The class template can be configured to use either tcp or ssl sockets
-  /// depending upon which class is provided as the SocketAdaptor:
-  /// tcp_adaptor or ssl::ssl_tcp_adaptor.
+  /// depending upon which class is provided as the socket type:
+  /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @tparam SocketAdaptor the type of socket to use:
-  /// tcp_adaptor or ssl::ssl_tcp_adaptor
+  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
   /// @tparam Container the container to use for the tx buffer:
   /// std::vector<char> or std::string, default std::vector<char>.
   /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:
@@ -53,7 +42,7 @@ namespace via
   /// whitespace characters allowed in a response: default 254, min 1, max 254.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
+  template <typename S,
             typename Container                  = std::vector<char>,
             unsigned short MAX_STATUS_NUMBER    = 65534,
             unsigned short MAX_REASON_LENGTH    = 65534,
@@ -63,7 +52,7 @@ namespace via
             unsigned char  MAX_WHITESPACE_CHARS = 254,
             bool           STRICT_CRLF          = false>
   class http_client : public std::enable_shared_from_this
-                                       <http_client<SocketAdaptor,
+                                       <http_client<S,
                                         Container,
                                         MAX_STATUS_NUMBER,
                                         MAX_REASON_LENGTH,
@@ -75,12 +64,10 @@ namespace via
   {
   public:
     /// The underlying connection, TCP or SSL.
-    typedef comms::connection<SocketAdaptor> connection_type;
-
-    typedef typename connection_type::socket_type socket_type;
+    typedef comms::connection<S> connection_type;
 
     /// This type.
-    typedef http_client<SocketAdaptor,
+    typedef http_client<S,
                         Container,
                         MAX_STATUS_NUMBER,
                         MAX_REASON_LENGTH,
@@ -346,8 +333,7 @@ namespace via
     /// @param ssl_context the asio ssl::context for the socket adaptor.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
-    /// @param rx_buffer_size the size of the receive_buffer, default
-    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// @param rx_buffer_size the size of the receive_buffer.
     /// @param max_body_size the maximum size of a response body.
     /// @param max_chunk_size the maximum size of a response chunk.
     http_client(ASIO::io_context& io_context,
@@ -361,9 +347,9 @@ namespace via
                 size_t          max_chunk_size) :
       io_context_(io_context),
 #ifdef HTTP_SSL
-      connection_(std::make_shared<connection_type>(socket_type(io_context, ssl_context), rx_buffer_size)),
+      connection_(std::make_shared<connection_type>(S(io_context, ssl_context), rx_buffer_size)),
 #else
-      connection_(std::make_shared<connection_type>(socket_type(io_context), rx_buffer_size)),
+      connection_(std::make_shared<connection_type>(S(io_context), rx_buffer_size)),
 #endif
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),
@@ -387,7 +373,7 @@ namespace via
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
-    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
+    /// connection_type::DEFAULT_RX_BUFFER_SIZE
     /// @param max_body_size the maximum size of a response body: default LONG_MAX.
     /// @param max_chunk_size the maximum size of a response chunk: default LONG_MAX.
     static shared_pointer create(ASIO::io_context& io_context,
@@ -396,7 +382,7 @@ namespace via
 #endif
                                  ResponseHandler response_handler,
                                  ChunkHandler    chunk_handler,
-               size_t rx_buffer_size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE,
+               size_t rx_buffer_size = connection_type::DEFAULT_RX_BUFFER_SIZE,
                size_t max_body_size  = LONG_MAX,
                size_t max_chunk_size = LONG_MAX)
     {
@@ -663,5 +649,3 @@ namespace via
     { return connection_; }
   };
 }
-
-#endif

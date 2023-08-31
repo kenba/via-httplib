@@ -9,12 +9,12 @@
 /// @file example_http_client.cpp
 /// @brief An example HTTPS client with optional handlers.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
+#define HTTP_SSL
 #include "via/http_client.hpp"
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::ssl::ssl_tcp_adaptor, std::string>
+typedef via::http_client<via::comms::ssl::ssl_socket, std::string>
                                                             https_client_type;
 typedef https_client_type::http_response http_response;
 typedef https_client_type::chunk_type http_chunk_type;

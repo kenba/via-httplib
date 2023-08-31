@@ -1,20 +1,15 @@
-#ifndef SOCKET_ADAPTOR_HPP_VIA_HTTPLIB_
-#define SOCKET_ADAPTOR_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2015 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file socket_adaptor.hpp
-/// @brief Type definitions used by the connection socket adaptors.
-/// @see tcp_adaptor
-/// @see ssl_tcp_adaptor
+/// @file asio_if.hpp
+/// @brief Type definitions used by the sockets.
 //////////////////////////////////////////////////////////////////////////////
 #ifdef ASIO_STANDALONE
   #include <asio.hpp>
@@ -23,6 +18,7 @@
   #define ASIO_TIMER asio::steady_timer
 #else
   #include <boost/asio.hpp>
+  #include <boost/system/error_code.hpp>
   #define ASIO boost::asio
   #define ASIO_ERROR_CODE boost::system::error_code
   #define ASIO_TIMER boost::asio::deadline_timer
@@ -69,5 +65,3 @@ namespace via
     typedef std::deque<ASIO::const_buffer> ConstBuffers;
   }
 }
-
-#endif

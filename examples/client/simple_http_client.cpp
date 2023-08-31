@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2020 Ken Barker
+// Copyright (c) 2013-2023 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -9,12 +9,11 @@
 /// @file simple_http_client.cpp
 /// @brief An example HTTP client.
 //////////////////////////////////////////////////////////////////////////////
-#include "via/comms/tcp_adaptor.hpp"
 #include "via/http_client.hpp"
 #include <iostream>
 
 /// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::tcp_adaptor, std::string> http_client_type;
+typedef via::http_client<via::comms::tcp_socket, std::string> http_client_type;
 typedef http_client_type::http_response http_response;
 typedef http_client_type::chunk_type http_chunk_type;
 

@@ -13,9 +13,11 @@ add_executable(${PROJECT_NAME}
 	example_https_server.cpp
 	
 	# thread_pool_http_server.cpp
+	# thread_pool_https_server.cpp
 	# example_http_server.cpp
 	# chunked_http_server.cpp
 	# example_https_server.cpp
+  # routing_http_server.cpp
 	# simple_http_server.cpp
   # simple_https_server.cpp
   # simple_mutual_authentication_https_server.cpp

@@ -1,6 +1,3 @@
-#ifndef SERVER_HPP_VIA_HTTPLIB_
-#define SERVER_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
@@ -14,13 +11,6 @@
 /// @brief The server template class.
 //////////////////////////////////////////////////////////////////////////////
 #include "connection.hpp"
-#ifdef HTTP_SSL
-  #ifdef ASIO_STANDALONE
-    #include <asio/ssl/context.hpp>
-  #else
-    #include <boost/asio/ssl/context.hpp>
-  #endif
-#endif
 #include <string>
 #include <sstream>
 #ifdef HTTP_THREAD_SAFE
@@ -38,22 +28,18 @@ namespace via
     /// A template class for implementing a tcp or ssl server using buffered
     /// connections.
     /// The class can be configured to use either tcp or ssl sockets depending
-    /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
+    /// upon which class is provided as the S template parameter: tcp_socket or
+    /// ssl::ssl_socket respectively.
     /// @see connection
-    /// @see tcp_adaptor
-    /// @see ssl::ssl_tcp_adaptor
-    /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
-    /// ssl::ssl_tcp_adaptor
+    /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor>
+    template <typename S>
     class server
     {
     public:
 
       /// The connection type used by this server.
-      typedef connection<SocketAdaptor> connection_type;
-
-      typedef typename connection_type::socket_type socket_type;
+      typedef connection<S> connection_type;
 
       /// A set of connections.
 #ifdef HTTP_THREAD_SAFE
@@ -84,9 +70,11 @@ namespace via
       /// The asio::io_context to use.
       ASIO::io_context& io_context_;
 
-#ifdef HTTP_SSL
-      /// The ssl::context for ssl_tcp_adaptor
+      /// The ssl::context for ssl_socket
       ASIO::ssl::context& ssl_context_;
+
+#ifdef HTTP_THREAD_SAFE
+      ASIO::strand<ASIO::io_context::executor_type> strand_;
 #endif
 
 #ifdef HTTP_THREAD_SAFE
@@ -95,7 +83,7 @@ namespace via
 #endif
 
       /// The next socket to be accepted.
-      ASIO::ip::tcp::socket next_socket_;
+      ASIO::ip::tcp::socket next_tcp_socket_;
 
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
@@ -111,7 +99,7 @@ namespace via
       event_callback_type event_callback_{nullptr};   ///< The event callback function.
       error_callback_type error_callback_{nullptr};   ///< The error callback function.
 
-      size_t rx_buffer_size_{SocketAdaptor::DEFAULT_RX_BUFFER_SIZE}; ///< The size of the receive buffer.
+      size_t rx_buffer_size_{connection_type::DEFAULT_RX_BUFFER_SIZE}; ///< The size of the receive buffer.
 
       // Socket parameters
 
@@ -121,6 +109,14 @@ namespace via
       /// The connection timeouts, in milliseconds, zero is disabled.
       int timeout_{0};
       bool keep_alive_{false};       ///< The tcp keep alive status.
+
+      S create_socket()
+      {
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+          return S(std::move(next_tcp_socket_), ssl_context_);
+        else
+          return std::move(next_tcp_socket_);
+      }
 
       /// @accept_handler
       /// The callback function called by the acceptor when it accepts a
@@ -136,14 +132,10 @@ namespace via
         if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
             (ASIO::error::operation_aborted != error))
         {
-          if (!error && accept_connection_(next_socket_))
-          {
+          if (!error && accept_connection_(next_tcp_socket_))
+          {          
             auto next_connection = std::make_shared<connection_type>
-#ifdef HTTP_SSL
-              (socket_type(std::move(next_socket_), ssl_context_),
-#else
-              (std::move(next_socket_),
-#endif
+             (create_socket(),
 #ifdef HTTP_THREAD_SAFE
               std::move(next_strand_),
 #endif
@@ -171,9 +163,9 @@ namespace via
 
 #ifdef HTTP_THREAD_SAFE
           next_strand_ = ASIO::make_strand(io_context_);
-          next_socket_ = ASIO::ip::tcp::socket(next_strand_);
+          next_tcp_socket_ = ASIO::ip::tcp::socket(next_strand_);
 #else
-          next_socket_ = ASIO::ip::tcp::socket(io_context_);
+          next_tcp_socket_ = ASIO::ip::tcp::socket(io_context_);
 #endif
 
           start_accept();
@@ -229,11 +221,11 @@ namespace via
       void start_accept()
       {
         if (acceptor_v6_.is_open())
-          acceptor_v6_.async_accept(next_socket_,
+          acceptor_v6_.async_accept(next_tcp_socket_,
             [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
         if (acceptor_v4_.is_open())
-          acceptor_v4_.async_accept(next_socket_,
+          acceptor_v4_.async_accept(next_tcp_socket_,
             [this](ASIO_ERROR_CODE const& error)
               { accept_handler(error); });
       }
@@ -254,26 +246,22 @@ namespace via
       /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
       /// @param ssl_context the ssl context, only required for TLS servers.
-      explicit server(ASIO::io_context& io_context
-#ifdef HTTP_SSL
-             , ASIO::ssl::context& ssl_context
-#endif
-      ) :
+      explicit server(ASIO::io_context& io_context,
+                      ASIO::ssl::context& ssl_context = ASIO::ssl::context(ASIO::ssl::context::tlsv13_server)) :
         io_context_(io_context),
-#ifdef HTTP_SSL
         ssl_context_(ssl_context),
+#ifdef HTTP_THREAD_SAFE
+        strand_(ASIO::make_strand(io_context)),
 #endif
 #ifdef HTTP_THREAD_SAFE
         next_strand_(ASIO::make_strand(io_context)),
-        next_socket_(next_strand_),
+        next_tcp_socket_(next_strand_),
 #else
-        next_socket_(io_context),
+        next_tcp_socket_(io_context),
 #endif
         acceptor_v6_(io_context),
         acceptor_v4_(io_context)
       {}
-
-#ifdef HTTP_SSL
 
       /// @fn ssl_context
       /// A function to manage the ssl context for the ssl connections.
@@ -282,8 +270,6 @@ namespace via
       {
         return ssl_context_;
       }
-
-#endif
 
       /// Destructor, close the connections.
       ~server()
@@ -404,5 +390,3 @@ namespace via
     };
   }
 }
-
-#endif

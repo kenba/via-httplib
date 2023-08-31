@@ -1,6 +1,3 @@
-#ifndef HTTP_SERVER_HPP_VIA_HTTPLIB_
-#define HTTP_SERVER_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
@@ -50,16 +47,10 @@
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
 #include "via/http/request_router.hpp"
-#ifdef HTTP_SSL
-  #ifdef ASIO_STANDALONE
-    #include <asio/ssl/context.hpp>
-  #else
-    #include <boost/asio/ssl/context.hpp>
-  #endif
-#endif
 #include <map>
 #include <stdexcept>
 #include <iostream>
+#define HTTP_THREAD_SAFE
 #ifdef HTTP_THREAD_SAFE
 #include "via/thread/threadsafe_hash_map.hpp"
 #else
@@ -71,12 +62,9 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_server
   /// The class template can be configured to use either tcp or ssl sockets
-  /// depending upon which class is provided as the SocketAdaptor:
+  /// depending upon which class is provided as the socket type:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
-  /// @see comms::tcp_adaptor
-  /// @see comms::ssl::ssl_tcp_adaptor
-  /// @tparam SocketAdaptor the type of socket to use:
-  /// tcp_adaptor or ssl::ssl_tcp_adaptor
+  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
   /// @tparam IPV4_ONLY whether an IPV4 only server is required, default false.
@@ -94,7 +82,7 @@ namespace via
   /// characters permitted in a request: default 8, min 1, max 254.
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
-  template <typename SocketAdaptor,
+  template <typename S,
             typename Container                  = std::vector<char>,
             bool           IPV4_ONLY            = false,
             size_t         MAX_URI_LENGTH       = 8190,
@@ -109,13 +97,13 @@ namespace via
   public:
 
     /// The comms server for the underlying connections, TCP or SSL.
-    typedef comms::server<SocketAdaptor> server_type;
+    typedef comms::server<S> server_type;
 
     /// The server connection_filter_type.
     typedef typename server_type::connection_filter_type connection_filter_type;
 
     /// The http_connections managed by this server.
-    typedef http_connection<SocketAdaptor,
+    typedef http_connection<S,
                             Container,
                             MAX_URI_LENGTH,
                             MAX_METHOD_LENGTH,
@@ -201,47 +189,6 @@ namespace via
 
     ////////////////////////////////////////////////////////////////////////
     // Functions
-
-    /// Handle a connected signal from an underlying comms connection.
-    /// @param connection a weak ponter to the underlying comms connection.
-    void connected_handler(std::weak_ptr<connection_type> connection)
-    {
-      // Use the raw pointer of the connection as the map key.
-      void* pointer(connection.lock().get());
-      if (!pointer)
-        return;
-
-      std::shared_ptr<http_connection_type> http_connection;
-#ifdef HTTP_THREAD_SAFE
-      auto value(http_connections_.find(pointer));
-      bool iter_not_found(value.first != pointer);
-      if (!iter_not_found)
-        http_connection = value.second;
-#else
-      // search for the connection in the collection
-      auto iter(http_connections_.find(pointer));
-      bool iter_not_found(iter == http_connections_.end());
-      if (!iter_not_found)
-        http_connection = iter->second;
-#endif
-
-      if (iter_not_found)
-      {
-        // Create and configure a new http_connection_type.
-        http_connection = std::make_shared<http_connection_type>
-                          (connection, max_content_length_, max_chunk_size_);
-        http_connection->set_translate_head(translate_head_);
-        http_connection->set_concatenate_chunks(!http_chunk_handler_);
-        http_connections_.emplace(pointer, http_connection);
-
-        // signal that the socket is connected
-        if (connected_handler_)
-          connected_handler_(http_connection);
-      }
-      else
-        std::cerr << "http_server, error: duplicate connection for "
-                  << http_connection->remote_address() << std::endl;
-    }
 
     /// Route the request using the request_router_.
     /// @param weak_ptr a weak pointer to the comms connection.
@@ -398,49 +345,64 @@ namespace via
     /// @param connection a weak pointer to the underlying comms connection.
     void event_handler(unsigned char event, std::weak_ptr<connection_type> connection)
     {
-      if (via::comms::CONNECTED == event)
-        connected_handler(connection);
-      else
-      {
-        // Get the raw pointer of the connection
-        void* pointer(connection.lock().get());
-        if (!pointer)
-          return;
+      // Get the raw pointer of the connection
+      void* pointer(connection.lock().get());
+      if (!pointer)
+        return;
 
-        std::shared_ptr<http_connection_type> http_connection;
+      std::shared_ptr<http_connection_type> http_connection;
 #ifdef HTTP_THREAD_SAFE
-        auto value(http_connections_.find(pointer));
-        bool iter_not_found(value.first != pointer);
-        if (!iter_not_found)
-          http_connection = value.second;
+      auto value(http_connections_.find(pointer));
+      bool iter_not_found(value.first != pointer);
+      if (!iter_not_found)
+        http_connection = value.second;
 #else
-        // search for the connection in the collection
-        auto iter(http_connections_.find(pointer));
-        bool iter_not_found(iter == http_connections_.end());
-        if (!iter_not_found)
-          http_connection = iter->second;
+      // search for the connection in the collection
+      auto iter(http_connections_.find(pointer));
+      bool iter_not_found(iter == http_connections_.end());
+      if (!iter_not_found)
+        http_connection = iter->second;
 #endif
 
+      switch(event)
+      {
+      case via::comms::CONNECTED:
         if (iter_not_found)
         {
-          std::cerr << "http_server, event_handler error: connection not found "
-                    << std::endl;
-          return;
-        }
+          // Create and configure a new http_connection_type.
+          http_connection = std::make_shared<http_connection_type>
+                            (connection, max_content_length_, max_chunk_size_);
+          http_connection->set_translate_head(translate_head_);
+          http_connection->set_concatenate_chunks(!http_chunk_handler_);
+          http_connections_.emplace(pointer, http_connection);
 
-        switch(event)
-        {
-        case via::comms::SENT:
-          // Notify the sent handler if one exists
-          if (message_sent_handler_)
-            message_sent_handler_(http_connection);
-          break;
-        case via::comms::DISCONNECTED:
-          disconnected_handler(pointer, http_connection);
-          break;
-        default:
-          ;
+          // signal that the socket is connected
+          if (connected_handler_)
+            connected_handler_(http_connection);
         }
+        else
+          std::cerr << "http_server, error: duplicate connection for "
+                    << http_connection->remote_address() << std::endl;
+        break;
+      case via::comms::SENT:
+        // Notify the sent handler if one exists
+        if (message_sent_handler_)
+        {
+          if (iter_not_found)
+          {
+            std::cerr << "http_server, event_handler error: connection not found\n"
+                      << std::endl;
+            return;
+          }
+          message_sent_handler_(http_connection);
+        }
+        break;
+      case via::comms::DISCONNECTED:
+        if (!iter_not_found)
+          disconnected_handler(pointer, http_connection);
+        break;
+      default:
+        ;
       }
     }
 
@@ -466,15 +428,28 @@ namespace via
 
     /// Constructor.
     /// @param io_context a reference to the ASIO::io_context.
-    /// @param ssl_context a reference to the asio ssl::context.
-    explicit http_server(ASIO::io_context& io_context
-#ifdef HTTP_SSL
-                        ,ASIO::ssl::context& ssl_context) :
-      server_(new server_type(io_context, ssl_context)),
-#else
-                        ) :
+    explicit http_server(ASIO::io_context& io_context) :
       server_(new server_type(io_context)),
-#endif
+      max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
+      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE)
+    {
+      server_->set_receive_callback([this]
+        (const char *data, size_t size, std::weak_ptr<connection_type> connection)
+          { receive_handler(data, size, connection); });
+      server_->set_event_callback([this]
+        (unsigned char event, std::weak_ptr<connection_type> connection)
+          { event_handler(event, connection); });
+      server_->set_error_callback([this]
+        (ASIO_ERROR_CODE const& error,
+         std::weak_ptr<connection_type> connection)
+          { error_handler(error, connection); });
+    }
+
+    /// Constructor.
+    /// @param io_context a reference to the ASIO::io_context.
+    /// @param ssl_context a reference to the asio ssl::context.
+    http_server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
+      server_(new server_type(io_context, ssl_context)),
       max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
       max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE)
     {
@@ -503,7 +478,7 @@ namespace via
     /// default 80 for HTTP or 443 for HTTPS.
     /// @return the boost error code, false if no error occured
     ASIO_ERROR_CODE accept_connections
-                      (unsigned short port = SocketAdaptor::DEFAULT_HTTP_PORT)
+                      (unsigned short port = connection_type::DEFAULT_HTTP_PORT)
     {
       // If a request handler's not been registered, use the request_router
       if (!http_request_handler_)
@@ -623,8 +598,8 @@ namespace via
 
     /// Set the size of the server receive buffer.
     /// @param size the new size of the receive buffer, default
-    /// SocketAdaptor::DEFAULT_RX_BUFFER_SIZE
-    void set_rx_buffer_size(size_t size = SocketAdaptor::DEFAULT_RX_BUFFER_SIZE) noexcept
+    /// connection_type::DEFAULT_RX_BUFFER_SIZE
+    void set_rx_buffer_size(size_t size = connection_type::DEFAULT_RX_BUFFER_SIZE) noexcept
     { server_->set_rx_buffer_size(size); }
 
     /// Set the tcp keep alive status for all future connections.
@@ -678,4 +653,3 @@ namespace via
   };
 
 }
-#endif

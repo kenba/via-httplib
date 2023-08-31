@@ -1,6 +1,3 @@
-#ifndef CONNECTION_HPP_VIA_HTTPLIB_
-#define CONNECTION_HPP_VIA_HTTPLIB_
-
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
@@ -14,50 +11,74 @@
 /// @file connection.hpp
 /// @brief The connection template class.
 //////////////////////////////////////////////////////////////////////////////
-#include "socket_adaptor.hpp"
-#ifndef ASIO_STANDALONE
-#include <boost/system/error_code.hpp>
+#include "asio_if.hpp"
+#ifdef ASIO_STANDALONE
+  #include <asio/ssl.hpp>
+  #include <asio/ssl/context.hpp>
+#else
+  #include <boost/asio/ssl.hpp>
+  #include <boost/asio/ssl/context.hpp>
 #endif
 #include <memory>
 #include <vector>
+#include <type_traits>
 
 namespace via
 {
   namespace comms
   {
+    /// @brief A TCP socket. 
+    typedef ASIO::ip::tcp::socket tcp_socket;
+
+    namespace ssl
+    {
+      /// @brief An SSL socket. 
+      typedef ASIO::ssl::stream<ASIO::ip::tcp::socket> ssl_socket;
+    }
+
+    /// @fn resolve_host
+    /// resolves the host name and port.
+    /// @param io_context the asio io_context associated with the connection.
+    /// @param host_name the host name.
+    /// @param port_name the host port.
+    /// @return a TCP resolver::results_type collection of endpoints
+    inline ASIO::ip::tcp::resolver::results_type resolve_host
+                      (ASIO::io_context& io_context,
+                       const char* host_name, const char* port_name)
+    {
+      ASIO_ERROR_CODE ignoredEc;
+      ASIO::ip::tcp::resolver resolver(io_context);
+      return resolver.resolve(host_name, port_name, ignoredEc);
+    }
+
     //////////////////////////////////////////////////////////////////////////
     /// @class connection
     /// A template class that buffers tcp or ssl comms sockets.
     /// The class can be configured to use either tcp or ssl sockets depending
-    /// upon which class is provided as the SocketAdaptor: tcp_adaptor or
-    /// ssl::ssl_tcp_adaptor respectively.
-    /// @see tcp_adaptor
-    /// @see ssl::ssl_tcp_adaptor
-    /// @tparam SocketAdaptor the type of socket, use: tcp_adaptor or
-    /// ssl::ssl_tcp_adaptor
+    /// upon which class is provided as the S: tcp_socket or
+    /// ssl::ssl_socket respectively.
+    /// @see tcp_socket
+    /// @see ssl::ssl_socket
+    /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
     //////////////////////////////////////////////////////////////////////////
-    template <typename SocketAdaptor>
-    class connection : public SocketAdaptor,
-      public std::enable_shared_from_this<connection<SocketAdaptor>>
+    template <typename S>
+    class connection : public std::enable_shared_from_this<connection<S>>
     {
     public:
 
-      /// The underlying socket type.
-      typedef typename SocketAdaptor::socket_type socket_type;
-
       /// This type.
-      typedef connection<SocketAdaptor> this_type;
+      typedef connection<S> this_type;
 
       /// A weak pointer to a connection.
-      typedef typename std::weak_ptr<connection<SocketAdaptor>> weak_pointer;
+      typedef typename std::weak_ptr<connection<S>> weak_pointer;
 
       /// A shared pointer to a connection.
-      typedef typename std::shared_ptr<connection<SocketAdaptor>> shared_pointer;
+      typedef typename std::shared_ptr<connection<S>> shared_pointer;
 
       /// The enable_shared_from_this type of this class.
-      typedef typename std::enable_shared_from_this<connection<SocketAdaptor>> enable;
+      typedef typename std::enable_shared_from_this<connection<S>> enable;
 
-      /// The resolver_iterator type of the SocketAdaptor
+      /// The resolver_iterator type of the S
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
 
       /// Receive callback function type.
@@ -69,12 +90,56 @@ namespace via
       /// Error callback function type.
       typedef std::function<void (ASIO_ERROR_CODE const&, weak_pointer)> error_callback_type;
 
+      /// @fn default_port
+      /// Get the default port number for the connection type
+      /// @return the default port number
+      static constexpr unsigned short default_port() noexcept
+      {
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+          return 443;
+        else
+          return 80;
+      }
+
+      /// The default HTTP port.
+      static constexpr unsigned short DEFAULT_HTTP_PORT{ default_port() };
+
+      /// @fn is_disconnect
+      /// This function determines whether the error is a socket disconnect,
+      /// it also determines whether the caller should perform an SSL
+      /// shutdown.
+      /// @param error the error_code
+      /// @retval ssl_shutdown - an SSL shutdown should be performed
+      /// @return true if the socket is disconnected, false otherwise.
+      static constexpr bool is_ssl_disconnect(ASIO_ERROR_CODE const& error) noexcept
+      {
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+          return ASIO::error::get_ssl_category() == error.category();
+        else
+          return false;
+      }
+
+      static constexpr bool is_ssl_shutdown(ASIO_ERROR_CODE const& error) noexcept
+      {
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        {
+          return
+// SSL_R_SHORT_READ is no longer defined in openssl 1.1.x
+#ifdef SSL_R_SHORT_READ
+               (SSL_R_SHORT_READ != ERR_GET_REASON(error.value())) &&
+#endif
+               (SSL_R_PROTOCOL_IS_SHUTDOWN != ERR_GET_REASON(error.value()));
+        }
+        else
+          return false;
+      }
+
+      /// The default size of the receive buffer.
+      static constexpr size_t DEFAULT_RX_BUFFER_SIZE = 8192;
+
     private:
 
-#ifdef HTTP_THREAD_SAFE
-      /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::strand<ASIO::io_context::executor_type> strand_;
-#endif
+      S socket_;
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
@@ -107,7 +172,7 @@ namespace via
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-          SocketAdaptor::write(buffers,
+          ASIO::async_write(socket_, buffers,
             [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                   size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
@@ -123,7 +188,7 @@ namespace via
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
         std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-        SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
+        socket_.async_read_some(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
           [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                 size_t bytes_transferred)
          { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
@@ -160,9 +225,9 @@ namespace via
       /// error signal.
       void signal_error_or_disconnect(ASIO_ERROR_CODE const& error)
       {
-        bool is_an_ssl_disconnect(SocketAdaptor::is_disconnect(error));
-        bool is_an_ssl_shutdown(is_an_ssl_disconnect &&
-                                SocketAdaptor::is_shutdown(error));
+        const bool is_an_ssl_disconnect{is_ssl_disconnect(error)};
+        const bool is_an_ssl_shutdown{is_an_ssl_disconnect && is_ssl_shutdown(error)};
+
         // if the other end has requested an SSL shutdown
         if (!shutdown_sent_ && is_an_ssl_shutdown)
           shutdown(); // reply with an SSL shutdown
@@ -265,18 +330,24 @@ namespace via
         shared_pointer pointer(ptr.lock());
         if (pointer && (ASIO::error::operation_aborted != error))
         {
-          if (!error)
-          {
-            pointer->connected_ = true;
-            pointer->event_callback_(CONNECTED, ptr);
-            pointer->set_socket_options();
-            pointer->enable_reception();
-          }
-          else
-          {
-            pointer->close();
-            pointer->error_callback_(error, ptr);
-          }
+          pointer->handshake_handler(error);
+        }
+      }
+
+      void handshake_handler(ASIO_ERROR_CODE const& error)
+      {
+        weak_pointer ptr(weak_from_this());
+        if (!error)
+        {
+          connected_ = true;
+          event_callback_(CONNECTED, ptr);
+          set_socket_options();
+          enable_reception();
+        }
+        else
+        {
+          close();
+          error_callback_(error, ptr);
         }
       }
 
@@ -299,8 +370,17 @@ namespace via
         {
           if (!error)
           {
-            pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
-              { handshake_callback(ptr, error); }, false);
+            if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+            {
+              pointer->socket_.async_handshake(ASIO::ssl::stream_base::client,
+                [ptr](ASIO_ERROR_CODE const& error)
+                { handshake_callback(ptr, error); });
+            }
+            else
+            {
+              ASIO_ERROR_CODE ec; // Default is success
+              pointer->handshake_handler(ec);
+            }
           }
           else
           {
@@ -314,14 +394,14 @@ namespace via
       /// If no_delay_ is set it disables the Nagle algorithm on the socket.
       void no_delay()
       {
-          SocketAdaptor::socket().set_option
+          socket().set_option
               (ASIO::ip::tcp::no_delay(no_delay_));
       }
 
       /// Set the socket's tcp keep alive status.
       void keep_alive()
       {
-          SocketAdaptor::socket().set_option
+          socket().set_option
               (ASIO::socket_base::keep_alive(keep_alive_));
       }
 
@@ -336,19 +416,19 @@ namespace via
 #if defined _WIN32 || defined WIN32 || defined _WIN64 || defined WIN64 \
   || defined  WINNT || defined OS_WIN64
         // use windows-specific time
-        SocketAdaptor::socket().set_option(ASIO::detail::
+        socket().set_option(ASIO::detail::
                    socket_option::integer<SOL_SOCKET, SO_RCVTIMEO>(timeout_));
-        SocketAdaptor::socket().set_option(ASIO::detail::
+        socket().set_option(ASIO::detail::
                    socket_option::integer<SOL_SOCKET, SO_SNDTIMEO>(timeout_));
 #else
         // assume everything else is posix
         struct timeval tv;
         tv.tv_sec  = timeout_ / 1000;
         tv.tv_usec = 1000 * (timeout_ % 1000);
-        setsockopt(SocketAdaptor::socket().native_handle(),
+        setsockopt(socket().native_handle(),
                    SOL_SOCKET, SO_RCVTIMEO,
                    reinterpret_cast<const char*>(&tv), sizeof(tv));
-        setsockopt(SocketAdaptor::socket().native_handle(),
+        setsockopt(socket().native_handle(),
                    SOL_SOCKET, SO_SNDTIMEO,
                    reinterpret_cast<const char*>(&tv), sizeof(tv));
 #endif
@@ -357,14 +437,14 @@ namespace via
       /// Set the socket's receive buffer size.
       void resize_receive_buffer()
       {
-        SocketAdaptor::socket().set_option
+        socket().set_option
             (ASIO::socket_base::receive_buffer_size(receive_buffer_size_));
       }
 
       /// Set the socket's send buffer size.
       void resize_send_buffer()
       {
-        SocketAdaptor::socket().set_option
+        socket().set_option
             (ASIO::socket_base::send_buffer_size(send_buffer_size_));
       }
 
@@ -399,7 +479,7 @@ namespace via
       /// @param receive_callback the receive callback function, default nullptr.
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
-      connection(socket_type socket,
+      connection(S socket,
 #ifdef HTTP_THREAD_SAFE
                  ASIO::strand<ASIO::io_context::executor_type> strand,
 #endif
@@ -407,10 +487,7 @@ namespace via
                  receive_callback_type receive_callback = nullptr,
                  event_callback_type event_callback = nullptr,
                  error_callback_type error_callback = nullptr) :
-        SocketAdaptor(std::move(socket)),
-#ifdef HTTP_THREAD_SAFE
-        strand_(std::move(strand)),
-#endif
+        socket_(std::move(socket)),
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         receive_callback_(receive_callback),
         event_callback_(event_callback),
@@ -447,6 +524,27 @@ namespace via
       void set_rx_buffer_size(size_t rx_buffer_size)
       { rx_buffer_->resize(rx_buffer_size, 0); }
 
+      /// @fn socket
+      /// Accessor for the underlying socket.
+      /// @return a reference to the socket.
+      auto& socket()
+      {
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+          return socket_.lowest_layer();
+        else
+          return socket_;
+      }
+
+      /// @fn connect_socket
+      /// Attempts to connect to the host endpoints.
+      /// @param connect_handler the connect callback function.
+      /// @param endpoints the host endpoints.
+      void connect_socket(ConnectHandler connect_handler,
+                          ASIO::ip::tcp::resolver::results_type const& endpoints)
+      {
+        ASIO::async_connect(socket(), endpoints, connect_handler); 
+      }
+
       /// @fn connect
       /// Connect the underlying socket adaptor to the given host name and
       /// port.
@@ -460,9 +558,18 @@ namespace via
                     const char* host_name, const char* port_name)
       {
         weak_pointer ptr(weak_from_this());
-        return SocketAdaptor::connect(io_context, host_name, port_name,
-          [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
-            { connect_callback(ptr, error, endpoint); });
+
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+          socket_.set_verify_callback(ASIO::ssl::host_name_verification(host_name));
+
+        auto endpoints{resolve_host(io_context, host_name, port_name)};
+        if (endpoints.empty())
+          return false;
+
+        connect_socket([ptr]
+            (ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
+        { connect_callback(ptr, error, endpoint); }, endpoints);
+        return true;
       }
 
       /// @fn start
@@ -485,8 +592,17 @@ namespace via
         send_buffer_size_    = send_buffer_size;
 
         weak_pointer weak_ptr(weak_from_this());
-        SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
-          { handshake_callback(weak_ptr, error); });
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        {
+          socket_.async_handshake(ASIO::ssl::stream_base::server,
+                [weak_ptr](ASIO_ERROR_CODE const& error)
+               { handshake_callback(weak_ptr, error); });
+        }
+        else
+        {
+          ASIO_ERROR_CODE ec; // Default is success
+          handshake_handler(ec);
+        }
       }
 
       /// @fn disconnect
@@ -506,20 +622,40 @@ namespace via
       {
         // local copies for the lambda
         weak_pointer weak_ptr(weak_from_this());
-        std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
 
-        // Call shutdown with the callback
-        shutdown_sent_ = true;
-        SocketAdaptor::shutdown([weak_ptr, rx_buffer]
-                        (ASIO_ERROR_CODE const& error, int bytes)
-                        { write_callback(weak_ptr, error, bytes, rx_buffer); });
+        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        {
+          // Cancel any pending operations
+          ASIO_ERROR_CODE ec;
+          socket().cancel(ec);
+          connected_ = false;
+          
+          // Call shutdown with the callback
+          std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
+          shutdown_sent_ = true;
+          socket_.async_shutdown([weak_ptr, rx_buffer]
+                          (ASIO_ERROR_CODE const& error)
+                          { write_callback(weak_ptr, error, 0, rx_buffer); });
+        }
+        else
+        {
+          ASIO_ERROR_CODE ec;
+          socket_.shutdown(ASIO::ip::tcp::socket::shutdown_both, ec);
+
+          ec = ASIO_ERROR_CODE(ASIO::error::eof);
+          write_callback(weak_ptr, ec, 0, rx_buffer_);
+        }
       }
 
       /// @fn close
       /// Close the underlying socket adaptor.
       /// Cancels all of the socket's callback functions.
       void close()
-      { SocketAdaptor::close(); }
+      {
+        ASIO_ERROR_CODE ignoredEc;
+        if (socket().is_open())
+          socket().close (ignoredEc);
+      }
 
       /// @fn enable_reception
       /// This function prepares the receive buffer and calls the
@@ -589,7 +725,7 @@ namespace via
         if (connected_)
         {
           ASIO::socket_base::receive_buffer_size option;
-          SocketAdaptor::socket().get_option(option);
+          socket().get_option(option);
           return option.value();
         }
         else
@@ -613,7 +749,7 @@ namespace via
         if (connected_)
         {
           ASIO::socket_base::send_buffer_size option;
-          SocketAdaptor::socket().get_option(option);
+          socket().get_option(option);
           return option.value();
         }
         else
@@ -633,5 +769,3 @@ namespace via
 
   }
 }
-
-#endif
