@@ -145,7 +145,7 @@ namespace via
               (std::move(next_socket_),
 #endif
 #ifdef HTTP_THREAD_SAFE
-              next_strand_,
+              std::move(next_strand_),
 #endif
               rx_buffer_size_,
               [this](const char *data, size_t size, std::weak_ptr<connection_type> ptr)
