@@ -73,7 +73,7 @@ namespace via
 
 #ifdef HTTP_THREAD_SAFE
       /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::io_context::strand strand_;
+      ASIO::strand<ASIO::io_context::executor_type> strand_;
 #endif
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
@@ -107,18 +107,10 @@ namespace via
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-#ifdef HTTP_THREAD_SAFE
-          SocketAdaptor::write(buffers,
-            ASIO::bind_executor(strand_, [weak_ptr, rx_buffer]
-                          (ASIO_ERROR_CODE const& error,
-                           size_t bytes_transferred)
-          { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
-#else
           SocketAdaptor::write(buffers,
             [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                   size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
-#endif
         }
 
         return connected_;
@@ -131,18 +123,10 @@ namespace via
         // local copies for lambdas
         weak_pointer weak_ptr(weak_from_this());
         std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-#ifdef HTTP_THREAD_SAFE
-        SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
-            ASIO::bind_executor(strand_, [weak_ptr, rx_buffer]
-                         (ASIO_ERROR_CODE const& error,
-                          size_t bytes_transferred)
-         { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); }));
-#else
         SocketAdaptor::read(ASIO::mutable_buffer(rx_buffer_->data(), rx_buffer_->size()),
           [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                 size_t bytes_transferred)
          { read_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
-#endif
       }
 
       /// This function determines whether the error is a socket disconnect.
@@ -315,14 +299,8 @@ namespace via
         {
           if (!error)
           {
-#ifdef HTTP_THREAD_SAFE
-            pointer->handshake(
-              ASIO::bind_executor(pointer->strand_, [ptr](ASIO_ERROR_CODE const& error)
-              { handshake_callback(ptr, error); }), false);
-#else
             pointer->handshake([ptr](ASIO_ERROR_CODE const& error)
               { handshake_callback(ptr, error); }, false);
-#endif
           }
           else
           {
@@ -416,14 +394,14 @@ namespace via
 
       /// connection constructor
       /// @param socket the asio socket associated with this connection
-      /// @param io_context the asio io_context used by the strand adaptor.
+      /// @param strand the asio strand used by the socket.
       /// @param rx_buffer_size the size of the receive_buffer.
       /// @param receive_callback the receive callback function, default nullptr.
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
       connection(socket_type socket,
 #ifdef HTTP_THREAD_SAFE
-                 ASIO::io_context& io_context,
+                 ASIO::strand<ASIO::io_context::executor_type> strand,
 #endif
                  size_t rx_buffer_size,
                  receive_callback_type receive_callback = nullptr,
@@ -431,7 +409,7 @@ namespace via
                  error_callback_type error_callback = nullptr) :
         SocketAdaptor(std::move(socket)),
 #ifdef HTTP_THREAD_SAFE
-        strand_(io_context),
+        strand_(std::move(strand)),
 #endif
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         receive_callback_(receive_callback),
@@ -482,16 +460,9 @@ namespace via
                     const char* host_name, const char* port_name)
       {
         weak_pointer ptr(weak_from_this());
-#ifdef HTTP_THREAD_SAFE
-        return SocketAdaptor::connect(io_context, host_name, port_name, 
-        ASIO::bind_executor(strand_,
-          [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
-            { connect_callback(ptr, error, endpoint); }));
-#else
         return SocketAdaptor::connect(io_context, host_name, port_name,
           [ptr](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::endpoint const& endpoint)
             { connect_callback(ptr, error, endpoint); });
-#endif
       }
 
       /// @fn start
@@ -514,15 +485,8 @@ namespace via
         send_buffer_size_    = send_buffer_size;
 
         weak_pointer weak_ptr(weak_from_this());
-
-#ifdef HTTP_THREAD_SAFE
-        SocketAdaptor::start(
-                ASIO::bind_executor(strand_, [weak_ptr](ASIO_ERROR_CODE const& error)
-          { handshake_callback(weak_ptr, error); }));
-#else
         SocketAdaptor::start([weak_ptr](ASIO_ERROR_CODE const& error)
           { handshake_callback(weak_ptr, error); });
-#endif
       }
 
       /// @fn disconnect
