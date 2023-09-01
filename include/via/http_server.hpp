@@ -66,7 +66,6 @@ namespace via
   /// @tparam S the type of socket, use: tcp_socket or ssl_socket
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
-  /// @tparam IPV4_ONLY whether an IPV4 only server is required, default false.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
   /// default 8190, min 1, max 4 billion.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
@@ -83,7 +82,6 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   template <typename S,
             typename Container                  = std::vector<char>,
-            bool           IPV4_ONLY            = false,
             size_t         MAX_URI_LENGTH       = 8190,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
@@ -477,7 +475,8 @@ namespace via
     /// default 80 for HTTP or 443 for HTTPS.
     /// @return the boost error code, false if no error occured
     ASIO_ERROR_CODE accept_connections
-                      (unsigned short port = connection_type::DEFAULT_HTTP_PORT)
+                      (unsigned short port = connection_type::DEFAULT_HTTP_PORT,
+                      bool ipv4_only = false)
     {
       // If a request handler's not been registered, use the request_router
       if (!http_request_handler_)
@@ -486,7 +485,7 @@ namespace via
                    http_request const& request, Container const& body)
         { route_request(weak_ptr, request, body); };
 
-      return server_->accept_connections(port, IPV4_ONLY);
+      return server_->accept_connections(port, ipv4_only);
     }
 
     /// Accessor for the request_router_
