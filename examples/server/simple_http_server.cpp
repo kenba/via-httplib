@@ -9,8 +9,8 @@
 #include "via/http_server.hpp"
 #include <iostream>
 
-/// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_socket, std::string> http_server_type;
+/// Define an HTTP server
+typedef via::http_server<via::comms::tcp_socket> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::http_request http_request;
 
@@ -22,11 +22,11 @@ namespace
   /// Responds with 200 OK with the client address in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
                        http_request const& request,
-                       std::string const& body)
+                       std::vector<char> const& body)
   {
     std::cout << "Rx request: " << request.to_string();
     std::cout << request.headers().to_string();
-    std::cout << "Rx body: "    << body << std::endl;
+    std::cout << "Rx body: "    << std::string_view(body.data(), body.size()) << std::endl;
 
     http_connection::shared_pointer connection(weak_ptr.lock());
     if (connection)
@@ -39,7 +39,7 @@ namespace
       // respond with the client's address
       std::string response_body("Hello, ");
       response_body += connection->remote_address();
-      connection->send(std::move(response), std::move(response_body));
+      connection->send(std::move(response), std::vector<char>(response_body.cbegin(), response_body.cend()));
     }
     else
       std::cerr << "Failed to lock http_connection::weak_pointer" << std::endl;

@@ -11,15 +11,13 @@
 /// a single io_context and a thread pool calling io_context::run().
 //////////////////////////////////////////////////////////////////////////////
 #define HTTP_THREAD_SAFE
-#include "via/comms/ssl/ssl_tcp_adaptor.hpp"
 #include "via/http_server.hpp"
 #include "../examples/certificates/server/server_crypto.hpp"
 #include <thread>
 #include <iostream>
 
-/// Define an HTTPS server using std::string to store message bodies
-typedef via::http_server<via::comms::ssl::ssl_tcp_adaptor, std::string>
-                                                            https_server_type;
+/// Define an HTTPS server using an asio strand to protect the handlers
+typedef via::http_server<via::comms::ssl_socket> https_server_type;
 typedef https_server_type::http_connection_type http_connection;
 typedef https_server_type::http_request http_request;
 typedef https_server_type::chunk_type http_chunk_type;
@@ -95,11 +93,11 @@ namespace
   /// If not, it responds with a 200 OK response with some HTML in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
                        http_request const& request,
-                       std::string const& body)
+                       std::vector<char> const& body)
   {
     std::cout << "Rx request: " << request.to_string();
     std::cout << request.headers().to_string();
-    std::cout << "Rx body: "    << body << std::endl;
+    std::cout << "Rx body: "    << std::string_view(body.data(), body.size()) << std::endl;
 
     if (!request.is_chunked())
       respond_to_request(weak_ptr);
@@ -109,7 +107,7 @@ namespace
   /// Outputs the chunk header and body to std::cout.
   void chunk_handler(http_connection::weak_pointer weak_ptr,
                      http_chunk_type const& chunk,
-                     std::string const& data)
+                     std::vector<char> const& data)
   {
     // Only send a response to the last chunk.
     if (chunk.is_last())
@@ -120,7 +118,7 @@ namespace
     }
     else
       std::cout << "Rx chunk, size: " << chunk.size()
-                << " data: " << data << std::endl;
+                << " data: " << std::string_view(data.data(), data.size()) << std::endl;
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -129,7 +127,7 @@ namespace
   /// response.
   void expect_continue_handler(http_connection::weak_pointer weak_ptr,
                                http_request const& request,
-                               std::string const& /* body */)
+                               std::vector<char> const& /* body */)
   {
     static const auto MAX_LENGTH(1024);
 
@@ -152,7 +150,7 @@ namespace
   /// A handler for the signal sent when an invalid HTTP mesasge is received.
   void invalid_request_handler(http_connection::weak_pointer weak_ptr,
                                http_request const&, // request,
-                               std::string const& /* body */)
+                               std::vector<char> const& /* body */)
   {
     std::cout << "Invalid request from: ";
     http_connection::shared_pointer connection(weak_ptr.lock());
@@ -192,7 +190,7 @@ namespace
 int main(int argc, char *argv[])
 {
   std::string app_name(argv[0]);
-  unsigned short port_number(via::comms::ssl::ssl_tcp_adaptor::DEFAULT_HTTP_PORT);
+  unsigned short port_number(https_server_type::connection_type::DEFAULT_HTTP_PORT);
 
   // Get a port number from the user (the default is 443)
   if (argc > 2)

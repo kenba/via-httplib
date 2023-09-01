@@ -13,8 +13,8 @@
 #include <sstream>
 #include <iostream>
 
-/// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::tcp_socket, std::string> http_client_type;
+/// Define an HTTP client
+typedef via::http_client<via::comms::tcp_socket> http_client_type;
 typedef http_client_type::http_response http_response;
 typedef http_client_type::chunk_type http_chunk_type;
 
@@ -61,7 +61,7 @@ namespace
 
       std::cout << "send_chunk: " << chunk_to_send << std::endl;
 
-      http_client->send_chunk(std::move(chunk_to_send));
+      http_client->send_chunk(std::vector<char>(chunk_to_send.cbegin(), chunk_to_send.cend()));
     }
     else if (count >= 0)
     {
@@ -82,11 +82,11 @@ namespace
   /// If so it sends chunks, otherwise it disconnects the connection unless
   /// the response is chunked.
   void response_handler(http_response const& response,
-                        std::string const& body)
+                        std::vector<char> const& body)
   {
     std::cout << "Rx response: " << response.to_string();
     std::cout << response.headers().to_string();
-    std::cout << "Rx body: "    << body << std::endl;
+    std::cout << "Rx body: "     << std::string_view(body.data(), body.size()) << std::endl;
 
     if (response.is_continue())
     {
@@ -103,7 +103,7 @@ namespace
 
   /// The handler for incoming HTTP chunks.
   /// Prints the chunk header and data to std::cout.
-  void chunk_handler(http_chunk_type const& chunk, std::string const& data)
+  void chunk_handler(http_chunk_type const& chunk, std::vector<char> const& data)
   {
     if (chunk.is_last())
     {
@@ -113,7 +113,7 @@ namespace
     }
     else
       std::cout << "Rx chunk, size: " << chunk.size()
-                << " data: " << data << std::endl;
+                << " data: " << std::string_view(data.data(), data.size()) << std::endl;
   }
 
   /// The handler for the HTTP socket disconnecting.

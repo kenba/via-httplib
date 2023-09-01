@@ -12,9 +12,8 @@
 #include "via/http_client.hpp"
 #include <iostream>
 
-/// Define an HTTP client using std::string to store message bodies
-typedef via::http_client<via::comms::ssl_socket, std::string>
-                                                            https_client_type;
+/// Define an HTTPS client
+typedef via::http_client<via::comms::ssl_socket> https_client_type;
 typedef https_client_type::http_response http_response;
 typedef https_client_type::chunk_type http_chunk_type;
 
@@ -43,11 +42,11 @@ namespace
   /// The handler for incoming HTTP requests.
   /// Prints the response.
   void response_handler(http_response const& response,
-                        std::string const& body)
+                        std::vector<char> const& body)
   {
     std::cout << "Rx response: " << response.to_string()
               << response.headers().to_string();
-    std::cout << "Rx body: "     << body << std::endl;
+    std::cout << "Rx body: "     << std::string_view(body.data(), body.size()) << std::endl;
 
     if (!response.is_chunked())
       http_client->disconnect();
@@ -55,7 +54,7 @@ namespace
 
   /// The handler for incoming HTTP chunks.
   /// Prints the chunk header and data to std::cout.
-  void chunk_handler(http_chunk_type const& chunk, std::string const& data)
+  void chunk_handler(http_chunk_type const& chunk, std::vector<char> const& data)
   {
     if (chunk.is_last())
     {
@@ -65,16 +64,16 @@ namespace
     }
     else
       std::cout << "Rx chunk, size: " << chunk.size()
-                << " data: " << data << std::endl;
+                << " data: " << std::string_view(data.data(), data.size()) << std::endl;
   }
 
   /// The handler for invalid HTTP requests.
   /// Outputs the buffer.
   void invalid_response_handler(http_response const& response,
-                                std::string const& body)
+                                std::vector<char> const& body)
   {
     std::cout << "Invalid response: "
-              << http_client->rx_buffer() << std::endl;
+              << std::string_view(http_client->rx_buffer().data(), http_client->rx_buffer().size()) << std::endl;
     http_client->disconnect();
   }
 

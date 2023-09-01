@@ -13,8 +13,8 @@
 #include <sstream>
 #include <iostream>
 
-/// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_socket, std::string> http_server_type;
+/// Define an HTTP server
+typedef via::http_server<via::comms::tcp_socket> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::http_request http_request;
 typedef http_server_type::chunk_type http_chunk_type;
@@ -55,7 +55,7 @@ namespace
 
       std::cout << "send_chunk: " << chunk_to_send << std::endl;
 
-      connection->send_chunk(std::move(chunk_to_send));
+      connection->send_chunk(std::vector<char>(chunk_to_send.cbegin(), chunk_to_send.cend()));
     }
     else if (count >= 0)
     {
@@ -132,11 +132,11 @@ namespace
   /// If not, it responds with a 200 OK response with some HTML in the body.
   void request_handler(http_connection::weak_pointer weak_ptr,
                        http_request const& request,
-                       std::string const& body)
+                       std::vector<char> const& body)
   {
     std::cout << "Rx request: " << request.to_string();
     std::cout << request.headers().to_string();
-    std::cout << "Rx body: "    << body << std::endl;
+    std::cout << "Rx body: "    << std::string_view(body.data(), body.size()) << std::endl;
 
     if (!request.is_chunked())
       respond_to_request(weak_ptr);
@@ -149,7 +149,7 @@ namespace
   /// @param chunk the http chunk
   void chunk_handler(http_connection::weak_pointer weak_ptr,
                      http_chunk_type const& chunk,
-                     std::string const& data)
+                     std::vector<char> const& data)
   {
     // Only send a response to the last chunk.
     if (chunk.is_last())
@@ -160,7 +160,7 @@ namespace
     }
     else
       std::cout << "Rx chunk, size: " << chunk.size()
-                << " data: " << data << std::endl;
+                << " data: " << std::string_view(data.data(), data.size()) << std::endl;
   }
 
   /// A handler for HTTP requests containing an "Expect: 100-continue" header.
@@ -169,7 +169,7 @@ namespace
   /// response.
   void expect_continue_handler(http_connection::weak_pointer weak_ptr,
                                http_request const& request,
-                               std::string const& /* body */)
+                               std::vector<char> const& /* body */)
   {
     static const auto MAX_LENGTH(1024);
 
