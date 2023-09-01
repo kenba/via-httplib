@@ -6,10 +6,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
-/// @file simple_https_client.cpp
-/// @brief An example HTTPS client.
+/// @file simple_mutual_authentication_https_client.cpp
+/// @brief An example mutual authentication HTTPS client.
 //////////////////////////////////////////////////////////////////////////////
-#define HTTP_SSL
 #include "via/http_client.hpp"
 #include <iostream>
 
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
 {
   std::string app_name(argv[0]);
 
-  // Get a hostname and uri from the user (assume default http port)
+  // Get a hostname and uri from the user (assume default https port)
   if (argc != 3)
   {
     std::cout << "Usage: " << app_name << " [host] [uri]\n"

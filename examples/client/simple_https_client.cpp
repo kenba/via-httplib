@@ -9,7 +9,6 @@
 /// @file simple_https_client.cpp
 /// @brief An example HTTPS client.
 //////////////////////////////////////////////////////////////////////////////
-#define HTTP_SSL
 #include "via/http_client.hpp"
 #include <iostream>
 
