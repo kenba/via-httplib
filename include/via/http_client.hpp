@@ -25,7 +25,7 @@ namespace via
   /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
   /// @see comms::tcp_adaptor
   /// @see comms::ssl::ssl_tcp_adaptor
-  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
+  /// @tparam S the type of socket, use: tcp_socket or ssl_socket
   /// @tparam Container the container to use for the tx buffer:
   /// std::vector<char> or std::string, default std::vector<char>.
   /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:

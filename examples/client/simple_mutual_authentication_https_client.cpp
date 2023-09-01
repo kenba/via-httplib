@@ -13,7 +13,7 @@
 #include <iostream>
 
 /// Define an HTTPS client using std::string to store message bodies
-typedef via::http_client<via::comms::ssl::ssl_socket, std::string>
+typedef via::http_client<via::comms::ssl_socket, std::string>
                                                             https_client_type;
 typedef https_client_type::http_response http_response;
 typedef https_client_type::chunk_type http_chunk_type;

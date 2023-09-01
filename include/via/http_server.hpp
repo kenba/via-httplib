@@ -64,7 +64,7 @@ namespace via
   /// The class template can be configured to use either tcp or ssl sockets
   /// depending upon which class is provided as the socket type:
   /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
-  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
+  /// @tparam S the type of socket, use: tcp_socket or ssl_socket
   /// @tparam Container the container to use for the rx & tx buffers:
   /// std::vector<char> (the default) or std::string.
   /// @tparam IPV4_ONLY whether an IPV4 only server is required, default false.

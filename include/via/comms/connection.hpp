@@ -30,11 +30,8 @@ namespace via
     /// @brief A TCP socket. 
     typedef ASIO::ip::tcp::socket tcp_socket;
 
-    namespace ssl
-    {
-      /// @brief An SSL socket. 
-      typedef ASIO::ssl::stream<ASIO::ip::tcp::socket> ssl_socket;
-    }
+    /// @brief An SSL socket. 
+    typedef ASIO::ssl::stream<ASIO::ip::tcp::socket> ssl_socket;
 
     /// @fn resolve_host
     /// resolves the host name and port.
@@ -56,10 +53,10 @@ namespace via
     /// A template class that buffers tcp or ssl comms sockets.
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the S: tcp_socket or
-    /// ssl::ssl_socket respectively.
+    /// ssl_socket respectively.
     /// @see tcp_socket
-    /// @see ssl::ssl_socket
-    /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
+    /// @see ssl_socket
+    /// @tparam S the type of socket, use: tcp_socket or ssl_socket
     //////////////////////////////////////////////////////////////////////////
     template <typename S>
     class connection : public std::enable_shared_from_this<connection<S>>
@@ -95,7 +92,7 @@ namespace via
       /// @return the default port number
       static constexpr unsigned short default_port() noexcept
       {
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
           return 443;
         else
           return 80;
@@ -113,7 +110,7 @@ namespace via
       /// @return true if the socket is disconnected, false otherwise.
       static constexpr bool is_ssl_disconnect(ASIO_ERROR_CODE const& error) noexcept
       {
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
           return ASIO::error::get_ssl_category() == error.category();
         else
           return false;
@@ -121,7 +118,7 @@ namespace via
 
       static constexpr bool is_ssl_shutdown(ASIO_ERROR_CODE const& error) noexcept
       {
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
         {
           return
 // SSL_R_SHORT_READ is no longer defined in openssl 1.1.x
@@ -376,7 +373,7 @@ namespace via
         {
           if (!error)
           {
-            if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+            if constexpr (std::is_same<S, ssl_socket>::value)
             {
               pointer->socket_.async_handshake(ASIO::ssl::stream_base::client,
                 [ptr](ASIO_ERROR_CODE const& error)
@@ -538,7 +535,7 @@ namespace via
       /// @return a reference to the socket.
       auto& socket()
       {
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
           return socket_.lowest_layer();
         else
           return socket_;
@@ -568,7 +565,7 @@ namespace via
       {
         weak_pointer ptr(weak_from_this());
 
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
           socket_.set_verify_callback(ASIO::ssl::host_name_verification(host_name));
 
         auto endpoints{resolve_host(io_context, host_name, port_name)};
@@ -601,7 +598,7 @@ namespace via
         send_buffer_size_    = send_buffer_size;
 
         weak_pointer weak_ptr(weak_from_this());
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
         {
           socket_.async_handshake(ASIO::ssl::stream_base::server,
                 [weak_ptr](ASIO_ERROR_CODE const& error)
@@ -632,7 +629,7 @@ namespace via
         // local copies for the lambda
         weak_pointer weak_ptr(weak_from_this());
 
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
         {
           // Cancel any pending operations
           ASIO_ERROR_CODE ec;

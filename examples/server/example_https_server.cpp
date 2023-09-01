@@ -15,7 +15,7 @@
 #include <iostream>
 
 /// Define an HTTPS server using std::string to store message bodies
-typedef via::http_server<via::comms::ssl::ssl_socket, std::string>
+typedef via::http_server<via::comms::ssl_socket, std::string>
                                                             https_server_type;
 typedef https_server_type::http_connection_type http_connection;
 typedef https_server_type::http_request http_request;

@@ -29,9 +29,9 @@ namespace via
     /// connections.
     /// The class can be configured to use either tcp or ssl sockets depending
     /// upon which class is provided as the S template parameter: tcp_socket or
-    /// ssl::ssl_socket respectively.
+    /// ssl_socket respectively.
     /// @see connection
-    /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
+    /// @tparam S the type of socket, use: tcp_socket or ssl_socket
     //////////////////////////////////////////////////////////////////////////
     template <typename S>
     class server
@@ -108,7 +108,7 @@ namespace via
 
       S create_socket()
       {
-        if constexpr (std::is_same<S, ssl::ssl_socket>::value)
+        if constexpr (std::is_same<S, ssl_socket>::value)
           return S(std::move(next_tcp_socket_), ssl_context_);
         else
           return std::move(next_tcp_socket_);

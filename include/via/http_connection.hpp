@@ -25,9 +25,9 @@ namespace via
   /// An HTTP connection.
   /// The class can be configured to use either tcp or ssl sockets depending
   /// upon which class is provided as the S: tcp_socket or
-  /// ssl::ssl_socket respectively.
+  /// ssl_socket respectively.
   /// @see comms::connection
-  /// @tparam S the type of socket, use: tcp_socket or ssl::ssl_socket
+  /// @tparam S the type of socket, use: tcp_socket or ssl_socket
   /// @tparam Container the type of container in which the request is held.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method.
