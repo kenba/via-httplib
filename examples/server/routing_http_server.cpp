@@ -6,12 +6,15 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //////////////////////////////////////////////////////////////////////////////
+/// @file routing_http_server.cpp
+/// @brief An example HTTP server using the request_router.
+//////////////////////////////////////////////////////////////////////////////
 #include "via/http_server.hpp"
 #include "via/http/request_router.hpp"
 #include <iostream>
 
-/// Define an HTTP server using std::string to store message bodies
-typedef via::http_server<via::comms::tcp_socket, std::string> http_server_type;
+/// Define an HTTP server
+typedef via::http_server<via::comms::tcp_socket> http_server_type;
 typedef http_server_type::http_connection_type http_connection;
 typedef http_server_type::http_request http_request;
 
@@ -39,23 +42,25 @@ namespace
 
   tx_response get_hello_handler(http_request const&, //request,
                                 Parameters const&, //parameters,
-                                std::string const&, // data,
-                                std::string &response_body)
+                                std::vector<char> const&, // data,
+                                std::vector<char> &response_body)
   {
-    response_body += "Hello, whoever you are?!";
+    static const std::string text{"Hello, whoever you are?!"};
+    response_body = std::vector<char>(text.cbegin(), text.cend());
     return tx_response(response_status::code::OK);
   }
 
   tx_response get_hello_name_handler(http_request const&, //request,
                                      Parameters const& parameters,
-                                     std::string const&, // data,
-                                     std::string &response_body)
+                                     std::vector<char> const&, // data,
+                                     std::vector<char> &response_body)
   {
-    response_body += "Hello, ";
+    std::string text{"Hello, "};
     auto iter(parameters.find("name"));
     if (iter != parameters.end())
-      response_body += iter->second;
+      text += iter->second;
 
+    response_body = std::vector<char>(text.cbegin(), text.cend());
     return tx_response(response_status::code::OK);
   }
 }
