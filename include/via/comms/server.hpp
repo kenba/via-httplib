@@ -74,10 +74,6 @@ namespace via
       ASIO::ssl::context& ssl_context_;
 
 #ifdef HTTP_THREAD_SAFE
-      ASIO::strand<ASIO::io_context::executor_type> strand_;
-#endif
-
-#ifdef HTTP_THREAD_SAFE
       /// Strand to ensure the connection's handlers are not called concurrently.
       ASIO::strand<ASIO::io_context::executor_type> next_strand_;
 #endif
@@ -133,7 +129,7 @@ namespace via
             (ASIO::error::operation_aborted != error))
         {
           if (!error && accept_connection_(next_tcp_socket_))
-          {          
+          {       
             auto next_connection = std::make_shared<connection_type>
              (create_socket(),
 #ifdef HTTP_THREAD_SAFE
@@ -250,9 +246,6 @@ namespace via
                       ASIO::ssl::context& ssl_context = ASIO::ssl::context(ASIO::ssl::context::tlsv13_server)) :
         io_context_(io_context),
         ssl_context_(ssl_context),
-#ifdef HTTP_THREAD_SAFE
-        strand_(ASIO::make_strand(io_context)),
-#endif
 #ifdef HTTP_THREAD_SAFE
         next_strand_(ASIO::make_strand(io_context)),
         next_tcp_socket_(next_strand_),

@@ -140,6 +140,12 @@ namespace via
     private:
 
       S socket_;
+
+#ifdef HTTP_THREAD_SAFE
+      /// Strand to ensure the connection's handlers are not called concurrently.
+      ASIO::strand<ASIO::io_context::executor_type> strand_;
+#endif
+
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
@@ -479,15 +485,18 @@ namespace via
       /// @param receive_callback the receive callback function, default nullptr.
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
-      connection(S socket,
+      connection(S&& socket,
 #ifdef HTTP_THREAD_SAFE
-                 ASIO::strand<ASIO::io_context::executor_type> strand,
+                 ASIO::strand<ASIO::io_context::executor_type>&& strand,
 #endif
                  size_t rx_buffer_size,
                  receive_callback_type receive_callback = nullptr,
                  event_callback_type event_callback = nullptr,
                  error_callback_type error_callback = nullptr) :
         socket_(std::move(socket)),
+#ifdef HTTP_THREAD_SAFE
+        strand_(std::move(strand)),
+#endif
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         receive_callback_(receive_callback),
         event_callback_(event_callback),
@@ -765,7 +774,7 @@ namespace via
         if (connected_)
           resize_send_buffer();
       }
-    };
+    }; // class connection
 
   }
 }
