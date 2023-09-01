@@ -328,48 +328,23 @@ namespace via
       std::cerr << error <<  std::endl;
     }
 
-    /// TCP Constructor.
+    /// Constructor.
+    /// @param socket the socket to use.
     /// @param io_context the asio io_context to use.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer.
     /// @param max_body_size the maximum size of a response body.
     /// @param max_chunk_size the maximum size of a response chunk.
-    http_client(ASIO::io_context& io_context,
+    http_client(S&& socket,
+                ASIO::io_context& io_context,
                 ResponseHandler response_handler,
                 ChunkHandler    chunk_handler,
                 size_t          rx_buffer_size,
                 size_t          max_body_size,
                 size_t          max_chunk_size) :
       io_context_(io_context),
-      connection_(std::make_shared<connection_type>(S(io_context), rx_buffer_size)),
-      timer_(io_context),
-      rx_(max_body_size, max_chunk_size),
-      http_response_handler_(response_handler),
-      http_chunk_handler_(chunk_handler)
-    {
-      // Set no delay, i.e. disable the Nagle algorithm
-      // An http_client will want to send messages immediately
-      connection_->set_no_delay(true);
-    }
-
-    /// SSL Constructor.
-    /// @param io_context the asio io_context to use.
-    /// @param ssl_context the asio ssl::context for the socket adaptor.
-    /// @param response_handler the handler for received HTTP responses.
-    /// @param chunk_handler the handler for received HTTP chunks.
-    /// @param rx_buffer_size the size of the receive_buffer.
-    /// @param max_body_size the maximum size of a response body.
-    /// @param max_chunk_size the maximum size of a response chunk.
-    http_client(ASIO::io_context& io_context,
-                ASIO::ssl::context& ssl_context,
-                ResponseHandler response_handler,
-                ChunkHandler    chunk_handler,
-                size_t          rx_buffer_size,
-                size_t          max_body_size,
-                size_t          max_chunk_size) :
-      io_context_(io_context),
-      connection_(std::make_shared<connection_type>(S(io_context, ssl_context), rx_buffer_size)),
+      connection_(std::make_shared<connection_type>(std::move(socket), rx_buffer_size)),
       timer_(io_context),
       rx_(max_body_size, max_chunk_size),
       http_response_handler_(response_handler),
@@ -383,6 +358,45 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
 
   public:
+
+    /// @fn create
+    /// The factory function to create connections.
+    /// @param socket the socket to use.
+    /// @param io_context the boost asio io_context used by the underlying
+    /// connection.
+    /// @param ssl_context the asio ssl::context for the socket adaptor.
+    /// @param response_handler the handler for received HTTP responses.
+    /// @param chunk_handler the handler for received HTTP chunks.
+    /// @param rx_buffer_size the size of the receive_buffer, default
+    /// connection_type::DEFAULT_RX_BUFFER_SIZE
+    /// @param max_body_size the maximum size of a response body: default LONG_MAX.
+    /// @param max_chunk_size the maximum size of a response chunk: default LONG_MAX.
+    static shared_pointer create(S&& socket,
+                                 ASIO::io_context& io_context,
+                                 ResponseHandler response_handler,
+                                 ChunkHandler    chunk_handler,
+               size_t rx_buffer_size = connection_type::DEFAULT_RX_BUFFER_SIZE,
+               size_t max_body_size  = LONG_MAX,
+               size_t max_chunk_size = LONG_MAX)
+    {
+      shared_pointer client_ptr(new http_client(std::move(socket), io_context, response_handler,
+                                            chunk_handler, rx_buffer_size,
+                                            max_body_size, max_chunk_size));
+
+      // configure client callbacks
+      weak_pointer ptr(client_ptr);
+      client_ptr->connection_->set_receive_callback([ptr]
+        (const char* data, size_t size, typename connection_type::weak_pointer weak_ptr)
+           { receive_callback(ptr, data, size, weak_ptr); });
+      client_ptr->connection_->set_error_callback([]
+        (const ASIO_ERROR_CODE &error,
+         typename connection_type::weak_pointer weak_ptr)
+           { error_handler(error, weak_ptr); });
+      client_ptr->connection_->set_event_callback([ptr]
+        (unsigned char event, typename connection_type::weak_pointer weak_ptr)
+           { event_callback(ptr, event, weak_ptr); });
+      return client_ptr;
+    }
 
     /// @fn create
     /// The factory function to create TCP connections.
@@ -402,21 +416,8 @@ namespace via
                size_t max_body_size  = LONG_MAX,
                size_t max_chunk_size = LONG_MAX)
     {
-      shared_pointer client_ptr(new http_client(io_context, response_handler,
-                                            chunk_handler, rx_buffer_size,
-                                            max_body_size, max_chunk_size));
-      weak_pointer ptr(client_ptr);
-      client_ptr->connection_->set_receive_callback([ptr]
-        (const char* data, size_t size, typename connection_type::weak_pointer weak_ptr)
-           { receive_callback(ptr, data, size, weak_ptr); });
-      client_ptr->connection_->set_error_callback([]
-        (const ASIO_ERROR_CODE &error,
-         typename connection_type::weak_pointer weak_ptr)
-           { error_handler(error, weak_ptr); });
-      client_ptr->connection_->set_event_callback([ptr]
-        (unsigned char event, typename connection_type::weak_pointer weak_ptr)
-           { event_callback(ptr, event, weak_ptr); });
-      return client_ptr;
+      return create(S(io_context), io_context, response_handler, chunk_handler,
+                    rx_buffer_size, max_body_size, max_chunk_size);
     }
 
     /// @fn create
@@ -438,21 +439,8 @@ namespace via
                size_t max_body_size  = LONG_MAX,
                size_t max_chunk_size = LONG_MAX)
     {
-      shared_pointer client_ptr(new http_client(io_context, ssl_context, response_handler,
-                                            chunk_handler, rx_buffer_size,
-                                            max_body_size, max_chunk_size));
-      weak_pointer ptr(client_ptr);
-      client_ptr->connection_->set_receive_callback([ptr]
-        (const char* data, size_t size, typename connection_type::weak_pointer weak_ptr)
-           { receive_callback(ptr, data, size, weak_ptr); });
-      client_ptr->connection_->set_error_callback([]
-        (const ASIO_ERROR_CODE &error,
-         typename connection_type::weak_pointer weak_ptr)
-           { error_handler(error, weak_ptr); });
-      client_ptr->connection_->set_event_callback([ptr]
-        (unsigned char event, typename connection_type::weak_pointer weak_ptr)
-           { event_callback(ptr, event, weak_ptr); });
-      return client_ptr;
+      return create(S(io_context, ssl_context), io_context, response_handler, chunk_handler,
+                    rx_buffer_size, max_body_size, max_chunk_size);
     }
 
     /// Destructor
