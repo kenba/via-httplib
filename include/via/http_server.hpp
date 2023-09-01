@@ -62,10 +62,8 @@ namespace via
   /// @class http_server
   /// The class template can be configured to use either tcp or ssl sockets
   /// depending upon which class is provided as the socket type:
-  /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
+  /// tcp_socket or ssl_socket respectively.
   /// @tparam S the type of socket, use: tcp_socket or ssl_socket
-  /// @tparam Container the container to use for the rx & tx buffers:
-  /// std::vector<char> (the default) or std::string.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri:
   /// default 8190, min 1, max 4 billion.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method:
@@ -81,7 +79,6 @@ namespace via
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename S,
-            typename Container                  = std::vector<char>,
             size_t         MAX_URI_LENGTH       = 8190,
             unsigned char  MAX_METHOD_LENGTH    = 8,
             unsigned short MAX_HEADER_NUMBER    = 100,
@@ -96,12 +93,14 @@ namespace via
     /// The comms server for the underlying connections, TCP or SSL.
     typedef comms::server<S> server_type;
 
+    /// The container to use for the rx & tx buffers.
+    typedef std::vector<char> Container;
+
     /// The server connection_filter_type.
     typedef typename server_type::connection_filter_type connection_filter_type;
 
     /// The http_connections managed by this server.
     typedef http_connection<S,
-                            Container,
                             MAX_URI_LENGTH,
                             MAX_METHOD_LENGTH,
                             MAX_HEADER_NUMBER,

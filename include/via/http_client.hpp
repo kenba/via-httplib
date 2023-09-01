@@ -21,13 +21,9 @@ namespace via
   ////////////////////////////////////////////////////////////////////////////
   /// @class http_client
   /// The class template can be configured to use either tcp or ssl sockets
-  /// depending upon which class is provided as the socket type:
-  /// tcp_adaptor or ssl::ssl_tcp_adaptor respectively.
-  /// @see comms::tcp_adaptor
-  /// @see comms::ssl::ssl_tcp_adaptor
+  /// depending upon which is provided as the socket type:
+  /// tcp_socket or ssl_socket respectively.
   /// @tparam S the type of socket, use: tcp_socket or ssl_socket
-  /// @tparam Container the container to use for the tx buffer:
-  /// std::vector<char> or std::string, default std::vector<char>.
   /// @tparam MAX_STATUS_NUMBER the maximum number of an HTTP response status:
   /// default 65534, max 65534.
   /// @tparam MAX_REASON_LENGTH the maximum length of a response reason string
@@ -43,7 +39,6 @@ namespace via
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF, default false.
   ////////////////////////////////////////////////////////////////////////////
   template <typename S,
-            typename Container                  = std::vector<char>,
             unsigned short MAX_STATUS_NUMBER    = 65534,
             unsigned short MAX_REASON_LENGTH    = 65534,
             unsigned short MAX_HEADER_NUMBER    = 65534,
@@ -53,7 +48,6 @@ namespace via
             bool           STRICT_CRLF          = false>
   class http_client : public std::enable_shared_from_this
                                        <http_client<S,
-                                        Container,
                                         MAX_STATUS_NUMBER,
                                         MAX_REASON_LENGTH,
                                         MAX_HEADER_NUMBER,
@@ -66,9 +60,11 @@ namespace via
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<S> connection_type;
 
+    /// The container to use for the rx & tx buffers.
+    typedef std::vector<char> Container;
+
     /// This type.
     typedef http_client<S,
-                        Container,
                         MAX_STATUS_NUMBER,
                         MAX_REASON_LENGTH,
                         MAX_HEADER_NUMBER,

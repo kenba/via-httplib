@@ -28,7 +28,6 @@ namespace via
   /// ssl_socket respectively.
   /// @see comms::connection
   /// @tparam S the type of socket, use: tcp_socket or ssl_socket
-  /// @tparam Container the type of container in which the request is held.
   /// @tparam MAX_URI_LENGTH the maximum length of an HTTP request uri.
   /// @tparam MAX_METHOD_LENGTH the maximum length of an HTTP request method.
   /// @tparam MAX_HEADER_NUMBER the maximum number of HTTP header field lines.
@@ -40,7 +39,6 @@ namespace via
   /// @tparam STRICT_CRLF enforce strict parsing of CRLF.
   ////////////////////////////////////////////////////////////////////////////
   template <typename S,
-            typename Container,
             size_t         MAX_URI_LENGTH,
             unsigned char  MAX_METHOD_LENGTH,
             unsigned short MAX_HEADER_NUMBER,
@@ -50,7 +48,6 @@ namespace via
             bool           STRICT_CRLF>
   class http_connection : public std::enable_shared_from_this
                                    <http_connection<S,
-                                                    Container,
                                                     MAX_URI_LENGTH,
                                                     MAX_METHOD_LENGTH,
                                                     MAX_HEADER_NUMBER,
@@ -63,9 +60,11 @@ namespace via
     /// The underlying connection, TCP or SSL.
     typedef comms::connection<S> connection_type;
 
+    /// The container to use for the rx & tx buffers.
+    typedef std::vector<char> Container;
+
     /// This type.
     typedef http_connection<S,
-                            Container,
                             MAX_URI_LENGTH,
                             MAX_METHOD_LENGTH,
                             MAX_HEADER_NUMBER,
