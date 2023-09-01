@@ -50,7 +50,6 @@
 #include <map>
 #include <stdexcept>
 #include <iostream>
-#define HTTP_THREAD_SAFE
 #ifdef HTTP_THREAD_SAFE
 #include "via/thread/threadsafe_hash_map.hpp"
 #else
