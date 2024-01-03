@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -89,14 +89,6 @@ namespace via
       ASIO::ssl::context& ssl_context_;
 #endif
 
-#ifdef HTTP_THREAD_SAFE
-      /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::strand<ASIO::io_context::executor_type> next_strand_;
-#endif
-
-      /// The next socket to be accepted.
-      ASIO::ip::tcp::socket next_socket_;
-
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
 
@@ -131,21 +123,19 @@ namespace via
       /// - add the new connection to the set
       /// - restart the acceptor to look for new connections.
       /// @param error the error, if any.
-      void accept_handler(const ASIO_ERROR_CODE& error)
+      /// @param socket the peer tcp socket.
+      void accept_handler(const ASIO_ERROR_CODE& error, ASIO::ip::tcp::socket socket)
       {
-        if ((acceptor_v6_.is_open() || acceptor_v4_.is_open())&&
-            (ASIO::error::operation_aborted != error))
+        if ((ASIO::error::operation_aborted != error) &&
+            (acceptor_v6_.is_open() || acceptor_v4_.is_open()))
         {
-          if (!error && accept_connection_(next_socket_))
+          if (!error && accept_connection_(socket))
           {
             auto next_connection = std::make_shared<connection_type>
 #ifdef HTTP_SSL
-              (socket_type(std::move(next_socket_), ssl_context_),
+              (socket_type(std::move(socket), ssl_context_),
 #else
-              (std::move(next_socket_),
-#endif
-#ifdef HTTP_THREAD_SAFE
-              std::move(next_strand_),
+              (std::move(socket),
 #endif
               rx_buffer_size_,
               [this](const char *data, size_t size, std::weak_ptr<connection_type> ptr)
@@ -168,13 +158,6 @@ namespace via
             next_connection->start(no_delay, keep_alive_, timeout_,
                                     receive_buffer_size_, send_buffer_size_);
           }
-
-#ifdef HTTP_THREAD_SAFE
-          next_strand_ = ASIO::make_strand(io_context_);
-          next_socket_ = ASIO::ip::tcp::socket(next_strand_);
-#else
-          next_socket_ = ASIO::ip::tcp::socket(io_context_);
-#endif
 
           start_accept();
         }
@@ -229,13 +212,19 @@ namespace via
       void start_accept()
       {
         if (acceptor_v6_.is_open())
-          acceptor_v6_.async_accept(next_socket_,
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+          acceptor_v6_.async_accept(
+#ifdef HTTP_THREAD_SAFE
+            ASIO::make_strand(io_context_),
+#endif
+            [this](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::socket socket)
+              { accept_handler(error, std::move(socket)); });
         if (acceptor_v4_.is_open())
-          acceptor_v4_.async_accept(next_socket_,
-            [this](ASIO_ERROR_CODE const& error)
-              { accept_handler(error); });
+          acceptor_v4_.async_accept(
+#ifdef HTTP_THREAD_SAFE
+            ASIO::make_strand(io_context_),
+#endif
+            [this](ASIO_ERROR_CODE const& error, ASIO::ip::tcp::socket socket)
+              { accept_handler(error, std::move(socket)); });
       }
 
     public:
@@ -262,12 +251,6 @@ namespace via
         io_context_(io_context),
 #ifdef HTTP_SSL
         ssl_context_(ssl_context),
-#endif
-#ifdef HTTP_THREAD_SAFE
-        next_strand_(ASIO::make_strand(io_context)),
-        next_socket_(next_strand_),
-#else
-        next_socket_(io_context),
 #endif
         acceptor_v6_(io_context),
         acceptor_v4_(io_context)

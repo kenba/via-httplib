@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -71,10 +71,6 @@ namespace via
 
     private:
 
-#ifdef HTTP_THREAD_SAFE
-      /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::strand<ASIO::io_context::executor_type> strand_;
-#endif
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
@@ -400,17 +396,11 @@ namespace via
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
       connection(socket_type socket,
-#ifdef HTTP_THREAD_SAFE
-                 ASIO::strand<ASIO::io_context::executor_type> strand,
-#endif
                  size_t rx_buffer_size,
                  receive_callback_type receive_callback = nullptr,
                  event_callback_type event_callback = nullptr,
                  error_callback_type error_callback = nullptr) :
         SocketAdaptor(std::move(socket)),
-#ifdef HTTP_THREAD_SAFE
-        strand_(std::move(strand)),
-#endif
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         receive_callback_(receive_callback),
         event_callback_(event_callback),

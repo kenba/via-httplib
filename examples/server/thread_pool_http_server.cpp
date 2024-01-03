@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2021 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -258,17 +258,13 @@ int main(int argc, char *argv[])
     {
       // Create a thread pool for the threads and run the asio io_context
       // in each of the threads.
-      std::vector<std::shared_ptr<std::thread> > threads;
+      std::vector<std::thread> threads;
       for (std::size_t i = 0; i < no_of_threads; ++i)
-      {
-        std::shared_ptr<std::thread> thread(std::make_shared<std::thread>
-                             ([&io_context](){ io_context.run(); }));
-        threads.push_back(thread);
-      }
+        threads.emplace_back([&io_context]{ io_context.run(); });
 
       // Wait for all threads in the pool to exit.
       for (std::size_t i(0); i < threads.size(); ++i)
-        threads[i]->join();
+        threads[i].join();
     }
     else
       io_context.run();
