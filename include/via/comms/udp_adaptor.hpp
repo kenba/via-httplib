@@ -4,7 +4,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2015-2023 Ken Barker
+// Copyright (c) 2015-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -15,6 +15,7 @@
 /// @brief Contains the udp_adaptor socket adaptor class.
 //////////////////////////////////////////////////////////////////////////////
 #include "socket_adaptor.hpp"
+#include "tcp_adaptor.hpp"
 
 namespace via
 {
@@ -56,12 +57,13 @@ namespace via
       /// Since this isn't a TCP socket, it just calls the connect_handler
       /// with a success error code.
       /// @param connect_handler the connect callback function.
+      /// @param endpoints the host endpoints.
       /// @param host_iterator the tcp resolver iterator.
       void connect_socket(ConnectHandler connect_handler,
-                          ASIO::ip::tcp::resolver::iterator host_iterator)
+                          ASIO::ip::tcp::resolver::results_type const& endpoints)
       {
         ASIO_ERROR_CODE ec; // Default is success
-        connect_handler(ec, host_iterator);
+        connect_handler(ec, *endpoints.cbegin());
       }
 
       /// @fn read
@@ -250,37 +252,22 @@ namespace via
       }
 
       /// @fn connect
-      /// Connect the udp socket to the given host name and port.
-      /// @pre To be called by "connected" connections only.
-      /// Multicast and Broadcast sockets must NOT call this function.
+      /// Connect the tcp socket to the given host name and port.
+      /// @pre To be called by "client" connections only.
+      /// Server connections are accepted by the server instead.
+      /// @param io_context the asio io_context associated with this connection
       /// @param host_name the host to connect to.
-      /// @param port the port to connect to.
+      /// @param port_name the port to connect to.
       /// @param connectHandler the handler to call when connected.
       bool connect(ASIO::io_context& io_context, const char* host_name,
-                   const char* port, ConnectHandler connectHandler)
+                   const char* port_name, ConnectHandler connectHandler)
       {
-        // resolve the port on the local host
-        ASIO_ERROR_CODE error;
-        ASIO::ip::udp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(host_name, port_name, ignoredEc);
+          auto endpoints{resolve_host(io_context, host_name, port_name)};
+          if (endpoints.empty())
+              return false;
 
-        // Determine whether the host and port was found
-        if (endpoints.empty())
-          return false;
-
-        // Attempt to connect to it.
-        socket_.connect(endpoints, error);
-        if (error)
-          return false;
-
-        is_connected_ = true;
-
-        // Call the connectHandler with the success error code.
-        // Note: uses a tcp resolver::iterator because the connectHandler
-        // requires it.
-        connectHandler(error, ASIO::ip::tcp::resolver::iterator());
-
-        return true;
+          connect_socket(connectHandler, endpoints);
+          return true;
       }
 
       /// @fn shutdown
