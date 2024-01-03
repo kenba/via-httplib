@@ -97,9 +97,9 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers buffers)
+      bool write_data(ConstBuffers&& buffers)
       {
-        tx_buffers_.swap(buffers);
+        tx_buffers_ = std::move(buffers);
 
         if (connected_)
         {
@@ -534,7 +534,7 @@ namespace via
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.
-      bool send_data(ConstBuffers buffers)
+      bool send_data(ConstBuffers&& buffers)
       {
         if (!transmitting_)
         {
