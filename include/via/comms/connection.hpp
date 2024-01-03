@@ -72,6 +72,7 @@ namespace via
     private:
 
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
+      ConstBuffers tx_buffers_{};                    ///< The transmit buffers.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
       error_callback_type error_callback_{ nullptr }; ///< The error callback function.
@@ -96,14 +97,16 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers const& buffers)
+      bool write_data(ConstBuffers buffers)
       {
+        tx_buffers_.swap(buffers);
+
         if (connected_)
         {
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-          SocketAdaptor::write(buffers,
+          SocketAdaptor::write(tx_buffers_,
             [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                   size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
