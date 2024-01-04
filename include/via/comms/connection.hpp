@@ -1,7 +1,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -138,12 +138,8 @@ namespace via
 
       S socket_;
 
-#ifdef HTTP_THREAD_SAFE
-      /// Strand to ensure the connection's handlers are not called concurrently.
-      ASIO::strand<ASIO::io_context::executor_type> strand_;
-#endif
-
       std::shared_ptr<std::vector<char>> rx_buffer_; ///< The receive buffer.
+      ConstBuffers tx_buffers_{};                    ///< The transmit buffers.
       receive_callback_type receive_callback_{ nullptr }; ///< The receive callback function.
       event_callback_type event_callback_{ nullptr }; ///< The event callback function.
       error_callback_type error_callback_{ nullptr }; ///< The error callback function.
@@ -168,14 +164,16 @@ namespace via
       /// Write data via the socket adaptor.
       /// @param buffers the buffer(s) containing the message.
       /// @return true if connected, false otherwise.
-      bool write_data(ConstBuffers const& buffers)
+      bool write_data(ConstBuffers&& buffers)
       {
+        tx_buffers_ = std::move(buffers);
+        
         if (connected_)
         {
           // local copies for lambdas
           weak_pointer weak_ptr(weak_from_this());
           std::shared_ptr<std::vector<char>> rx_buffer(rx_buffer_);
-          ASIO::async_write(socket_, buffers,
+          ASIO::async_write(socket_, tx_buffers_,
             [weak_ptr, rx_buffer](ASIO_ERROR_CODE const& error,
                                   size_t bytes_transferred)
           { write_callback(weak_ptr, error, bytes_transferred, rx_buffer); });
@@ -483,17 +481,11 @@ namespace via
       /// @param event_callback the event callback function, default nullptr.
       /// @param error_callback the error callback function, default nullptr.
       connection(S&& socket,
-#ifdef HTTP_THREAD_SAFE
-                 ASIO::strand<ASIO::io_context::executor_type>&& strand,
-#endif
                  size_t rx_buffer_size,
                  receive_callback_type receive_callback = nullptr,
                  event_callback_type event_callback = nullptr,
                  error_callback_type error_callback = nullptr) :
         socket_(std::move(socket)),
-#ifdef HTTP_THREAD_SAFE
-        strand_(std::move(strand)),
-#endif
         rx_buffer_(new std::vector<char>(rx_buffer_size, 0)),
         receive_callback_(receive_callback),
         event_callback_(event_callback),
@@ -683,7 +675,7 @@ namespace via
       /// Send the data in the buffers.
       /// @param buffers the data to write.
       /// @return true if the buffers are being sent, false otherwise.
-      bool send_data(ConstBuffers buffers)
+      bool send_data(ConstBuffers&& buffers)
       {
         if (!transmitting_)
         {
