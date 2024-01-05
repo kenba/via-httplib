@@ -83,7 +83,7 @@ int main(int /* argc */, char *argv[])
                           (via::http::request_method::GET, "/hello/:name",
                            get_hello_name_handler);
 
-    // Accept IPV4 connections on the default port (80)
+    // Accept connections (both IPV4 and IPV6) on the default port (80)
     boost::system::error_code error(http_server.accept_connections());
     if (error)
     {
