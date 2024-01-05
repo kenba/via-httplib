@@ -492,6 +492,9 @@ namespace via
         error_callback_(error_callback)
       {}
 
+      connection(connection const&) = delete;
+      connection& operator=(connection const&) = delete;
+
       /// The destructor calls close to ensure that all of the socket's
       /// callback functions are cancelled so that the object can (eventually)
       /// be destroyed.

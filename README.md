@@ -14,7 +14,7 @@ HTTP/HTTPS servers to be built that comply with
 ## Requirements
 
 + A C++17 compliant compiler. This version requires a complier that supports string_view.  
-It's been tested with `MSVC 2022`, `GCC 12.1.0` and `MinGw 11.2.0`.  
+It's been tested with `MSVC 2022`, `GCC 12.3.0` and `MinGw 11.2.0`.  
 C++11 versions are available in tags `1.6.0` and lower.  
 
 + The `asio` C++ library, either [standalone asio](http://think-async.com/) or [boost asio](http://www.boost.org/).  
@@ -48,7 +48,7 @@ An example https server [docker](https://www.docker.com/) image can be built usi
 the following commands from this directory:
 
 ```shell
-docker build . -t via-http-server:1.10.0
+docker build . -t via-http-server:0.1
 ```
 
 ## Example HTTP Server
