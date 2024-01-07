@@ -18,6 +18,7 @@
 #else
 #include <set>
 #endif
+#include <cassert>
 
 namespace via
 {
@@ -70,8 +71,8 @@ namespace via
       /// The asio::io_context to use.
       ASIO::io_context& io_context_;
 
-      /// The ssl::context for ssl_socket
-      ASIO::ssl::context& ssl_context_;
+      /// The ssl::context pointer for creating ssl_sockets
+      ASIO::ssl::context* ssl_context_ptr_{nullptr};
 
       /// The IPv6 acceptor for this server.
       ASIO::ip::tcp::acceptor acceptor_v6_;
@@ -101,7 +102,7 @@ namespace via
       S create_socket(ASIO::ip::tcp::socket&& socket)
       {
         if constexpr (std::is_same<S, ssl_socket>::value)
-          return S(std::move(socket), ssl_context_);
+          return S(std::move(socket), *ssl_context_ptr_);
         else
           return std::move(socket);
       }
@@ -228,23 +229,19 @@ namespace via
       /// @pre the event_callback and error_callback functions must exist.
       /// E.g. if either of them are class member functions then the class
       /// MUST have been constructed BEFORE this constructor is called.
+      /// @pre the ssl_context_ptr must be a valid pointer for ssl_sockets.
       /// @param io_context the boost asio io_context used by the acceptor
       /// and connections.
-      /// @param ssl_context the ssl context, only required for TLS servers.
+      /// @param ssl_context_ptr the ssl context pointer, required by TLS servers.
       explicit server(ASIO::io_context& io_context,
-                      ASIO::ssl::context& ssl_context = ASIO::ssl::context(ASIO::ssl::context::tlsv13_server)) :
+                      ASIO::ssl::context* ssl_context_ptr) :
         io_context_(io_context),
-        ssl_context_(ssl_context),
+        ssl_context_ptr_(ssl_context_ptr),
         acceptor_v6_(io_context),
         acceptor_v4_(io_context)
-      {}
-
-      /// @fn ssl_context
-      /// A function to manage the ssl context for the ssl connections.
-      /// @return ssl_context the ssl context.
-      ASIO::ssl::context& ssl_context() noexcept
       {
-        return ssl_context_;
+        if constexpr (std::is_same<S, ssl_socket>::value)
+          assert(ssl_context_ptr != nullptr); // ssl_sockets require a valid ssl_context
       }
 
       /// Destructor, close the connections.

@@ -1,7 +1,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -423,29 +423,12 @@ namespace via
     http_server& operator=(http_server) = delete;
 
     /// Constructor.
+    /// @pre the ssl_context_ptr must be a valid pointer for HTTPS servers.
     /// @param io_context a reference to the ASIO::io_context.
-    explicit http_server(ASIO::io_context& io_context) :
-      server_(new server_type(io_context)),
-      max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
-      max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE)
-    {
-      server_->set_receive_callback([this]
-        (const char *data, size_t size, std::weak_ptr<connection_type> connection)
-          { receive_handler(data, size, connection); });
-      server_->set_event_callback([this]
-        (unsigned char event, std::weak_ptr<connection_type> connection)
-          { event_handler(event, connection); });
-      server_->set_error_callback([this]
-        (ASIO_ERROR_CODE const& error,
-         std::weak_ptr<connection_type> connection)
-          { error_handler(error, connection); });
-    }
-
-    /// Constructor.
-    /// @param io_context a reference to the ASIO::io_context.
-    /// @param ssl_context a reference to the asio ssl::context.
-    http_server(ASIO::io_context& io_context, ASIO::ssl::context& ssl_context) :
-      server_(new server_type(io_context, ssl_context)),
+    /// @param ssl_context_ptr a pointer to the asio ssl::context.
+    /// It is required by HTTPS servers, it may be set to nullptr for HTTP servers.
+    http_server(ASIO::io_context& io_context, ASIO::ssl::context* ssl_context_ptr) :
+      server_(new server_type(io_context, ssl_context_ptr)),
       max_content_length_(http_request_rx::DEFAULT_MAX_CONTENT_LENGTH),
       max_chunk_size_(http::DEFAULT_MAX_CHUNK_SIZE)
     {

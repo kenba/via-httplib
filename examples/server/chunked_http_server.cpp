@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2014-2023 Ken Barker
+// Copyright (c) 2014-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -217,10 +217,10 @@ int main(int argc, char *argv[])
   try
   {
     /// The asio io_context.
-    ASIO::io_context io_context;
+    ASIO::io_context io_context(1);
 
     // create an http_server
-    http_server_type http_server(io_context);
+    http_server_type http_server(io_context, nullptr);
 
     // connect the handler callback functions
     http_server.request_received_event(request_handler);

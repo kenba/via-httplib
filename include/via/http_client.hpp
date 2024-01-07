@@ -1,7 +1,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -360,7 +360,6 @@ namespace via
     /// @param socket the socket to use.
     /// @param io_context the boost asio io_context used by the underlying
     /// connection.
-    /// @param ssl_context the asio ssl::context for the socket adaptor.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default
@@ -398,7 +397,6 @@ namespace via
     /// The factory function to create TCP connections.
     /// @param io_context the boost asio io_context used by the underlying
     /// connection.
-    /// @param ssl_context the asio ssl::context for the socket adaptor.
     /// @param response_handler the handler for received HTTP responses.
     /// @param chunk_handler the handler for received HTTP chunks.
     /// @param rx_buffer_size the size of the receive_buffer, default

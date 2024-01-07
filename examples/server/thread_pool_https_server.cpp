@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
     ASIO::io_context io_context(no_of_threads);
 
     // create an https_server and connect the request handler
-    https_server_type https_server(io_context, ssl_context);
+    https_server_type https_server(io_context, &ssl_context);
     https_server.request_received_event(request_handler);
 
     // connect the handler callback functions

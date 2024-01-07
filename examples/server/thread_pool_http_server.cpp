@@ -212,11 +212,15 @@ int main(int argc, char *argv[])
 
   try
   {
+    // Determine the number of concurrent threads supported
+    size_t no_of_threads(std::thread::hardware_concurrency());
+    std::cout << "No of threads: " << no_of_threads << std::endl;
+
     // create an io_context for the server
-    ASIO::io_context io_context;
+    ASIO::io_context io_context(no_of_threads);
 
     // create an http_server and connect the request handler
-    http_server_type http_server(io_context);
+    http_server_type http_server(io_context, nullptr);
     http_server.request_received_event(request_handler);
 
     // connect the handler callback functions
@@ -247,10 +251,6 @@ int main(int argc, char *argv[])
     signals_.async_wait([&http_server]
       (ASIO_ERROR_CODE const& error, int signal_number)
     { handle_stop(error, signal_number, http_server); });
-
-    // Determine the number of concurrent threads supported
-    size_t no_of_threads(std::thread::hardware_concurrency());
-    std::cout << "No of threads: " << no_of_threads << std::endl;
 
     if (no_of_threads > 0)
     {

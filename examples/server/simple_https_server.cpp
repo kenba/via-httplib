@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -87,7 +87,7 @@ int main(int /* argc */, char *argv[])
     ASIO::io_context io_context(1);
 
     // Create the HTTP server and attach the request handler
-    https_server_type https_server(io_context, ssl_context);
+    https_server_type https_server(io_context, &ssl_context);
     https_server.request_received_event(request_handler);
 
     // and accept IPV4 connections on the default port (443)
