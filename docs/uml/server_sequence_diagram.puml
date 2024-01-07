@@ -1,0 +1,86 @@
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Server Connection Sequence
+
+actor user
+
+box "TCP/SSL Server" #LightBlue
+    participant server
+    participant acceptor
+end box
+
+box "TCP/SSL Connection" #LightYellow
+    participant tcp_socket
+    participant connection
+    participant ssl_socket
+end box
+
+participant client #LightGreen
+
+== Initialisation ==
+
+user -> server ++ : ASIO::io_context\noptional(ASIO::ssl::context)
+
+user -> server : accept_connections(port)
+server -> acceptor ++ : listen
+
+== Accept Client Connections ==
+
+server -> acceptor : async_accept
+
+acceptor <- client : connect
+acceptor -> tcp_socket ++ : create
+tcp_socket -> connection ++ : create
+tcp_socket -> client ++ : connected
+
+
+server <- connection : connected
+server -> connection : accept connection
+
+opt SSL socket
+    connection -> ssl_socket ++ : handshake
+    ssl_socket -> client : SSL handshake
+    ssl_socket <- client : SSL handshake
+    connection <- ssl_socket : handshake\nsuccess
+end
+
+== Connection Open for Reception and Transmission ==
+
+loop
+    connection -> connection : read_data
+    connection <- client : send data (e.g. request)
+    user <- connection : data received
+
+    user -> connection : send data
+    connection -> client : send data (e.g. response)
+end
+
+== Disconnection ==
+
+alt server disconnect
+    user -> connection : disconnect
+else client disconnect
+    connection <- client : disconnect
+end
+
+alt SSL socket
+    tcp_socket <- connection : cancel
+    connection -> ssl_socket : async_shutdown
+    ssl_socket -> connection --
+    ssl_socket -> client -- : SSL shutdown
+    client -> client --
+else TCP socket
+    tcp_socket <- connection -- : shutdown_both
+    tcp_socket -> tcp_socket --
+end
+
+== Close Server ==
+
+user -> server : close()
+server -> acceptor : close()
+server <- acceptor --
+user <- server --
+
+@enduml

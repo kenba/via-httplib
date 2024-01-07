@@ -276,7 +276,7 @@ namespace via
       /// Create the acceptor and wait for connections.
       /// @param port the port number to serve.
       /// @param ipv4_only whether an IPV4 only server is required.
-      /// @return the boost error code, false if no error occured
+      /// @return the boost error code, false if no error occurred
       ASIO_ERROR_CODE accept_connections(unsigned short port, bool ipv4_only)
       {
         // Determine whether the IPv6 acceptor accepts both IPv6 & IPv4

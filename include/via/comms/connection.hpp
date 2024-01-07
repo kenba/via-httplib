@@ -19,9 +19,8 @@
   #include <boost/asio/ssl.hpp>
   #include <boost/asio/ssl/context.hpp>
 #endif
-#include <memory>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 namespace via
 {
@@ -71,9 +70,6 @@ namespace via
 
       /// A shared pointer to a connection.
       typedef typename std::shared_ptr<connection<S>> shared_pointer;
-
-      /// The enable_shared_from_this type of this class.
-      typedef typename std::enable_shared_from_this<connection<S>> enable;
 
       /// The resolver_iterator type of the S
       typedef typename ASIO::ip::tcp::resolver::iterator resolver_iterator;
@@ -153,12 +149,6 @@ namespace via
       bool connected_{ false };          ///< If the socket is connected.
       bool disconnect_pending_{ false }; ///< Shutdown the socket after the next write.
       bool shutdown_sent_{ false };      ///< The SSL shutdown signal has been sent.
-
-      /// @fn weak_from_this
-      /// Get a weak_pointer to this instance.
-      /// @return a weak_pointer to this connection.
-      weak_pointer weak_from_this()
-      { return weak_pointer(enable::shared_from_this()); }
 
       /// @fn write_data
       /// Write data via the socket adaptor.

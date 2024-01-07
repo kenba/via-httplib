@@ -1,7 +1,7 @@
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013-2023 Ken Barker
+// Copyright (c) 2013-2024 Ken Barker
 // (ken dot barker at via-technology dot co dot uk)
 //
 // Distributed under the Boost Software License, Version 1.0.
@@ -25,6 +25,7 @@
 #endif
 #include <deque>
 #include <functional>
+#include <memory>
 
 namespace via
 {

@@ -47,7 +47,6 @@
 #include "http_connection.hpp"
 #include "via/comms/server.hpp"
 #include "via/http/request_router.hpp"
-#include <map>
 #include <stdexcept>
 #include <iostream>
 #ifdef HTTP_THREAD_SAFE

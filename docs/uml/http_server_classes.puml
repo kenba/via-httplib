@@ -1,0 +1,33 @@
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title via-httplib server classes
+
+set namespaceSeparator ::
+
+namespace via {
+    class http_server<socket_type>
+    class http_connection<socket_type>
+
+    http_server *-- "*" http_connection
+    http_connection *-- via::http::request_receiver
+
+    http_server *-- "*" via::comms::server
+    http_connection *-- via::comms::connection
+}
+
+namespace via::comms {
+    class server<socket_type> 
+    class connection<socket_type> 
+
+    note bottom of connection
+        **socket_type** is either
+        **tcp_socket** or **ssl_socket**
+    end note
+
+    server *-- tcp_acceptor
+    server o-- connection
+}
+
+@enduml

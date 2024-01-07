@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="1533px" preserveAspectRatio="none" style="width:871px;height:1533px;background:#FFFFFF;" version="1.1" viewBox="0 0 871 1533" width="871px" zoomAndPan="magnify"><defs/><g><rect fill="#ADD8E6" height="1521.25" style="stroke:#181818;stroke-width:0.5;" width="184.5" x="190" y="6"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="102" x="231.25" y="19.4951">TCP/SSL Server</text><rect fill="#FFFFE0" height="1521.25" style="stroke:#181818;stroke-width:0.5;" width="341" x="376.5" y="6"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="132" x="481" y="19.4951">TCP/SSL Connection</text><rect fill="#FFFFFF" height="1252.9766" style="stroke:#181818;stroke-width:1.0;" width="10" x="216" y="175.6641"/><rect fill="#FFFFFF" height="1178.2734" style="stroke:#181818;stroke-width:1.0;" width="10" x="331" y="236.3672"/><rect fill="#FFFFFF" height="909.8125" style="stroke:#181818;stroke-width:1.0;" width="10" x="416.5" y="371.7734"/><rect fill="#FFFFFF" height="859.4609" style="stroke:#181818;stroke-width:1.0;" width="10" x="537.5" y="402.125"/><rect fill="#FFFFFF" height="609.1641" style="stroke:#181818;stroke-width:1.0;" width="10" x="668.5" y="548.8828"/><rect fill="#FFFFFF" height="775.9219" style="stroke:#181818;stroke-width:1.0;" width="10" x="794.5" y="432.4766"/><rect fill="none" height="156.1094" style="stroke:#000000;stroke-width:1.5;" width="342" x="491" y="508.1797"/><rect fill="none" height="183.1094" style="stroke:#000000;stroke-width:1.5;" width="823" x="10" y="722.6406"/><rect fill="none" height="94.8906" style="stroke:#000000;stroke-width:1.5;" width="823" x="10" y="964.1016"/><rect fill="none" height="223.5938" style="stroke:#000000;stroke-width:1.5;" width="484" x="370.5" y="1072.9922"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="37" x2="37" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="221" x2="221" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="335.5" x2="335.5" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="421.5" x2="421.5" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="542" x2="542" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="673.5" x2="673.5" y1="82.6094" y2="1446.6406"/><line style="stroke:#181818;stroke-width:0.5;stroke-dasharray:5.0,5.0;" x1="799" x2="799" y1="82.6094" y2="1446.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="28" x="20" y="79.5332">user</text><ellipse cx="37" cy="13.5" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M37,21.5 L37,48.5 M24,29.5 L50,29.5 M37,48.5 L24,63.5 M37,48.5 L50,63.5 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="28" x="20" y="1460.1738">user</text><ellipse cx="37" cy="1471.75" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M37,1479.75 L37,1506.75 M24,1487.75 L50,1487.75 M37,1506.75 L24,1521.75 M37,1506.75 L50,1521.75 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="54" x="194" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40" x="201" y="71.5332">server</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="54" x="194" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40" x="201" y="1467.1738">server</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="69" x="301.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="55" x="308.5" y="71.5332">acceptor</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="69" x="301.5" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="55" x="308.5" y="1467.1738">acceptor</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="82" x="380.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="68" x="387.5" y="71.5332">tcp_socket</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="82" x="380.5" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="68" x="387.5" y="1467.1738">tcp_socket</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="83" x="501" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69" x="508" y="71.5332">connection</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="83" x="501" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69" x="508" y="1467.1738">connection</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="80" x="633.5" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="66" x="640.5" y="71.5332">ssl_socket</text><rect fill="#E2E2F0" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="80" x="633.5" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="66" x="640.5" y="1467.1738">ssl_socket</text><rect fill="#90EE90" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="47" x="776" y="50"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="33" x="783" y="71.5332">client</text><rect fill="#90EE90" height="31.6094" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="47" x="776" y="1445.6406"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="33" x="783" y="1467.1738">client</text><rect fill="#FFFFFF" height="1252.9766" style="stroke:#181818;stroke-width:1.0;" width="10" x="216" y="175.6641"/><rect fill="#FFFFFF" height="1178.2734" style="stroke:#181818;stroke-width:1.0;" width="10" x="331" y="236.3672"/><rect fill="#FFFFFF" height="909.8125" style="stroke:#181818;stroke-width:1.0;" width="10" x="416.5" y="371.7734"/><rect fill="#FFFFFF" height="859.4609" style="stroke:#181818;stroke-width:1.0;" width="10" x="537.5" y="402.125"/><rect fill="#FFFFFF" height="609.1641" style="stroke:#181818;stroke-width:1.0;" width="10" x="668.5" y="548.8828"/><rect fill="#FFFFFF" height="775.9219" style="stroke:#181818;stroke-width:1.0;" width="10" x="794.5" y="432.4766"/><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="864.5" x="0" y="113.7852"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="113.7852" y2="113.7852"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="116.7852" y2="116.7852"/><rect fill="#EEEEEE" height="24.3516" style="stroke:#000000;stroke-width:2.0;" width="96" x="384.25" y="102.6094"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="78" x="390.25" y="120.1045">Initialisation</text><polygon fill="#181818" points="204,171.6641,214,175.6641,204,179.6641,208,175.6641" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="37" x2="210" y1="175.6641" y2="175.6641"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="99" x="44" y="154.4561">ASIO::io_context</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="160" x="44" y="170.8076">optional(ASIO::ssl::context)</text><polygon fill="#181818" points="204,202.0156,214,206.0156,204,210.0156,208,206.0156" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="37" x2="210" y1="206.0156" y2="206.0156"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="146" x="44" y="201.1592">accept_connections(port)</text><polygon fill="#181818" points="319,232.3672,329,236.3672,319,240.3672,323,236.3672" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="226" x2="325" y1="236.3672" y2="236.3672"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="31" x="233" y="231.5107">listen</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="864.5" x="0" y="265.543"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="265.543" y2="265.543"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="268.543" y2="268.543"/><rect fill="#EEEEEE" height="24.3516" style="stroke:#000000;stroke-width:2.0;" width="184" x="340.25" y="254.3672"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="166" x="346.25" y="271.8623">Accept Client Connections</text><polygon fill="#181818" points="319,307.0703,329,311.0703,319,315.0703,323,311.0703" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="226" x2="325" y1="311.0703" y2="311.0703"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="81" x="233" y="306.2139">async_accept</text><polygon fill="#181818" points="352,337.4219,342,341.4219,352,345.4219,348,341.4219" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="346" x2="798.5" y1="341.4219" y2="341.4219"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="46" x="358" y="336.5654">connect</text><polygon fill="#181818" points="404.5,367.7734,414.5,371.7734,404.5,375.7734,408.5,371.7734" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="341" x2="410.5" y1="371.7734" y2="371.7734"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="36" x="348" y="366.917">create</text><polygon fill="#181818" points="525.5,398.125,535.5,402.125,525.5,406.125,529.5,402.125" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="426.5" x2="531.5" y1="402.125" y2="402.125"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="36" x="433.5" y="397.2686">create</text><polygon fill="#181818" points="782.5,428.4766,792.5,432.4766,782.5,436.4766,786.5,432.4766" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="426.5" x2="788.5" y1="432.4766" y2="432.4766"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="60" x="433.5" y="427.6201">connected</text><polygon fill="#181818" points="237,458.8281,227,462.8281,237,466.8281,233,462.8281" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="231" x2="536.5" y1="462.8281" y2="462.8281"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="60" x="243" y="457.9717">connected</text><polygon fill="#181818" points="525.5,489.1797,535.5,493.1797,525.5,497.1797,529.5,493.1797" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="226" x2="531.5" y1="493.1797" y2="493.1797"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="106" x="233" y="488.3232">accept connection</text><path d="M491,508.1797 L556,508.1797 L556,516.5313 L546,526.5313 L491,526.5313 L491,508.1797 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="156.1094" style="stroke:#000000;stroke-width:1.5;" width="342" x="491" y="508.1797"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="20" x="506" y="522.6748">opt</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="70" x="571" y="521.5986">[SSL socket]</text><polygon fill="#181818" points="656.5,544.8828,666.5,548.8828,656.5,552.8828,660.5,548.8828" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="547.5" x2="662.5" y1="548.8828" y2="548.8828"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="63" x="554.5" y="544.0264">handshake</text><polygon fill="#181818" points="782.5,575.2344,792.5,579.2344,782.5,583.2344,786.5,579.2344" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="678.5" x2="788.5" y1="579.2344" y2="579.2344"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="92" x="685.5" y="574.3779">SSL handshake</text><polygon fill="#181818" points="689.5,605.5859,679.5,609.5859,689.5,613.5859,685.5,609.5859" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="683.5" x2="793.5" y1="609.5859" y2="609.5859"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="92" x="695.5" y="604.7295">SSL handshake</text><polygon fill="#181818" points="558.5,652.2891,548.5,656.2891,558.5,660.2891,554.5,656.2891" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="552.5" x2="667.5" y1="656.2891" y2="656.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="63" x="564.5" y="635.0811">handshake</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="49" x="564.5" y="651.4326">success</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="864.5" x="0" y="692.4648"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="692.4648" y2="692.4648"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="695.4648" y2="695.4648"/><rect fill="#EEEEEE" height="24.3516" style="stroke:#000000;stroke-width:2.0;" width="332" x="266.25" y="681.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="314" x="272.25" y="698.7842">Connection Open for Reception and Transmission</text><path d="M10,722.6406 L83,722.6406 L83,730.9922 L73,740.9922 L10,740.9922 L10,722.6406 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="183.1094" style="stroke:#000000;stroke-width:1.5;" width="823" x="10" y="722.6406"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="28" x="25" y="737.1357">loop</text><line style="stroke:#181818;stroke-width:1.0;" x1="547.5" x2="589.5" y1="763.3438" y2="763.3438"/><line style="stroke:#181818;stroke-width:1.0;" x1="589.5" x2="589.5" y1="763.3438" y2="776.3438"/><line style="stroke:#181818;stroke-width:1.0;" x1="548.5" x2="589.5" y1="776.3438" y2="776.3438"/><polygon fill="#181818" points="558.5,772.3438,548.5,776.3438,558.5,780.3438,554.5,776.3438" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="57" x="554.5" y="758.4873">read_data</text><polygon fill="#181818" points="558.5,802.6953,548.5,806.6953,558.5,810.6953,554.5,806.6953" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="552.5" x2="793.5" y1="806.6953" y2="806.6953"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="138" x="564.5" y="801.8389">send data (e.g. request)</text><polygon fill="#181818" points="48,833.0469,38,837.0469,48,841.0469,44,837.0469" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="42" x2="536.5" y1="837.0469" y2="837.0469"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="76" x="54" y="832.1904">data received</text><polygon fill="#181818" points="525.5,863.3984,535.5,867.3984,525.5,871.3984,529.5,867.3984" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="37" x2="531.5" y1="867.3984" y2="867.3984"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="57" x="44" y="862.542">send data</text><polygon fill="#181818" points="782.5,893.75,792.5,897.75,782.5,901.75,786.5,897.75" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="547.5" x2="788.5" y1="897.75" y2="897.75"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="148" x="554.5" y="892.8936">send data (e.g. response)</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="864.5" x="0" y="933.9258"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="933.9258" y2="933.9258"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="936.9258" y2="936.9258"/><rect fill="#EEEEEE" height="24.3516" style="stroke:#000000;stroke-width:2.0;" width="107" x="378.75" y="922.75"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="89" x="384.75" y="940.2451">Disconnection</text><path d="M10,964.1016 L71,964.1016 L71,972.4531 L61,982.4531 L10,982.4531 L10,964.1016 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="94.8906" style="stroke:#000000;stroke-width:1.5;" width="823" x="10" y="964.1016"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="16" x="25" y="978.5967">alt</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="109" x="86" y="977.5205">[server disconnect]</text><polygon fill="#181818" points="525.5,1000.8047,535.5,1004.8047,525.5,1008.8047,529.5,1004.8047" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="37" x2="531.5" y1="1004.8047" y2="1004.8047"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="63" x="44" y="999.9482">disconnect</text><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="10" x2="833" y1="1013.8047" y2="1013.8047"/><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="102" x="15" y="1025.2236">[client disconnect]</text><polygon fill="#181818" points="558.5,1046.9922,548.5,1050.9922,558.5,1054.9922,554.5,1050.9922" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="552.5" x2="793.5" y1="1050.9922" y2="1050.9922"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="63" x="564.5" y="1046.1357">disconnect</text><path d="M370.5,1072.9922 L431.5,1072.9922 L431.5,1081.3438 L421.5,1091.3438 L370.5,1091.3438 L370.5,1072.9922 " fill="#EEEEEE" style="stroke:#000000;stroke-width:1.5;"/><rect fill="none" height="223.5938" style="stroke:#000000;stroke-width:1.5;" width="484" x="370.5" y="1072.9922"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="16" x="385.5" y="1087.4873">alt</text><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="70" x="446.5" y="1086.4111">[SSL socket]</text><polygon fill="#181818" points="437.5,1109.6953,427.5,1113.6953,437.5,1117.6953,433.5,1113.6953" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="431.5" x2="536.5" y1="1113.6953" y2="1113.6953"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="38" x="443.5" y="1108.8389">cancel</text><polygon fill="#181818" points="656.5,1140.0469,666.5,1144.0469,656.5,1148.0469,660.5,1144.0469" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="547.5" x2="662.5" y1="1144.0469" y2="1144.0469"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="97" x="554.5" y="1139.1904">async_shutdown</text><polygon fill="#181818" points="558.5,1154.0469,548.5,1158.0469,558.5,1162.0469,554.5,1158.0469" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="552.5" x2="672.5" y1="1158.0469" y2="1158.0469"/><polygon fill="#181818" points="782.5,1184.3984,792.5,1188.3984,782.5,1192.3984,786.5,1188.3984" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="673.5" x2="788.5" y1="1188.3984" y2="1188.3984"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="84" x="680.5" y="1183.542">SSL shutdown</text><line style="stroke:#181818;stroke-width:1.0;" x1="804.5" x2="846.5" y1="1207.3984" y2="1207.3984"/><line style="stroke:#181818;stroke-width:1.0;" x1="846.5" x2="846.5" y1="1207.3984" y2="1220.3984"/><line style="stroke:#181818;stroke-width:1.0;" x1="799.5" x2="846.5" y1="1220.3984" y2="1220.3984"/><polygon fill="#181818" points="809.5,1216.3984,799.5,1220.3984,809.5,1224.3984,805.5,1220.3984" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="370.5" x2="854.5" y1="1224.3984" y2="1224.3984"/><text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacing" textLength="71" x="375.5" y="1235.8174">[TCP socket]</text><polygon fill="#181818" points="437.5,1257.5859,427.5,1261.5859,437.5,1265.5859,433.5,1261.5859" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="431.5" x2="541.5" y1="1261.5859" y2="1261.5859"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="87" x="443.5" y="1256.7295">shutdown_both</text><line style="stroke:#181818;stroke-width:1.0;" x1="426.5" x2="468.5" y1="1280.5859" y2="1280.5859"/><line style="stroke:#181818;stroke-width:1.0;" x1="468.5" x2="468.5" y1="1280.5859" y2="1293.5859"/><line style="stroke:#181818;stroke-width:1.0;" x1="421.5" x2="468.5" y1="1293.5859" y2="1293.5859"/><polygon fill="#181818" points="431.5,1289.5859,421.5,1293.5859,431.5,1297.5859,427.5,1293.5859" style="stroke:#181818;stroke-width:1.0;"/><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="864.5" x="0" y="1324.7617"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="1324.7617" y2="1324.7617"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="864.5" y1="1327.7617" y2="1327.7617"/><rect fill="#EEEEEE" height="24.3516" style="stroke:#000000;stroke-width:2.0;" width="99" x="382.75" y="1313.5859"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="81" x="388.75" y="1331.0811">Close Server</text><polygon fill="#181818" points="204,1366.2891,214,1370.2891,204,1374.2891,208,1370.2891" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="37" x2="210" y1="1370.2891" y2="1370.2891"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="39" x="44" y="1365.4326">close()</text><polygon fill="#181818" points="319,1396.6406,329,1400.6406,319,1404.6406,323,1400.6406" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="226" x2="325" y1="1400.6406" y2="1400.6406"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="39" x="233" y="1395.7842">close()</text><polygon fill="#181818" points="237,1410.6406,227,1414.6406,237,1418.6406,233,1414.6406" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="231" x2="335" y1="1414.6406" y2="1414.6406"/><polygon fill="#181818" points="48,1424.6406,38,1428.6406,48,1432.6406,44,1428.6406" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="42" x2="220" y1="1428.6406" y2="1428.6406"/><!--MD5=[f3dbcc925e27adef08a0dfff89f8dd42]
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Server Connection Sequence
+
+actor user
+
+box "TCP/SSL Server" #LightBlue
+    participant server
+    participant acceptor
+end box
+
+box "TCP/SSL Connection" #LightYellow
+    participant tcp_socket
+    participant connection
+    participant ssl_socket
+end box
+
+participant client #LightGreen
+
+== Initialisation ==
+
+user -> server ++ : ASIO::io_context\noptional(ASIO::ssl::context)
+
+user -> server : accept_connections(port)
+server -> acceptor ++ : listen
+
+== Accept Client Connections ==
+
+server -> acceptor : async_accept
+
+acceptor <- client : connect
+acceptor -> tcp_socket ++ : create
+tcp_socket -> connection ++ : create
+tcp_socket -> client ++ : connected
+
+
+server <- connection : connected
+server -> connection : accept connection
+
+opt SSL socket
+    connection -> ssl_socket ++ : handshake
+    ssl_socket -> client : SSL handshake
+    ssl_socket <- client : SSL handshake
+    connection <- ssl_socket : handshake\nsuccess
+end
+
+== Connection Open for Reception and Transmission ==
+
+loop
+    connection -> connection : read_data
+    connection <- client : send data (e.g. request)
+    user <- connection : data received
+
+    user -> connection : send data
+    connection -> client : send data (e.g. response)
+end
+
+== Disconnection ==
+
+alt server disconnect
+    user -> connection : disconnect
+else client disconnect
+    connection <- client : disconnect
+end
+
+alt SSL socket
+    tcp_socket <- connection : cancel
+    connection -> ssl_socket : async_shutdown
+    ssl_socket -> connection - -
+    ssl_socket -> client - - : SSL shutdown
+    client -> client - -
+else TCP socket
+    tcp_socket <- connection - - : shutdown_both
+    tcp_socket -> tcp_socket - -
+end
+
+== Close Server ==
+
+user -> server : close()
+server -> acceptor : close()
+server <- acceptor - -
+user <- server - -
+
+@enduml
+
+@startuml
+
+
+
+actor user
+
+box "TCP/SSL Server" #LightBlue
+    participant server
+    participant acceptor
+end box
+
+box "TCP/SSL Connection" #LightYellow
+    participant tcp_socket
+    participant connection
+    participant ssl_socket
+end box
+
+participant client #LightGreen
+
+== Initialisation ==
+
+user -> server ++ : ASIO::io_context\noptional(ASIO::ssl::context)
+
+user -> server : accept_connections(port)
+server -> acceptor ++ : listen
+
+== Accept Client Connections ==
+
+server -> acceptor : async_accept
+
+acceptor <- client : connect
+acceptor -> tcp_socket ++ : create
+tcp_socket -> connection ++ : create
+tcp_socket -> client ++ : connected
+
+
+server <- connection : connected
+server -> connection : accept connection
+
+opt SSL socket
+    connection -> ssl_socket ++ : handshake
+    ssl_socket -> client : SSL handshake
+    ssl_socket <- client : SSL handshake
+    connection <- ssl_socket : handshake\nsuccess
+end
+
+== Connection Open for Reception and Transmission ==
+
+loop
+    connection -> connection : read_data
+    connection <- client : send data (e.g. request)
+    user <- connection : data received
+
+    user -> connection : send data
+    connection -> client : send data (e.g. response)
+end
+
+== Disconnection ==
+
+alt server disconnect
+    user -> connection : disconnect
+else client disconnect
+    connection <- client : disconnect
+end
+
+alt SSL socket
+    tcp_socket <- connection : cancel
+    connection -> ssl_socket : async_shutdown
+    ssl_socket -> connection - -
+    ssl_socket -> client - - : SSL shutdown
+    client -> client - -
+else TCP socket
+    tcp_socket <- connection - - : shutdown_both
+    tcp_socket -> tcp_socket - -
+end
+
+== Close Server ==
+
+user -> server : close()
+server -> acceptor : close()
+server <- acceptor - -
+user <- server - -
+
+@enduml
+
+PlantUML version 1.2022.8(Sun Sep 25 10:00:33 BST 2022)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) Client VM
+Default Encoding: Cp1252
+Language: en
+Country: GB
+--></g></svg>

@@ -1,0 +1,50 @@
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Via Namespaces
+
+set namespaceSeparator ::
+
+namespace via {
+    class http_server<socket_type>
+    class http_connection<socket_type>
+    class http_client<socket_type>
+
+    http_server *-- via::comms::server
+    http_server *-- "*" via::http_connection
+
+    http_connection *-- "1" via::comms::connection
+    http_connection *-- via::http::request
+    http_connection *-- via::http::response
+
+    http_client *-- "1" via::comms::connection
+    http_client *-- via::http::request
+    http_client *-- via::http::response
+}
+
+namespace via::http {
+    request *-- request_method
+    request *-- headers
+    request *-- chunk
+    request *-- response_status
+
+    response *-- response_status
+    response *-- headers
+    response *-- chunk
+}
+
+namespace via::comms {
+    class server<socket_type> 
+    class connection<socket_type> 
+
+    note bottom of connection
+        **socket_type** is either
+        **tcp_socket** or **ssl_socket**
+    end note
+
+    server *-- tcp_acceptor
+    server o-- connection
+}
+
+@enduml

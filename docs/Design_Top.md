@@ -5,8 +5,9 @@ The via-httplib library consists of three parts:
  1. Tcp and Ssl communications software in namespace [via::comms](Design_comms.md)
  2. The HTTP parser/encoder in namespace [via::http](Design_HTTP.md)
  3. HTTP server, connection and client API in namespace `via`  
- 
-![Via Namespaces](images/via_namespaces.png)
+
+![Via Namespaces](images/via_namespaces.svg)  
+*Figure 1. via-httplib Namespaces*
 
 The parser/encoder in via::http is completely independent of the communications
 code in via::comms. They have been designed to provide a foundation for the
@@ -31,12 +32,12 @@ after it has responded. However, it shall close the connection if:
 + the client does not send a request within a given timeout period.  
 
 Each connection shall be managed independently. The server shall:
- 
+
 + Forward requests to the application when complete: i.e. all of the HTTP
 headers and the associated body (only if Content-Length > 0) have been received
 or just all of the HTTP headers when using chunked Transfer-Encoding.  
 + Forward ‘chunks’ when each chunk is complete.  
-+ Enable the application to send its response asynchronously.   
++ Enable the application to send its response asynchronously.
 
 The only exception to this is the response to a request message with a “HEAD”
 method. The server should respond to this request message precisely as it
@@ -45,16 +46,17 @@ although the response message may contain a “Content-Length” message header,
 it MUST NOT contain any data, i.e. a message body.
 
 ### Design
-     
+
 #### HTTP Server
-     
+
 The HTTP server consists of:
 
 + `http_connections` i.e. connections with an HTTP request parser and an HTTP
 response encoder.  
 + an `http_server` to manage the http_connections.
 
-![HTTP Server Classes](images/http_server_classes.png)
+![HTTP Server Classes](images/http_server_classes.svg)  
+*Figure 2. HTTP(S) Server Classes*
 
 Like the comms connections and server, the HTTP connections and server are
 implemented as template classes instantiated with a `SocketAdaptor` for the type
@@ -66,7 +68,8 @@ of comms socket required and a `Container` for the type of buffer to use
 The HTTP client just consists of `http_clients`, i.e. connections with an HTTP request encoder
 and an HTTP response parser.  
 
-![HTTP Client Classes](images/http_client_classes.png)
+![HTTP Client Classes](images/http_client_classes.svg)  
+*Figure 2. HTTP(S) Client Classes*
 
 As above, the HTTP clients are implemented as template classes instantiated with
 a `SocketAdaptor` for the type of comms socket required and a `Container` for the

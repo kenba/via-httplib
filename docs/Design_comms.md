@@ -71,7 +71,7 @@ Connection can't be destroyed until async_read returns.
 In order to enable the object to be destroyed using the RAII pattern the
 shared_ptr must be replaced by a weak_ptr in the call to bind and the
 read_callback function needs to be changed from a member function to a static
-function which tests whether the weak pointer is still valid before trying 
+function which tests whether the weak pointer is still valid before trying
 to use it, e.g:
 
     void read_handler(boost::system::error_code const& error,
@@ -103,7 +103,7 @@ to use it, e.g:
                          boost::asio::placeholders::bytes_transferred,
                          read_buffer_)));
     }
-    
+
 Note: in this example the `read_buffer_` is stored in a `shared_ptr` and
 passed in the `async_read` call of bind to ensure that the lifetime of the
 `read_buffer_` exceeds the lifetime of `async_read`.
@@ -114,11 +114,11 @@ Establishing an TCP/SSL client connection consists of three stages:
 
  1. Connect to the remote host and port.  
  The socket_adaptor resolves the host name to get a host_iterator.
- 
+
  2. Connect to the host_iterator.
  If the host_iterator is valid, the connection attempts to connect to it. If
  unsuccessful it will iterate around the hosts until it connects or fails.
- 
+
  3. If it connects to a host_iterator and it's an SSL socket, it initiates
  a handshake with the socket. If it's a TCP socket the socket adaptor will
  always accept the handshake.
@@ -141,7 +141,7 @@ the connection and starts the server handshake.
  a handshake with the socket. If it's a TCP socket the socket adaptor will
  always accept the handshake.
 
-![TCP/SSL Server Connection Sequence Diagram](images/server_sequence_diagram.png)
+![TCP/SSL Server Connection Sequence Diagram](images/server_sequence_diagram.svg)
 
 ## Socket Disconnection ##
 
@@ -151,7 +151,7 @@ server or client wants to close the connection it shall call the connections
 will be detected by the read/write handlers as disconnect error.
 
 `asio` provides `close` functions however, to gracefully (and in the SSL case,
-correctly) close the connection it should be `shutdown` before being closed. 
+correctly) close the connection it should be `shutdown` before being closed.
 
 The `asio` SSL shutdown sends an SSL `close notify` message to the other end
 of the connection. This is the secure method of closing the connection.

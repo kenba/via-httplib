@@ -11,6 +11,9 @@ A header-only library for embedding **HTTP** or **HTTPS**, **IPV6** and **IPV4**
 HTTP/HTTPS servers to be built that comply with
 [rfc7230](https://tools.ietf.org/html/rfc7230) wherever possible.
 
+![Via Namespaces](docs/images/via_namespaces.svg)  
+*Figure 1. via-httplib Namespaces*
+
 ## Requirements
 
 + A C++17 compliant compiler. This version requires a complier that supports string_view.  
@@ -39,7 +42,8 @@ Otherwise `standalone asio` can be downloaded from: [asio](http://think-async.co
 
 If you require an **HTTPS** server or client then you must also install the
 [OpenSSL](https://www.openssl.org/) library.  
-Please note that a plain **HTTP** server does **not** require `OpenSLL`.
+Please note that a plain **HTTP** server does **not** require `OpenSLL` lib files.
+However, it does require the `OpenSLL` header files.
 
 The [Server User Guide](docs/Server.md) explains how to use the library to create HTTP servers and
 the [Client User Guide](docs/Client.md) explains how to use the library to create HTTP clients.
