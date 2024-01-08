@@ -1,0 +1,18 @@
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Via Comms Classes
+
+class server<socket_type> 
+class connection<socket_type> 
+
+note bottom of connection
+    **socket_type** is either
+    **tcp_socket** or **ssl_socket**
+end note
+
+server *-- tcp_acceptor
+server o-- connection
+
+@enduml

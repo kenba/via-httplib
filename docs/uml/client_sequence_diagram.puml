@@ -1,0 +1,33 @@
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Client Connection Sequence
+
+'autonumber
+connection -> socket : connect(host, port)
+opt ssl
+socket -> asio.socket : set_verify_callback
+end
+
+connection <- socket : host iterator
+
+loop around host iterators
+connection -> socket : connect_socket
+socket -> asio.socket : async_connect
+connection <- asio.socket : connect_callback
+end
+
+connection -> socket : handshake
+alt ssl
+socket -> asio.socket : async_handshake
+connection <- asio.socket : handshake_callback
+else
+connection <- socket : handshake_callback
+note right
+The tcp_adaptor always
+accepts the handshake
+end note
+end alt
+
+@enduml

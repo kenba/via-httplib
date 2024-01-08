@@ -16,7 +16,7 @@ messages on TCP, SSL, UDP and other communications protocols. However, the
 library does not buffer received or transmitted messages. This is good for
 efficiency but makes it hard to use...
 
-![Comms Classes](images/via_comms_classes.png)
+![Comms Classes](images/via_comms_classes.svg)
 
 The `via::comms` library simply uses a bridge design pattern to wrap the
 boost::asio socket classes with buffers for the received and transmitted
@@ -123,7 +123,7 @@ Establishing an TCP/SSL client connection consists of three stages:
  a handshake with the socket. If it's a TCP socket the socket adaptor will
  always accept the handshake.
 
-![TCP/SSL Client Connection Sequence Diagram](images/client_sequence_diagram.png)
+![TCP/SSL Client Connection Sequence Diagram](images/client_sequence_diagram.svg)
 
 ## Server Connections ##
 
@@ -166,4 +166,4 @@ will fail with the SSL error code: SSL_R_PROTOCOL_IS_SHUTDOWN.
 The asio TCP shutdown function is synchronous, so the TCP shutdown just waits
 for the function to return before signalling that socket is disconnected.
 
-![TCP/SSL Socket Disconnection Sequence Diagram](images/socket_disconnection_sequence_diagram.png)
+![TCP/SSL Socket Disconnection Sequence Diagram](images/socket_disconnection_sequence_diagram.svg)

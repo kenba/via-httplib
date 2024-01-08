@@ -1,8 +1,8 @@
 @startuml
 
-'Copyright (c) 2013-2015 Ken Barker
+'Copyright (c) 2013-2024 Ken Barker
 
-title Socket Disonnection Sequence
+' title Socket Disonnection Sequence
 
 'autonumber
 actor "server or client"

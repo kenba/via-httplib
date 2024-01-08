@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="275px" preserveAspectRatio="none" style="width:333px;height:275px;background:#FFFFFF;" version="1.1" viewBox="0 0 333 275" width="333px" zoomAndPan="magnify"><defs/><g><!--MD5=[7288765a1906b576ad30e4ceee268498]
+class server--><g id="elem_server"><rect codeLine="6" fill="#F1F1F1" height="48" id="server" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="142" x="109.5" y="10"/><ellipse cx="124.5" cy="26" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M127.2656,21.875 Q127.4219,21.6563 127.6094,21.5469 Q127.7969,21.4375 128.0156,21.4375 Q128.3906,21.4375 128.625,21.6953 Q128.8594,21.9531 128.8594,22.5625 L128.8594,24.0156 Q128.8594,24.625 128.625,24.8906 Q128.3906,25.1563 128.0156,25.1563 Q127.6719,25.1563 127.4688,24.9531 Q127.2656,24.7656 127.1563,24.25 Q127.1094,23.8906 126.9219,23.7031 Q126.5938,23.3281 125.9844,23.1094 Q125.375,22.8906 124.75,22.8906 Q123.9844,22.8906 123.3516,23.2188 Q122.7188,23.5469 122.2266,24.2969 Q121.7344,25.0469 121.7344,26.0781 L121.7344,27.1719 Q121.7344,28.4063 122.625,29.2266 Q123.5156,30.0469 125.1094,30.0469 Q126.0469,30.0469 126.7031,29.7969 Q127.0938,29.6406 127.5156,29.2031 Q127.7813,28.9375 127.9297,28.8594 Q128.0781,28.7813 128.2813,28.7813 Q128.6094,28.7813 128.8672,29.0391 Q129.125,29.2969 129.125,29.6406 Q129.125,29.9844 128.7813,30.3906 Q128.2813,30.9688 127.4844,31.2969 Q126.4063,31.75 125.1094,31.75 Q123.5938,31.75 122.3906,31.125 Q121.4063,30.625 120.7188,29.5547 Q120.0313,28.4844 120.0313,27.2031 L120.0313,26.0469 Q120.0313,24.7188 120.6484,23.5703 Q121.2656,22.4219 122.3594,21.8047 Q123.4531,21.1875 124.6875,21.1875 Q125.4219,21.1875 126.0703,21.3516 Q126.7188,21.5156 127.2656,21.875 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="40" x="138.5" y="31.7285">server</text><rect fill="#FFFFFF" height="17.0938" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" width="68" x="186.5" y="7"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="66" x="187.5" y="20.457">socket_type</text><line style="stroke:#181818;stroke-width:0.5;" x1="110.5" x2="250.5" y1="42" y2="42"/><line style="stroke:#181818;stroke-width:0.5;" x1="110.5" x2="250.5" y1="50" y2="50"/></g><!--MD5=[a51e4cef3fd81858adf4cbeddf49a032]
+class connection--><g id="elem_connection"><rect codeLine="7" fill="#F1F1F1" height="48" id="connection" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="171" x="7" y="118"/><ellipse cx="22" cy="134" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M24.7656,129.875 Q24.9219,129.6563 25.1094,129.5469 Q25.2969,129.4375 25.5156,129.4375 Q25.8906,129.4375 26.125,129.6953 Q26.3594,129.9531 26.3594,130.5625 L26.3594,132.0156 Q26.3594,132.625 26.125,132.8906 Q25.8906,133.1563 25.5156,133.1563 Q25.1719,133.1563 24.9688,132.9531 Q24.7656,132.7656 24.6563,132.25 Q24.6094,131.8906 24.4219,131.7031 Q24.0938,131.3281 23.4844,131.1094 Q22.875,130.8906 22.25,130.8906 Q21.4844,130.8906 20.8516,131.2188 Q20.2188,131.5469 19.7266,132.2969 Q19.2344,133.0469 19.2344,134.0781 L19.2344,135.1719 Q19.2344,136.4063 20.125,137.2266 Q21.0156,138.0469 22.6094,138.0469 Q23.5469,138.0469 24.2031,137.7969 Q24.5938,137.6406 25.0156,137.2031 Q25.2813,136.9375 25.4297,136.8594 Q25.5781,136.7813 25.7813,136.7813 Q26.1094,136.7813 26.3672,137.0391 Q26.625,137.2969 26.625,137.6406 Q26.625,137.9844 26.2813,138.3906 Q25.7813,138.9688 24.9844,139.2969 Q23.9063,139.75 22.6094,139.75 Q21.0938,139.75 19.8906,139.125 Q18.9063,138.625 18.2188,137.5547 Q17.5313,136.4844 17.5313,135.2031 L17.5313,134.0469 Q17.5313,132.7188 18.1484,131.5703 Q18.7656,130.4219 19.8594,129.8047 Q20.9531,129.1875 22.1875,129.1875 Q22.9219,129.1875 23.5703,129.3516 Q24.2188,129.5156 24.7656,129.875 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="69" x="36" y="139.7285">connection</text><rect fill="#FFFFFF" height="17.0938" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" width="68" x="113" y="115"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="66" x="114" y="128.457">socket_type</text><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="177" y1="150" y2="150"/><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="177" y1="158" y2="158"/></g><g id="elem_GMN4"><path d="M8,226 L8,268.7031 A0,0 0 0 0 8,268.7031 L177,268.7031 A0,0 0 0 0 177,268.7031 L177,236 L167,226 L96.5,226 L92.5,166.45 L88.5,226 L8,226 A0,0 0 0 0 8,226 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M167,226 L167,236 L177,236 L167,226 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="74" x="14" y="244.4951">socket_type</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="46" x="92" y="244.4951">is either</text><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="66" x="14" y="260.8467">tcp_socket</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="11" x="84" y="260.8467">or</text><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="63" x="99" y="260.8467">ssl_socket</text></g><!--MD5=[8cb20552efb9366d505fa1c4a0ca5105]
+class tcp_acceptor--><g id="elem_tcp_acceptor"><rect fill="#F1F1F1" height="48" id="tcp_acceptor" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="114" x="212.5" y="118"/><ellipse cx="227.5" cy="134" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M230.2656,129.875 Q230.4219,129.6563 230.6094,129.5469 Q230.7969,129.4375 231.0156,129.4375 Q231.3906,129.4375 231.625,129.6953 Q231.8594,129.9531 231.8594,130.5625 L231.8594,132.0156 Q231.8594,132.625 231.625,132.8906 Q231.3906,133.1563 231.0156,133.1563 Q230.6719,133.1563 230.4688,132.9531 Q230.2656,132.7656 230.1563,132.25 Q230.1094,131.8906 229.9219,131.7031 Q229.5938,131.3281 228.9844,131.1094 Q228.375,130.8906 227.75,130.8906 Q226.9844,130.8906 226.3516,131.2188 Q225.7188,131.5469 225.2266,132.2969 Q224.7344,133.0469 224.7344,134.0781 L224.7344,135.1719 Q224.7344,136.4063 225.625,137.2266 Q226.5156,138.0469 228.1094,138.0469 Q229.0469,138.0469 229.7031,137.7969 Q230.0938,137.6406 230.5156,137.2031 Q230.7813,136.9375 230.9297,136.8594 Q231.0781,136.7813 231.2813,136.7813 Q231.6094,136.7813 231.8672,137.0391 Q232.125,137.2969 232.125,137.6406 Q232.125,137.9844 231.7813,138.3906 Q231.2813,138.9688 230.4844,139.2969 Q229.4063,139.75 228.1094,139.75 Q226.5938,139.75 225.3906,139.125 Q224.4063,138.625 223.7188,137.5547 Q223.0313,136.4844 223.0313,135.2031 L223.0313,134.0469 Q223.0313,132.7188 223.6484,131.5703 Q224.2656,130.4219 225.3594,129.8047 Q226.4531,129.1875 227.6875,129.1875 Q228.4219,129.1875 229.0703,129.3516 Q229.7188,129.5156 230.2656,129.875 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="82" x="241.5" y="139.7285">tcp_acceptor</text><line style="stroke:#181818;stroke-width:0.5;" x1="213.5" x2="325.5" y1="150" y2="150"/><line style="stroke:#181818;stroke-width:0.5;" x1="213.5" x2="325.5" y1="158" y2="158"/></g><!--MD5=[de7915e1ca207eb367e793e6dd063621]
+reverse link server to tcp_acceptor--><g id="link_server_tcp_acceptor"><path codeLine="14" d="M209.27,69.26 C222.6,85.13 238.08,103.58 250.01,117.79 " fill="none" id="server-backto-tcp_acceptor" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="201,59.42,201.7934,66.5873,208.7146,68.6116,207.9212,61.4443,201,59.42" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[244b4bb4085e86c9490e25fd66fb900b]
+reverse link server to connection--><g id="link_server_connection"><path codeLine="15" d="M152.05,69.26 C138.88,85.13 123.56,103.58 111.77,117.79 " fill="none" id="server-backto-connection" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="none" points="160.22,59.42,153.3101,61.4822,152.556,68.6538,159.4659,66.5916,160.22,59.42" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[2feb93d5e64a1b90f8bd484657507a1b]
+@startuml
+
+'Copyright (c) 2013-2024 Ken Barker
+
+' title Via Comms Classes
+
+class server<socket_type> 
+class connection<socket_type> 
+
+note bottom of connection
+    **socket_type** is either
+    **tcp_socket** or **ssl_socket**
+end note
+
+server *- - tcp_acceptor
+server o- - connection
+
+@enduml
+
+@startuml
+
+
+
+class server<socket_type> 
+class connection<socket_type> 
+
+note bottom of connection
+    **socket_type** is either
+    **tcp_socket** or **ssl_socket**
+end note
+
+server *- - tcp_acceptor
+server o- - connection
+
+@enduml
+
+PlantUML version 1.2022.8(Sun Sep 25 10:00:33 BST 2022)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) Client VM
+Default Encoding: Cp1252
+Language: en
+Country: GB
+--></g></svg>

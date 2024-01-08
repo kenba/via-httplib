@@ -146,12 +146,6 @@ namespace via
     ////////////////////////////////////////////////////////////////////////
     // Functions
 
-    /// @fn weak_from_this
-    /// Get a weak_pointer to this instance.
-    /// @return a weak_pointer to this http_client.
-    weak_pointer weak_from_this()
-    { return weak_pointer(enable::shared_from_this()); }
-
     /// Attempt to connect to the host.
     bool connect()
     {
